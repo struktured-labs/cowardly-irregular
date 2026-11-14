@@ -68,15 +68,58 @@ func test_the_gains_are_in_a_plausible_range() -> void:
 
 
 func test_only_voice_lines_carry_a_gain() -> void:
-	## The field is read ONLY by play_voice. A gain_db on a battle or UI cue would be silently
-	## ignored, which is the "data describing a level nothing applies" failure one surface over.
+	## The field is read ONLY by play_voice and play_voiced_line. A gain_db on a battle or UI cue would be
+	## silently ignored, which is the "data describing a level nothing applies" failure one surface over.
+	## A recorded line is selected by its `line` field (voiced_line_clip), so that, not a key prefix, admits it.
 	var sfx := _sfx()
 	var strays: Array[String] = []
 	for key in sfx:
-		if (sfx[key] as Dictionary).has("gain_db") and not str(key).begins_with("voice_"):
+		var e: Dictionary = sfx[key]
+		if e.has("gain_db") and not str(key).begins_with("voice_") and not e.has("line"):
 			strays.append(str(key))
 	assert_eq(strays, [],
-		"these non-voice cues carry a gain_db that nothing reads — only play_voice applies it: %s" % [strays])
+		"these cues carry a gain_db that nothing reads — only play_voice and play_voiced_line apply it: %s" % [strays])
+
+
+## The 386 boss lines were rendered to -16 LUFS under a -1 dBTP ceiling, and the ceiling held 44 of them more
+## than 1 LU short (median -16.4, range -19.4..-15.5). tools/voice_level_trim.py levels them to their OWN
+## target as a second class; gain applied to the audio and re-measured: all 386 at -16.0, true peak <= -1.3 dBTP.
+func _func_body(src: String, name: String) -> String:
+	var at := src.find("\nfunc %s(" % name)
+	if at < 0:
+		return ""
+	var end := src.find("\nfunc ", at + 1)
+	return src.substr(at, (end if end > 0 else src.length()) - at)
+
+
+func test_the_line_player_applies_a_recorded_lines_own_gain() -> void:
+	## The arm at the top passes on play_voice's copy alone; this one is about the boss-line path.
+	var body := _func_body(FileAccess.get_file_as_string(SM), "play_voiced_line")
+	assert_ne(body, "", "VOID: play_voiced_line is gone from SoundManager, so this arm guards nothing")
+	assert_true(body.contains("get(\"gain_db\", 0.0)"),
+		"play_voiced_line no longer reads gain_db, so every boss line's level in the manifest is inert")
+	assert_true(body.contains("VOICE_PLAYER_BASE_DB + gain"),
+		"play_voiced_line reads gain_db but does not apply it to the line player's level")
+
+
+func test_the_recorded_lines_are_levelled() -> void:
+	var sfx := _sfx()
+	var lines := 0
+	var gained := 0
+	var wild: Array[String] = []
+	for key in sfx:
+		var e: Dictionary = sfx[key]
+		if not e.has("line"):
+			continue
+		lines += 1
+		if e.has("gain_db"):
+			gained += 1
+			if absf(float(e["gain_db"])) > MAX_ABS_GAIN + 0.01:
+				wild.append("%s %+.1f" % [key, float(e["gain_db"])])
+	assert_gt(lines, 300, "VOID: only %d recorded-line entries found; there were 386" % lines)
+	## Most sit within 0.05 dB of target and carry none; 353 of 386 needed one. Half is a lost write, not a level.
+	assert_gt(gained, lines / 2, "only %d of %d recorded lines carry a gain_db, so the levelling pass was lost or never ran" % [gained, lines])
+	assert_eq(wild, [], "these recorded lines' gains are outside +/-%.1f dB: %s" % [MAX_ABS_GAIN, wild])
 
 
 ## ⛔ `voice_blip_*` SHARES THE PREFIX AND IS A DIFFERENT ASSET CLASS. The arm above excludes

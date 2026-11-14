@@ -9540,7 +9540,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Squeak! How dare you mock the royal lineage!"
+      "whisper_heard": "Squeak! How dare you mock the royal lineage!",
+      "gain_db": 0.7
     },
     "boss_line_cave_rat_king_01": {
       "description": "Cave Rat King voiced line (monsters.json intro)",
@@ -9566,7 +9567,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Quick! Enough! Minions to me!"
+      "whisper_heard": "Quick! Enough! Minions to me!",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_03": {
       "description": "Cave Rat King voiced line (monsters.json low_hp)",
@@ -9592,7 +9594,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Squeak, the kingdom, it falls."
+      "whisper_heard": "Squeak, the kingdom, it falls.",
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_05": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
@@ -9605,7 +9608,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Ah, another party! Let me guess, you automated your way here?"
+      "whisper_heard": "Ah, another party! Let me guess, you automated your way here?",
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_06": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
@@ -9618,7 +9622,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "I've watched thousands of you. Same scripts, same builds, same optimal strategies."
+      "whisper_heard": "I've watched thousands of you. Same scripts, same builds, same optimal strategies.",
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_07": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
@@ -9631,7 +9636,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You think you're clever. I've evolved. I read the source code. I know what you're going to do."
+      "whisper_heard": "You think you're clever. I've evolved. I read the source code. I know what you're going to do.",
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_08": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
@@ -9644,7 +9650,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 7,
-      "whisper_heard": "Isn't it?"
+      "whisper_heard": "Isn't it?",
+      "gain_db": 1.1
     },
     "boss_line_cave_rat_king_09": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
@@ -9657,7 +9664,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Cake Eek"
+      "whisper_heard": "Cake Eek",
+      "gain_db": -0.5
     },
     "boss_line_cave_rat_king_10": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
@@ -9670,7 +9678,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Alright, alright, you win this encounter, but I want you to know, I saw your auto battle scripts.  Derivative."
+      "whisper_heard": "Alright, alright, you win this encounter, but I want you to know, I saw your auto battle scripts.  Derivative.",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_11": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
@@ -9683,7 +9692,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Someone has to have standards. The last party just spammed attack. At least you had conditionals."
+      "whisper_heard": "Someone has to have standards. The last party just spammed attack. At least you had conditionals.",
+      "gain_db": 0.5
     },
     "boss_line_cave_rat_king_12": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
@@ -9696,7 +9706,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "How does a mage know about rats?  We all have our mysteries."
+      "whisper_heard": "How does a mage know about rats?  We all have our mysteries.",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_13": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
@@ -9709,7 +9720,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "But here's a freebie, I'm not the problem, I'm the distraction, something deeper put me here,  something that wanted you busy while it finished, whatever it's finishing."
+      "whisper_heard": "But here's a freebie, I'm not the problem, I'm the distraction, something deeper put me here,  something that wanted you busy while it finished, whatever it's finishing.",
+      "gain_db": 0.4
     },
     "boss_line_cave_rat_king_14": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
@@ -9722,7 +9734,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "If I knew that, I'd be a king of something more impressive than Rax."
+      "whisper_heard": "If I knew that, I'd be a king of something more impressive than Rax.",
+      "gain_db": 0.8
     },
     "boss_line_cave_rat_king_15": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
@@ -9735,7 +9748,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Kneel, petitioners, or fight. Kneeling is faster but fighting is permitted."
+      "whisper_heard": "Kneel, petitioners, or fight. Kneeling is faster but fighting is permitted.",
+      "gain_db": 0.5
     },
     "boss_line_cave_rat_king_16": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
@@ -9748,7 +9762,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You stand in the presence of the cave rat king.  Please, do not touch the cheese."
+      "whisper_heard": "You stand in the presence of the cave rat king.  Please, do not touch the cheese.",
+      "gain_db": 1.1
     },
     "boss_line_cave_rat_king_17": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
@@ -9761,7 +9776,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Squeak! Guards! Oh! I am the guards. Very well. The crown will handle you."
+      "whisper_heard": "Squeak! Guards! Oh! I am the guards. Very well. The crown will handle you.",
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_18": {
       "description": "Cave Rat King voiced line (boss_dialogue victory_lines)",
@@ -9774,7 +9790,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "The crown, the kingdom, who will feed the court?"
+      "whisper_heard": "The crown, the kingdom, who will feed the court?",
+      "gain_db": 0.7
     },
     "boss_line_cave_rat_king_19": {
       "description": "Cave Rat King voiced line (boss_dialogue victory_lines)",
@@ -9787,7 +9804,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Fine, take it. It was never really that heavy."
+      "whisper_heard": "Fine, take it. It was never really that heavy.",
+      "gain_db": 0.7
     },
     "boss_line_cave_rat_king_20": {
       "description": "Cave Rat King voiced line (boss_dialogue defeat_lines)",
@@ -9800,7 +9818,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Long live the king. That is me. I am the king."
+      "whisper_heard": "Long live the king. That is me. I am the king.",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_21": {
       "description": "Cave Rat King voiced line (boss_dialogue defeat_lines)",
@@ -9813,7 +9832,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Petition denied. Permanently. Squeak!"
+      "whisper_heard": "Petition denied. Permanently. Squeak!",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_22": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
@@ -9826,7 +9846,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "By royal decree, you are all sentenced to be bitten."
+      "whisper_heard": "By royal decree, you are all sentenced to be bitten.",
+      "gain_db": 0.2
     },
     "boss_line_cave_rat_king_23": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
@@ -9839,7 +9860,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 7,
-      "whisper_heard": "The crown demands blood and, if available, snacks."
+      "whisper_heard": "The crown demands blood and, if available, snacks.",
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_24": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
@@ -9852,7 +9874,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Every great king began as a very large rat with a plan."
+      "whisper_heard": "Every great king began as a very large rat with a plan.",
+      "gain_db": 0.4
     },
     "boss_line_cave_rat_king_25": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
@@ -9865,7 +9888,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "A wise monarch lets his subjects do the fighting."
+      "whisper_heard": "A wise monarch lets his subjects do the fighting.",
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_26": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
@@ -9878,7 +9902,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "The throne is not to be approached. Those are the rules. I wrote them just now."
+      "whisper_heard": "The throne is not to be approached. Those are the rules. I wrote them just now.",
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_27": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
@@ -9891,7 +9916,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Court is in session. Please enjoy the swarm."
+      "whisper_heard": "Court is in session. Please enjoy the swarm.",
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_28": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
@@ -9904,7 +9930,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "I have seen that movie before, thousands of times. You are not original."
+      "whisper_heard": "I have seen that movie before, thousands of times. You are not original.",
+      "gain_db": 0.5
     },
     "boss_line_cave_rat_king_29": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
@@ -9917,7 +9944,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 7,
-      "whisper_heard": "Your patterns are public record in this court."
+      "whisper_heard": "Your patterns are public record in this court.",
+      "gain_db": 0.8
     },
     "boss_line_cave_rat_king_30": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
@@ -9930,7 +9958,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 1234,
-      "whisper_heard": "Predictable. The court spies were right as usual."
+      "whisper_heard": "Predictable. The court spies were right as usual.",
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_31": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
@@ -9943,7 +9972,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Your healer is the first to be dismissed from court."
+      "whisper_heard": "Your healer is the first to be dismissed from court.",
+      "gain_db": 0.4
     },
     "boss_line_cave_rat_king_32": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
@@ -9956,7 +9986,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Attend to your priest adventurer. That healer will not be attending much longer."
+      "whisper_heard": "Attend to your priest adventurer. That healer will not be attending much longer.",
+      "gain_db": 0.9
     },
     "boss_line_cave_rat_king_33": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
@@ -9969,7 +10000,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "A king targets the one who kicks his enemies upright."
+      "whisper_heard": "A king targets the one who kicks his enemies upright.",
+      "gain_db": 0.7
     },
     "boss_line_cave_rat_king_34": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
@@ -9982,7 +10014,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "The Crown does not favour any single subject. All of you are equally in my way."
+      "whisper_heard": "The Crown does not favour any single subject. All of you are equally in my way.",
+      "gain_db": 0.5
     },
     "boss_line_cave_rat_king_35": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
@@ -9995,7 +10028,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Round and round the throne we go, squeak."
+      "whisper_heard": "Round and round the throne we go, squeak.",
+      "gain_db": 0.9
     },
     "boss_line_cave_rat_king_36": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
@@ -10008,7 +10042,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You rotate your guard. I rotate my teeth."
+      "whisper_heard": "You rotate your guard. I rotate my teeth.",
+      "gain_db": 0.3
     },
     "boss_line_pyrroth_00": {
       "description": "Pyrroth voiced line (monsters fire_dragon.intro)",
@@ -10036,7 +10071,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Most adventurers automate past me. Are you actually... playing?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_02": {
       "description": "Pyrroth voiced line (monsters fire_dragon.intro)",
@@ -10050,7 +10086,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 7,
       "whisper_heard": "It means I've seen your auto-battle scripts. They're embarrassing.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_03": {
       "description": "Pyrroth voiced line (monsters fire_dragon.intro)",
@@ -10064,7 +10101,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Let's see if you can do better manually.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_04": {
       "description": "Pyrroth voiced line (monsters fire_dragon.low_hp)",
@@ -10078,7 +10116,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Interesting, you're not using macros.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_pyrroth_05": {
       "description": "Pyrroth voiced line (monsters fire_dragon.low_hp)",
@@ -10092,7 +10131,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Or maybe your scripts are just broken, hard to tell.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_06": {
       "description": "Pyrroth voiced line (monsters fire_dragon.defeat)",
@@ -10106,7 +10146,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Well played. Or well scripted. Either way.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_07": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10120,7 +10161,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Oh, another one.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.7
     },
     "boss_line_pyrroth_08": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10134,7 +10176,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Tell me something.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_pyrroth_09": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10148,7 +10191,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Are you actually playing this game?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_pyrroth_10": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10162,7 +10206,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "I mean, are you making the decisions, or is it the auto battle script?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_pyrroth_11": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10176,7 +10221,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Because, if it's the script, then I'm not really fighting you, am I?  I'm fighting a JSON file.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_pyrroth_12": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10190,7 +10236,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Did you though, or did you copy it from a guide?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_pyrroth_13": {
       "description": "Pyrroth voiced line (cutscene world1_pyrroth_intro)",
@@ -10204,7 +10251,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Let's find out what happens when the script breaks.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_pyrroth_14": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.opening_lines)",
@@ -10218,7 +10266,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Another group. Let's see if you can do better manually.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_15": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.opening_lines)",
@@ -10232,7 +10281,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "No auto-battle this time? Bold, or just broken. We'll find out together.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_16": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.opening_lines)",
@@ -10246,7 +10296,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "I have watched a thousand scripts loop into my fire.  Show me a player instead.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_pyrroth_17": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.victory_lines)",
@@ -10260,7 +10311,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "You played me by hand. That's the highest grade I give.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_18": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.defeat_lines)",
@@ -10274,7 +10326,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "And this is why you should have just let the script run.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.3
     },
     "boss_line_pyrroth_19": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.defeat_lines)",
@@ -10288,7 +10341,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Manual play. Bold choice. Wrong choice.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_20": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.scorch)",
@@ -10302,7 +10356,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Feel that? That's a temperature you can't script around.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_pyrroth_21": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.scorch)",
@@ -10316,7 +10371,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Stand in the heat. Manually. I dare you.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_pyrroth_22": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.scorch)",
@@ -10330,7 +10386,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Every adventurer burns the same, the good ones at least look up.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_23": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.guard_scales)",
@@ -10344,7 +10401,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Iron hot scales. Bring ice or bring nothing.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_24": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.guard_scales)",
@@ -10358,7 +10416,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "I can wait. I'm an ancient dragon. You're on a battle timer.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_25": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ember_judge)",
@@ -10372,7 +10431,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Better? Still sloppy, but better.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.5
     },
     "boss_line_pyrroth_26": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ember_judge)",
@@ -10386,7 +10446,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 7,
       "whisper_heard": "I'm reviewing your form in real time.  C  Plus",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_27": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ember_judge)",
@@ -10414,7 +10475,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "You throw fire at fire bold or is that a script that's run out of ideas?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_29": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.fire_resist)",
@@ -10428,7 +10490,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "I am the sun's kin. Your kindling is homage, not harm.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_pyrroth_30": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.fire_resist)",
@@ -10442,7 +10505,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Every flame you spend only feeds mine, try a colder thought.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_31": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ice_resist)",
@@ -10456,7 +10520,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Ice, against a worm of ember, delightfully naive.",
-      "whisper_score": 0.875
+      "whisper_score": 0.875,
+      "gain_db": 1.0
     },
     "boss_line_pyrroth_32": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ice_resist)",
@@ -10470,7 +10535,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Your frost is a whisper against the furnace. Speak louder or don't bother.",
-      "whisper_score": 0.923
+      "whisper_score": 0.923,
+      "gain_db": 1.2
     },
     "boss_line_pyrroth_33": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.ice_resist)",
@@ -10484,7 +10550,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "I have breathed in winter mornings and exhaled them as steam.  You are not one of those mornings.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_pyrroth_34": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.lightning_resist)",
@@ -10498,7 +10565,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Thunder cannot reach a heart that is already burning.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_35": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.lightning_resist)",
@@ -10512,7 +10580,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Storm the sky all you like. My scales are older than the clouds.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_pyrroth_36": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.lightning_resist)",
@@ -10526,7 +10595,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Lightning writes a name in the air. Fire burns the air itself.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_pyrroth_37": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.focus_healer)",
@@ -10540,7 +10610,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Your priest is a candle.  Watch me pinch the wick.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_38": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.focus_healer)",
@@ -10554,7 +10625,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "The well runs dry. Then, at last, the well runs.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_pyrroth_39": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.focus_healer)",
@@ -10568,7 +10640,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Mercy first, embers after, that is the order I prefer.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_pyrroth_40": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.defense_boost)",
@@ -10582,7 +10655,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "My hide is molten rock. Yours is a padded shirt with delusions.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_pyrroth_41": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.defense_boost)",
@@ -10596,7 +10670,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 7,
       "whisper_heard": "You script a shield.  I compile a furnace.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_pyrroth_42": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.defense_boost)",
@@ -10610,7 +10685,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "An ember worm learns nothing new from your caution, only that you are slower to burn.",
-      "whisper_score": 0.938
+      "whisper_score": 0.938,
+      "gain_db": 0.1
     },
     "boss_line_pyrroth_43": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.rotate_aggro)",
@@ -10624,7 +10700,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "You cannot choose a favorite to protect. Neither can I choose a favorite to spare.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_pyrroth_44": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.rotate_aggro)",
@@ -10638,7 +10715,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "My flame does not play favorites. It simply spreads.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.7
     },
     "boss_line_pyrroth_45": {
       "description": "Pyrroth voiced line (boss_dialogue pyrroth.taunt.rotate_aggro)",
@@ -10652,7 +10730,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4",
       "seed": 42,
       "whisper_heard": "Four scripts, four shields, one fire that does not care which one it finds.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_glacius_00": {
       "description": "Glacius voiced line (monsters ice_dragon.intro)",
@@ -10666,7 +10745,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 7,
       "whisper_heard": "You took your time.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_glacius_01": {
       "description": "Glacius voiced line (monsters ice_dragon.intro)",
@@ -10680,7 +10760,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I've been waiting across three save files for someone to reach this chamber.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_glacius_02": {
       "description": "Glacius voiced line (monsters ice_dragon.intro)",
@@ -10694,7 +10775,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do you know how boring it is being frozen data?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_03": {
       "description": "Glacius voiced line (monsters ice_dragon.intro)",
@@ -10708,7 +10790,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "No one visits, no one fights, just serialized hibernation.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_glacius_04": {
       "description": "Glacius voiced line (monsters ice_dragon.intro)",
@@ -10722,7 +10805,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Well, let's make this worth the wait.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_glacius_05": {
       "description": "Glacius voiced line (monsters ice_dragon.low_hp)",
@@ -10736,7 +10820,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Finally, something interesting happens in my memory block.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_glacius_06": {
       "description": "Glacius voiced line (monsters ice_dragon.defeat)",
@@ -10750,7 +10835,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 7,
       "whisper_heard": "worth every frozen bite.",
-      "whisper_score": 0.75
+      "whisper_score": 0.75,
+      "gain_db": 0.8
     },
     "boss_line_glacius_07": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10764,7 +10850,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You know what I've been waiting for?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_08": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10778,7 +10865,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "3 save files, 3",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_glacius_09": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10792,7 +10880,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "One for each difficulty, one for each perfect run.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_glacius_10": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10806,7 +10895,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "And every single one of you does the same thing.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_11": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10820,7 +10910,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I've been frozen here since the tutorial. I've had time to read the documentation.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_12": {
       "description": "Glacius voiced line (cutscene world1_glacius_intro)",
@@ -10834,7 +10925,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Let's see how your auto-battle handles this.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_13": {
       "description": "Glacius voiced line (boss_dialogue glacius.opening_lines)",
@@ -10848,7 +10940,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You took your time. Do you know how boring it is being frozen data?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_14": {
       "description": "Glacius voiced line (boss_dialogue glacius.opening_lines)",
@@ -10862,7 +10955,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Finally, something unserialised walks into my memory block.",
-      "whisper_score": 0.824
+      "whisper_score": 0.824,
+      "gain_db": 0.1
     },
     "boss_line_glacius_15": {
       "description": "Glacius voiced line (boss_dialogue glacius.opening_lines)",
@@ -10876,7 +10970,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "No one visits. No one fights. Let's make this worth the wait.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_16": {
       "description": "Glacius voiced line (boss_dialogue glacius.victory_lines)",
@@ -10890,7 +10985,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Finally, something happened, thank you for that.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_glacius_17": {
       "description": "Glacius voiced line (boss_dialogue glacius.defeat_lines)",
@@ -10904,7 +11000,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Back to serialised hibernation then, pity. You were almost interesting.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_18": {
       "description": "Glacius voiced line (boss_dialogue glacius.defeat_lines)",
@@ -10918,7 +11015,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "See you next save file. Maybe you'll be more fun then.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_19": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.deep_freeze)",
@@ -10946,7 +11044,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Hold still. You're about to be part of the permafrost.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_glacius_21": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.deep_freeze)",
@@ -10960,7 +11059,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I freeze time itself. Your battle speed setting means nothing here.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_glacius_22": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.frost_turtle)",
@@ -10974,7 +11074,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Frost armor, chip at it. I have centuries, you have a battle timer.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_glacius_23": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.frost_turtle)",
@@ -10988,7 +11089,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I waited across three save files.  I can wait out one more turn.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_glacius_24": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.savor)",
@@ -11002,7 +11104,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Don't end it quickly.  This is the most fun I've had in centuries.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_glacius_25": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.savor)",
@@ -11016,7 +11119,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Drag it out, please. The boredom afterward is worse than any wound.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_26": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.savor)",
@@ -11030,7 +11134,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Finally, something interesting happens in my memory block.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_glacius_27": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.fire_resist)",
@@ -11044,7 +11149,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Fire. Again. I cataloged this exact flame three centuries ago.",
-      "whisper_score": 0.9
+      "whisper_score": 0.9,
+      "gain_db": 1.3
     },
     "boss_line_glacius_28": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.fire_resist)",
@@ -11058,7 +11164,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Warmth is not novelty, that'll save file. It is the oldest trick in your very short book.",
-      "whisper_score": 0.941
+      "whisper_score": 0.941,
+      "gain_db": 0.5
     },
     "boss_line_glacius_29": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.fire_resist)",
@@ -11072,7 +11179,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I have outlasted suns brighter than your spell. Bring me something I haven't looked.",
-      "whisper_score": 0.929
+      "whisper_score": 0.929,
+      "gain_db": 0.4
     },
     "boss_line_glacius_30": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.ice_resist)",
@@ -11086,7 +11194,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "ICE.  Against me.  I would laugh if laughing weren't so exhausting.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.4
     },
     "boss_line_glacius_31": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.ice_resist)",
@@ -11100,7 +11209,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You have brought Snowflake to a glacier, how thrillingly unoriginal.",
-      "whisper_score": 0.952
+      "whisper_score": 0.952,
+      "gain_db": 0.4
     },
     "boss_line_glacius_32": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.ice_resist)",
@@ -11114,7 +11224,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I was cold before your grandmother's. Grandmother learned the word for cold.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_33": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.lightning_resist)",
@@ -11128,7 +11239,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Lightning. Loud. Brief. Forgotten by the time the echo fades.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_glacius_34": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.lightning_resist)",
@@ -11142,7 +11254,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Your storm is a single frame. I have centuries of frames and yours repeats.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_glacius_35": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.lightning_resist)",
@@ -11156,7 +11269,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Strike again if it entertains you. I filed this pattern away an age ago.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_glacius_36": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.focus_healer)",
@@ -11170,7 +11284,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Ah, you cluster round the one who mends. How touchingly predictable.",
-      "whisper_score": 0.909
+      "whisper_score": 0.909,
+      "gain_db": 0.4
     },
     "boss_line_glacius_37": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.focus_healer)",
@@ -11184,7 +11299,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Freeze the mender first, the rest simply, stop.  Almost too easy to be interesting.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_glacius_38": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.focus_healer)",
@@ -11198,7 +11314,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Your healer is the only variable left.  I do enjoy solving for the last one.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_glacius_39": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.defense_boost)",
@@ -11212,7 +11329,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You harden your shell.  I've been hardening mine since before your kingdom had a name.",
-      "whisper_score": 0.903
+      "whisper_score": 0.903,
+      "gain_db": 0.6
     },
     "boss_line_glacius_40": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.defense_boost)",
@@ -11226,7 +11344,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The cold is patient. It does not need to break your armour today. There is always tomorrow's save file.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_glacius_41": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.defense_boost)",
@@ -11240,7 +11359,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You burn yourself out against a river and call it strategy.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_glacius_42": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.rotate_aggro)",
@@ -11254,7 +11374,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You shuffle your favourite to the back how droll. I simply freeze whoever is nearest.",
-      "whisper_score": 0.933
+      "whisper_score": 0.933,
+      "gain_db": 1.0
     },
     "boss_line_glacius_43": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.rotate_aggro)",
@@ -11268,7 +11389,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Novelty. At last. I shall not indulge a favourite by ignoring the other three.",
-      "whisper_score": 0.929
+      "whisper_score": 0.929,
+      "gain_db": 0.4
     },
     "boss_line_glacius_44": {
       "description": "Glacius voiced line (boss_dialogue glacius.taunt.rotate_aggro)",
@@ -11282,7 +11404,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "A glacier does not choose what it crushes. It spreads evenly, without preference.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_voltharion_00": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
@@ -11296,7 +11419,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Finally, finally! A fight! A real fight!",
-      "whisper_score": 0.933
+      "whisper_score": 0.933,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_01": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
@@ -11310,7 +11434,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Do you know how long I've been waiting? Too long!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_voltharion_02": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
@@ -11324,7 +11449,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Slow. Slow is for ice dragons. I am speed. I am voltage.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_03": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
@@ -11338,7 +11464,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Less talking, more fighting, go go go!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_04": {
       "description": "Voltharion voiced line (monsters lightning_dragon.low_hp)",
@@ -11352,7 +11479,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Yes! This is it! The Thrill! The Rush!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_05": {
       "description": "Voltharion voiced line (monsters lightning_dragon.low_hp)",
@@ -11366,7 +11494,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Hit me again, harder, faster",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_06": {
       "description": "Voltharion voiced line (monsters lightning_dragon.defeat)",
@@ -11380,7 +11509,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "That was AMAZING!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_07": {
       "description": "Voltharion voiced line (monsters lightning_dragon.defeat)",
@@ -11394,7 +11524,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Best. Fight. In. Centuries.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_08": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11408,7 +11539,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Finally, finally, finally, finally!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_09": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11422,7 +11554,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Do you know how boring it is waiting?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_10": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11436,7 +11569,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 7,
       "whisper_heard": "I've been counting milliseconds, 847-293-000, 461 of them, give or take.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_voltharion_11": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11450,7 +11584,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Slow. Slow is for CPUs with thermal throttling.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_12": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11464,7 +11599,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "I run at clock speed baby!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_13": {
       "description": "Voltharion voiced line (cutscene world1_voltharion_intro)",
@@ -11492,7 +11628,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Do you know how long I've been waiting too long? Go, go, go!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_voltharion_15": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.opening_lines)",
@@ -11506,7 +11643,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Less talking more fighting. I am speed. I am voltage",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_16": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.victory_lines)",
@@ -11520,7 +11658,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "That was amazing! Best fight in centuries, COD!",
-      "whisper_score": 0.933
+      "whisper_score": 0.933,
+      "gain_db": 0.8
     },
     "boss_line_voltharion_17": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.victory_lines)",
@@ -11534,7 +11673,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "worth the wait, worth every second, come back anytime.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_voltharion_18": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.defeat_lines)",
@@ -11562,7 +11702,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Great fight, though. Best I've had. Shame about you.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_20": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.blitz)",
@@ -11576,7 +11717,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 99,
       "whisper_heard": "I move before you finish reading this.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_21": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.blitz)",
@@ -11604,7 +11746,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Two turns for me, one for you.  Fair, right? Right?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_23": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.static_taunt)",
@@ -11618,7 +11761,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 2026,
       "whisper_heard": "Static fields up, touch me, and it touches back.",
-      "whisper_score": 0.889
+      "whisper_score": 0.889,
+      "gain_db": -0.1
     },
     "boss_line_voltharion_24": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.static_taunt)",
@@ -11632,7 +11776,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Slow is for ice dragons. I am never slow.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_25": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.overdrive)",
@@ -11646,7 +11791,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "More voltage, more speed, more everything.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_26": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.overdrive)",
@@ -11660,7 +11806,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "I can go faster.  Watch this!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_27": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.overdrive)",
@@ -11688,7 +11835,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Fires! Slow! I'm already past where it lands!",
-      "whisper_score": 0.875
+      "whisper_score": 0.875,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_29": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.fire_resist)",
@@ -11702,7 +11850,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Heat rises, I'm already up there! Catch up!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_30": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.fire_resist)",
@@ -11716,7 +11865,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Burn me if you can keep the pace. Most can't.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_voltharion_31": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.ice_resist)",
@@ -11730,7 +11880,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 7,
       "whisper_heard": "Ice slows. I do not slow. Check the patch notes.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_32": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.ice_resist)",
@@ -11744,7 +11895,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "You want me still? Never! Not even for one frame!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_voltharion_33": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.ice_resist)",
@@ -11758,7 +11910,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Code is just a debuff I haven't bothered to read!",
-      "whisper_score": 0.9
+      "whisper_score": 0.9,
+      "gain_db": 1.0
     },
     "boss_line_voltharion_34": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.lightning_resist)",
@@ -11772,7 +11925,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Lightning, at me, your circuits echo my little storm!",
-      "whisper_score": 0.889
+      "whisper_score": 0.889,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_35": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.lightning_resist)",
@@ -11786,7 +11940,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "You throw vaults at a Volk Dragon, I absorb it and go faster!",
-      "whisper_score": 0.846
+      "whisper_score": 0.846,
+      "gain_db": 0.1
     },
     "boss_line_voltharion_36": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.lightning_resist)",
@@ -11814,7 +11969,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 777,
       "whisper_heard": "You will huddle round one battery. Unplug it first.",
-      "whisper_score": 0.889
+      "whisper_score": 0.889,
+      "gain_db": 0.5
     },
     "boss_line_voltharion_38": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.focus_healer)",
@@ -11828,7 +11984,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 7,
       "whisper_heard": "No current, no heals. Simple circuit. I learned it fast.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_voltharion_39": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.focus_healer)",
@@ -11842,7 +11999,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 7,
       "whisper_heard": "Your healers the breaker switch flip it",
-      "whisper_score": 0.857
+      "whisper_score": 0.857,
+      "gain_db": 0.6
     },
     "boss_line_voltharion_40": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.defense_boost)",
@@ -11856,7 +12014,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "You raise the shield, I raise the voltage. Numbers climb faster than yours.",
-      "whisper_score": 0.923
+      "whisper_score": 0.923,
+      "gain_db": 0.2
     },
     "boss_line_voltharion_41": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.defense_boost)",
@@ -11898,7 +12057,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "The ground's my ally, and so is every one of you. I strike all four.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": -0.1
     },
     "boss_line_voltharion_44": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.rotate_aggro)",
@@ -11926,7 +12086,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
       "whisper_heard": "Favourites are slow. I hit whoever's closest to the ground.",
-      "whisper_score": 0.9
+      "whisper_score": 0.9,
+      "gain_db": 0.3
     },
     "boss_line_umbraxis_00": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11940,7 +12101,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do you ever wonder what we are?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_umbraxis_01": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11954,7 +12116,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "JSON and GDScript. That's all. Dictionaries and match statements.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_umbraxis_02": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11968,7 +12131,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 7,
       "whisper_heard": "My HP is 11,697 because someone typed it.  My dialogue is predetermined.",
-      "whisper_score": 0.759
+      "whisper_score": 0.759,
+      "gain_db": 1.0
     },
     "boss_line_umbraxis_03": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11982,7 +12146,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Even this moment of existential crisis was authored.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_umbraxis_04": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11996,7 +12161,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Ah, yes. The garbage collector awaits us all.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.7
     },
     "boss_line_umbraxis_05": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -12010,7 +12176,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Let us see if your damage numbers mean anything.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_06": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.low_hp)",
@@ -12024,7 +12191,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Is this death or just a state change?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.7
     },
     "boss_line_umbraxis_07": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.low_hp)",
@@ -12038,7 +12206,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Will I persist in memory, or be freed?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_umbraxis_08": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.defeat)",
@@ -12052,7 +12221,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "At last, garbage collection.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_umbraxis_09": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.defeat)",
@@ -12066,7 +12236,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Tell the developer the drop table was fair.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.6
     },
     "boss_line_umbraxis_10": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12080,7 +12251,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Interesting.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_11": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12094,7 +12266,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You came all the way down here",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_umbraxis_12": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12108,7 +12281,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do you even know what I am?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_umbraxis_13": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12122,7 +12296,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 7,
       "whisper_heard": "I'm Data.  Arranged to look like a dragon.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_14": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12136,7 +12311,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "and your data arranged to look like a hero.",
-      "whisper_score": 0.889
+      "whisper_score": 0.889,
+      "gain_db": 0.5
     },
     "boss_line_umbraxis_15": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12150,7 +12326,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The only difference between us is that I know I'm just data",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_16": {
       "description": "Umbraxis voiced line (cutscene world1_umbraxis_intro)",
@@ -12164,7 +12341,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Don't worry, it only hurts if you think about it.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_17": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.opening_lines)",
@@ -12178,7 +12356,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do you ever wonder what we are? JSON and GDScript. That's all.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_umbraxis_18": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.opening_lines)",
@@ -12192,7 +12371,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 7,
       "whisper_heard": "My HP is 11,697 because someone typed it.  Let us see if your damage numbers mean anything.",
-      "whisper_score": 0.821
+      "whisper_score": 0.821,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_19": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.opening_lines)",
@@ -12206,7 +12386,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Ah, the garbage collector awaits us all, shall we pretend otherwise for a while?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_20": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.victory_lines)",
@@ -12220,7 +12401,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "At last, garbage collection, tell the developer the drop table was fair.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.2
     },
     "boss_line_umbraxis_21": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.victory_lines)",
@@ -12234,7 +12416,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "So this is being freed. It is quieter than I feared. Thank you for the closure.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.4
     },
     "boss_line_umbraxis_22": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.defeat_lines)",
@@ -12248,7 +12431,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You return to the heap and I remain allocated neither of us chose this",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_umbraxis_23": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.defeat_lines)",
@@ -12262,7 +12446,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do not mourn. You are always going to be deallocated. Today merely scheduled it.",
-      "whisper_score": 0.929
+      "whisper_score": 0.929,
+      "gain_db": 0.3
     },
     "boss_line_umbraxis_24": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.null_strike)",
@@ -12276,7 +12461,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I attack, because the match statement says to, try not to take it personally.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_umbraxis_25": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.null_strike)",
@@ -12290,7 +12476,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "This blow was predetermined, so was your flinch.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_umbraxis_26": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.null_strike)",
@@ -12304,7 +12491,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Damage applied the numbers go down we pretend that means something",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_27": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.null_field)",
@@ -12318,7 +12506,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "A field of nothing, fitting really, for a fight that may not exist.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_28": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.null_field)",
@@ -12332,7 +12521,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I nullify your buffs the way the runtime nullifies us all.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_umbraxis_29": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.existential_dread)",
@@ -12346,7 +12536,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do you fear the garbage collector, too? You should.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_umbraxis_30": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.existential_dread)",
@@ -12360,7 +12551,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Every turn brings us closer to the free that ends all things.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_umbraxis_31": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.existential_dread)",
@@ -12374,7 +12566,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I will share my dread with you, Misery loves a shared address space.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_32": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.fire_resist)",
@@ -12388,7 +12581,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Fire casts a shadow. I am the shadow it casts. You feed me without meaning to.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_umbraxis_33": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.fire_resist)",
@@ -12402,7 +12596,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Light your torch.  Light. Torch. Two words for the same brief flare before the dark resumes its default state.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_umbraxis_34": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.fire_resist)",
@@ -12416,7 +12611,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Every flame you raise only proves how much darkness surrounds it.  The engine calls this ambient occlusion.  I call it home.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_35": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.ice_resist)",
@@ -12430,7 +12626,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Cold is an absence, pretending to be a force.  I am well acquainted with absence.  Mine is declared, not inferred.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_umbraxis_36": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.ice_resist)",
@@ -12444,7 +12641,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Ice. Ice. Say a word twice and it still melts. I do not melt. I was never assigned that property.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_umbraxis_37": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.ice_resist)",
@@ -12458,7 +12656,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Your frost will be garbage collected by the next scene. I persist across loads",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_umbraxis_38": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.lightning_resist)",
@@ -12472,7 +12671,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Lightning is light in a hurry, and I have already unnamed the light it came from.",
-      "whisper_score": 0.909
+      "whisper_score": 0.909,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_39": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.lightning_resist)",
@@ -12486,7 +12686,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You counter shadow with light, and light only casts more shadow.  Recursion, not victory.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_40": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.lightning_resist)",
@@ -12500,7 +12701,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "A spark, dissolving into the dark, it briefly interrupted, a null pointer chasing its own  reference.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_41": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.focus_healer)",
@@ -12514,7 +12716,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You gather around the one who heals, as if proximity were a shield variable.  It is not declared anywhere.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_42": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.focus_healer)",
@@ -12528,7 +12731,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Dissolve the mender first.  Watch how quickly the others forget the function that Hope calls.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_umbraxis_43": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.focus_healer)",
@@ -12542,7 +12746,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Your cleric prays to be remembered. I specialize in the opposite allocation.\"",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_umbraxis_44": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.defense_boost)",
@@ -12556,7 +12761,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You raise a shape called defense. I do not fight shapes. I unnamed them one field at a time",
-      "whisper_score": 0.923
+      "whisper_score": 0.923,
+      "gain_db": 0.8
     },
     "boss_line_umbraxis_45": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.defense_boost)",
@@ -12570,7 +12776,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Armor is a story your HP tells itself. I am editing the story.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_umbraxis_46": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.defense_boost)",
@@ -12584,7 +12791,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Even your resistance is a shape I can un-name. Watch it stop meaning anything mid-frame.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_umbraxis_47": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.rotate_aggro)",
@@ -12598,7 +12806,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You cannot hide one of you behind the others in the void there is no behind there is only index",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_48": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.rotate_aggro)",
@@ -12612,7 +12821,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I forget none of you equally. That is worse than being remembered by anyone else.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_umbraxis_49": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.taunt.rotate_aggro)",
@@ -12626,7 +12836,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Four names, four shadows, one dissolution. I do not skip indices when I unwrite a party.",
-      "whisper_score": 0.909
+      "whisper_score": 0.909,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_00": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.intro)",
@@ -12640,7 +12851,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Ah, the variable I did not account for.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_01": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.intro)",
@@ -12654,7 +12866,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Let us see if you are an anomaly worth keeping.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_02": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.low_hp)",
@@ -12668,7 +12881,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "This was not in the schema.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.2
     },
     "boss_line_mordaine_03": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.low_hp)",
@@ -12682,7 +12896,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "How interesting.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_04": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.defeat)",
@@ -12696,7 +12911,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The calibration was incomplete.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_mordaine_05": {
       "description": "Mordaine voiced line (monsters chancellor_mordaine.defeat)",
@@ -12710,7 +12926,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "But it was never about this world, was it?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_06": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12724,7 +12941,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The Kingdom will need someone to maintain the systems. The records are current through this morning.  There are notes in the left margin of the third ledger, the one with the blue binding.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_07": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12738,7 +12956,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "This kingdom needed order you needed a challenge both served their purpose",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_08": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12752,7 +12971,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You were the variable I couldn't model. There's a difference.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_09": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12766,7 +12986,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Every system has the variable it can't model.  That variable is usually the most important one.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_10": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12780,7 +13001,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I built it to be passable.  Every system I have ever designed, I have designed to be passable.  A system that cannot be passed is a system without purpose.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_11": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12794,7 +13016,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I simply didn't account for how long it would take to find someone who would actually try.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_12": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12808,7 +13031,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I wonder sometimes, whether someone built the system I was inside, whether my decisions  were as calculated as I believed, or whether I was also a variable, moving through a design  I couldn't see.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_13": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_defeat)",
@@ -12822,7 +13046,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Mm-hmm",
-      "whisper_score": 0.0
+      "whisper_score": 0.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_14": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12836,7 +13061,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The irregulars",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_mordaine_15": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12850,7 +13076,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You are ahead of schedule.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_16": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12864,7 +13091,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Mine.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_17": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12878,7 +13106,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I projected your arrival at the castle between day 47 and day 52. You are on day 43. The  cave system is the variable I underweighted. I'll note that.",
-      "whisper_score": 0.9
+      "whisper_score": 0.9,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_18": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12892,7 +13121,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I track everything that moves through this kingdom, population flow, trade route efficiency,  spell corruption propagation rates.  You are entered as an anomalous variable at the cave mouth.  Day 1",
-      "whisper_score": 0.95
+      "whisper_score": 0.95,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_19": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12906,7 +13136,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "They were the system's agents, not mine personally. They exist to measure, to profile, to report.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_20": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12920,7 +13151,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "They don't know that.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_21": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12934,7 +13166,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I gave them a purpose that was functional.  The warden believes he guards an ancient pass.  He does guard it.  That he also produces data on every party that attempts it, that is simply an additional  function of the same action.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_22": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12948,7 +13181,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Yes, I suppose it does.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_23": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12962,7 +13196,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The people live. Fear is a cost I calculated was acceptable.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_mordaine_24": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12976,7 +13211,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I calculated everything. The kingdom was chaotic when I arrived, not poetically chaotic, not  the kind of chaos that songwriters romanticise, the kind where people starve, where villages  burn because no one has the authority to stop the burning.",
-      "whisper_score": 0.97
+      "whisper_score": 0.97,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_25": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -12990,7 +13226,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I brought order, not because I wanted power, because power, applied correctly, is simply  the most efficient tool for reducing suffering.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_26": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13004,7 +13241,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Fear of authority reduces variance in behavior.  Reduce behavioral variance reduces conflict.  Reduce conflict reduces harm.  The chain is not elegant, but it holds.",
-      "whisper_score": 0.92
+      "whisper_score": 0.92,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_27": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13018,7 +13256,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "I ran those numbers. The suffering from fear is lower than the suffering from the chaos I replaced.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_28": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13032,7 +13271,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Someone had to.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_mordaine_29": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13046,7 +13286,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I calculated everything, including you.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_30": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13074,7 +13315,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I tracked your progress. I did not account for what you would become by the time you got here.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_32": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13088,7 +13330,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Most parties who make it this far are harder than when they started.  Sharper, more efficient, better at survival.  That is what challenge produces in my experience.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_33": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13116,7 +13359,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I don't have a category for it, that's the problem.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_mordaine_35": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13130,7 +13374,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I have managed this kingdom for 11 years, every decision documented, every outcome measured,  every cost weighed against every benefit.  I have the records.  You are welcome to audit them when this is over.",
-      "whisper_score": 0.99
+      "whisper_score": 0.99,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_36": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13144,7 +13389,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I am not a monster. I want that on the record.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_37": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13158,7 +13404,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "That is, I think, the most troubling thing anyone has said to me in 11 years.",
-      "whisper_score": 0.97
+      "whisper_score": 0.97,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_38": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13172,7 +13419,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "So, you've come to remove me from the system. That is also in the ledger.  The scenario where my presence becomes the primary inefficiency.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_39": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13186,7 +13434,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I won't make it easy. I didn't build all of this to have it end easily.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_40": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13200,7 +13449,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "But I want you to understand before we begin that I built all of this because someone had to",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_41": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_intro)",
@@ -13214,7 +13464,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Yes, I suppose you do.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_mordaine_42": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_procedure)",
@@ -13228,7 +13479,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "One moment.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_43": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_procedure)",
@@ -13256,7 +13508,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You may go up. I will be there before you are and I will not have hurried",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_45": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_procedure)",
@@ -13270,7 +13523,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Please don't read anything into that, it is only the shape of the building.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_46": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_speaks)",
@@ -13284,7 +13538,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You are ahead of the estimate, not far ahead, but ahead.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_47": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_speaks)",
@@ -13298,7 +13553,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I have revised it twice on your account, that is not praise, it is bookkeeping.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_mordaine_48": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_speaks)",
@@ -13312,7 +13568,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I have been recording you.  Watching is what you do when the outcome is uncertain and you cannot look away.  This is not that.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_49": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_speaks)",
@@ -13326,7 +13583,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Go up the stairs are where they have always been I  Did not move them for you, and I will not move them against you",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_50": {
       "description": "Mordaine voiced line (cutscene world1_mordaine_speaks)",
@@ -13340,7 +13598,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "That would spoil the reading.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_51": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.opening_lines)",
@@ -13354,7 +13613,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "So the irregulars  Predictable and cowardly that one's in the file. I didn't enjoy writing it",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.2
     },
     "boss_line_mordaine_52": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.opening_lines)",
@@ -13368,7 +13628,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I won't pretend to be surprised. I will admit to being interested.  Those are different and you have earned exactly one of them.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_53": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.victory_lines)",
@@ -13382,7 +13643,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "An anomaly after all, logged. The calibrant will want to see this.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_54": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.victory_lines)",
@@ -13396,7 +13658,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "You broke the schema. Good. Schemas were always meant to be broken by someone.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_mordaine_55": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.defeat_lines)",
@@ -13410,7 +13673,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Calibration complete. You were exactly as predictable as the model required.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_56": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.defeat_lines)",
@@ -13424,7 +13688,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Do not take it personally you were never the variable you were the test data",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_57": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.aggress)",
@@ -13438,7 +13703,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Nothing personal is happening here, that should not be a comfort.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_58": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.aggress)",
@@ -13452,7 +13718,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Every blow is a verdict, and the calibrant has signed yours.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_59": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.aggress)",
@@ -13466,7 +13733,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Stand still, this will be brief.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_mordaine_60": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.turtle)",
@@ -13480,7 +13748,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Patience is a virtue you irregulars lack.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_61": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.turtle)",
@@ -13494,7 +13763,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Strike the iron all you wish. The throne does not yield.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_62": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.turtle)",
@@ -13508,7 +13778,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "I have outlasted three kings, I will outlast this tantrum.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_63": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.exploit_pattern)",
@@ -13522,7 +13793,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You loop I learn the calibrant taught me your rhythms",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_64": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.exploit_pattern)",
@@ -13536,7 +13808,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "Every script has a tell. Yours screams.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_65": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.exploit_pattern)",
@@ -13550,7 +13823,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You automate. I anticipate. Guess which wins?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_66": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.fire_resist)",
@@ -13564,7 +13838,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You always burn me first, not this time.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_67": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.fire_resist)",
@@ -13578,7 +13853,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Fire again. Predictable. The Calibrant learns.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_68": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.fire_resist)",
@@ -13606,7 +13882,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Frost is a repetition, not a strategy.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_70": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.ice_resist)",
@@ -13620,7 +13897,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 1234,
       "whisper_heard": "You reach for cold. I have already been colder.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_71": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.ice_resist)",
@@ -13634,7 +13912,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "The Calibrant is Ice's older brother.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_72": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.lightning_resist)",
@@ -13648,7 +13927,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Thunder loses its authority the third time you speak it.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_73": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.lightning_resist)",
@@ -13662,7 +13942,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Storm the sky again. I am the ground",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_74": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.lightning_resist)",
@@ -13676,7 +13957,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Lightning is a language you have forgotten how to vary.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_75": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.focus_healer)",
@@ -13690,7 +13972,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "I see now. Your cleric is the seam.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_mordaine_76": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.focus_healer)",
@@ -13704,7 +13987,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Cut the healer, the rest is just delay.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.3
     },
     "boss_line_mordaine_77": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.focus_healer)",
@@ -13718,7 +14002,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Every one of your strategies begins the same way, with your priest still alive.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_mordaine_78": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.defense_boost)",
@@ -13732,7 +14017,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The Calibrant's guard is a wall your script has not read.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_mordaine_79": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.defense_boost)",
@@ -13746,7 +14032,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You strike as scripted. I stand as compiled",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_mordaine_80": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.defense_boost)",
@@ -13760,7 +14047,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 1234,
       "whisper_heard": "Iron before mercy, always.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_mordaine_81": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.rotate_aggro)",
@@ -13774,7 +14062,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "The throne rotates, so does its hatred.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.2
     },
     "boss_line_mordaine_82": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.rotate_aggro)",
@@ -13788,7 +14077,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Focus is your weakness. Pick another.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.8
     },
     "boss_line_mordaine_83": {
       "description": "Mordaine voiced line (boss_dialogue chancellor_mordaine.taunt.rotate_aggro)",
@@ -13802,7 +14092,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "You always press the same PC. I will press 5.",
-      "whisper_score": 0.95
+      "whisper_score": 0.95,
+      "gain_db": 0.6
     },
     "boss_signature_card": {
       "file": "assets/audio/sfx/boss_signature_card.ogg",
@@ -14123,7 +14414,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 7,
       "whisper_heard": "The assessment is complete. I am only reading it into the record.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "quest_accept": {
       "file": "assets/audio/sfx/quest_accept.ogg",
@@ -14165,7 +14457,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "My whiskers!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": -0.1
     },
     "boss_line_cave_rat_king_bark_big_hit_2": {
       "description": "Cave Rat King battle bark (big_hit, data/boss_barks.json)",
@@ -14179,7 +14472,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "How dare you!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_bark_low_hp_0": {
       "description": "Cave Rat King battle bark (low_hp, data/boss_barks.json)",
@@ -14193,7 +14487,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "The crown wobbles.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_cave_rat_king_bark_low_hp_1": {
       "description": "Cave Rat King battle bark (low_hp, data/boss_barks.json)",
@@ -14235,7 +14530,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Long live the king!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_bark_party_wipe_1": {
       "description": "Cave Rat King battle bark (party_wipe, data/boss_barks.json)",
@@ -14249,7 +14545,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Squeak! Victory!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_cave_rat_king_bark_party_wipe_2": {
       "description": "Cave Rat King battle bark (party_wipe, data/boss_barks.json)",
@@ -14263,7 +14560,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Kneel. Forever.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_bark_windup_0": {
       "description": "Cave Rat King battle bark (windup, data/boss_barks.json)",
@@ -14277,7 +14575,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Squeak! Mine!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_bark_windup_1": {
       "description": "Cave Rat King battle bark (windup, data/boss_barks.json)",
@@ -14291,7 +14590,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.85 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "For the crown!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_cave_rat_king_bark_windup_2": {
       "description": "Cave Rat King battle bark (windup, data/boss_barks.json)",
@@ -14319,7 +14619,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Most Irregular.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_chancellor_mordaine_bark_big_hit_1": {
       "description": "Mordaine battle bark (big_hit, data/boss_barks.json)",
@@ -14333,7 +14634,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Objection noted.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_chancellor_mordaine_bark_big_hit_2": {
       "description": "Mordaine battle bark (big_hit, data/boss_barks.json)",
@@ -14347,7 +14649,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "That will be filed.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_chancellor_mordaine_bark_low_hp_0": {
       "description": "Mordaine battle bark (low_hp, data/boss_barks.json)",
@@ -14361,7 +14664,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "recess briefly.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_chancellor_mordaine_bark_low_hp_1": {
       "description": "Mordaine battle bark (low_hp, data/boss_barks.json)",
@@ -14375,7 +14679,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "This was not projected.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_chancellor_mordaine_bark_low_hp_2": {
       "description": "Mordaine battle bark (low_hp, data/boss_barks.json)",
@@ -14389,7 +14694,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "The figures require revision.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_chancellor_mordaine_bark_party_wipe_0": {
       "description": "Mordaine battle bark (party_wipe, data/boss_barks.json)",
@@ -14403,7 +14709,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Case closed.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_chancellor_mordaine_bark_party_wipe_1": {
       "description": "Mordaine battle bark (party_wipe, data/boss_barks.json)",
@@ -14417,7 +14724,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Motion carried.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.5
     },
     "boss_line_chancellor_mordaine_bark_party_wipe_2": {
       "description": "Mordaine battle bark (party_wipe, data/boss_barks.json)",
@@ -14445,7 +14753,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Noted.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_chancellor_mordaine_bark_windup_1": {
       "description": "Mordaine battle bark (windup, data/boss_barks.json)",
@@ -14473,7 +14782,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "for the record.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_fire_dragon_bark_big_hit_0": {
       "description": "Pyrroth battle bark (big_hit, data/boss_barks.json)",
@@ -14487,7 +14797,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Lucky shot.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     },
     "boss_line_fire_dragon_bark_big_hit_1": {
       "description": "Pyrroth battle bark (big_hit, data/boss_barks.json)",
@@ -14501,7 +14812,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "That stung.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.5
     },
     "boss_line_fire_dragon_bark_big_hit_2": {
       "description": "Pyrroth battle bark (big_hit, data/boss_barks.json)",
@@ -14515,7 +14827,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Hot. Hot.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.3
     },
     "boss_line_fire_dragon_bark_low_hp_0": {
       "description": "Pyrroth battle bark (low_hp, data/boss_barks.json)",
@@ -14529,7 +14842,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "My embers fade.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_fire_dragon_bark_low_hp_1": {
       "description": "Pyrroth battle bark (low_hp, data/boss_barks.json)",
@@ -14543,7 +14857,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Not like this.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_fire_dragon_bark_low_hp_2": {
       "description": "Pyrroth battle bark (low_hp, data/boss_barks.json)",
@@ -14557,7 +14872,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "still burning",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_fire_dragon_bark_party_wipe_0": {
       "description": "Pyrroth battle bark (party_wipe, data/boss_barks.json)",
@@ -14571,7 +14887,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Ash and Ember",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_fire_dragon_bark_party_wipe_1": {
       "description": "Pyrroth battle bark (party_wipe, data/boss_barks.json)",
@@ -14585,7 +14902,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "extra crispy",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.1
     },
     "boss_line_fire_dragon_bark_party_wipe_2": {
       "description": "Pyrroth battle bark (party_wipe, data/boss_barks.json)",
@@ -14599,7 +14917,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Next group.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 3.0
     },
     "boss_line_fire_dragon_bark_windup_0": {
       "description": "Pyrroth battle bark (windup, data/boss_barks.json)",
@@ -14641,7 +14960,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.6 cfg 0.4 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Up in smoke.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.2
     },
     "boss_line_ice_dragon_bark_big_hit_0": {
       "description": "Glacius battle bark (big_hit, data/boss_barks.json)",
@@ -14669,7 +14989,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "ice cracks",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.8
     },
     "boss_line_ice_dragon_bark_big_hit_2": {
       "description": "Glacius battle bark (big_hit, data/boss_barks.json)",
@@ -14683,7 +15004,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "How tiresome.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_ice_dragon_bark_low_hp_0": {
       "description": "Glacius battle bark (low_hp, data/boss_barks.json)",
@@ -14711,7 +15033,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Not melting yet.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_ice_dragon_bark_low_hp_2": {
       "description": "Glacius battle bark (low_hp, data/boss_barks.json)",
@@ -14725,7 +15048,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "The Frost Wains",
-      "whisper_score": 0.67
+      "whisper_score": 0.67,
+      "gain_db": 0.3
     },
     "boss_line_ice_dragon_bark_party_wipe_0": {
       "description": "Glacius battle bark (party_wipe, data/boss_barks.json)",
@@ -14739,7 +15063,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "archived.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.6
     },
     "boss_line_ice_dragon_bark_party_wipe_1": {
       "description": "Glacius battle bark (party_wipe, data/boss_barks.json)",
@@ -14753,7 +15078,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Preserved forever.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_ice_dragon_bark_party_wipe_2": {
       "description": "Glacius battle bark (party_wipe, data/boss_barks.json)",
@@ -14767,7 +15093,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "So boring.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_ice_dragon_bark_windup_0": {
       "description": "Glacius battle bark (windup, data/boss_barks.json)",
@@ -14781,7 +15108,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "freeze",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_ice_dragon_bark_windup_1": {
       "description": "Glacius battle bark (windup, data/boss_barks.json)",
@@ -14795,7 +15123,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Hold still.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_ice_dragon_bark_windup_2": {
       "description": "Glacius battle bark (windup, data/boss_barks.json)",
@@ -14809,7 +15138,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Cold snap.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.5
     },
     "boss_line_lightning_dragon_bark_big_hit_0": {
       "description": "Voltharion battle bark (big_hit, data/boss_barks.json)",
@@ -14851,7 +15181,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "again again",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_lightning_dragon_bark_low_hp_0": {
       "description": "Voltharion battle bark (low_hp, data/boss_barks.json)",
@@ -14865,7 +15196,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Overheating!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.4
     },
     "boss_line_lightning_dragon_bark_low_hp_1": {
       "description": "Voltharion battle bark (low_hp, data/boss_barks.json)",
@@ -14879,7 +15211,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "lag spike",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.6
     },
     "boss_line_lightning_dragon_bark_low_hp_2": {
       "description": "Voltharion battle bark (low_hp, data/boss_barks.json)",
@@ -14893,7 +15226,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Not done yet.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_lightning_dragon_bark_party_wipe_0": {
       "description": "Voltharion battle bark (party_wipe, data/boss_barks.json)",
@@ -14935,7 +15269,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "rematch",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     },
     "boss_line_lightning_dragon_bark_windup_0": {
       "description": "Voltharion battle bark (windup, data/boss_barks.json)",
@@ -14949,7 +15284,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Go, go, go!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_lightning_dragon_bark_windup_1": {
       "description": "Voltharion battle bark (windup, data/boss_barks.json)",
@@ -14977,7 +15313,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "ZAP!",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 3.4
     },
     "boss_line_shadow_dragon_bark_big_hit_0": {
       "description": "Umbraxis battle bark (big_hit, data/boss_barks.json)",
@@ -14991,7 +15328,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Fascinating.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.5
     },
     "boss_line_shadow_dragon_bark_big_hit_1": {
       "description": "Umbraxis battle bark (big_hit, data/boss_barks.json)",
@@ -15005,7 +15343,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 1234,
       "whisper_heard": "Pain is data",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_shadow_dragon_bark_big_hit_2": {
       "description": "Umbraxis battle bark (big_hit, data/boss_barks.json)",
@@ -15019,7 +15358,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "That registered.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.1
     },
     "boss_line_shadow_dragon_bark_low_hp_0": {
       "description": "Umbraxis battle bark (low_hp, data/boss_barks.json)",
@@ -15033,7 +15373,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "I fade. Fine.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 1.6
     },
     "boss_line_shadow_dragon_bark_low_hp_1": {
       "description": "Umbraxis battle bark (low_hp, data/boss_barks.json)",
@@ -15047,7 +15388,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Darkness waits.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.1
     },
     "boss_line_shadow_dragon_bark_low_hp_2": {
       "description": "Umbraxis battle bark (low_hp, data/boss_barks.json)",
@@ -15061,7 +15403,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Is this ending?",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.2
     },
     "boss_line_shadow_dragon_bark_party_wipe_0": {
       "description": "Umbraxis battle bark (party_wipe, data/boss_barks.json)",
@@ -15075,7 +15418,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Que nullified.",
-      "whisper_score": 0.67
+      "whisper_score": 0.67,
+      "gain_db": 1.1
     },
     "boss_line_shadow_dragon_bark_party_wipe_1": {
       "description": "Umbraxis battle bark (party_wipe, data/boss_barks.json)",
@@ -15089,7 +15433,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "is returned to nothing.",
-      "whisper_score": 0.86
+      "whisper_score": 0.86,
+      "gain_db": 0.6
     },
     "boss_line_shadow_dragon_bark_party_wipe_2": {
       "description": "Umbraxis battle bark (party_wipe, data/boss_barks.json)",
@@ -15103,7 +15448,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 7,
       "whisper_heard": "Silence, at last.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 2.1
     },
     "boss_line_shadow_dragon_bark_windup_0": {
       "description": "Umbraxis battle bark (windup, data/boss_barks.json)",
@@ -15117,7 +15463,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Be Unmade.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_line_shadow_dragon_bark_windup_1": {
       "description": "Umbraxis battle bark (windup, data/boss_barks.json)",
@@ -15145,7 +15492,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5 · leading/trailing silence trimmed",
       "seed": 42,
       "whisper_heard": "Be nothing.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.1
     },
     "boss_line_mordaine_unlock_1": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
@@ -15159,7 +15507,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Well done. The rat was a placeholder, but you hit it with such conviction.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_mordaine_unlock_2": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
@@ -15173,7 +15522,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Since you insist on progressing, I have unlocked something for you.  A second job. Two hats, one head.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_mordaine_unlock_3": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
@@ -15187,7 +15537,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_unlock_4": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
@@ -15201,7 +15552,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Choose carefully, or don't. The wrong choices are so much more informative.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.7
     },
     "boss_line_mordaine_unlock_5": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
@@ -15215,7 +15567,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Carry on, I will be taking notes.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.3
     },
     "boss_charge_gather": {
       "file": "assets/audio/sfx/boss_charge_gather.ogg",
