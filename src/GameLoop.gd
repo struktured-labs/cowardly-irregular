@@ -4719,10 +4719,33 @@ func _maybe_diegetic_retry() -> bool:
 		if is_instance_valid(member):
 			_restore_duelist(member)
 			member.current_ap = 0
+	_autobattle_off_for_retry()
 	await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
 	if BattleTransition:
 		await BattleTransition.fade_out()
 	return true
+
+
+## A lost fight is retried by hand (struktured 2026-11-14, any monster): every PC's autobattle goes off, scripts kept.
+func _autobattle_off_for_retry() -> Array[String]:
+	var switched: Array[String] = []
+	for member in party:
+		if member == null or not is_instance_valid(member):
+			continue
+		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			AutobattleSystem.set_autobattle_enabled(char_id, false)
+			switched.append(char_id)
+	AutobattleSystem.cancel_all_next_turn = false
+	if BattleManager:
+		BattleManager.is_autobattle_enabled = false
+	if not switched.is_empty():
+		print("[AUTOBATTLE] Retry: autobattle off for %s" % ", ".join(switched))
+		if is_inside_tree() and Toast:
+			Toast.show_warning(self, "Autobattle off for the retry")
+		if _overworld_menu and is_instance_valid(_overworld_menu) and _overworld_menu.has_method("refresh_autobattle_label"):
+			_overworld_menu.refresh_autobattle_label()
+	return switched
 
 
 func _show_game_over_screen() -> void:
@@ -4781,6 +4804,7 @@ func _show_game_over_screen() -> void:
 				if is_instance_valid(member):
 					_restore_duelist(member)
 					member.current_ap = 0
+			_autobattle_off_for_retry()
 			await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
 			if BattleTransition:
 				await BattleTransition.fade_out()
