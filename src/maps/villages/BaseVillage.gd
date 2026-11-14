@@ -1323,6 +1323,11 @@ func _described_prop_cell(examine_id: String, want: Vector2i, taken: Array) -> V
 const _EXAMINE_BESIDE_DOOR := {
 	"rivet_row_incident_numbers": "IncidentBoardDoor",
 	"vertex_threshold_tally": "ThresholdDoor",
+	"sandrift_rain_tally": "RainLedgerDoor",
+	"ironhaven_strike_ledger": "StrikeRegistryDoor",
+	"rivet_row_union_board": "UnionHallDoor",
+	"maple_heights_hoa_board": "CommunityCenterDoor",
+	"maple_heights_appendix_form": "CommunityCenterDoor",
 }
 
 
