@@ -150,3 +150,29 @@ func test_legend_row_boxes_never_touch_the_next_row() -> void:
 			var b: Label = rows[i + 1][1]
 			var box_h: float = a.get_combined_minimum_size().y
 			assert_gte(b.position.y - a.position.y, box_h, "legend row %d's %.0f px box runs into row %d at %s" % [i, box_h, i + 1, str(p)])
+
+
+## cutscenes' .803 census: at 150% and 200% a toast settled on the threat "!" at the bottom centre; the meter reserved no block.
+func test_the_meter_reserves_its_block_even_while_faded() -> void:
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		var t := _threat()
+		assert_true(t.is_in_group(OverworldMinimap.HUD_GROUP), "the meter joins the reserved HUD at %s" % str(p))
+		var r: Rect2 = t.reserved_rect()
+		assert_true(r.encloses(t._icon_label.get_rect()), "the reserved block %s covers the '!' %s at %s" % [r, t._icon_label.get_rect(), str(p)])
+		assert_true(r.encloses(t._bar_bg.get_rect()), "and the bar %s at %s" % [t._bar_bg.get_rect(), str(p)])
+		assert_eq(t._bar_bg.color.a, 0.0, "CONTROL: a fresh meter is faded out, and its block is held anyway")
+
+
+func test_hud_that_reads_the_group_keeps_off_the_meter() -> void:
+	GameState.text_size_scale = 2.0
+	var t := _threat()
+	var meter: Rect2 = t.reserved_rect()
+	var reserved: Array = []
+	for n in get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
+		if n.has_method("reserved_rect") and n.reserved_rect().has_area():
+			reserved.append(n.reserved_rect())
+	var arrow := Rect2(meter.get_center() - Vector2(40, 10), Vector2(80, 20))
+	assert_true(arrow.intersects(meter), "CONTROL: the arrow starts on the meter")
+	var moved := Rect2(ObjectiveArrow.clear_of_hud(arrow, reserved, SCREEN.size), arrow.size)
+	assert_false(moved.intersects(meter), "a group reader moved %s clear of the meter %s" % [moved, meter])
