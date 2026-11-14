@@ -107,8 +107,6 @@ func test_the_read_tier_is_one_switch() -> void:
 ## site anywhere reds: the assert is on the difference, so a stale or emptied table cannot pass quietly.
 const FALLBACK_SITES := {
 	"res://src/GameLoop.gd": 3,
-	"res://src/cutscene/CutsceneDialogue.gd": 2,
-	"res://src/cutscene/CutsceneDirector.gd": 3,
 	"res://src/ui/AbilitiesMenu.gd": 1,
 	"res://src/ui/CutsceneGallery.gd": 1,
 	"res://src/ui/DayClockWidget.gd": 1,
