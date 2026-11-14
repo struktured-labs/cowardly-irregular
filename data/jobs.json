@@ -228,6 +228,10 @@
       "label": "Strike",
       "animation": "strike"
     },
+    "basic_attack_strikes": [
+      {"scale": 0.6, "weapon": ""},
+      {"scale": 0.6, "weapon": "bolt"}
+    ],
     "visual": {
       "sprite_type": "cloaked",
       "outfit_color": [
