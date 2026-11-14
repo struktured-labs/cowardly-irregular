@@ -2,7 +2,7 @@
 # fold_selftest.sh — prove fold.sh's refusal/accept arms on a throwaway worktree. Pushes nothing.
 #
 # Arms: an unpushed sha is skipped · an older READYed commit on the branch is folded (not the tip) · a missing branch is skipped · an undeclared file
-# deletion is skipped · the same deletion, declared in FOLD_ALLOW_DELETE, merges · a tip whose HISTORY holds an [UNVERIFIED] commit is skipped. Probe tips are
+# deletion is skipped · the same deletion, declared in FOLD_ALLOW_DELETE, merges · a tip whose HISTORY holds an [UNVERIFIED] commit is skipped · a branch:sha vouch counts · a vouch naming no commit exits 2. Probe tips are
 # LOCAL refs under refs/remotes/origin/lane/zz-selftest-*, removed on exit with the worktree.
 # Exit 0 = every arm behaved; 1 = an arm did not.
 set -uo pipefail
@@ -44,6 +44,8 @@ run "declared deletion merges"       0 "MERGED zz-selftest-del"               FO
 run "a labelled ancestor is skipped" 1 "SKIP zz-selftest-label: an \[UNVERIFIED\] commit would ride in" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a labelled tip vouched by FOLD_VERIFIED merges" 0 "VOUCHED by FOLD_VERIFIED" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="$(git rev-parse --short=9 "$REF2")" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a vouch for ANOTHER sha does not cover it" 1 "SKIP zz-selftest-label: an \[UNVERIFIED\] commit would ride in" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="${DEL:0:9}" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
+run "a branch:sha vouch (the args-file form) merges" 0 "VOUCHED by FOLD_VERIFIED" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="zz-selftest-label:$(git rev-parse --short=9 "$REF2")" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
+run "a vouch naming no commit refuses the fold" 2 "names no commit" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="zz-selftest-label:0000000feedface" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 ## A first tip that could fast-forward must still land as a merge commit, or release_note.sh never names it (.767: Mordaine's re-cast).
 env FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997 "zz-selftest-del:${DEL:0:9}" >/dev/null 2>&1
 P2="$(git -C "$WT" log -1 --format=%P fold/v3.33.997~1 2>/dev/null | wc -w)"

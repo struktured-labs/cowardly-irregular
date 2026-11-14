@@ -6,7 +6,8 @@
 #   FOLD_VERIFIED="sha1 sha2" vouches for tips whose READY carried the evidence while their history still
 #   holds an [UNVERIFIED] subject. Lanes label before verifying and post the numbers after, and striking a
 #   label needs a force-push, so 16 of 41 tips in the .746 batch carried one. Exact commit only: a tip
-#   named under any other sha is still skipped.
+#   named under any other sha is still skipped. A token may be a bare sha or the args form branch:sha; a
+#   token that names no commit refuses the whole fold (exit 2) — it used to vouch for nothing in silence (.801).
 #
 # Each tip is merged only if the announced sha is ON origin/lane/<branch> (the READYed commit is merged
 # even when the branch has moved on since), and its three-dot diff deletes nothing undeclared (a stale tree reverts a release that
@@ -16,13 +17,13 @@ set -uo pipefail
 ## FOLD_REPO points the fold at another checkout (fold_selftest.sh uses a throwaway worktree).
 cd "${FOLD_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 2
 
-## True when FOLD_VERIFIED names exactly this commit. Each token is resolved, so a short sha matches and an
-## unresolvable one vouches for nothing.
+## True when FOLD_VERIFIED names exactly this commit. Each token is resolved (a branch: prefix dropped), so a
+## short sha matches; the check after fetch has already refused any token that resolves to nothing.
 vouched() {
   local want tok full
   want="$(git rev-parse -q --verify "$1^{commit}")" || return 1
   for tok in ${FOLD_VERIFIED:-}; do
-    full="$(git rev-parse -q --verify "$tok^{commit}" 2>/dev/null)" || continue
+    full="$(git rev-parse -q --verify "${tok##*:}^{commit}" 2>/dev/null)" || continue
     [ "$full" = "$want" ] && return 0
   done
   return 1
@@ -38,6 +39,11 @@ PREV="$(sed -n 's/^const SEMVER := "\(.*\)"$/\1/p' src/meta/Version.gd)"
 [ -n "$PREV" ] || { echo "fold.sh: no SEMVER line in src/meta/Version.gd" >&2; exit 2; }
 NEXT="3.33.$NNN-alpha"
 [ "$PREV" != "$NEXT" ] || { echo "fold.sh: origin/main is already $NEXT" >&2; exit 2; }
+## A vouch that resolves to nothing is a typo or a wrong file, never an intent: refuse before anything is built.
+for tok in ${FOLD_VERIFIED:-}; do
+  git rev-parse -q --verify "${tok##*:}^{commit}" >/dev/null 2>&1 \
+    || { echo "fold.sh: FOLD_VERIFIED token '$tok' names no commit — refusing (fix the list, it would vouch for nothing)" >&2; exit 2; }
+done
 git checkout -q -b "fold/v3.33.$NNN" origin/main || exit 2
 
 SKIPPED=0
