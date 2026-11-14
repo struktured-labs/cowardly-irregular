@@ -2030,11 +2030,14 @@ const MAX_VOICE_LINES: int = 3
 
 
 ## Authored lines quoted as the boss's register, speaker tags stripped and hyphen runs undone like the persona.
+## A line longer than the taunt cap is skipped: the model would copy a length the validator then cuts.
 static func _format_voice_lines(lines: Array) -> String:
 	var out: PackedStringArray = PackedStringArray()
-	for l in lines.slice(0, MAX_VOICE_LINES):
+	for l in lines:
+		if out.size() >= MAX_VOICE_LINES:
+			break
 		var said: String = unrun_hyphens(spoken_line(str(l))).strip_edges()
-		if said != "":
+		if said != "" and said.length() <= MAX_BOSS_TAUNT_CHARS:
 			out.append("  - %s" % said)
 	if out.is_empty():
 		return ""
