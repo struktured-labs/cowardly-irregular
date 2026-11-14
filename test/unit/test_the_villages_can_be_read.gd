@@ -297,7 +297,9 @@ func test_every_village_actually_builds_its_examines() -> void:
 					scene, examine_id])
 			var want_cell: Vector2i = spawn_cell + v._examine_offset_for(str(examine_id))
 			var drift: int = max(abs(cell.x - want_cell.x), abs(cell.y - want_cell.y))
-			assert_lte(drift, v._EXAMINE_SEARCH_RADIUS,
+			# An examine anchored to a drawn prop is judged beside it (test_an_examine_stands_beside_the_prop_it_describes), not by drift.
+			if not v._EXAMINE_DESCRIBES.has(examine_id):
+				assert_lte(drift, v._EXAMINE_SEARCH_RADIUS,
 				"%s: '%s' resolved %d cells from its intended %s — the search is meant to nudge, not relocate" % [
 					scene, examine_id, drift, str(want_cell)])
 			assert_true(prop.is_in_group("interactables"),

@@ -1290,6 +1290,35 @@ func _examine_anchor_cell(_examine_id: String) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
+## The prop kind an examine's text describes; it is read beside the nearest such prop its village draws (census tmp/examine_census.md, group B).
+const _EXAMINE_DESCRIBES := {
+	"eldertree_grafted_branch": VillagePropScript.Kind.TREE,
+	"frosthold_meltwater_mark": VillagePropScript.Kind.FENCE,
+	"grimhollow_lantern_ledger": VillagePropScript.Kind.LAMP_POST,
+}
+## Where a readable may stand beside a footprint cell: in front first, then either side; never behind, where the art grows up over it.
+const _BESIDE_STEPS: Array = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
+
+
+## The free walkable cell in front of (else beside) the drawn prop this examine describes, nearest props first; (-1, -1) if the village draws none.
+func _described_prop_cell(examine_id: String, want: Vector2i, taken: Array) -> Vector2i:
+	if not _EXAMINE_DESCRIBES.has(examine_id) or props == null:
+		return Vector2i(-1, -1)
+	var bases: Array = []
+	for p in props.get_children():
+		if p is VillageProp and p.kind == _EXAMINE_DESCRIBES[examine_id]:
+			bases.append([p, Vector2i(floori(p.position.x / TILE_SIZE), roundi(p.position.y / TILE_SIZE) - 1)])
+	bases.sort_custom(func(a, b): return Vector2(a[1] - want).length() < Vector2(b[1] - want).length())
+	for entry in bases:
+		var foot: Array = entry[0].footprint_cells(entry[1])
+		for step in _BESIDE_STEPS:
+			for f in foot:
+				var c: Vector2i = f + step
+				if not foot.has(c) and not taken.has(c) and _is_cell_walkable(c):
+					return c
+	return Vector2i(-1, -1)
+
+
 ## Only this village's entries, so a pack-wide key change cannot pull another scene's text in.
 func _load_examine_pack() -> Dictionary:
 	if not FileAccess.file_exists(_EXAMINE_PACK):
@@ -1359,6 +1388,8 @@ func _place_authored_examines() -> void:
 			continue
 		# An examine anchored to something the village DRAWS stands on the authored cell beside it, not by offset from the spawn.
 		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
+		if anchor.x < 0:
+			anchor = _described_prop_cell(str(examine_id), spawn_cell + _examine_offset_for(str(examine_id)), taken)
 		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
 			continue
