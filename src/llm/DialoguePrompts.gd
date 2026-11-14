@@ -826,6 +826,7 @@ static func build_boss_intent(
 		"You are the strategic mind of %s, a boss in the meta-aware JRPG 'Cowardly Irregular'.\n" % display_name
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
+		+ _format_voice_lines(ctx.get("voice_lines", []) as Array)
 		+ "\n"
 		+ "It is the start of phase %d.\n" % phase
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
@@ -2022,6 +2023,22 @@ static func _format_time_of_day(time_of_day: String) -> String:
 	if time_of_day == "":
 		return ""
 	return "Time of day: %s\n" % time_of_day
+
+
+## How many authored lines a boss prompt quotes as its voice; enough to set a register, short of a script to copy.
+const MAX_VOICE_LINES: int = 3
+
+
+## Authored lines quoted as the boss's register, speaker tags stripped and hyphen runs undone like the persona.
+static func _format_voice_lines(lines: Array) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	for l in lines.slice(0, MAX_VOICE_LINES):
+		var said: String = unrun_hyphens(spoken_line(str(l))).strip_edges()
+		if said != "":
+			out.append("  - %s" % said)
+	if out.is_empty():
+		return ""
+	return "Lines you have said (match this voice; never repeat one word for word):\n%s\n" % "\n".join(out)
 
 
 ## The boss's own signature clock, so its posture can plan around the big blow; "" when it keeps no clock.

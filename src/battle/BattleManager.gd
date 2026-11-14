@@ -9986,6 +9986,8 @@ func _build_boss_intent_context(
 		ctx.persona = str(entry.get("persona", ""))
 		if ctx.persona.is_empty():
 			ctx.persona = "%s, a boss in Cowardly Irregular." % _resolve_boss_display_name(persona_id)
+		if boss_dlg.has_method("get_opening_lines"):
+			ctx.voice_lines = (boss_dlg.get_opening_lines(persona_id) as Array).slice(0, DialoguePrompts.MAX_VOICE_LINES)
 
 	# Recent actions — feed the player action log so the LLM can see what
 	# the party keeps doing (mirrors the prompt's "Recent exchange" block).

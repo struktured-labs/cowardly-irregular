@@ -80,6 +80,9 @@ var signature_id: String = ""
 var signature_in: int = -1
 var charging: bool = false
 
+## Lines this boss has been authored to say (boss_dialogue.json opening_lines), so the model's taunt matches its voice.
+var voice_lines: Array = []
+
 
 ## Hard cap on recent_actions size. Older entries get dropped.
 const RECENT_LIMIT: int = 8
@@ -115,4 +118,5 @@ func to_dict() -> Dictionary:
 		"signature_id": signature_id,
 		"signature_in": signature_in,
 		"charging": charging,
+		"voice_lines": voice_lines.duplicate(),
 	}
