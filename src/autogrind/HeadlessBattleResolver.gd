@@ -1209,7 +1209,8 @@ func _maybe_monster_counter(monster, attacker) -> void:
 	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
 	if ability.is_empty():
 		return
-	_log("%s counters with %s!" % [monster.combatant_name, str(ability.get("name", ability_id.replace("_", " ").capitalize()))])
+	## The verb is the ability's own (`counter_verb`, cowir-battle's Royal Spite), as live reads it.
+	_log("%s %s %s!" % [monster.combatant_name, str(ability.get("counter_verb", "counters with")), str(ability.get("name", ability_id.replace("_", " ").capitalize()))])
 	_resolve_ability(monster, ability_id, _counter_targets(monster, attacker, ability), true)
 
 
