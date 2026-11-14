@@ -55,6 +55,10 @@
 					{
 						"line": "It's drawing breath. Shield up before it lets go.",
 						"when": "enemy_charging"
+					},
+					{
+						"line": "Knocked the wind right out of it. Now we hit back.",
+						"when": "enemy_charge_broken"
 					}
 				],
 				"low_hp": [
@@ -252,6 +256,10 @@
 					{
 						"line": "Something's gathering over there. Brace. I'll mend what it breaks.",
 						"when": "enemy_charging"
+					},
+					{
+						"line": "Its big moment fizzled. Breathe, everyone.",
+						"when": "enemy_charge_broken"
 					}
 				],
 				"low_hp": [
@@ -489,6 +497,10 @@
 					{
 						"line": "Power's pooling on their side. Interrupt the sum, or survive it.",
 						"when": "enemy_charging"
+					},
+					{
+						"line": "Interrupted mid-sum. It has to count from zero now.",
+						"when": "enemy_charge_broken"
 					}
 				],
 				"low_hp": [
@@ -726,6 +738,10 @@
 					{
 						"line": "Big wind-up. Somebody knock it off its count.",
 						"when": "enemy_charging"
+					},
+					{
+						"line": "Off its count. Told you somebody would.",
+						"when": "enemy_charge_broken"
 					}
 				],
 				"low_hp": [
@@ -957,6 +973,10 @@
 					{
 						"line": "Ooh, a crescendo. Somebody stop the conductor.",
 						"when": "enemy_charging"
+					},
+					{
+						"line": "The crescendo collapsed. Encore denied.",
+						"when": "enemy_charge_broken"
 					}
 				],
 				"low_hp": [
