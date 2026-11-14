@@ -95,3 +95,35 @@ func test_each_described_examine_stands_beside_a_prop_of_its_kind() -> void:
 		assert_true(_reach(v).has(at), "%s at %s cannot be walked to from %s's arrival spawn" % [id, str(at), scene])
 		checked += 1
 	assert_eq(checked, described.size(), "every described examine was judged, not skipped")
+
+
+## Census group B's two door anchors: the incident board and the threshold sign are read just beside the door they describe.
+func test_each_door_examine_stands_beside_its_door() -> void:
+	var by_door: Dictionary = BV.get_script_constant_map().get("_EXAMINE_BESIDE_DOOR", {})
+	assert_gt(by_door.size(), 0, "CONTROL: BaseVillage._EXAMINE_BESIDE_DOOR must name at least one examine")
+	var pack := _pack()
+	var checked := 0
+	for id in by_door:
+		var scene := str((pack.get(id, {}) as Dictionary).get("scene", ""))
+		assert_true(ResourceLoader.exists(_script_for(scene)), "CONTROL: %s's village script %s exists" % [id, _script_for(scene)])
+		if not ResourceLoader.exists(_script_for(scene)):
+			continue
+		var v: Node = await _village(_script_for(scene))
+		var door: Node = v.buildings.get_node_or_null(str(by_door[id]))
+		assert_not_null(door, "CONTROL: %s builds the door %s that %s describes" % [scene, by_door[id], id])
+		var ex: Node2D = v.npcs.get_node_or_null("Examine_" + str(id))
+		assert_not_null(ex, "%s placed no readable for %s" % [scene, id])
+		if door == null or ex == null:
+			continue
+		var box: Array = v._door_box_cells(door)
+		assert_gt(box.size(), 0, "CONTROL: %s's trigger box covers some cells" % by_door[id])
+		var at := _cell(ex)
+		assert_false(box.has(at), "%s at %s stands inside %s's trigger %s, so a press there is contested" % [id, str(at), by_door[id], str(box)])
+		var touches := false
+		for c in box:
+			for d in N4:
+				touches = touches or (c + d == at)
+		assert_true(touches, "%s is read at %s, not beside %s's approach %s" % [id, str(at), by_door[id], str(box)])
+		assert_true(_reach(v).has(at), "%s at %s cannot be walked to from %s's arrival spawn" % [id, str(at), scene])
+		checked += 1
+	assert_eq(checked, by_door.size(), "every door examine was judged, not skipped")

@@ -1319,6 +1319,56 @@ func _described_prop_cell(examine_id: String, want: Vector2i, taken: Array) -> V
 	return Vector2i(-1, -1)
 
 
+## The door an examine's text describes (its board or sign is on that building); it is read just beside the door's approach (census group B).
+const _EXAMINE_BESIDE_DOOR := {
+	"rivet_row_incident_numbers": "IncidentBoardDoor",
+	"vertex_threshold_tally": "ThresholdDoor",
+}
+
+
+## The cells a door's trigger box covers.
+func _door_box_cells(door: Node) -> Array:
+	var out: Array = []
+	var col := door.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if col == null:
+		for c in door.get_children():
+			if c is CollisionShape2D:
+				col = c
+	if col == null or not (col.shape is RectangleShape2D):
+		return out
+	var size: Vector2 = (col.shape as RectangleShape2D).size
+	var r := Rect2(door.position + col.position - size * 0.5, size)
+	for y in range(floori(r.position.y / TILE_SIZE), ceili(r.end.y / TILE_SIZE)):
+		for x in range(floori(r.position.x / TILE_SIZE), ceili(r.end.x / TILE_SIZE)):
+			out.append(Vector2i(x, y))
+	return out
+
+
+## The free walkable cell just left or right of the door's approach (its box's front row, then the row below); (-1, -1) if none.
+func _door_side_cell(examine_id: String, taken: Array) -> Vector2i:
+	if not _EXAMINE_BESIDE_DOOR.has(examine_id) or buildings == null:
+		return Vector2i(-1, -1)
+	var door := buildings.get_node_or_null(str(_EXAMINE_BESIDE_DOOR[examine_id]))
+	if door == null:
+		return Vector2i(-1, -1)
+	var box: Array = _door_box_cells(door)
+	if box.is_empty():
+		return Vector2i(-1, -1)
+	var x0: int = box[0].x
+	var x1: int = box[0].x
+	var y1: int = box[0].y
+	for c in box:
+		x0 = mini(x0, c.x)
+		x1 = maxi(x1, c.x)
+		y1 = maxi(y1, c.y)
+	for y in [y1, y1 + 1]:
+		for x in [x0 - 1, x1 + 1]:
+			var c := Vector2i(x, y)
+			if not box.has(c) and not taken.has(c) and _is_cell_walkable(c):
+				return c
+	return Vector2i(-1, -1)
+
+
 ## Only this village's entries, so a pack-wide key change cannot pull another scene's text in.
 func _load_examine_pack() -> Dictionary:
 	if not FileAccess.file_exists(_EXAMINE_PACK):
@@ -1390,6 +1440,8 @@ func _place_authored_examines() -> void:
 		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
 		if anchor.x < 0:
 			anchor = _described_prop_cell(str(examine_id), spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		if anchor.x < 0:
+			anchor = _door_side_cell(str(examine_id), taken)
 		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
 			continue
