@@ -113,3 +113,54 @@ func test_no_monster_theme_is_declared_twice_with_different_beds() -> void:
 	## the count is visible: if it ever reaches zero, the multi-namer case below stops being tested.
 	assert_gt(shared, 0,
 		"ANTI-VACUITY: no bed is named by more than one monster, so the shared-bed case is untested here")
+
+
+## Every `music` a monster carries BELOW its top level (the Calibrant's `phase_faces[].music`), derived by walking
+## each entry: the arm above reads `music_track` only, and the consumer census excuses every `boss_*` id through
+## the composed `"boss_" + suffix` family, so a mistyped face theme reds nothing and the face plays the generic boss bed.
+func _nested_music(node, path: String, out: Array) -> void:
+	if node is Dictionary:
+		for k in (node as Dictionary).keys():
+			var v = (node as Dictionary)[k]
+			if str(k) == "music" and v is String:
+				out.append([path, str(v)])
+			_nested_music(v, "%s/%s" % [path, k], out)
+	elif node is Array:
+		for i in range((node as Array).size()):
+			_nested_music((node as Array)[i], "%s[%d]" % [path, i], out)
+
+
+## The face handler's non-track sentinels, read from its own `face_music == "<x>"` arms: exempt only while the
+## consumer still special-cases them, so deleting the arm turns "silence" back into a failed lookup here.
+func _face_sentinels() -> Dictionary:
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var at: int = src.find("\nfunc _on_boss_face_changed(")
+	assert_gt(at, -1, "FLOOR: BattleScene._on_boss_face_changed is gone; no face music has a consumer")
+	var end: int = src.find("\nfunc ", at + 1)
+	var body: String = src.substr(at) if end < 0 else src.substr(at, end - at)
+	var re := RegEx.new()
+	re.compile("face_music == \"([a-z_]+)\"")
+	var out: Dictionary = {}
+	for m in re.search_all(body):
+		out[m.get_string(1)] = true
+	return out
+
+
+func test_every_boss_face_names_a_real_bed() -> void:
+	var keys := _manifest_keys()
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MONSTERS))
+	var mons = (parsed as Dictionary).get("monsters", parsed) if parsed is Dictionary else {}
+	var found: Array = []
+	for id in (mons as Dictionary).keys():
+		_nested_music((mons as Dictionary)[id], str(id), found)
+	assert_gt(found.size(), 3, "ANTI-VACUITY: only %d nested music keys in monsters.json (%s); the walk stopped matching" % [found.size(), str(found)])
+	var sentinels := _face_sentinels()
+	assert_true(sentinels.has("silence"), "CONTROL: the face handler no longer special-cases \"silence\", so the Calibrant's unmasking would call play_music(\"silence\")")
+	var liars: Array = []
+	for pair in found:
+		var track: String = str(pair[1])
+		if not keys.has(track) and not sentinels.has(track):
+			liars.append("%s names '%s'" % [pair[0], track])
+	assert_eq(liars.size(), 0,
+		"a boss face names a bed the manifest does not have; has_music_track accepts any boss* id, so play_music falls back to the generic boss bed and the face loses its theme with only a print: "
+		+ " · ".join(liars) + " — author the key in data/music_manifest.json or fix the spelling")
