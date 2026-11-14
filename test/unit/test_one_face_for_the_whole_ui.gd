@@ -72,7 +72,29 @@ func test_nothing_turns_to_tofu() -> void:
 		if not found:
 			missing += ch
 	assert_eq(missing, "", "symbols the pixel face does not draw must resolve in the chain behind it")
-	assert_gte(f.fallbacks.size(), 5, "the old face and its four symbol fonts are chained (%d)" % f.fallbacks.size())
+	assert_gte(f.fallbacks.size(), 4, "the four symbol fonts are chained (%d)" % f.fallbacks.size())
+
+
+## .804 slot 1: with the old face on the chain, a 1x pixel line measured 13/14/17/18 px at 9/10/12/13 instead of
+## 12, because Godot sizes a Label by its chain's tallest line box. The face draws the Latin the old face used to.
+func test_the_old_face_is_not_behind_the_pixel_face() -> void:
+	var f: Font = UiFont.display()
+	var old: Font = UiFont.body() if UiFont.read_tier == UiFont.READ_TIER_DEFAULT else null
+	assert_not_null(old, "CONTROL: the reading tier is the old face, so there is an old face to look for")
+	assert_gt(f.fallbacks.size(), 0, "CONTROL: the pixel face has a chain to search")
+	assert_false(f.fallbacks.has(old), "the old face is on the pixel face's chain, so its line box sizes every pixel Label")
+	if old != null:
+		assert_eq(f.fallbacks.size(), old.fallbacks.size(), "the pixel face carries exactly the old face's symbol fonts")
+	var undrawn := ""
+	for ch in "äöéèêëáàâãíìîïóòôõúùûüñýÿç°±²÷§‼":
+		if not (f as FontFile).has_char(ch.unicode_at(0)):
+			undrawn += ch
+	assert_eq(undrawn, "", "Latin the old face used to supply that the pixel face must now draw itself")
+	var composed: Array = UiFont.glyph_table().get("é", [])
+	assert_eq(composed.size(), 7, "CONTROL: é is composed from e's 7 rows")
+	if composed.size() == 7:
+		assert_eq([str(composed[0]), str(composed[1])], ["...#.", "..#.."], "é carries the acute in the two rows above the x-height")
+		assert_eq(str(composed[6]), str(UiFont.glyph_table()["e"][6]), "and e's own baseline row")
 
 
 func test_sizes_snap_to_whole_pixels_never_a_blur() -> void:

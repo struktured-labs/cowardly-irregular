@@ -6,8 +6,9 @@ class_name UiFont
 ##
 ## The damage numbers are PixelText: drawn glyphs, not a font, so a Label could never use them. This builds a
 ## real bitmap FontFile from the SAME glyph table (plus UiFontGlyphs' lowercase and punctuation), so Labels,
-## Buttons, wrapping and BBCode all work, and anything the table does not draw falls through to the old face and
-## its Noto chain instead of turning to tofu.
+## Buttons, wrapping and BBCode all work, and the symbols the table does not draw fall through to the Noto chain
+## instead of turning to tofu. The old face is not on that chain (its taller line box would size every Label), so
+## Latin the table does not draw - capital accents, other scripts - has no fallback in a display Label.
 ##
 ## Two tiers. DISPLAY (headings, menu rows, labels, numbers) is the pixel face and is the theme default.
 ## BODY (text you read in sentences, text you type) is whatever `read_tier` says: the old face, or the pixel one.
@@ -58,6 +59,9 @@ static func glyph_table() -> Dictionary:
 		t[k] = UiFontGlyphs.GLYPHS[k]
 	for k in UiFontGlyphs.OVERRIDES:
 		t[k] = UiFontGlyphs.OVERRIDES[k]
+	for k in UiFontGlyphs.ACCENTED:
+		var pair: Array = UiFontGlyphs.ACCENTED[k]
+		t[k] = UiFontGlyphs.accent(t[pair[0]], pair[1])
 	for k in UiFontGlyphs.ALIASES:
 		t[k] = t[UiFontGlyphs.ALIASES[k]]
 	return t
@@ -191,7 +195,11 @@ static func _ensure_built() -> void:
 	_outlined = _build(true)
 	if _body != null:
 		# Flat, so "the symbol fonts are on the default font's chain" stays true for everything that walks it.
-		var chain: Array[Font] = [_body]
+		# The old face is NOT on it: Godot sizes every Label by its chain's tallest line box, and Open Sans's
+		# (ascent 1.069 em) made a 1x pixel line 13-18 px instead of 12 (.804 slot 1). The symbol fonts were
+		# fitted inside the pixel box instead (tools/fit_fallback_metrics.py), and the Latin the old face
+		# supplied is drawn by the face itself (UiFontGlyphs.ACCENTS + the Latin-1 signs in GLYPHS).
+		var chain: Array[Font] = []
 		for fb in _body.fallbacks:
 			chain.append(fb)
 		_display.fallbacks = chain

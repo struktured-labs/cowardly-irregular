@@ -76,7 +76,57 @@ const GLYPHS := {
 	"✓": [".....", "....#", "....#", "...#.", "#.#..", ".#...", "....."],
 	"✗": [".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "....."],
 	"★": ["..#..", "..#..", "#####", ".###.", ".###.", "#...#", "....."],
+	# Latin-1 the game authors (Frosthold's ö, Maple's ä, InteractGeometry's °, the battle log's ± ² ÷ §, an actor's ‼).
+	# The old face drew these until it left the pixel face's chain (UiFont._ensure_built says why).
+	# The i accents are drawn, not composed: a two-row mark would run into the stem with no gap.
+	"í": ["..#", "...", ".#.", ".#.", ".#.", ".#.", ".#."],
+	"ì": ["#..", "...", ".#.", ".#.", ".#.", ".#.", ".#."],
+	"î": [".#.", "#.#", ".#.", ".#.", ".#.", ".#.", ".#."],
+	"ï": ["#.#", "...", ".#.", ".#.", ".#.", ".#.", ".#."],
+	"ç": [".....", ".....", ".###.", "#....", "#....", "#...#", ".###.", "..#..", ".##.."],
+	"°": [".#.", "#.#", ".#.", "...", "...", "...", "..."],
+	"±": ["..#..", "..#..", "#####", "..#..", "..#..", ".....", "#####"],
+	"²": ["##.", "..#", ".#.", "###", "...", "...", "..."],
+	"÷": [".....", "..#..", ".....", "#####", ".....", "..#..", "....."],
+	"§": [".###", "#...", ".##.", "#..#", ".##.", "...#", "###."],
+	"‼": ["#.#", "#.#", "#.#", "#.#", "#.#", "...", "#.#"],
 }
+
+## Accent marks: two rows, drawn in the two blank rows above an x-height letter (UiFont.glyph_table composes them).
+const MARKS := {
+	"acute": ["..#", ".#."],
+	"grave": ["#..", ".#."],
+	"circumflex": [".#.", "#.#"],
+	"diaeresis": ["#.#", "..."],
+	"tilde": [".#.#", "#.#."],
+}
+
+## Lowercase accented letters as { char: [base, mark] }. Capitals have no room above the cap line in 7 rows, so
+## they are not drawn and have no fallback in a display Label.
+const ACCENTED := {
+	"á": ["a", "acute"], "à": ["a", "grave"], "â": ["a", "circumflex"], "ä": ["a", "diaeresis"], "ã": ["a", "tilde"],
+	"é": ["e", "acute"], "è": ["e", "grave"], "ê": ["e", "circumflex"], "ë": ["e", "diaeresis"],
+	"ó": ["o", "acute"], "ò": ["o", "grave"], "ô": ["o", "circumflex"], "ö": ["o", "diaeresis"], "õ": ["o", "tilde"],
+	"ú": ["u", "acute"], "ù": ["u", "grave"], "û": ["u", "circumflex"], "ü": ["u", "diaeresis"],
+	"ñ": ["n", "tilde"], "ý": ["y", "acute"], "ÿ": ["y", "diaeresis"],
+}
+
+
+## `base` with MARKS[mark] in its two top rows, both centred on the wider of the two. The base's top two rows must
+## be blank (an x-height letter); anything else returns the base unchanged, so a bad entry draws the plain letter.
+static func accent(base: Array, mark: String) -> Array:
+	var m: Array = MARKS.get(mark, [])
+	if m.size() != 2 or base.size() < 3 or str(base[0]).contains("#") or str(base[1]).contains("#"):
+		return base
+	var bw: int = str(base[0]).length()
+	var mw: int = str(m[0]).length()
+	var w: int = maxi(bw, mw)
+	var out: Array = []
+	for i in base.size():
+		var row: String = str(m[i]) if i < 2 else str(base[i])
+		var lead: int = (w - row.length()) / 2
+		out.append(".".repeat(lead) + row + ".".repeat(w - row.length() - lead))
+	return out
 
 ## Where a sentence needs a different drawing than a damage number: the comma hangs a tail so it is not a period.
 const OVERRIDES := {
