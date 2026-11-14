@@ -12,12 +12,20 @@
 # Refuses (exit 1, nothing written) unless the sha resolves to a commit that is ON origin/lane/<branch>
 # after a fetch of that branch, and is not already on origin/main. A branch already queued is REPLACED, never listed twice (a READY that
 # moves its tip names the new sha). Exit 0 = recorded / listed · 1 = refused · 2 = usage.
-# QUEUE_DIR overrides tmp/ and QUEUE_NO_FETCH=1 skips the fetch (both for the selftest).
+# Files land in tmp/ of the checkout you are STANDING in (fold.sh reads them from there), not of the
+# checkout the script lives in: run from another worktree, the old rule wrote where no fold looked (.803).
+# QUEUE_DIR overrides that and QUEUE_NO_FETCH=1 skips the fetch (both for the selftest).
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 
+dest_dir() {
+  [ -n "${QUEUE_DIR:-}" ] && { echo "$QUEUE_DIR"; return; }
+  local top; top="$(git rev-parse --show-toplevel 2>/dev/null)" || top="$REPO"
+  echo "$top/tmp"
+}
+
 queue() {
-  local nnn="$1" b="${2#lane/}" want="$3" dir="${QUEUE_DIR:-$REPO/tmp}" full tip args ver
+  local nnn="$1" b="${2#lane/}" want="$3" dir="$(dest_dir)" full tip args ver
   case "$nnn" in ''|*[!0-9]*) echo "queue_tip: release number '$nnn' is not a number" >&2; return 2 ;; esac
   [ -n "$b" ] && [ -n "$want" ] || { echo "usage: queue_tip.sh NNN <branch> <sha>" >&2; return 2; }
   if [ "${QUEUE_NO_FETCH:-0}" != 1 ]; then
@@ -39,11 +47,11 @@ queue() {
   [ -n "$old" ] && { grep -vxF "$old" "$ver" > "$ver.new"; mv "$ver.new" "$ver"; }
   echo "$b:${full:0:9}" >> "$args"; echo "${full:0:9}" >> "$ver"
   local note=""; [ "$full" = "$tip" ] || note=" — an older commit than the tip ${tip:0:9}"
-  echo "queued $b:${full:0:9}${old:+ (replaces $old)}$note"
+  echo "queued $b:${full:0:9}${old:+ (replaces $old)}$note -> $args"
 }
 
 list() {
-  local dir="${QUEUE_DIR:-$REPO/tmp}" a v
+  local dir; dir="$(dest_dir)"; local a v
   a="$(wc -l < "$dir/fold_args_$1.txt" 2>/dev/null || echo 0)"; v="$(wc -l < "$dir/fold_verified_$1.txt" 2>/dev/null || echo 0)"
   cat "$dir/fold_args_$1.txt" 2>/dev/null
   echo "-- $a tip(s), $v verified sha(s)"; [ "$a" = "$v" ] || { echo "queue_tip: the two files disagree" >&2; return 1; }
@@ -72,11 +80,16 @@ selftest() {
   arm "a sha that names nothing is refused"    1 "names no commit"                    queue 990 zz-queue-selftest 0000000feedface
   arm "a missing branch is refused"            1 "no origin/lane/zz-no-such"          queue 990 zz-no-such "${t2:0:9}"
   arm "a refusal wrote nothing"                0 "1 tip(s), 1 verified"              list 990
+  local other="$d/other_checkout"; mkdir -p "$other"; git -C "$other" init -q
+  out="$(cd "$other" && env -u QUEUE_DIR bash -c "source '$REPO/tools/fold_gate/queue_tip.sh' --source-only; dest_dir")"
+  [ "$out" = "$other/tmp" ] && echo "ok   files land in the checkout you stand in" \
+    || { echo "FAIL dest from another checkout was '$out', wanted '$other/tmp'"; fails=1; }
   echo "queue_tip selftest: $([ $fails = 0 ] && echo 'every arm as expected' || echo 'an arm FAILED')"
   return "$fails"
 }
 
 case "${1:-}" in
+  --source-only) return 0 2>/dev/null || exit 0 ;;
   --selftest) selftest ;;
   *) [ "${2:-}" = "--list" ] && { list "$1"; exit; }; [ "$#" = 3 ] || { sed -n 3,5p "$0" >&2; exit 2; }; queue "$@" ;;
 esac
