@@ -22,10 +22,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SIZE = 256
 # Share of the figure's height, from the top of the head, that makes the bust.
 BUST_SHARE = 0.46
-# Walkers whose hair stands tall enough that the default share ends at the eyes (Granny Kaya's bun, 2026-10-16).
-BUST_SHARE_FOR = {"granny_kaya": 0.62}
+# Walkers whose top stands tall enough that the default share ends at the eyes (Granny Kaya's bun 2026-10-16; the Village Knight's halberd 2026-11-14).
+BUST_SHARE_FOR = {"granny_kaya": 0.62, "village_knight": 0.62}
 # npc id -> cell size of its 4x4 walk sheet (row 0 = south).
-WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48, "granny_kaya": 48, "bill": 48}
+WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48, "granny_kaya": 48, "bill": 48, "village_knight": 64}
 
 
 def bust(sheet: Image.Image, cell: int, share: float = BUST_SHARE) -> Image.Image:

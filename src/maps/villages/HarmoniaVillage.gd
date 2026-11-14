@@ -899,6 +899,21 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(bill)
 
+	# The Village Knight — the artist's sixth overworld villager (2026-11-03 drop), on watch along the south wall's west end.
+	var knight_loop: Array[Vector2] = [
+		Vector2(6 * TILE_SIZE, 31 * TILE_SIZE),
+		Vector2(11 * TILE_SIZE, 31 * TILE_SIZE),
+	]
+	var knight = _create_wandering_npc(
+		"Village Knight",
+		"village_knight",
+		"I stand watch over the south wall. The wall has not moved in eleven years. I consider this a success.",
+		knight_loop,
+		"villager",
+		"village_knight"
+	)
+	npcs.add_child(knight)
+
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
 func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:

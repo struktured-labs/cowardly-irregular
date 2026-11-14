@@ -5909,6 +5909,32 @@
         }
       }
     },
+    "village_knight": {
+      "path": "res://assets/sprites/npcs/village_knight/overworld.png",
+      "frame_width": 64,
+      "frame_height": 64,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-11-03 — Villagers/Village Knight 1.aseprite, 16 frames / 4 tags (South, West, North, East: the tags are read by NAME, so their order does not matter), layers Halberd..Head plus a second Halberd layer. The artist's SIXTH overworld walker; it sat on the Drive unused until 2026-11-14. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 40x55 in 64px cells (Roy's cell size), 28 opaque colours, no resampling. His East is drawn on its own, NOT a mirror of West (the halberd and plume change sides), and both side rows were checked by eye to face the way they walk: the plume trails behind him. Every row is the artist's frames untouched.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
     "keeper_willow": {
       "path": "res://assets/sprites/npcs/keeper_willow/overworld.png",
       "frame_width": 48,
