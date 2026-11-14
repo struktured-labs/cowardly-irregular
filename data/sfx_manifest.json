@@ -15311,8 +15311,8 @@
     },
     "ability_royal_spite": {
       "file": "assets/audio/sfx/ability_royal_spite.ogg",
-      "prompt": "The Cave Rat King's own counter, Royal Spite (struktured via cowir-main 25439/25451: make it obvious it's devastating; wounded-pride spite from a tiny king). The tell: breath hiss under three climbing rodent chitters bending into an indignant squeal (180 ms). The bite at 0.18 s: incisor clack, wet crunch over a falling 110->45 Hz body and a 38 Hz sub. The spite: a sour royal brass blat, two saws a minor second apart falling a fifth, under a short regalia jangle. -11.1 LUFS, a crit's level (attack_hit_dagger_crit), not an ability's (~-15.7): the heaviest single hit in the fight. numpy synthesis, not heard by struktured yet.",
-      "duration_seconds": 0.79,
+      "prompt": "The Cave Rat King's own counter, Royal Spite (struktured via cowir-main 25439/25451: make it obvious it's devastating; wounded-pride spite from a tiny king). The CONTACT cue: battle plays it on the hitstop callback (cowir-battle 25459), so the transient is sample 0. The bite: incisor clack, wet crunch over a falling 110->45 Hz body and a 38 Hz sub. The spite under its tail: a sour royal brass blat, saws a minor second apart falling a fifth, under a regalia jangle. -11.1 LUFS, true peak -1.5 dBTP: a crit's level (attack_hit_dagger_crit), not an ability's (~-15.7). numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.61,
       "source": "tools/gen_royal_spite.py"
     }
   }
