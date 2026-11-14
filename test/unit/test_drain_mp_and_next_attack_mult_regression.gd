@@ -53,16 +53,20 @@ func test_support_path_stores_next_attack_multiplier() -> void:
 
 func test_attack_path_consumes_meta_and_clears() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var fn_idx: int = src.find("func _execute_attack")
+	# The rogue's two-strike attack (.802) moved the per-strike roll into _roll_attack_strike; _execute_attack must still reach it.
+	var atk_idx: int = src.find("func _execute_attack(")
+	var atk_next: int = src.find("\nfunc ", atk_idx + 1)
+	assert_true(src.substr(atk_idx, atk_next - atk_idx).contains("_roll_attack_strike("), "_execute_attack must roll its strikes through _roll_attack_strike")
+	var fn_idx: int = src.find("func _roll_attack_strike(")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("attacker.get_meta(\"_next_attack_multiplier\", 0.0)"),
-		"_execute_attack must read the stored multiplier from meta")
+		"_roll_attack_strike must read the stored multiplier from meta")
 	assert_true(body.contains("attacker.set_meta(\"_next_attack_multiplier\", 0.0)"),
-		"_execute_attack must clear the meta after consuming (one-shot)")
+		"_roll_attack_strike must clear the meta after consuming (one-shot)")
 	# Pin the multiplier application before the clear.
 	assert_true(body.contains("damage = int(damage * stored_nam)"),
-		"_execute_attack must multiply damage by the stored value")
+		"_roll_attack_strike must multiply damage by the stored value")
 
 
 func test_data_still_authors_fields() -> void:

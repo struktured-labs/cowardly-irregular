@@ -27,6 +27,8 @@ signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
+## A basic attack's strike `index` (0-based) of `count` is about to resolve; the scene times each strike's number to its own beat.
+signal strike_starting(attacker: Combatant, index: int, count: int, weapon: String)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
 ## A cast that could not pay (MP short, or past the AP floor). Its own channel: hit_negated also plays attack_miss.
@@ -5579,6 +5581,38 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
+	## Each strike rolls its own miss and crit; the defence then meets the attack ONCE (cowir-main 25203, struktured's
+	## "0.6 of an Attack per hit"): a strike's share of the summed raw is the share of the defence it meets, so two
+	## strikes deal the formula's total for their sum at any DEF. A kill ends the attack; the rest are not dealt.
+	var strikes: Array = attacker.basic_attack_strikes()
+	var rolls: Array = []
+	var barrier_left: bool = actual_target.has_status("barrier")
+	var reflecting: bool = actual_target.has_status("reflect") or actual_target.has_status("physical_reflect")
+	for st in strikes:
+		var roll: Dictionary = _roll_attack_strike(attacker, actual_target, float(st["scale"]))
+		roll["weapon"] = str(st["weapon"])
+		if roll["fate"] == "hit" and barrier_left:
+			roll["fate"] = "barrier"
+			barrier_left = false
+		elif roll["fate"] == "hit" and reflecting:
+			roll["fate"] = "reflect"
+		rolls.append(roll)
+	var raw_total: int = 0
+	for roll in rolls:
+		if roll["fate"] == "hit":
+			roll["damage"] = _strike_hit_bonuses(attacker, actual_target, int(roll["damage"]))
+			raw_total += int(roll["damage"])
+	for i in rolls.size():
+		if i > 0 and not actual_target.is_alive:
+			break
+		strike_starting.emit(attacker, i, rolls.size(), str(rolls[i]["weapon"]))
+		var share: float = float(rolls[i]["damage"]) / raw_total if raw_total > 0 and rolls[i]["fate"] == "hit" else 1.0
+		_land_attack_strike(attacker, actual_target, rolls[i], share)
+
+
+## One strike's rolls, before it meets the target: miss, then the raw number (variance x scale, crit, the attacker's
+## one-shot multipliers). `scale` is the strike's share of a full swing. Fate is "miss" or "hit".
+func _roll_attack_strike(attacker: Combatant, actual_target: Combatant, scale: float) -> Dictionary:
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
 	var base_miss_rate = 0.10
 	if attacker.has_status("blind"):
@@ -5587,18 +5621,14 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var speed_diff = float(attacker.speed - actual_target.speed) / max(actual_target.speed, 1)
 	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
-		attack_missed.emit(actual_target)
-		var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
-		battle_log_message.emit(log_msg)
-		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
-		return
+		return {"fate": "miss", "damage": 0, "is_crit": false}
 
 	var base_damage = attacker.get_buffed_stat("attack", attacker.attack)
 	if attacker.has_status("fear"):
 		base_damage = int(base_damage * 0.5)
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
 	var variance = randf_range(vrange.x, vrange.y)
-	var damage = int(base_damage * variance)
+	var damage = int(base_damage * variance * scale)
 
 	# Critical hit calculation (physical attacks can crit)
 	var is_crit = false
@@ -5641,25 +5671,12 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		# Bypass defense: add target's defense directly to damage (nullifying reduction)
 		damage += actual_target.defense
 		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
+	return {"fate": "hit", "damage": damage, "is_crit": is_crit}
 
-	# Barrier nullifies the next incoming hit, then expires.
-	if actual_target.has_status("barrier"):
-		actual_target.remove_status("barrier")
-		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
-		_announce_negated_hit(actual_target, "BLOCK")
-		# Counter-on-hit hook fires even on nullified hits — boss reads it
-		# as a tactical pressure event (the boss WAS attacked).
-		_trigger_monster_counter(actual_target, attacker)
-		return
 
-	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
-	if actual_target.has_status("reflect") or actual_target.has_status("physical_reflect"):
-		var reflected = attacker.take_damage(damage, false)
-		damage_dealt.emit(attacker, reflected, false, "", 1.0)
-		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
-		_trigger_monster_counter(actual_target, attacker)
-		return
-
+## The hit's target-side bonuses on the raw, for a strike that will reach take_damage (not one a barrier eats or a
+## reflect bounces). Cover's mitigation is consumed here, by the first such strike.
+func _strike_hit_bonuses(attacker: Combatant, actual_target: Combatant, damage: int) -> int:
 	## Tick 453: pattern_recognition passive's meta_effects.boss_
 	## pattern_memory. The passive's stat_mods.attack_multiplier =
 	## 1.2 is already a flat baseline boost on the attacker's
@@ -5670,9 +5687,39 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## monster_type lives in GameState.previously_fought_bosses.
 	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
 	damage = _apply_familiar_weight_bonus(attacker, actual_target, damage)
+	return _consume_cover_mitigation(damage)
 
-	damage = _consume_cover_mitigation(damage)
-	var actual_damage = actual_target.take_damage(damage, false)
+
+## Land one rolled strike. `defence_share` is the share of the target's defence it meets (its share of the attack's raw).
+func _land_attack_strike(attacker: Combatant, actual_target: Combatant, roll: Dictionary, defence_share: float) -> void:
+	if roll["fate"] == "miss":
+		attack_missed.emit(actual_target)
+		var miss_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
+		battle_log_message.emit(miss_msg)
+		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
+		return
+	var damage: int = int(roll["damage"])
+	var is_crit: bool = bool(roll["is_crit"])
+
+	# Barrier nullifies the next incoming hit, then expires.
+	if roll["fate"] == "barrier":
+		actual_target.remove_status("barrier")
+		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		_announce_negated_hit(actual_target, "BLOCK")
+		# Counter-on-hit hook fires even on nullified hits — boss reads it
+		# as a tactical pressure event (the boss WAS attacked).
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
+	if roll["fate"] == "reflect":
+		var reflected = attacker.take_damage(damage, false)
+		damage_dealt.emit(attacker, reflected, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	var actual_damage = actual_target.take_damage(damage, false, defence_share)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 	## Retaliation, not negation: the hit lands in full and then the armour bites back.
 	_retaliate_armor_thorns(attacker, actual_target, actual_damage)
@@ -6704,6 +6751,19 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	## The number is take_damage's own; the formula above is its defense step, the suffix the rest.
 	var landed: int = target.damage_preview(incoming, false)
 	formula += _target_side_clause(target, dmg, landed)
+	## A multi-strike attack (the Rogue) previews the sum of its strikes, each meeting its share of the defence as it lands.
+	var strikes: Array = attacker.basic_attack_strikes()
+	if strikes.size() > 1:
+		var total: int = 0
+		var parts: PackedStringArray = []
+		var scale_sum: float = 0.0
+		for st in strikes:
+			scale_sum += float(st["scale"])
+		for st in strikes:
+			var each: int = target.damage_preview(int(incoming * float(st["scale"])), false, float(st["scale"]) / scale_sum)
+			total += each
+			parts.append(str(each))
+		return {"damage": total, "formula": formula + "; %d strikes ×%s = %s = %d, then ×variance ×crit each" % [strikes.size(), str(strikes[0]["scale"]), " + ".join(parts), total]}
 	return {"damage": landed, "formula": formula + ", then ×variance ×crit"}
 
 
@@ -10862,6 +10922,7 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 			"name":   str(e.combatant_name),
 			"hp_pct": e.get_hp_percentage(),
 			"charging": BossCadence.is_charging(e.get_meta("_cadence", {})),
+			"charge_broken": bool((e.get_meta("_cadence", {}) as Dictionary).get("interrupted", false)),
 		})
 
 	for entry_dict in _battle_action_log:

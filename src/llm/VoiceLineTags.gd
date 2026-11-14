@@ -7,7 +7,7 @@ const SIMPLE_TAGS: Array[String] = [
 	"none_down", "all_full", "ally_down", "ally_low", "last_standing",
 	"enemy_last", "enemy_nearly_dead", "many_enemies", "self_status",
 	"self_leveled", "self_learned_ability", "long_fight", "one_shot_win",
-	"won_barely", "someone_fell", "enemy_charging",
+	"won_barely", "someone_fell", "enemy_charging", "enemy_charge_broken",
 ]
 ## Say when a line MAY play and hold in most fights, so they filter but never outrank generic lines.
 const PRECONDITION_TAGS: Array[String] = ["none_down", "all_full"]
@@ -66,6 +66,8 @@ static func tag_holds(tag: String, ctx: PartyCombatLineContext) -> bool:
 			return alive_enemies.size() >= 3
 		"enemy_charging":
 			return alive_enemies.any(func(e): return bool(e.get("charging", false)))
+		"enemy_charge_broken":
+			return alive_enemies.any(func(e): return bool(e.get("charge_broken", false)))
 		"self_status":
 			return not ctx.speaker_status.is_empty()
 		"self_leveled":

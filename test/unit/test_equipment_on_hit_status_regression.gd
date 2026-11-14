@@ -49,14 +49,15 @@ func test_apply_helper_exists() -> void:
 
 func test_attack_calls_apply_after_damage() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var fn_idx: int = src.find("func _execute_attack")
+	## A basic attack's strike lands in _land_attack_strike since the Rogue's two strikes (2026-11-13).
+	var fn_idx: int = src.find("func _land_attack_strike")
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("_apply_equipment_on_hit_status(attacker, actual_target)"),
-		"_execute_attack must call _apply_equipment_on_hit_status after damage")
+		"_land_attack_strike must call _apply_equipment_on_hit_status after damage")
 	# Pin ordering: apply must come AFTER damage lands.
-	var dmg_idx: int = body.find("actual_target.take_damage(damage, false)")
+	var dmg_idx: int = body.find("actual_target.take_damage(damage, false, defence_share)")
 	var apply_idx: int = body.find("_apply_equipment_on_hit_status")
 	assert_lt(dmg_idx, apply_idx,
 		"on-hit status apply must run AFTER take_damage (status piles on top of the hit)")

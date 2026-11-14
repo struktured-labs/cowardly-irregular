@@ -207,6 +207,18 @@ var elemental_immunities: Array[String] = []   # Takes 0x damage from these
 var job = null
 
 
+## The basic attack's strikes, as [{scale, weapon}]: one full swing unless the job authors `basic_attack_strikes` (the Rogue's blade + bolt).
+## Live (_execute_attack) and the grind (_resolve_attack) both loop over THIS, so the two engines cannot disagree on it.
+func basic_attack_strikes() -> Array:
+	var authored = job.get("basic_attack_strikes", []) if job is Dictionary else []
+	var out: Array = []
+	if authored is Array:
+		for s in authored:
+			if s is Dictionary and float(s.get("scale", 0.0)) > 0.0:
+				out.append({"scale": float(s["scale"]), "weapon": str(s.get("weapon", ""))})
+	return out if not out.is_empty() else [{"scale": 1.0, "weapon": ""}]
+
+
 ## The job's name as the player reads it in the CURRENT world (data/job_world_names.json; W1 is the base name). Story's
 ## canon ruling 21964: W2-W6 show the world's name everywhere. The one display read of a job name; KEY reads use the id.
 static func job_display_name_for_id(job_id: String) -> String:
@@ -394,7 +406,7 @@ func execute_defer() -> void:
 
 ## Combat actions
 ## What take_damage will remove for this incoming amount, before a damage_absorb ward and the HP floor, with no side effect.
-func damage_preview(amount: int, is_magical: bool = false) -> int:
+func damage_preview(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 	"""The target's side of every hit: vulnerability, defense, defending, exposed, and the
 	damage_multiplier dial. take_damage and BattleManager's estimators both call this."""
 	amount = max(0, amount)
@@ -406,6 +418,7 @@ func damage_preview(amount: int, is_magical: bool = false) -> int:
 			amount = max(0, amount)
 
 	var def_value = get_buffed_stat("magic_defense", magic_defense) if is_magical else get_buffed_stat("defense", defense)
+	def_value = def_value * clampf(defence_scale, 0.0, 1.0)
 	var denom = max(1, amount + def_value)
 	var actual_damage = int((amount * amount) / float(denom))
 	actual_damage = max(1, actual_damage)  # Always at least 1 damage
@@ -435,7 +448,8 @@ func damage_preview(amount: int, is_magical: bool = false) -> int:
 	return actual_damage
 
 
-func take_damage(amount: int, is_magical: bool = false) -> int:
+## defence_scale: the share of the target's defence this hit meets (a multi-strike attack's strike, see BattleManager._execute_attack).
+func take_damage(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""
 	if not is_alive:
 		return 0
@@ -477,7 +491,7 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 					print("[SHARED_DAMAGE] %d redirected to controller %s" % [redirect_amount, ctrl.combatant_name])
 
 	## One owner for the target's side of a hit, so the command menu quotes this instead of stopping at defense.
-	var actual_damage: int = damage_preview(amount, is_magical)
+	var actual_damage: int = damage_preview(amount, is_magical, defence_scale)
 
 	## Tick 386: damage_absorb status converts incoming damage to
 	## healing 1:1 while active. Applied by the fill_the_void ability
