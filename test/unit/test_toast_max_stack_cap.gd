@@ -40,7 +40,7 @@ func test_eviction_loop_present() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h, x, w, vp_size.y, blocks) < 0.0):"),
+	assert_true(body.contains("while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()) < 0.0):"),
 		"eviction must use a while-loop (handles N events catching up after a cap-violation)")
 	assert_true(body.contains("var oldest: Node = _active_layers.pop_front()"),
 		"eviction must pop_front (oldest first) — FIFO eviction")
@@ -62,7 +62,7 @@ func test_eviction_runs_after_prune_before_offset() -> void:
 	var prune_idx: int = body.find("_active_layers = _active_layers.filter")
 	## Since the free-row placement (2026-11-11) the offset is `_free_y`'s row, taken after the eviction loop.
 	var evict_idx: int = body.find("while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK")
-	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))")
+	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()))")
 	assert_gt(prune_idx, -1)
 	assert_gt(evict_idx, -1)
 	assert_gt(offset_idx, -1)
@@ -103,7 +103,7 @@ func test_runtime_sixth_toast_evicts_first() -> void:
 	var texts_seen: Array = []
 	for layer in ToastCls._active_layers:
 		for child in layer.get_children():
-			if child is Label and child.position.x == 0:
+			if child is Label and child.name == "Text":  # the text label (a toast is centred now, so x is not 0)
 				texts_seen.append(child.text)
 	assert_false("t0" in texts_seen,
 		"t0 (first/oldest) must be evicted")
@@ -132,7 +132,7 @@ func test_runtime_five_toasts_no_eviction() -> void:
 	var texts_seen: Array = []
 	for layer in ToastCls._active_layers:
 		for child in layer.get_children():
-			if child is Label and child.position.x == 0:
+			if child is Label and child.name == "Text":  # the text label (a toast is centred now, so x is not 0)
 				texts_seen.append(child.text)
 	# All 5 originals must be present.
 	for i in range(5):
@@ -172,7 +172,7 @@ func test_tick_205_stacking_preserved() -> void:
 	## Was `size() * STACK_ROW_HEIGHT`: placing by COUNT put a new toast on a live row (test_a_toast_takes_a_free_row).
 	assert_true(src.contains("ys.append(BASE_Y + row * STACK_ROW_HEIGHT)"),
 		"rows still step by STACK_ROW_HEIGHT from BASE_Y")
-	assert_true(src.contains("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))"),
+	assert_true(src.contains("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()))"),
 		"and a toast takes the first free row")
 
 

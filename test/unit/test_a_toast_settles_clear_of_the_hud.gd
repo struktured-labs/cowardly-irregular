@@ -159,3 +159,25 @@ func test_a_hint_is_its_settled_size_on_the_frame_it_opens() -> void:
 		assert_almost_eq(first.size.y, settled.size.y, 1.0, "at Text Size %s the hint opens %s and settles %s" % [p, first, settled])
 		assert_almost_eq(first.position.y, settled.position.y, 1.0, "and opens where it settles at %s" % p)
 		vp.get_parent().free()
+
+
+func test_the_hint_clears_every_block_whatever_order_they_are_listed() -> void:
+	var size := Vector2(880, 200)
+	var upper := Rect2(400, 250, 400, 60)   # clear of the panel at the top; in its way once `lower` pushes it down
+	var lower := Rect2(400, 8, 400, 60)
+	var forward: float = TutorialHint.top_clear_of(200.0, size, [lower, upper])
+	var backward: float = TutorialHint.top_clear_of(200.0, size, [upper, lower])
+	assert_eq(forward, upper.end.y + 6.0, "CONTROL: listed top-down, the panel settles below both")
+	assert_eq(backward, forward, "listed bottom-up it settles in the same place, not on top of the first block")
+
+
+func test_another_screens_hud_and_toasts_do_not_push_this_toast() -> void:
+	var other := _screen()
+	_reserve(other, Rect2(0, 0, 1280, 600))
+	for i in 3:
+		Toast.show(other, "a toast on another screen %d" % i)
+	var vp := _screen()
+	Toast.show(vp, "a toast on this screen")
+	var r := _text_rect(Toast._active_layers.back())
+	assert_true(r.has_area(), "CONTROL: the toast built a Text label")
+	assert_eq(r.position.y, Toast.BASE_Y, "a block and toasts on ANOTHER viewport do not move this one off its first row: %s" % r)

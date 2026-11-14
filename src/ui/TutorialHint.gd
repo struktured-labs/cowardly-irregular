@@ -240,13 +240,13 @@ func _reserved_rects() -> Array:
 	if not is_inside_tree():
 		return out
 	for n in get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
-		if n.has_method("reserved_rect"):
+		if n.has_method("reserved_rect") and n.get_viewport() == get_viewport():  # another screen's HUD is not in the way
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
 	# An open command/field menu is never covered: the battle hint sat on the command menu (demo 2026-11).
 	for m in get_tree().get_nodes_in_group("win98_menus"):
-		if m is Control and (m as Control).is_visible_in_tree():
+		if m is Control and (m as Control).is_visible_in_tree() and m.get_viewport() == get_viewport():
 			var mr: Rect2 = (m as Control).get_global_rect()
 			if mr.has_area():
 				out.append(mr)
@@ -260,10 +260,16 @@ static func fit_on_screen(y: float, panel_h: float, view_h: float) -> float:
 	return clampf(y, PANEL_TOP, maxf(PANEL_TOP, view_h - panel_h - 8.0))
 
 
+## Repeats until no block is in the way: one pass missed a block listed BEFORE the one that pushed it down (field census, .802).
 static func top_clear_of(panel_x: float, panel_size: Vector2, reserved: Array) -> float:
 	var y := PANEL_TOP
-	for r in reserved:
-		var band := Rect2(panel_x, y, panel_size.x, maxf(panel_size.y, 1.0))
-		if band.intersects(r):
-			y = r.end.y + 6.0
+	for _pass in reserved.size() + 1:
+		var moved := false
+		for r in reserved:
+			var band := Rect2(panel_x, y, panel_size.x, maxf(panel_size.y, 1.0))
+			if band.intersects(r):
+				y = r.end.y + 6.0
+				moved = true
+		if not moved:
+			break
 	return y

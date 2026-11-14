@@ -34,7 +34,7 @@ const HINT_GROUP := &"tutorial_hints"
 ## The y of the first band [x, x+w) × `band_h` that overlaps no live toast and no HUD block already on screen; -1 if none
 ## fits above `view_h`. Candidates are the stack rows (BASE_Y + n rows), then the line just under each block in the way,
 ## so with nothing else up the rows are exactly the old stride.
-static func _free_y(band_h: float, x: float = 0.0, w: float = 1280.0, view_h: float = 720.0, blocks: Array = []) -> float:
+static func _free_y(band_h: float, x: float = 0.0, w: float = 1280.0, view_h: float = 720.0, blocks: Array = [], vp: Viewport = null) -> float:
 	var taken: Array = blocks.duplicate()
 	var ys: Array = []
 	for row in MAX_STACK:
@@ -42,7 +42,7 @@ static func _free_y(band_h: float, x: float = 0.0, w: float = 1280.0, view_h: fl
 	for r in blocks:
 		ys.append((r as Rect2).end.y + HUD_GAP)
 	for live in _active_layers:
-		if is_instance_valid(live) and (live as CanvasLayer).visible:
+		if is_instance_valid(live) and (live as CanvasLayer).visible and (vp == null or not live.is_inside_tree() or live.get_viewport() == vp):
 			var t := Rect2(float(live.get_meta("toast_x", 0.0)), float(live.get_meta("toast_y", BASE_Y)),
 				float(live.get_meta("toast_w", 1280.0)), float(live.get_meta("toast_h", LINE_BAND)))
 			taken.append(t)
@@ -67,13 +67,14 @@ static func _hud_blocks(parent: Node) -> Array:
 	var out: Array = []
 	if parent == null or not parent.is_inside_tree():
 		return out
+	var vp: Viewport = parent.get_viewport()
 	for n in parent.get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
-		if n.has_method("reserved_rect"):
+		if n.has_method("reserved_rect") and n.get_viewport() == vp:  # only this screen's HUD
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
 	for h in parent.get_tree().get_nodes_in_group(HINT_GROUP):
-		if h.has_method("panel_rect"):
+		if h.has_method("panel_rect") and h.get_viewport() == vp:
 			var r: Rect2 = h.panel_rect()
 			if r.has_area():
 				out.append(r)
@@ -112,12 +113,12 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	## place by COUNT (`size() * row`), so once an older toast had faded the next one landed on a row still in use, and
 	## a burst past MAX_STACK put every extra toast on the last row, one on top of another (struktured 2026-11-11).
 	## At the cap, or with no clear row, the oldest goes at once (hidden this frame, not just queued) and its row is free.
-	while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h, x, w, vp_size.y, blocks) < 0.0):
+	while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()) < 0.0):
 		var oldest: Node = _active_layers.pop_front()
 		if is_instance_valid(oldest):
 			oldest.visible = false
 			oldest.queue_free()
-	var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))
+	var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()))
 
 	var layer := CanvasLayer.new()
 	layer.layer = 80

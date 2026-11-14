@@ -52,7 +52,7 @@ func test_show_prunes_invalid_before_offset_compute() -> void:
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
 	var filter_idx: int = body.find("_active_layers = _active_layers.filter")
-	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))")   # free-row placement, clear of the HUD (.802)
+	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()))")   # free-row placement, clear of the HUD (.802)
 	assert_gt(filter_idx, -1, "filter call missing")
 	assert_gt(offset_idx, -1, "stack_offset compute missing")
 	assert_lt(filter_idx, offset_idx,
@@ -65,7 +65,7 @@ func test_y_position_uses_base_plus_offset() -> void:
 	var fn_idx: int = src.find("static func show(")
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))"),
+	assert_true(body.contains("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks, parent.get_viewport()))"),
 		"label y must be BASE_Y + stack_offset (stack from top)")
 	assert_true(body.contains("label.position = Vector2(x, y)"),
 		"label uses computed y")
