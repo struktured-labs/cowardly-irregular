@@ -237,6 +237,7 @@ func test_every_authored_field_is_read_or_declared() -> void:
 
 func test_a_field_read_only_by_dead_code_is_unread() -> void:
 	## boss_dialogue.json's opening_lines passed the rule above for months: get_opening_lines named the key and had no caller.
+	## Green means no PUBLIC reader is uncalled: one hop only, and a dead `_private` reader passes as an engine callback would.
 	var dead: Array = []
 	for path in AUTHORED_FILES:
 		for key in _keys_of(path):
