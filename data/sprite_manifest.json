@@ -386,6 +386,9 @@
       "impact_frames": {
         "attack": 1
       },
+      "second_impact_frames": {
+        "attack": 4
+      },
       "animations": [
         "advance",
         "attack",

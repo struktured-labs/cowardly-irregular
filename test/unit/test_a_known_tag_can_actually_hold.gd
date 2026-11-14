@@ -63,6 +63,7 @@ func _situations() -> Dictionary:
 		"an enemy nearly dead": _ctx([me, _m("Mira", "cleric")], [_e("Slime", 5.0), _e("Rat")]),
 		"outnumbered": _ctx([me, _m("Mira", "cleric")], [_e("Slime"), _e("Rat"), _e("Bat")]),
 		"a boss gathering its signature": _ctx([me, _m("Mira", "cleric")], [{"name": "Glacius", "hp_pct": 80.0, "charging": true}]),
+		"a boss whose charge was just broken": _ctx([me, _m("Mira", "cleric")], [{"name": "Glacius", "hp_pct": 80.0, "charge_broken": true}]),
 		"the speaker is poisoned": _ctx([me, _m("Mira", "cleric")], two_foes, ["poison"]),
 		"a cleric is alive beside me": _ctx([me, _m("Mira", "cleric")], two_foes),
 		"the speaker levelled on this win": _ectx({PartyCombatLineContext.VICTORY_SELF_LEVELED: true}),

@@ -100,9 +100,11 @@ func show_zone(zone_id: String) -> void:
 	_tween.parallel().tween_property(_bg, "modulate:a", 0.0, FADE_OUT)
 
 
-## The arrival banner, while it is showing at all, for HUD that must keep off it (TutorialHint).
+## The arrival banner from the moment it is shown (its fade-in starts at alpha 0), for HUD that must keep off it (TutorialHint).
 func reserved_rect() -> Rect2:
-	if _bg == null or not is_instance_valid(_bg) or _bg.modulate.a <= 0.01:
+	if _bg == null or not is_instance_valid(_bg):
+		return Rect2()
+	if _bg.modulate.a <= 0.01 and not (_tween != null and _tween.is_valid() and _tween.is_running()):
 		return Rect2()
 	return _bg.get_rect()
 
