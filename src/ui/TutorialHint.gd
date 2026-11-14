@@ -219,6 +219,7 @@ func _seat() -> void:
 	var inner_w: float = _panel.size.x - _panel.get_theme_stylebox("panel").get_minimum_size().x
 	for l in [_title_label, _body_label, _dismiss_label]:
 		(l as Label).size.x = inner_w
+		(l as Label).update_minimum_size()  # a Label's resize does not drop the cached minimum the panel clamps to
 	_panel.size = Vector2(_panel.size.x, 0.0)
 	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
 

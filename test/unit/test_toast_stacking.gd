@@ -52,7 +52,7 @@ func test_show_prunes_invalid_before_offset_compute() -> void:
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
 	var filter_idx: int = body.find("_active_layers = _active_layers.filter")
-	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h))")   # the free-row placement (2026-11-11)
+	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))")   # free-row placement, clear of the HUD (.802)
 	assert_gt(filter_idx, -1, "filter call missing")
 	assert_gt(offset_idx, -1, "stack_offset compute missing")
 	assert_lt(filter_idx, offset_idx,
@@ -65,9 +65,9 @@ func test_y_position_uses_base_plus_offset() -> void:
 	var fn_idx: int = src.find("static func show(")
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("var y: float = maxf(BASE_Y, _free_y(band_h))"),
+	assert_true(body.contains("var y: float = maxf(BASE_Y, _free_y(band_h, x, w, vp_size.y, blocks))"),
 		"label y must be BASE_Y + stack_offset (stack from top)")
-	assert_true(body.contains("label.position = Vector2(0, y)"),
+	assert_true(body.contains("label.position = Vector2(x, y)"),
 		"label uses computed y")
 
 
@@ -79,7 +79,7 @@ func test_shadow_position_uses_y_plus_offset() -> void:
 	var fn_idx: int = src.find("static func show(")
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("shadow.position = Vector2(2, y + 2)"),
+	assert_true(body.contains("shadow.position = Vector2(x + 2, y + 2)"),
 		"shadow follows label y (y + 2 vertical offset for shadow effect)")
 
 

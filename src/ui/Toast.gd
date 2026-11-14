@@ -36,15 +36,17 @@ const HINT_GROUP := &"tutorial_hints"
 ## so with nothing else up the rows are exactly the old stride.
 static func _free_y(band_h: float, x: float = 0.0, w: float = 1280.0, view_h: float = 720.0, blocks: Array = []) -> float:
 	var taken: Array = blocks.duplicate()
-	for live in _active_layers:
-		if is_instance_valid(live) and (live as CanvasLayer).visible:
-			taken.append(Rect2(float(live.get_meta("toast_x", 0.0)), float(live.get_meta("toast_y", BASE_Y)),
-				float(live.get_meta("toast_w", 1280.0)), float(live.get_meta("toast_h", LINE_BAND))))
 	var ys: Array = []
 	for row in MAX_STACK:
 		ys.append(BASE_Y + row * STACK_ROW_HEIGHT)
-	for r in taken:
+	for r in blocks:
 		ys.append((r as Rect2).end.y + HUD_GAP)
+	for live in _active_layers:
+		if is_instance_valid(live) and (live as CanvasLayer).visible:
+			var t := Rect2(float(live.get_meta("toast_x", 0.0)), float(live.get_meta("toast_y", BASE_Y)),
+				float(live.get_meta("toast_w", 1280.0)), float(live.get_meta("toast_h", LINE_BAND)))
+			taken.append(t)
+			ys.append(t.end.y + STACK_ROW_HEIGHT - LINE_BAND)  # under a toast, the stack's own row gap
 	ys.sort()
 	for y in ys:
 		if y < BASE_Y or y + band_h > view_h:
