@@ -5702,7 +5702,7 @@ func _land_attack_strike(attacker: Combatant, actual_target: Combatant, roll: Di
 	var is_crit: bool = bool(roll["is_crit"])
 
 	# Barrier nullifies the next incoming hit, then expires.
-	if roll["fate"] == "barrier" and actual_target.has_status("barrier"):
+	if roll["fate"] == "barrier":
 		actual_target.remove_status("barrier")
 		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
 		_announce_negated_hit(actual_target, "BLOCK")

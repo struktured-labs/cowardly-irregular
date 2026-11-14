@@ -1153,7 +1153,7 @@ func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: floa
 
 	## guardian_wall nullifies this one swing and breaks. Checked after the number exists, before
 	## take_damage, and the on-hit riders below do not run — same place live returns.
-	if roll["fate"] == "barrier" and target.has_status("barrier"):
+	if roll["fate"] == "barrier":
 		target.remove_status("barrier")
 		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
 		return 0
