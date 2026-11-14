@@ -1,5 +1,5 @@
 itch-assets/.gdignore 4294967295 0
-itch-assets/CAPTIONS.md 3521365133 50258
+itch-assets/CAPTIONS.md 4215417547 51591
 itch-assets/PROVENANCE.md 3230051840 17021
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
@@ -232,10 +232,10 @@ itch-assets/screenshots/grimhollow_spiral.png 3298149931 97599
 itch-assets/screenshots/grimhollow_village.png 406131728 166991
 itch-assets/screenshots/harmonia_village.png 2980173131 295819
 itch-assets/screenshots/infernal_grotto_f3.png 1959022635 356857
-itch-assets/screenshots/inn_interior.png 1333310891 115253
+itch-assets/screenshots/inn_interior.png 3855384258 235289
 itch-assets/screenshots/ironhaven_village.png 556511171 132004
 itch-assets/screenshots/sandrift_village.png 1743451807 125693
-itch-assets/screenshots/shop_interior.png 3477591601 58445
+itch-assets/screenshots/shop_interior.png 279039919 242353
 itch-assets/screenshots/tavern_interior.png 1978280195 140333
 itch-assets/screenshots/title_screen.png 3841941558 868483
 itch-assets/screenshots/warren_lever_portals.png 961837313 362868
