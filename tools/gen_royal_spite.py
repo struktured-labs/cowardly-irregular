@@ -5,12 +5,13 @@ devastating"; named for wounded-pride spite from a tiny king).
     python3 tools/gen_royal_spite.py <out.ogg>
     python3 tools/gen_royal_spite.py --selftest
 
-Three beats in one cue, ordered the way the hit lands. The TELL: a breath hiss under three rodent chitters climbing
-in pitch into an indignant squeal (180 ms), so the player hears it coming. The BITE: an incisor clack, a wet crunch
-over a falling 110 -> 45 Hz body and a sub, the weight the shared `counter` thump lacks. The SPITE: a sour royal
-brass blat, two detuned saws a minor second apart, falling a fifth, under a short regalia jangle: the fanfare a
-king plays for himself when he has been insulted. Levelled to a crit's loudness (attack_hit_dagger_crit, -11.1
-LUFS), not to the abilities (~-15.7): it must read as the heaviest single hit in the fight.
+The CONTACT cue, transient at sample 0: battle plays it on the hitstop callback (cowir-battle 25459), so the freeze
+and the bite start together. The BITE: an incisor clack, a wet crunch over a falling 110 -> 45 Hz body and a 38 Hz
+sub, the weight the shared `counter` thump lacks. The SPITE, entering under its tail: a sour royal brass blat, two
+saws a minor second apart falling a fifth, under a short regalia jangle, the fanfare a king plays for himself when
+he has been insulted. `windup()` is the tell (hiss, climbing chitters, an indignant squeal), kept here and NOT
+shipped as a cue: it would need a wind-up call to play it. Levelled to a crit's loudness
+(attack_hit_dagger_crit, -11.1 LUFS), not to the abilities (~-15.7): the heaviest single hit in the fight.
 numpy synthesis at 44.1 kHz mono, one deterministic seed.
 
 --selftest renders in memory and checks the shape. It opens no file and writes nothing.
@@ -29,13 +30,15 @@ from gen_sequence_beats import SR, N, at, env, hp, lp, mix, sweep, t  # noqa: E4
 
 SEED = 6011
 TARGET_LUFS = -11.1
-BITE_AT = 0.18          # seconds: the crunch lands here, after the intake; battle aligns the hit frame to it
+WINDUP_S = 0.18         # the optional tell's length
+SPITE_AT = 0.06         # the blat enters under the bite's tail
 PEAK_CEILING = 10 ** (-6.0 / 20)   # gen_bolt_cues' measured encode overshoot margin for a dense short cue
 
 
-def royal_spite(rng):
-    ## The intake: breath hiss rising, and three rodent chitters climbing in pitch.
-    n_in = N(BITE_AT)
+def windup(rng):
+    """The tell, NOT shipped as a cue yet: breath hiss under three climbing chitters bending into an indignant squeal.
+    battle plays the contact cue at contact (cowir-battle 25459), so this exists for a wind-up call if one is wired."""
+    n_in = N(WINDUP_S)
     rise = np.linspace(0, 1, n_in)
     hiss = hp(lp(rng.standard_normal(n_in), 2500 + 5000 * rise), 1200) * rise ** 2 * .25
     chit = np.zeros(n_in)
@@ -44,7 +47,12 @@ def royal_spite(rng):
         c = np.sin(2 * np.pi * np.cumsum(np.full(N(d), f) * (1 + .25 * np.sin(2 * np.pi * 70 * t(d)))) / SR)
         c *= env(N(d), .002, 6) * (.22 + .06 * i)
         chit[N(when):N(when) + len(c)] += c[:n_in - N(when)]
-    intake = hiss + chit
+    sq = sweep(3700, 7400, .05) * env(N(.05), .003, 3) * .3
+    return mix(hiss + chit, at(sq, WINDUP_S - .055))[:n_in]
+
+
+def royal_spite(rng):
+    """The contact cue. The bite's transient is sample 0: battle starts it on the hitstop callback, freeze and sound together."""
     ## The bite: incisors clack (two bright clicks 12 ms apart), the crunch, the body.
     clack = mix(hp(rng.standard_normal(N(.006)), 4000) * env(N(.006), .0002, 12) * 1.4,
                 at(hp(rng.standard_normal(N(.006)), 3500) * env(N(.006), .0002, 12) * 1.1, .012))
@@ -54,13 +62,11 @@ def royal_spite(rng):
     body = sweep(110, 45, .45) * env(N(.45), .001, 5) * 1.3
     sub = np.sin(2 * np.pi * 38 * t(.3)) * env(N(.3), .004, 6) * .8
     bite = mix(clack, at(crunch, .004), at(body, .002), at(sub, .002))
-    ## The squeal that ends the tell: the last chitter bends up an octave, the indignation.
-    sq = sweep(3700, 7400, .05) * env(N(.05), .003, 3) * .3
-    intake = mix(intake, at(sq, BITE_AT - .055))[:n_in]
     ## The spite: a sour brass blat (saws a minor second apart, falling a fifth), then the regalia jangling.
     d = .55
     tt = t(d)
     fall = 2 ** (-(7 / 12) * np.clip(tt / .4, 0, 1))
+
     def saw(f0):
         ph = np.cumsum(f0 * fall) / SR
         return 2 * (ph % 1) - 1
@@ -73,8 +79,7 @@ def royal_spite(rng):
         ring = (np.sin(2 * np.pi * f * r) + .4 * np.sin(2 * np.pi * f * 1.37 * r)) * np.exp(-r * 30) * .07
         s0 = N(when)
         jangle[s0:s0 + len(ring)] += ring[:len(jangle) - s0]
-    spite = mix(blat, jangle)
-    return mix(intake, at(bite, BITE_AT), at(spite, BITE_AT + .06))
+    return mix(bite, at(mix(blat, jangle), SPITE_AT))
 
 
 def _wav(y, path):
@@ -130,23 +135,22 @@ def selftest():
 
     y = royal_spite(np.random.default_rng(SEED))
     a = np.abs(y)
-    pre, post = a[:N(BITE_AT)], a[N(BITE_AT):N(BITE_AT + .05)]
-    chk("the loudest moment is the bite, not the tell or the blat", N(BITE_AT) <= np.argmax(a) < N(BITE_AT + .05))
-    chk("the intake is a tell, well under the bite (< -9 dB)", pre.max() < post.max() * 10 ** (-9 / 20))
+    chk("the transient is at the start: the loudest moment is within 15 ms of sample 0 (battle plays it AT contact)",
+        np.argmax(a) < N(.015))
+    chk("CONTROL: the cue is not a click, it rings past 0.5 s", a[N(.5):].max() > a.max() * 10 ** (-40 / 20))
     f = np.fft.rfftfreq(len(y), 1 / SR)
     spec = np.abs(np.fft.rfft(y))
     chk("the bite carries sub weight (< 120 Hz)", spec[(f > 30) & (f < 120)].sum() > .1 * spec.sum())
-    tail = y[N(BITE_AT + .25):N(BITE_AT + .55)]
+    tail = y[N(.25):N(.55)]
     tf = np.fft.rfftfreq(len(tail), 1 / SR)
     ts = np.abs(np.fft.rfft(tail)) ** 2   # POWER: magnitude sums overweight the broadband crunch/jangle floor
-    lo_mid = ts[(tf > 120) & (tf < 1500)].sum()
-    chk("after the bite the blat carries the cue (energy mostly 120-1500 Hz)", lo_mid > .5 * ts.sum())
+    chk("after the bite the blat carries the cue (energy mostly 120-1500 Hz)", ts[(tf > 120) & (tf < 1500)].sum() > .5 * ts.sum())
     peak = tf[np.argmax(ts * ((tf > 120) & (tf < 400)))]
     chk("the blat has fallen below its 196 Hz start by then (the deflation)", 120 < peak < 190)
-    pre = y[:N(BITE_AT)]
-    pf = np.fft.rfftfreq(len(pre), 1 / SR)
-    ps = np.abs(np.fft.rfft(pre)) ** 2
-    chk("CONTROL: the tell is NOT in that band (the arm above measures the blat)", ps[(pf > 120) & (pf < 1500)].sum() < .5 * ps.sum())
+    w = windup(np.random.default_rng(SEED))
+    wf = np.fft.rfftfreq(len(w), 1 / SR)
+    ws = np.abs(np.fft.rfft(w)) ** 2
+    chk("CONTROL: the windup tell is NOT in the blat band (the blat arm measures the blat)", ws[(wf > 120) & (wf < 1500)].sum() < .5 * ws.sum())
     chk("short enough to sit under one hit (< 1.4 s)", len(y) < N(1.4))
     chk("deterministic: the same seed renders the same samples", np.array_equal(y, royal_spite(np.random.default_rng(SEED))))
     print("selftest: %s" % ("PASS" if ok else "FAIL"))
