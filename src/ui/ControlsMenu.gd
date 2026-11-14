@@ -66,6 +66,8 @@ const ROW_NINTENDO := 1
 const ROW_HELP := 2
 const ROW_ACTION_FIRST := 3
 const ROW_HEIGHT = 32
+## The row font at 100%; _row_font never fits below it at a larger Text Size.
+const ROW_FONT_DEFAULT := 14
 ## The column header's own band, between the option rows and the action rows.
 ## The air between the action rows and Reset/Test/Map. Named because the row-height cap has to
 ## subtract it: it was a bare 8 in the loop and absent from the cap, so the cap over-budgeted by
@@ -235,7 +237,7 @@ func _panel_w_frac() -> float:
 ## for a binding label. Same algorithm, vertical axis, so the screen has one policy rather than two.
 ## A row the player cannot reach would be worse than text that stops short of the setting.
 func _row_font() -> int:
-	var want: int = TextScale.scaled(14)
+	var want: int = TextScale.scaled(ROW_FONT_DEFAULT)
 	var fnt: Font = get_theme_font("font", "Label")
 	if fnt == null:
 		return want
@@ -247,7 +249,9 @@ func _row_font() -> int:
 		return want
 	var cap: float = avail / float(rows)
 	var fs: int = want
-	while fs > 10 and fnt.get_height(fs) + 8.0 > cap:
+	## Floor at the 100% size: a snapping face (UiFont, 1x below 14) otherwise walks 2x down to 1x, so 200% drew smaller than 100%.
+	var floor_fs: int = mini(want, ROW_FONT_DEFAULT)
+	while fs > floor_fs and fnt.get_height(fs) + 8.0 > cap:
 		fs -= 1
 	return fs
 
