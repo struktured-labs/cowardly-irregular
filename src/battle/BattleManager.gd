@@ -2867,9 +2867,13 @@ func _charge_lines(boss: Combatant) -> Dictionary:
 
 ## The charge turn: the boss spends it gathering, and says so in its own words when story authored them.
 func _execute_boss_charge(boss: Combatant, ability_id: String) -> void:
-	var authored := str(_charge_lines(boss).get("charge_line", ""))
+	var lines := _charge_lines(boss)
+	var authored := str(lines.get("charge_line", ""))
 	battle_log_message.emit("[color=cyan]%s[/color]" % authored if authored != "" \
 		else "[color=cyan]%s is gathering power for %s![/color]" % [boss.combatant_name, _ability_display_name(ability_id)])
+	var barks: Array = lines.get("charge_barks", [])
+	if not barks.is_empty():
+		_speak_boss_bark(boss, str(barks.pick_random()))
 
 
 ## A status landed on a cadence boss; an interrupting one mid-charge breaks the breath.
@@ -2881,7 +2885,16 @@ func _on_cadence_status(status: String, boss: Combatant) -> void:
 		battle_log_message.emit("[color=yellow]%s[/color]" % broken_log if broken_log != "" \
 			else "[color=yellow]%s's charge is broken![/color]" % boss.combatant_name)
 		boss_charge_broken.emit(boss, status)
+		_speak_boss_bark(boss, str(_charge_lines(boss).get("interrupted_bark", "")))
 		boss_charge_changed.emit(boss, false)
+
+
+## A boss's authored cadence bark: logged in its voice and shown as its taunt bubble. Unauthored ("") says nothing.
+func _speak_boss_bark(boss: Combatant, line: String) -> void:
+	if line.strip_edges() == "":
+		return
+	_log_boss_line(boss, line)
+	boss_taunt.emit(boss, line)
 
 
 ## Battle over: every boss still charging stops, once, so a listener never holds its charge state into the next fight.
