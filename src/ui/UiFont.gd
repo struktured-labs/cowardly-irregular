@@ -7,8 +7,8 @@ class_name UiFont
 ## The damage numbers are PixelText: drawn glyphs, not a font, so a Label could never use them. This builds a
 ## real bitmap FontFile from the SAME glyph table (plus UiFontGlyphs' lowercase and punctuation), so Labels,
 ## Buttons, wrapping and BBCode all work, and the symbols the table does not draw fall through to the Noto chain
-## instead of turning to tofu. The old face is not on that chain (its taller line box would size every Label), so
-## Latin the table does not draw - capital accents, other scripts - has no fallback in a display Label.
+## instead of turning to tofu. The old face is not on that chain (its taller line box would size every Label); the
+## Latin the table does not draw falls to LATIN_FALLBACK, last, whose line box is fitted inside the pixel box.
 ##
 ## Two tiers. DISPLAY (headings, menu rows, labels, numbers) is the pixel face and is the theme default.
 ## BODY (text you read in sentences, text you type) is whatever `read_tier` says: the old face, or the pixel one.
@@ -34,6 +34,8 @@ const ASCENT := 9
 const DESCENT := 3
 const SPACE_ADVANCE := 3
 const ATLAS_COLS := 16
+## Anonymous Pro, re-boxed and renamed (OFL-AnonymousPro.txt): the Latin behind the pixel face.
+const LATIN_FALLBACK := "res://assets/fonts/fallback/CowirLatinFallback-Regular.ttf"
 const READ_TIER_DEFAULT := "default"
 const READ_TIER_PIXEL := "pixel"
 ## Theme slots that carry text you READ or TYPE; they follow read_tier.
@@ -202,6 +204,13 @@ static func _ensure_built() -> void:
 		var chain: Array[Font] = []
 		for fb in _body.fallbacks:
 			chain.append(fb)
+		# LAST, so every symbol still comes from Noto: Latin the table does not draw (É, ß, a model's other
+		# scripts) instead of tofu, boxed inside the pixel box like the rest (main 25569).
+		var latin = load(LATIN_FALLBACK)
+		if latin is Font:
+			chain.append(latin)
+		else:
+			push_warning("[UIFONT] %s did not load: Latin the face does not draw will be tofu" % LATIN_FALLBACK)
 		_display.fallbacks = chain
 		_outlined.fallbacks = chain
 

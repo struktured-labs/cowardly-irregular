@@ -29,7 +29,40 @@ FONTS = [
     "assets/fonts/fallback/NotoSansSymbols-Regular.ttf",
     "assets/fonts/fallback/NotoSansMath-Regular.ttf",
     "assets/fonts/fallback/NotoEmoji-Regular.ttf",
+    "assets/fonts/fallback/CowirLatinFallback-Regular.ttf",
 ]
+## The Latin fallback behind the pixel face (main 25569: a model's "Éclair" must not draw as tofu) is Anonymous Pro
+## from the GUT addon, which exports exclude, so it is copied here. Its OFL reserves the name "Anonymous Pro", and a
+## re-boxed copy is a Modified Version, so the copy is renamed (OFL section 3) and ships with OFL-AnonymousPro.txt.
+DERIVED = {
+    "assets/fonts/fallback/CowirLatinFallback-Regular.ttf": ("addons/gut/fonts/AnonymousPro-Regular.ttf", "Cowir Latin Fallback"),
+}
+RENAMED_IDS = (1, 3, 4, 6, 16, 17)
+
+
+def derive(target: Path, source: Path, family: str) -> None:
+    font = TTFont(source)
+    post = family.replace(" ", "") + "-Regular"
+    names = {1: family, 3: f"{post};1.003;cowir", 4: f"{family} Regular", 6: post, 16: family, 17: "Regular"}
+    for rec in list(font["name"].names):
+        if rec.nameID in RENAMED_IDS:
+            font["name"].removeNames(nameID=rec.nameID)
+    for nid, text in names.items():
+        if nid in (16, 17):
+            continue
+        font["name"].setName(text, nid, 3, 1, 0x409)
+        font["name"].setName(text, nid, 1, 0, 0)
+    font.save(target)
+
+
+def renamed_ok(path: Path, family: str) -> list[str]:
+    bad = []
+    for rec in TTFont(path)["name"].names:
+        if rec.nameID in RENAMED_IDS and "anonymous" in str(rec).lower():
+            bad.append(f"name {rec.nameID} still says {rec}")
+    if not any(rec.nameID == 1 and str(rec) == family for rec in TTFont(path)["name"].names):
+        bad.append(f"family is not {family}")
+    return bad
 PIXEL_ASCENT, PIXEL_DESCENT, NOMINAL = 9, 3, 9
 WORST = NOMINAL + 4  # the largest size still drawn at 1x: round(13 / 9) == 1
 
@@ -53,6 +86,19 @@ def main() -> int:
     failed = 0
     for rel in FONTS:
         path = ROOT / rel
+        if rel in DERIVED:
+            src, family = DERIVED[rel]
+            if not path.exists():
+                if check:
+                    print(f"{path.name}: MISSING (derive it from {src})")
+                    failed += 1
+                    continue
+                derive(path, ROOT / src, family)
+                print(f"  derived {path.name} from {src} as '{family}'")
+            bad = renamed_ok(path, family)
+            if bad:
+                print(f"{path.name}: RESERVED NAME LEFT: {bad[:2]}")
+                failed += 1
         font = TTFont(path)
         upm = font["head"].unitsPerEm
         asc, desc = target(upm)
