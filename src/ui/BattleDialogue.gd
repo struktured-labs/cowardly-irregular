@@ -188,7 +188,9 @@ func _dialogue_metrics() -> Dictionary:
 	var speaker_px := TextScale.scaled(14)
 	var body_px := TextScale.scaled(13)
 	var hint_px := TextScale.scaled(10)
-	var font := ThemeDB.fallback_font
+	## Speaker and hint are Labels (display face); the body is the RichTextLabel, which draws the read-tier face.
+	var font: Font = UiFont.display()
+	var body_font: Font = UiFont.body()
 	var speaker_h := 20.0 * float(speaker_px) / 14.0
 	var hint_h := 14.0 * float(hint_px) / 10.0
 	var line_h := 18.0 * float(body_px) / 13.0
@@ -196,8 +198,9 @@ func _dialogue_metrics() -> Dictionary:
 	if font:
 		speaker_h = float(font.get_height(speaker_px))
 		hint_h = float(font.get_height(hint_px))
-		line_h = maxf(1.0, float(font.get_height(body_px)))
-		line_base = maxf(1.0, float(font.get_height(13)))
+	if body_font:
+		line_h = maxf(1.0, float(body_font.get_height(body_px)))
+		line_base = maxf(1.0, float(body_font.get_height(13)))
 	# 100% and 80% keep the authored slots (body at y=28, 74px tall, hint 20px off the bottom). The font's own get_height(14) is taller than that 20px gap, so growing from the glyph would move the default panel.
 	var text_y: float = float(TILE_SIZE * 2 + 20)
 	var body_h: float = float(BOX_HEIGHT - TILE_SIZE * 4 - 30)
