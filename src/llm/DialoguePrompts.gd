@@ -503,21 +503,6 @@ static func build_npc_opening(
 	)
 
 
-## Build a prompt asking the LLM for a contextual NPC opening, with an explicit
-## topic hint to guide flavour (e.g. "a recent boss defeat" or "the party's low HP").
-##
-## Convenience overload of build_npc_opening; the topic is appended to persona.
-static func build_npc_opening_topical(
-	npc_name: String,
-	npc_persona: String,
-	location: String,
-	topic: String,
-	recent_events: Array,
-) -> String:
-	var extended_persona: String = "%s — today's topic: %s" % [npc_persona, topic]
-	return build_npc_opening(npc_name, extended_persona, location, recent_events)
-
-
 # ── Prompt builder: NPC sign-off ─────────────────────────────────────────────
 
 ## Build a prompt asking the LLM to generate a single CLOSING line — the

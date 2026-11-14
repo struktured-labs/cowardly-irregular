@@ -70,7 +70,7 @@ const SRC := "res://src/llm/DialoguePrompts.gd"
 ## Prose a player reads, long enough to pronominalise a third party. Measured:
 ## 6 of 6 gendered references wrong without the note, 13 of 13 right with it.
 const CARRIES: Array[String] = [
-	"build_npc_opening", "build_npc_opening_topical", "build_npc_reply",
+	"build_npc_opening", "build_npc_reply",
 	"build_combined_reply", "build_player_choices",
 ]
 
@@ -122,9 +122,6 @@ func _drive(builder: String) -> String:
 		"build_npc_opening":
 			return DP.build_npc_opening("Elder Theron", "keeper of records", "Harmonia",
 				_events_naming_her())
-		"build_npc_opening_topical":
-			return DP.build_npc_opening_topical("Elder Theron", "keeper of records",
-				"Harmonia", "the sealed gates", _events_naming_her())
 		"build_npc_reply":
 			return DP.build_npc_reply("Elder Theron", "keeper of records", "Harmonia",
 				_events_naming_her(), "Dark days.", "What now?")
