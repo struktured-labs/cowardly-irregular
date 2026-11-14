@@ -82,7 +82,7 @@ func test_take_damage_delegates_to_damage_preview() -> void:
 	assert_gt(idx, -1, "take_damage must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("damage_preview(amount, is_magical)"),
+	assert_true(body.contains("damage_preview(amount, is_magical, defence_scale)"),
 		"take_damage() must remove what damage_preview reports, or the dial is wired into nothing")
 
 

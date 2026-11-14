@@ -240,8 +240,7 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	# literal ever appears at a call site and a named-key control here could only ever fail. It
 	# stays in the alternation so that the day someone DOES hardcode one, it is audited.
 	# METHOD LIST: the scanner's play_* alternation is a SECOND pattern with its own unaudited complement — play_death and play_ambient sat outside it and their literal keys went unscanned. Name one key per covered method; play_status is EXCLUDED BY CONSTRUCTION (it builds "status_" + arg, so no literal key exists to match) and its cues stay unauditable here.
-	# play_second_hit is in the alternation with NO pair yet: no src call exists until cowir-battle wires the Rogue's bolt; that change adds ["attack_hit_bolt", "play_second_hit"] here.
-	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"], ["group_all_out", "play_flourish"], ["full_bank_unleash", "play_advance_state"], ["weather_thunder_distant", "play_weather_oneshot"], ["autogrind_stop_sting", "play_alert"]]:
+	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"], ["group_all_out", "play_flourish"], ["full_bank_unleash", "play_advance_state"], ["weather_thunder_distant", "play_weather_oneshot"], ["autogrind_stop_sting", "play_alert"], ["attack_hit_bolt", "play_second_hit"]]:
 		assert_true(code_refs.has(pair[0]),
 			"scanner lost coverage of %s — its literal sfx keys are unaudited, and a key-presence check on the OTHER methods still passes" % pair[1])
 
