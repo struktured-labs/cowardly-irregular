@@ -551,7 +551,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 ##
 ## Mirrors SettingsMenu's `_line_h` / `_row_font` pair rather than inventing a third spelling.
 func _menu_font() -> Font:
-	return ThemeDB.fallback_font
+	return UiFont.display()
 
 
 func _menu_row_h() -> float:
