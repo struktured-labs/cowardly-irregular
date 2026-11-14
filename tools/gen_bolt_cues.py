@@ -6,8 +6,9 @@
     python3 tools/gen_bolt_cues.py --list
     python3 tools/gen_bolt_cues.py --selftest
 
-Keys follow play_attack_hit's per-weapon convention (attack_hit_<type>[_crit]), so battle plays the bolt beat with
-SoundManager.play_attack_hit("bolt", is_crit) and needs no new player method. The bolt must read as a DIFFERENT
+Keys follow play_attack_hit's per-weapon convention (attack_hit_<type>[_crit]), but battle plays the bolt beat with
+SoundManager.play_second_hit("attack_hit_bolt[_crit]") on its own player, so it never cuts off the dagger hit still
+ringing on the battle player at high speed. The bolt must read as a DIFFERENT
 hit from the dagger's whip-crack a beat earlier: a short incoming hiss, a dense THUNK with low body (the dagger cue
 has deliberately none), and the shaft's quiver ringing out. The crit adds a bright crack and a short double echo,
 the same crit identity the dagger crit carries. Levelled by integrated loudness to sit beside attack_hit_dagger /
