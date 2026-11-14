@@ -1089,7 +1089,7 @@
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back). royal_spite 8-9 (impact 9) is APPENDED: his counter, a sceptre wind-up then an open-mouthed lunge, cut from the paid batch-1 attack raw cave_rat_king__attack__1794580709 by tools/append_motion_frames.py (strike mirrored to face like the idle; 12 px of trailing cape clipped). T1, $0 new spend; ships on eye + colour (struktured via cowir-main 25446). Frames 0-7 untouched.",
       "flip_h": true,
       "flip_h_reason": "authored facing LEFT unlike the other 256px sheets; without this it renders backwards in battle (playtest 2026-07-25)",
       "frame_width": 256,
@@ -1111,6 +1111,11 @@
         "dead": {
           "start": 0,
           "end": 0
+        },
+        "royal_spite": {
+          "start": 8,
+          "end": 9,
+          "impact": 1
         }
       },
       "tier": "T1",
