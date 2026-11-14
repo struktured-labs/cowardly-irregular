@@ -71,3 +71,22 @@ func test_the_battle_hands_over_the_bosss_own_lines() -> void:
 	assert_eq(ctx.voice_lines, authored.slice(0, DP.MAX_VOICE_LINES), "the context carries Glacius's own lines, capped")
 	var none: BossIntentContext = BattleManager._build_boss_intent_context(_boss(), "nobody_authored_this_boss", 1, BossDialogue)
 	assert_eq(none.voice_lines, [], "an unauthored boss hands over none")
+
+
+func test_a_line_too_long_to_say_is_not_a_model() -> void:
+	var cap: int = DP.MAX_BOSS_TAUNT_CHARS
+	var fits: String = "a".repeat(cap)
+	var over: String = "b".repeat(cap + 1)
+	var prompt: String = DP.build_boss_intent("Glacius", _ctx([over, fits]))
+	assert_string_contains(prompt, "  - %s\n" % fits, "CONTROL: a line exactly at the taunt cap is quoted")
+	assert_false(prompt.contains(over), "a line the validator would cut is not shown as the voice to copy")
+
+
+func test_the_construct_is_quoted_only_what_it_could_say() -> void:
+	var lines: Array = BossDialogue.get_opening_lines("mage_prismatic_construct")
+	var too_long: Array = lines.filter(func(l): return DP.spoken_line(str(l)).length() > DP.MAX_BOSS_TAUNT_CHARS)
+	assert_false(too_long.is_empty(), "CONTROL: the Construct authors an opening line over the taunt cap")
+	var prompt: String = DP.build_boss_intent("Construct", _ctx(lines))
+	for l in too_long:
+		assert_false(prompt.contains(DP.spoken_line(str(l)).left(60)), "the over-long line stays out of the prompt")
+	assert_string_contains(prompt, "Lines you have said", "CONTROL: its shorter line still sets the voice")
