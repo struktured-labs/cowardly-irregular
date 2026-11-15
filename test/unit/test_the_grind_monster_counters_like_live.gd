@@ -81,11 +81,15 @@ func test_the_counter_strike_lands_on_the_attacker() -> void:
 
 
 func test_a_silenced_monster_still_counters_like_live() -> void:
+	var hero := _make("Hero", "")
 	var foe := _make("Foe", COUNTERER)
 	foe.add_status("silence", 999)
-	var lines := _swing(COUNTERER, 100, null, foe)
+	var lines := _swing(COUNTERER, 200, hero, foe)
 	assert_true(foe.has_status("silence"), "CONTROL: the foe stayed silenced")
-	assert_gt(_count(lines, " counters with "), 0, "live's counter skips the silence check; the grind refused it")
+	## The announcement is logged BEFORE _resolve_ability, so it cannot see a refusal; judge what the counter did.
+	assert_gt(_count(lines, " counters with "), 0, "CONTROL: the silenced foe announced a counter")
+	assert_eq(_count(lines, " is silenced"), 0, "live's counter skips the silence check; the grind refused it: %s" % str(lines.slice(0, 6)))
+	assert_lt(hero.current_hp, hero.max_hp, "a silenced monster's counter must still land on the hero who swung")
 
 
 func test_control_a_monster_without_counters_never_answers() -> void:
