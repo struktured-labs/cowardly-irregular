@@ -151,26 +151,6 @@ func _apply_preview_room() -> void:
 	_preview_panel.clip_contents = true
 	_preview_panel.custom_minimum_size = Vector2(0, float(TextScale.scaled(PREVIEW_FLOOR_PX)))
 	_preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	if not _preview_panel.resized.is_connected(_fit_preview):
-		_preview_panel.resized.connect(_fit_preview)
-	_fit_preview.call_deferred()
-
-
-## At 200% the face's taller line outgrew all the room (480 in 410); clipping hides notes read before Confirm, so step down to fit, above 100%.
-func _fit_preview() -> void:
-	if _preview_panel == null or _preview_panel.size.y <= 0.0:
-		return
-	var label := _preview_panel.get_node_or_null("PreviewLabel") as Label
-	if label == null:
-		return
-	var path := "Panel/VBox/PreviewPanel/PreviewLabel"
-	var base: int = int(_base_px.get(path, label.get_theme_font_size("font_size")))
-	var px: int = TextScale.scaled(base)
-	var floor_px: int = base + 1 if px > base else px
-	label.add_theme_font_size_override("font_size", px)
-	while px > floor_px and label.get_minimum_size().y > _preview_panel.size.y:
-		px -= 1
-		label.add_theme_font_size_override("font_size", px)
 
 
 func _input(event: InputEvent) -> void:
@@ -413,7 +393,6 @@ func _populate_preview(result: Dictionary) -> void:
 		for n in (notes as Array):
 			lines.append("  - %s" % str(n))
 	label.text = "\n".join(lines)
-	_fit_preview.call_deferred()
 
 
 func _show_error(errors: Array) -> void:

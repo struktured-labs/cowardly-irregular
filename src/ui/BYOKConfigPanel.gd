@@ -64,8 +64,6 @@ const CONTROL_MIN_H := 30.0
 const BUTTON_H := 36.0
 const BUTTON_MIN_W := 160.0
 const BUTTON_FONT := 14
-## A caption never steps to its 100% size or below; above 100% it stays at least one pixel larger, as every Text Size arm requires.
-const BUTTON_FONT_MIN := BUTTON_FONT
 const HEADER_FONT := 18
 const NOTE_FONT := 11
 const LABEL_FONT := 14
@@ -254,7 +252,7 @@ func _build_ui() -> void:
 	## the error — measured rather than the old flat 66, which held three 12px lines and two 24px.
 	## The room that EXISTS above the buttons, never more: the panel is capped by the viewport, so
 	## reserving what the longest message WANTS is what put it over Test Connection at 2.0x.
-	var btn_top: float = panel_y + panel_h - _button_h() - 20.0
+	var btn_top: float = panel_y + panel_h - _buttons_h() - 20.0
 	var want: float = maxf(_text_h(LONGEST_STATUS, form_w, status_px), float(status_px) * 3.0)
 	_status_label.size = Vector2(form_w, maxf(float(status_px) + LINE_PAD, minf(want, btn_top - (row_y + 12.0) - ROW_GAP)))
 	_status_label.text = _fit_status(idle_text)
@@ -265,8 +263,9 @@ func _build_ui() -> void:
 	_test_btn = Button.new()
 	_test_btn.text = "Test Connection"
 	var bw: float = _button_w()
-	var btn_y: float = panel_y + panel_h - _button_h() - 20.0
-	_test_btn.add_theme_font_size_override("font_size", _button_px())
+	var btn_y: float = panel_y + panel_h - _buttons_h() - 20.0
+	var low_y: float = btn_y + (_button_h() + ROW_GAP if _button_rows() == 2 else 0.0)
+	_test_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
 	_test_btn.position = Vector2(panel_x + 24, btn_y)
 	_test_btn.size = Vector2(bw, _button_h())
 	_test_btn.pressed.connect(_on_test_pressed)
@@ -274,16 +273,16 @@ func _build_ui() -> void:
 
 	_save_btn = Button.new()
 	_save_btn.text = "Save & Apply"
-	_save_btn.add_theme_font_size_override("font_size", _button_px())
-	_save_btn.position = Vector2(panel_x + panel_w - 24 - bw - ROW_GAP - bw, btn_y)
+	_save_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_save_btn.position = Vector2(panel_x + panel_w - 24 - bw - ROW_GAP - bw, low_y)
 	_save_btn.size = Vector2(bw, _button_h())
 	_save_btn.pressed.connect(_on_save_pressed)
 	add_child(_save_btn)
 
 	_cancel_btn = Button.new()
 	_cancel_btn.text = "Cancel"
-	_cancel_btn.add_theme_font_size_override("font_size", _button_px())
-	_cancel_btn.position = Vector2(panel_x + panel_w - 24 - bw, btn_y)
+	_cancel_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_cancel_btn.position = Vector2(panel_x + panel_w - 24 - bw, low_y)
 	_cancel_btn.size = Vector2(bw, _button_h())
 	_cancel_btn.pressed.connect(_on_cancel_pressed)
 	add_child(_cancel_btn)
@@ -331,7 +330,7 @@ func _content_h(panel_w: float) -> float:
 			+ SECTION_GAP + 6.0 * row_h \
 			+ _text_h("Logs use the masked form abcd…WXYZ, never the raw value.", form_w, TextScale.scaled(NOTE_FONT)) \
 			+ 12.0 + _text_h(LONGEST_STATUS, form_w, TextScale.scaled(STATUS_FONT)) \
-			+ ROW_GAP + _button_h() + 20.0 + 16.0
+			+ ROW_GAP + _buttons_h() + 20.0 + 16.0
 
 
 func _text_h(text: String, w: float, px: int) -> float:
@@ -377,21 +376,16 @@ func _button_w() -> float:
 	var widest: float = 0.0
 	for cap in ["Test Connection", "Save & Apply", "Cancel"]:
 		widest = maxf(widest, f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
-	## Three share one row, so a measured width that cannot fit three is capped rather than
-	## allowed to overlap — my guard caught Test Connection over Save & Apply at 2.0x.
-	var room: float = (_panel_w() - 48.0 - 2.0 * ROW_GAP) / 3.0
-	return clampf(widest + 28.0, BUTTON_MIN_W, maxf(BUTTON_MIN_W, room))
+	return clampf(widest + 28.0, BUTTON_MIN_W, maxf(BUTTON_MIN_W, (_panel_w() - 48.0 - ROW_GAP) / 2.0))
 
 
-## The capped width holds a caption only if the font steps down with it; a Button grows to its text, so a too-wide caption overlapped its neighbour.
-func _button_px() -> int:
-	var px: int = TextScale.scaled(BUTTON_FONT)
-	var floor_px: int = BUTTON_FONT_MIN + 1 if px > BUTTON_FONT_MIN else px
-	var f: Font = UiFont.display()
-	var room: float = _button_w() - 28.0
-	while px > floor_px and f.get_string_size("Test Connection", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
-		px -= 1
-	return px
+## Captions keep their scaled size (the face snaps, so a stepped-down caption draws at 100%); when three cannot share a row, Test Connection takes its own.
+func _button_rows() -> int:
+	return 1 if 3.0 * _button_w() + 2.0 * ROW_GAP <= _panel_w() - 48.0 else 2
+
+
+func _buttons_h() -> float:
+	return _button_h() * float(_button_rows()) + ROW_GAP * float(_button_rows() - 1)
 
 
 ## _add_label returns its clamped height so the caller advances by what DREW, not by a literal.
