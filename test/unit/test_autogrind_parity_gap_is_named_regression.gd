@@ -59,6 +59,7 @@ const DECLARED := {
 	"penalty": "NOT an ability-field read: 0 as `ability[\"penalty\"]`. :1075 reads injury[\"penalty\"] off a permanent injury and :7353 writes a dict key. warp_to_boss authors it and live enforces nothing — BattleManager:6799 says so in its own comment — so both engines ignore it equally",
 	"name": "presentation only — the grind renders nothing",
 	"description": "presentation only — the grind renders nothing",
+	"counter_verb": "the verb of a counter's log line; the grind's counter (autogrind lane-the-grind-monster-counters-like-live) reads it and deletes this line when it lands",
 	"summon_id": "live's own spawn is SCENE-SIDE: _execute_summon only emits monster_summoned, and BattleScene builds the combatant. Porting it headless also decides whether summoned enemies grant EXP, which changes the grind's reward economy — struktured's call, not a repair",
 	"summon_count": "see summon_id — same scene-side spawn",
 	"summon_duration": "see summon_id — same scene-side spawn",

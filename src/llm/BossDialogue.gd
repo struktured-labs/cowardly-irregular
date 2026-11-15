@@ -217,6 +217,14 @@ func get_backstab_widens_crack_line(boss_id: String) -> String:
 	return _random_pool_line(boss_id, "backstab_widens_crack_lines")
 
 
+## The boss's words on its FIRST counter of a battle (Royal Spite); "" when unauthored, so the counter only logs.
+func get_counter_first_line(boss_id: String) -> String:
+	if not has_entry(boss_id) or not (_data[boss_id] is Dictionary):
+		return ""
+	var line = (_data[boss_id] as Dictionary).get("counter_first_line", "")
+	return (line as String).strip_edges() if line is String else ""
+
+
 ## A boss's charge-turn words (main 24676: the text lives here; monsters.json's cadence row is mechanics only). Empty fields when unauthored.
 func get_charge_lines(boss_id: String) -> Dictionary:
 	var barks: Array[String] = []

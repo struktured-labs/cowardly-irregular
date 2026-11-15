@@ -817,19 +817,25 @@ func _step_screen_shake(step: Dictionary) -> void:
 		await _shake_layer(duration, intensity)
 		return
 
-	var original_offset = camera.offset
+	# st = [jitter-free base, current jitter]: another writer's move folds into the base; base + jitter is exact, so no drift.
+	var st := [camera.offset, Vector2.ZERO]
+	var apply := func(j: Vector2) -> void:
+		if is_instance_valid(camera):
+			st[0] += camera.offset - (st[0] + st[1])
+			camera.offset = st[0] + j
+		st[1] = j
 	var shake_tween = create_tween()
 	var steps_count = int(duration / 0.05)
+	var last := Vector2.ZERO
 	for i in range(steps_count):
-		var offset = Vector2(
-			randf_range(-intensity, intensity),
-			randf_range(-intensity, intensity)
-		)
-		shake_tween.tween_property(camera, "offset", original_offset + offset, 0.05)
-	shake_tween.tween_property(camera, "offset", original_offset, 0.05)
+		var j := Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		shake_tween.tween_method(apply, last, j, 0.05)
+		last = j
+	shake_tween.tween_method(apply, last, Vector2.ZERO, 0.05)
 	await _await_tween_hold(shake_tween)
 	if is_instance_valid(camera):
-		camera.offset = original_offset
+		camera.offset = st[0] + (camera.offset - (st[0] + st[1]))
+	st[1] = Vector2.ZERO
 
 
 ## Jitters this CanvasLayer's offset — backdrop, vignette and letterbox all ride it; the dialogue layer (96) stays readable.

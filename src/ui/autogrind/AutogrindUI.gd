@@ -3505,7 +3505,8 @@ func append_resolver_log(lines: Array) -> void:
 		var text := str(line)
 		if text.strip_edges() == "":
 			continue
-		_log_message("[color=#8899aa]%s[/color]" % text)
+		## Narration is plain text, but an id from a pasted share code reaches it unvalidated; [lb] keeps its brackets literal.
+		_log_message("[color=#8899aa]%s[/color]" % text.replace("[", "[lb]"))
 
 
 func _get_corruption_color(val: float) -> Color:

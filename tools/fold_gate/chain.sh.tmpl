@@ -43,6 +43,11 @@ if pb="$(publish_busy)"; then echo "PUBLISH WAIT EXPIRED after ${pw}s, starting 
 ## the wait below cannot see this selftest's own debris.
 tools/box_busy.sh --selftest > tmp/bbself@NNN@.log 2>&1
 BE=$?; echo "box_busy selftest EC=$BE"; tail -1 tmp/bbself@NNN@.log
+## The fold tools' own arms: fold.sh and queue_tip.sh build THIS tree's merge, and neither is in any selftest corpus.
+tools/fold_gate/fold_selftest.sh > tmp/foldself@NNN@.log 2>&1
+FE=$?; echo "fold selftest EC=$FE"; tail -1 tmp/foldself@NNN@.log
+tools/fold_gate/queue_tip.sh --selftest > tmp/queueself@NNN@.log 2>&1
+QE=$?; echo "queue_tip selftest EC=$QE"; tail -1 tmp/queueself@NNN@.log
 
 others_busy() { local r e=0; r="$(tools/box_busy.sh --others 2>/dev/null)" || e=$?; case "$e" in 0) echo "$r"; return 0 ;; 1) return 1 ;; *) echo "(box_busy --others could not answer, exit $e)"; return 0 ;; esac; }
 ow=0
@@ -95,6 +100,8 @@ WHY=""
 [ "$SE" -eq 0 ] && command grep -aq 'VERDICT: PASS' tmp/smoke@NNN@.log || WHY="$WHY smoke"
 [ "$F" = 0 ] && [ "$E" = 0 ] || WHY="$WHY smoke-errors"
 [ "$BE" -eq 0 ] || WHY="$WHY box_busy-selftest"
+[ "$FE" -eq 0 ] || WHY="$WHY fold-selftest"
+[ "$QE" -eq 0 ] || WHY="$WHY queue_tip-selftest"
 [ "$RE" -eq 0 ] || WHY="$WHY runner-selftest"
 [ "$TE" -eq 0 ] || WHY="$WHY selftests"
 [ "$AE" -eq 0 ] || WHY="$WHY ambient-pitch"

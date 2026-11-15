@@ -3,7 +3,7 @@
   "title": "Fragment: The Last Grade",
   "world": 2,
   "trigger": "arbiter_grade_defeated",
-  "background": "suburban_neighborhood",
+  "background": "suburban_school",
   "location": "maple_heights_room_204",
   "description": "Found in Room 204 of Maple Heights Elementary after defeating the Arbiter of the Grade. A graded paper, left on the desk. The grade has been crossed out and rewritten several times. The final mark is in a different hand — quieter, less certain, more true.",
   "steps": [

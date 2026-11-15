@@ -26,6 +26,8 @@ const NON_FACT := {
 	"summon_message": "the flavour line printed when it summons", "threat_class": "an AI targeting hint, not something the player reads",
 	"bp_cost": "the BP bank is unbuilt, so the game charges nothing (BattleManager default_stance)",
 	"bp_gain": "the BP bank is unbuilt, so the game grants nothing (BattleManager default_stance)",
+	"counter_verb": "the battle log's verb for a counter, not a number the player weighs",
+	"impact_weight": "presentation: how heavy the hit lands on screen, not what it does",
 }
 
 
