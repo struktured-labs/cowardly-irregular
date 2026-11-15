@@ -497,6 +497,8 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	slots_label.position = Vector2(panel_size.x - _s(140), _s(16))
 	slots_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	slots_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED)
+	# The authored x is kept while it fits; a wider drawn line moves left so its right edge stays inside the panel.
+	slots_label.position.x = minf(slots_label.position.x, panel_size.x - slots_label.get_minimum_size().x - _s(8))
 	panel.add_child(slots_label)
 
 	return panel
