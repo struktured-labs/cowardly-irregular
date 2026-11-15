@@ -135,12 +135,10 @@ const AWAITING := {
 	"brasston_redundancy_index": "ruling: a card-catalogue drawer, better moved indoors",
 	"eldertree_gravestone": "a GRAVESTONE prop",
 	"frosthold_cairn": "a CAIRN prop",
-	"grimhollow_warning": "a SIGNPOST prop",
 	"harmonia_statue": "a STATUE prop",
 	"ironhaven_furnace_log": "a FURNACE prop",
 	"node_prime_sticky": "a TERMINAL prop (the note is on its monitor)",
 	"node_prime_terminal": "a TERMINAL prop",
-	"sandrift_caravan_post": "a SIGNPOST prop",
 	"vertex_monolith": "a MONOLITH prop",
 }
 ## Anchored by a village's own _examine_anchor_cell override rather than a BaseVillage table.

@@ -1295,6 +1295,8 @@ const _EXAMINE_DESCRIBES := {
 	"eldertree_grafted_branch": VillagePropScript.Kind.TREE,
 	"frosthold_meltwater_mark": VillagePropScript.Kind.FENCE,
 	"grimhollow_lantern_ledger": VillagePropScript.Kind.LAMP_POST,
+	"grimhollow_warning": VillagePropScript.Kind.SIGNPOST,
+	"sandrift_caravan_post": VillagePropScript.Kind.SIGNPOST,
 }
 ## Where a readable may stand beside a footprint cell: in front first, then either side; never behind, where the art grows up over it.
 const _BESIDE_STEPS: Array = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
