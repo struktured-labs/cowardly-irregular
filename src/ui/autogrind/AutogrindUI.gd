@@ -1235,9 +1235,18 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to add rule, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, add_w, h,
+	var hit: Button = MenuMouseHelper.make_clickable(cell, row_idx, add_w, h,
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
+	## The label's own minimum is what it draws; it settles when the theme reaches it in the tree, so the box follows that signal.
+	var fit := func() -> void:
+		var w: float = maxf(add_w, label.get_minimum_size().x + 8.0)
+		cell.custom_minimum_size.x = w
+		cell.size.x = w
+		bg.size.x = w
+		hit.size.x = w
+	label.minimum_size_changed.connect(fit)
+	fit.call()
 
 	return cell
 

@@ -194,7 +194,7 @@ func _build_ui() -> void:
 		## below. A raw size here was consistent only while the label's was raw too, and the default
 		## flags were inert only while no token exceeded the width -- measured elsewhere today, a
 		## mismatched pair derived a 120px box for 140px of text, and it bit at 125%, not just at 2.0x.
-		advice_h = UiFont.display().get_multiline_string_size(
+		advice_h = ThemeDB.fallback_font.get_multiline_string_size(
 			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, TextScale.scaled(ADVICE_FONT_SIZE),
 			-1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
 	## The header stacks by the face's own line heights, so a taller line box pushes the next line down instead of under it.
@@ -563,7 +563,7 @@ static func split_session_new(split: Array, session_ids: Array) -> Array:
 func _measure_badge_width(a: Dictionary) -> float:
 	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
 	var px: int = TextScale.scaled(CHIP_FONT_SIZE)
-	var w: float = UiFont.display().get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var w: float = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	return maxf(_grew(72.0), w + _grew(16.0))
 
 
