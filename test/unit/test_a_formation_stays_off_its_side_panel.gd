@@ -112,8 +112,7 @@ func test_no_party_member_touches_the_party_panel_or_a_badge_at_any_size() -> vo
 	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
-		for i in 3:
-			await get_tree().process_frame
+		assert_true(await _settled(scene), "text %.2f: the party came to rest after the build" % ts)
 		var w: Dictionary = Body.walls(scene)
 		assert_eq(scene.party_sprite_nodes.size(), 5, "CONTROL: the full party stands")
 		assert_true(w.has("PartyStatusPanel") and w.has("SpeedPanel") and w.has("AutoToggleButton"),
@@ -121,7 +120,7 @@ func test_no_party_member_touches_the_party_panel_or_a_badge_at_any_size() -> vo
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene.cycle_formation()
-				await get_tree().create_timer(0.4).timeout
+				assert_true(await _settled(scene), "text %.2f: the party came to rest in %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]])
 			var tag := "text %.2f %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]]
 			bad.append_array(_touches(scene, scene.party_sprite_nodes, ["PartyStatusPanel", "SpeedPanel", "AutoToggleButton"], tag))
 			bad.append_array(_touches(scene, scene.enemy_sprite_nodes, ["SpeedPanel", "AutoToggleButton"], tag))
@@ -165,12 +164,11 @@ func test_no_two_party_members_stack_in_any_formation() -> void:
 	for ts in [1.0, 2.0]:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
-		for i in 3:
-			await get_tree().process_frame
+		assert_true(await _settled(scene), "text %.2f: the party came to rest after the build" % ts)
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene.cycle_formation()
-				await get_tree().create_timer(0.4).timeout
+				assert_true(await _settled(scene), "text %.2f: the party came to rest in %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]])
 			var figs: Array = []
 			for s in scene.party_sprite_nodes:
 				figs.append(_figure(s))
