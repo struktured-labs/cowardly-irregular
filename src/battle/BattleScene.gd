@@ -6398,16 +6398,14 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	if is_instance_valid(attacker_sprite) and attacker_sprite.has_meta("attack_tween"):
 		lunge = attacker_sprite.get_meta("attack_tween")
 	var held_lunge: bool = duration > 0.07 and lunge is Tween and lunge.is_valid() and lunge.is_running()
-	## A stop called from the lunge's own LAST callback pauses it mid-step and the step still finishes it ("Can't play finished Tween").
-	var ended: Array = [false]
 	if held_lunge:
 		lunge.pause()
-		lunge.finished.connect(func(): ended[0] = true, CONNECT_ONE_SHOT)
 	get_tree().create_timer(duration).timeout.connect(func():
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
-		if held_lunge and lunge.is_valid() and not ended[0]:
+		## A new lunge KILLS the held one; paused, it is never pruned, so it stays valid and play() errors ("Can't play finished Tween").
+		if held_lunge and lunge.is_valid() and is_instance_valid(attacker_sprite) and attacker_sprite.get_meta("attack_tween", null) == lunge:
 			_lunges_resumed += 1
 			lunge.play()
 	, CONNECT_ONE_SHOT)
