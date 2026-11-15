@@ -86,3 +86,37 @@ func test_settings_gate_still_silences_both() -> void:
 	var r := await _observe({"duration": 0.3, "intensity": 6.0})
 	assert_false(r["layer"], "screen_shake_enabled=false must suppress the layer shake")
 	assert_false(r["camera"], "screen_shake_enabled=false must suppress the camera shake")
+
+
+## Runs a staged shake to the end; `mid` (if valid) is called a few frames in, as another offset writer would.
+func _staged_shake_from(start: Vector2, mid: Callable = Callable()) -> Vector2:
+	_d._staged = true
+	_cam.offset = start
+	var done := [false]
+	var runner := func() -> void:
+		await _d._step_screen_shake({"duration": 0.3, "intensity": 6.0})
+		done[0] = true
+	runner.call()
+	for i in 4:
+		await get_tree().process_frame
+	if mid.is_valid():
+		mid.call()
+	var waited := 0.0
+	while not done[0] and waited < 2.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	assert_true(done[0], "CONTROL: the staged shake finished inside its budget")
+	return _cam.offset
+
+
+func test_a_staged_shake_hands_back_the_offset_it_found() -> void:
+	var end := await _staged_shake_from(Vector2(0, -40))
+	assert_almost_eq(end.x, 0.0, 0.01, "a shake leaves the camera where it found it: %s" % end)
+	assert_almost_eq(end.y, -40.0, 0.01, "including an offset someone else had already set: %s" % end)
+
+
+## Regression: the shake restored a SNAPSHOT, so an offset another writer moved mid-shake (the shop's entry framing easing home) was put back afterwards.
+func test_an_offset_moved_during_a_shake_survives_it() -> void:
+	var end := await _staged_shake_from(Vector2(0, -40), func() -> void: _cam.offset += Vector2(0, 40))
+	assert_almost_eq(end.x, 0.0, 0.01, "the shake takes back only its own jitter: %s" % end)
+	assert_almost_eq(end.y, 0.0, 0.01, "so the other writer's move from -40 to 0 stands, not the -40 the shake found: %s" % end)

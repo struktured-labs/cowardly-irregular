@@ -24,6 +24,7 @@ var _vp_size := Vector2(1280, 720)
 func setup(parent: Node, player: Node2D, spawner: Node) -> void:
 	_player_ref = player
 	_spawner_ref = spawner
+	add_to_group(OverworldMinimap.HUD_GROUP)
 
 	_canvas = CanvasLayer.new()
 	_canvas.name = "ThreatMeter"
@@ -88,6 +89,13 @@ func _on_text_size_changed(_scale: float) -> void:
 		return
 	TextScale.apply(_icon_label)
 	_layout_icon()
+
+## The "!" and its bar, held even while faded out: a monster can fade the meter in under a toast at any moment.
+func reserved_rect() -> Rect2:
+	if _icon_label == null or _bar_bg == null or not is_instance_valid(_icon_label) or not is_instance_valid(_bar_bg):
+		return Rect2()
+	return _icon_label.get_rect().merge(_bar_bg.get_rect())
+
 
 func _exit_tree() -> void:
 	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
