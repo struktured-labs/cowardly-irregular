@@ -844,7 +844,7 @@ var _rx: Dictionary = {}
 func _tally_rx() -> void:
 	if not _rx.is_empty():
 		return
-	for k in [["attack", "^(.+?) attacks (.+) for (\\d+)$"], ["cast", "^(.+?) (?:casts|uses) (\\w+) on (.+) for (\\d+)$"],
+	for k in [["attack", "^(.+?) attacks (.+) for (\\d+)(?: \\([\\d +]+\\))?$"], ["cast", "^(.+?) (?:casts|uses) (\\w+) on (.+) for (\\d+)$"],
 			["nomp", "^(.+?) has no MP for (\\w+)$"], ["mp", "^(.+?) restores (\\d+) MP to (.+)$"],
 			["defer", "^(.+?) defers$"], ["group", "^(.+?) (?:hits|strikes|blasts|crushes) (.+) for (\\d+)!$"]]:
 		_rx[k[0]] = RegEx.create_from_string(k[1])
