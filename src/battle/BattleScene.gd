@@ -65,8 +65,8 @@ const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04
 const SIGNATURE_HITSTOP := 0.14  # seconds of hit-stop on a signature's impact
 const SIGNATURE_TINT_ALPHA := 0.32  # how strongly the backdrop takes the boss's colour during its signature
 var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
-## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
-const ENEMY_EDGE_SHIFT := -24.0
+## The enemies stand this much nearer their edge (struktured 2026-11-01); -24 left 9 px at 200% and the pixel face's wider column took 14.
+const ENEMY_EDGE_SHIFT := -12.0
 const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
 const PARTY_RANK_GAP := 8.0  # between neighbouring members' bodies across the two ranks
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with

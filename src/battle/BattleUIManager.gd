@@ -944,8 +944,11 @@ func _fit_turn_info() -> void:
 	var cap: float = room if room > 0.0 else base_strip.x
 	var w: float = clampf(need, minf(base_strip.x, cap), cap)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF if need <= w + 0.5 else TextServer.AUTOWRAP_WORD_SMART
+	label.update_minimum_size()
 	strip.offset_left = -w * 0.5
 	strip.offset_right = w * 0.5
+	strip.offset_bottom = strip.offset_top + base_strip.y
+	strip.notification(Container.NOTIFICATION_SORT_CHILDREN)  ## the line breaks at the new width now, not on the next frame
 	strip.offset_bottom = strip.offset_top + base_strip.y
 
 
