@@ -212,7 +212,7 @@ func test_every_real_turn_line_fits_the_strip_at_every_preset() -> void:
 				over.append("'%s' drew at %dpx, not the setting's %d (the fit must add room, never shrink)" % [line, px, scaled])
 			if w > avail + 0.5:
 				over.append("'%s' @%dpx needs %.0f of %.0f" % [line, px, w, avail])
-			if panel.size.x > maxf(room, 400.0) + 0.5:
+			if panel.size.x > room + 0.5:
 				over.append("'%s' widened the strip to %.0f, past the %.0f between the side panels" % [line, panel.size.x, room])
 		gut.p("%sx widest fitted line: %.0fpx of %.0f — %s" % [str(s), worst_w, avail, worst])
 		assert_eq(over, [],
@@ -313,3 +313,36 @@ func test_a_long_line_does_not_shrink_the_strip_forever() -> void:
 			("after a long line, a SHORT line must return to the full size %d. Got %s across four "
 			+ "turns — a fit that compounds never recovers, so the strip stays tiny for the rest of "
 			+ "the battle.") % [scaled, str(seen)])
+
+
+## The FIRST fit runs at scene build, before any layout pass; it must already read the setting and the real room.
+func test_the_first_fit_at_200_percent_already_has_its_size_and_room() -> void:
+	_scene = await _build(2.0)
+	var label: Label = _scene.get_node_or_null(TURN_INFO)
+	var panel: Control = _scene.get_node_or_null("UI/TurnInfoPanel")
+	assert_false(label == null or panel == null, "fixture: the strip and its panel must exist")
+	if label == null or panel == null:
+		return
+	var scaled: int = TextScale.scaled(int(label.get_meta(&"base_font_px", 0)))
+	gut.p("first fit @2.0: '%s' %dpx, strip %.0f of room %.0f" % [label.text, label.get_theme_font_size(&"font_size"), panel.size.x, _scene._ui_manager.turn_strip_room()])
+	assert_eq(label.get_theme_font_size(&"font_size"), scaled, "the build's own fit draws at the setting's %d px" % scaled)
+	assert_lte(panel.size.x, _scene._ui_manager.turn_strip_room() + 0.5, "and its strip already sits inside the room")
+
+
+## A room under the shipped 400px (a wide enemy column) narrows the strip rather than laying it over the panels.
+func test_a_room_under_400_narrows_the_strip_instead_of_covering_the_panels() -> void:
+	_scene = await _build(1.0)
+	var label: Label = _scene.get_node_or_null(TURN_INFO)
+	var panel: Control = _scene.get_node_or_null("UI/TurnInfoPanel")
+	var enemy: Control = _scene.get_node_or_null("UI/EnemyStatusPanel")
+	assert_false(label == null or panel == null or enemy == null, "fixture: the strip, its panel and the enemy column must exist")
+	if label == null or panel == null or enemy == null:
+		return
+	enemy.offset_right = 500.0
+	await get_tree().process_frame
+	var room: float = _scene._ui_manager.turn_strip_room()
+	assert_lt(room, 400.0, "CONTROL: the widened column must leave less than 400px of room (got %.0f)" % room)
+	label.text = "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)"
+	_scene._ui_manager._fit_turn_info()
+	assert_lte(panel.size.x, room + 0.5, "the strip narrows to the %.0f px room (got %.0f)" % [room, panel.size.x])
+	assert_ne(label.autowrap_mode, TextServer.AUTOWRAP_OFF, "and wraps the line it can no longer hold")

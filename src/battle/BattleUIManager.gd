@@ -941,7 +941,8 @@ func _fit_turn_info() -> void:
 	var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
 	var room: float = turn_strip_room()
 	var need: float = font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x + inset
-	var w: float = clampf(need, base_strip.x, maxf(base_strip.x, room))
+	var cap: float = room if room > 0.0 else base_strip.x
+	var w: float = clampf(need, minf(base_strip.x, cap), cap)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF if need <= w + 0.5 else TextServer.AUTOWRAP_WORD_SMART
 	strip.offset_left = -w * 0.5
 	strip.offset_right = w * 0.5
