@@ -190,7 +190,7 @@ func _is_called(fn: String, corpus: String) -> bool:
 	var uses: int = RegEx.create_from_string("\\b%s\\b" % fn).search_all(corpus).size()
 	var defs: int = RegEx.create_from_string("func\\s+%s\\b" % fn).search_all(corpus).size()
 	## A has_method("fn") probe asks whether the reader exists, never calls it (ai .804 V2: it kept a dead reader live).
-	var probes: int = RegEx.create_from_string("has_method\\(\\s*\"%s\"\\s*\\)" % fn).search_all(corpus).size()
+	var probes: int = RegEx.create_from_string("has_method\\(\\s*&?[\"']%s[\"']\\s*\\)" % fn).search_all(corpus).size()
 	return uses - probes > defs
 
 
@@ -264,6 +264,10 @@ func test_the_dead_reader_check_can_say_yes() -> void:
 	var probe := "func g():\n\tif d.has_method(\"get_zz_lines\"):\n\t\tpass\n"
 	assert_eq(_dead_readers("zz_lines", unused, accessor + probe), ["A.get_zz_lines"], "a has_method probe alone is not a caller")
 	assert_eq(_dead_readers("zz_lines", used, accessor + probe + caller), [], "CONTROL: a probe beside a real call stays live")
+	var sn_probe := "func h():\n\tif d.has_method(&\"get_zz_lines\") or d.has_method('get_zz_lines'):\n\t\tpass\n"
+	assert_eq(_dead_readers("zz_lines", unused, accessor + sn_probe), ["A.get_zz_lines"], "the StringName and single-quote probes are not callers")
+	var by_name := "func k():\n\td.call(\"get_zz_lines\", 1)\n"
+	assert_eq(_dead_readers("zz_lines", unused, accessor + by_name), [], "CONTROL: call(\"fn\") is a real caller")
 	assert_gt(_code_by_file.size(), 200, "CONTROL: the per-file corpus is the whole src tree")
 
 
