@@ -1295,6 +1295,7 @@ const _EXAMINE_DESCRIBES := {
 	"eldertree_grafted_branch": VillagePropScript.Kind.TREE,
 	"frosthold_meltwater_mark": VillagePropScript.Kind.FENCE,
 	"grimhollow_lantern_ledger": VillagePropScript.Kind.LAMP_POST,
+	"eldertree_gravestone": VillagePropScript.Kind.GRAVESTONE,
 	"grimhollow_warning": VillagePropScript.Kind.SIGNPOST,
 	"sandrift_caravan_post": VillagePropScript.Kind.SIGNPOST,
 }
