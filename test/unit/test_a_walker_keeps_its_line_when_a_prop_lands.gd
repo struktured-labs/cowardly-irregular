@@ -101,3 +101,23 @@ func test_control_the_index_deal_re_dealt_the_cast() -> void:
 					redealt += 1
 					break
 	assert_gt(redealt, 0, "the index deal re-dealt no bystander, so this file reproduces nothing")
+
+
+func test_a_walker_never_paces_through_someone_standing_still() -> void:
+	await _ensure_built()
+	## Anchors ignore NPCs; the deal itself must not, or a walker paces through a villager who stands still.
+	var judged: int = 0
+	for b in _built:
+		var v = b["village"]
+		var standing := {}
+		for nd in v.npcs.get_children():
+			if nd is Node2D and not (nd is WanderingNPC):
+				for r in v._keep_clear_rects(nd, false):
+					v._mark_cells(standing, r)
+		for run in v._stable_walker_runs(v._get_ambient_walkers().size()):
+			var rr: Rect2i = v._run_rect(run)
+			for y in range(rr.position.y, rr.end.y):
+				for x in range(rr.position.x, rr.end.x):
+					assert_false(standing.has(Vector2i(x, y)), "%s: a walker's line %s crosses a standing NPC at %s" % [b["path"].get_file(), str(run), str(Vector2i(x, y))])
+			judged += 1
+	assert_gt(judged, 15, "CONTROL: walker lines were judged (%d)" % judged)
