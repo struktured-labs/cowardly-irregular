@@ -1268,7 +1268,6 @@ const _EXAMINE_OFFSETS := {
 	"grimhollow_lantern_ledger": Vector2i(-3, -1),
 	## cowir-story 2026-10-13 — second looks for the remaining six. Each is an institutional
 	## document, like that village's first entry, and each offset clears the first one's cell.
-	"brasston_redundancy_index": Vector2i(3, -1),
 	"ironhaven_strike_ledger": Vector2i(-1, 3),
 	"maple_heights_appendix_form": Vector2i(1, 3),
 	"rivet_row_incident_numbers": Vector2i(-3, 2),
