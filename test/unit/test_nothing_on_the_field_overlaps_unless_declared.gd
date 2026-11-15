@@ -89,6 +89,7 @@ func _field() -> SubViewport:
 	hint.show_hint(HINT_ID, "Movement", body)
 	for i in Toast.MAX_STACK:
 		Toast.show(host, "Saved at the Whispering Cave entrance (%d)" % i)
+	arrow.update(Vector2.ZERO)  # the next frame: the arrow sees the hint that just opened, as it does every frame in play
 	return vp
 
 

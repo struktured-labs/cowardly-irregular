@@ -101,7 +101,7 @@ func update(player_pos: Vector2) -> void:
 
 	_arrow_label.position = clear_of_hud(Rect2(edge_x, edge_y, box.x, box.y), _reserved_rects(), vp_size)
 	_arrow_label.size = box
-	_arrow_label.visible = true
+	_arrow_label.visible = not ducks_under_a_hint(Rect2(_arrow_label.position, box))
 
 
 ## The arrow's box: the widest arrow text at the live font size, never smaller than the authored box.
@@ -134,13 +134,17 @@ func _reserved_rects() -> Array:
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
-	# An open tutorial hint is in the way too: at 200% its 880 px panel reached the arrow's right-edge seat.
-	for h in _arrow_label.get_tree().get_nodes_in_group(Toast.HINT_GROUP):
-		if h.has_method("panel_rect") and h.get_viewport() == _arrow_label.get_viewport():
-			var hr: Rect2 = h.panel_rect()
-			if hr.has_area():
-				out.append(hr)
 	return out
+
+
+## True when an open tutorial hint's panel covers `seat`; the arrow ducks so the hint has the player's attention (cowir-main 25911).
+func ducks_under_a_hint(seat: Rect2) -> bool:
+	if _arrow_label == null or not _arrow_label.is_inside_tree():
+		return false
+	for h in _arrow_label.get_tree().get_nodes_in_group(Toast.HINT_GROUP):
+		if h.has_method("panel_rect") and h.get_viewport() == _arrow_label.get_viewport() and (h.panel_rect() as Rect2).intersects(seat):
+			return true
+	return false
 
 
 ## Up-right objectives put the arrow on the minimap legend ("Objective >" over "Cave"); step below a reserved
