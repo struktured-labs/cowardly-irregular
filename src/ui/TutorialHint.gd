@@ -91,6 +91,7 @@ func _build_ui() -> void:
 	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_body_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	UiFont.as_body(_body_label)  # a hint is sentences: the reading tier, not the pixel face's whole steps
 	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_body_label)
 
