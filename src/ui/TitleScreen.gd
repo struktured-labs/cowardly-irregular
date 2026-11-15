@@ -283,12 +283,13 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 		sub.mouse_filter = MOUSE_FILTER_IGNORE
 		row.add_child(sub)
 
-	# The authored height is a floor: the pixel face draws in whole steps, so the row is seated from what its text measures.
-	var need := label.position.y + label.get_minimum_size().y
+	# The authored height is a floor: the pixel face draws in whole steps, so the row is seated from the font's line (off-tree a Label's minimum is stale).
+	var f: Font = ThemeDB.fallback_font
+	var need: float = label.position.y + (f.get_height(TextScale.scaled(18)) if f else 24.0 * k)
 	var sub_node := row.get_node_or_null("Subtitle") as Label
 	if sub_node:
 		sub_node.position.y = maxf(sub_node.position.y, need)
-		need = sub_node.position.y + sub_node.get_minimum_size().y
+		need = sub_node.position.y + (f.get_height(TextScale.scaled(11)) if f else 16.0 * k)
 	row.custom_minimum_size.y = maxf(row_h, ceilf(need))
 	return row
 

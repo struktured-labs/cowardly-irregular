@@ -410,7 +410,8 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
 	hp_bar.name = "HPBar"
 	# Seated under the job line it DRAWS: at 150% the face steps the 10 px job to 2x while k still follows the name, and its g reached the HP label.
-	var hp_y: float = maxf(36.0 * k, job_label.position.y + job_label.get_minimum_size().y)
+	var jf: Font = _menu_font()
+	var hp_y: float = maxf(36.0 * k, job_label.position.y + (jf.get_height(TextScale.scaled(10)) if jf else 14.0 * k))
 	hp_bar.position = Vector2(58, hp_y)
 	card.add_child(hp_bar)
 
