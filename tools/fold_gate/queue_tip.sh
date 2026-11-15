@@ -53,8 +53,18 @@ queue() {
 list() {
   local dir; dir="$(dest_dir)"; local a v
   a="$(wc -l < "$dir/fold_args_$1.txt" 2>/dev/null || echo 0)"; v="$(wc -l < "$dir/fold_verified_$1.txt" 2>/dev/null || echo 0)"
-  cat "$dir/fold_args_$1.txt" 2>/dev/null
+  local gone=0 line b sha full
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue; b="${line%%:*}"; sha="${line#*:}"
+    # A queued sha is only good while its branch still holds it: a force-push after READY drops it,
+    # and fold.sh then SKIPs that branch at fold time. Say so here, before the fold.
+    full="$(git -C "$REPO" rev-parse -q --verify "$sha^{commit}" 2>/dev/null)"
+    if [ -n "$full" ] && git -C "$REPO" merge-base --is-ancestor "$full" "refs/remotes/origin/lane/$b" 2>/dev/null; then
+      echo "$line"
+    else echo "$line   <- GONE: no longer on origin/lane/$b (force-pushed or deleted); fold.sh would SKIP it"; gone=1; fi
+  done < "$dir/fold_args_$1.txt"
   echo "-- $a tip(s), $v verified sha(s)"; [ "$a" = "$v" ] || { echo "queue_tip: the two files disagree" >&2; return 1; }
+  return "$gone"
 }
 
 selftest() {
@@ -80,6 +90,9 @@ selftest() {
   arm "a sha that names nothing is refused"    1 "names no commit"                    queue 990 zz-queue-selftest 0000000feedface
   arm "a missing branch is refused"            1 "no origin/lane/zz-no-such"          queue 990 zz-no-such "${t2:0:9}"
   arm "a refusal wrote nothing"                0 "1 tip(s), 1 verified"              list 990
+  git -C "$REPO" update-ref "$ref" "$t3"
+  arm "a queued sha the branch lost is GONE"   1 "GONE: no longer on origin/lane/zz-queue-selftest" list 990
+  git -C "$REPO" update-ref "$ref" "$t2"
   local other="$d/other_checkout"; mkdir -p "$other"; git -C "$other" init -q
   out="$(cd "$other" && env -u QUEUE_DIR bash -c "source '$REPO/tools/fold_gate/queue_tip.sh' --source-only; dest_dir")"
   [ "$out" = "$other/tmp" ] && echo "ok   files land in the checkout you stand in" \
