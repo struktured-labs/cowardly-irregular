@@ -128,7 +128,8 @@ func test_at_100_percent_the_prompt_rests_clear_of_the_hint_bar() -> void:
 	if hint != null and hint.is_visible_in_tree():
 		rest = minf(rest, hint.get_global_rect().position.y - OverlayScript.PROMPT_GAP - o.get_theme_default_font().get_height(TextScale.scaled(OverlayScript.PROMPT_FONT)))
 	assert_almost_eq(prompt.position.y, rest, 1.0, "the prompt rests on .792's line, lifted only as far as the hint bar needs")
-	assert_almost_eq(o._bottom_margin(vp.y), OverlayScript.STRIP_BOTTOM_MARGIN, 0.01, "and the column keeps .792's bottom margin")
+	var margin: float = maxf(OverlayScript.STRIP_BOTTOM_MARGIN, vp.y - rest + OverlayScript.PROMPT_GAP + 2.0)
+	assert_almost_eq(o._bottom_margin(vp.y), margin, 0.5, "and the column stands clear of the prompt (.792's 64, or more where the prompt lifted)")
 	assert_almost_eq(o._ch(), OverlayScript.CARD_H, 0.01, "a card keeps its .792 height: its content fits inside it")
 	assert_almost_eq(o._gap, OverlayScript.CARD_GAP, 0.01, "and the cards keep their .792 gap")
 	assert_false(o._compact, "and their .792 padding: compact is only for a column that overflows")
