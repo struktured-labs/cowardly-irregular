@@ -75,14 +75,22 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 
 
 ## CONTROL: at 100% the card is exactly the shipped card, so the fix moves nothing a player sees today at the default.
-func test_at_100_percent_the_card_is_the_shipped_card() -> void:
+## .792 pinned 100/[4,36,52,68]/28 exactly; the dial-9 face (struktured 2026-11-14) draws a taller 100% line, so the shipped card scales by it.
+func test_at_100_percent_the_card_is_the_shipped_card_scaled_by_its_drawn_line() -> void:
 	var m: Control = await _menu(1.0)
 	var card: Control = m._party_panels[0]
-	assert_eq(card.size.y, 100.0, "the card is 100 px tall")
-	assert_eq(_row_tops(card), [4.0, 36.0, 52.0, 68.0], "name, HP, MP and level sit where they did")
-	assert_eq(card.position.y, 28.0, "under a 28 px title row")
+	var k: float = maxf(1.0, snappedf(_name_line(card) / 20.0, 0.05))
+	gut.p("100%% drawn name line %.1f px -> card factor %.2f" % [_name_line(card), k])
+	assert_almost_eq(card.size.y, 100.0 * k, 0.01, "the card is the shipped 100 px times its drawn line's factor")
+	var want: Array = []
+	for t in [4.0, 36.0, 52.0, 68.0]:
+		want.append(t * k)
+	var got: Array = _row_tops(card)
+	for i in want.size():
+		assert_almost_eq(float(got[i]), float(want[i]), 0.01, "%s sits at its shipped spot times the factor" % ROWS[i])
+	assert_almost_eq(card.position.y, 28.0 * k, 0.01, "under the shipped 28 px title row times the factor")
 	var small: Control = (await _menu(0.8))._party_panels[0]
-	assert_eq(small.size.y, 100.0, "and 80% never shrinks the shipped card")
+	assert_gte(small.size.y, 100.0, "and 80% never shrinks the card under the shipped 100 px")
 
 
 ## The name's drawn line height: what the card grows by. Not the setting (a 200% font draws a 39 px line, not 40).
@@ -98,6 +106,7 @@ func test_the_rows_step_apart_as_the_text_grows() -> void:
 	var card0: Control = (await _menu(1.0))._party_panels[0]
 	var base: Array = _row_tops(card0)
 	var line0: float = _name_line(card0)
+	var grown := 0
 	for s in _presets():
 		if float(s) <= 1.0:
 			continue
@@ -106,11 +115,17 @@ func test_the_rows_step_apart_as_the_text_grows() -> void:
 		var name_px: int = (m._party_panels[0].get_node("NameLabel") as Label).get_theme_font_size("font_size")
 		assert_gt(name_px, 14, "CONTROL @%s: the name's font grew (%d px)" % [s, name_px])
 		var grow: float = _name_line(m._party_panels[0]) / line0
-		assert_gt(grow, 1.1, "CONTROL @%s: the name's line grew (x%.3f)" % [s, grow])
+		## The face draws whole steps, so some presets grow the px and not the line; there a row may not step tighter than at 100%.
+		if grow <= 1.1:
+			for i in range(1, tops.size()):
+				assert_gte(tops[i] - tops[i - 1], (base[i] - base[i - 1]) - SLACK, "@%s (line x%.3f) %s never steps tighter than at 100%%" % [s, grow, ROWS[i]])
+			continue
+		grown += 1
 		for i in range(1, tops.size()):
 			var step: float = tops[i] - tops[i - 1]
 			var want: float = (base[i] - base[i - 1]) * (grow - SNAP)
 			assert_gte(step, want - SLACK, "@%s %s starts %.0f px under %s; its 100%% step grown with the text is %.0f" % [s, ROWS[i], step, ROWS[i - 1], want])
+	assert_gt(grown, 0, "CONTROL: at least one preset grows the drawn line, or the grown-step arm above never ran")
 
 
 ## Every line a card draws ends inside the card, every card inside the panel (or its scroll), and no card on the title.

@@ -43,6 +43,8 @@ func _init(style: Dictionary = {}) -> void:
 	_panel.add_child(_title)
 	_desc = _label(Color(_style.get("text", Color.WHITE)))
 	_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	## Sentences read in the BODY tier (UiFont's header); the pixel face's whole steps capped the fit at 3x, under MIN_FACTOR.
+	UiFont.as_body(_desc)
 	_panel.add_child(_desc)
 	_rows = Control.new()
 	_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE

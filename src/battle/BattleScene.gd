@@ -8400,12 +8400,12 @@ func _show_address_banner(text: String) -> void:
 	panel.add_child(label)
 	# Anchor at top-center.
 	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	panel.position = Vector2(-150, 60)
-	panel.size = Vector2(300, 0)  # auto-resize via child
-	## ...and that auto-resize grows RIGHTWARD by default, so the banner sat off-centre. Measured:
-	## the one string both callers pass renders 332px inside this 300px box, centre 656 vs 640 — 16px
-	## right, every time, because the text is a fixed literal. Same class as the hint bar's fallback.
+	## Grow BOTH before any size is set: the label measures off-tree, so a wider face clamped the box END-ward at `size =`.
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var banner_w: float = maxf(300.0, panel.get_combined_minimum_size().x)
+	panel.offset_left = -banner_w * 0.5
+	panel.offset_right = banner_w * 0.5
+	panel.offset_top = 60.0
 	panel.modulate = Color(1, 1, 1, 0)
 	panel.z_index = 200
 	add_child(panel)
