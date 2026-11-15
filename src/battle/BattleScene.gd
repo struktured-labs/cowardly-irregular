@@ -551,6 +551,8 @@ func _ready() -> void:
 	if BattleManager.has_signal("monster_counter_started"):
 		BattleManager.monster_counter_started.connect(_on_monster_counter_started)
 		BattleManager.monster_counter_finished.connect(_on_monster_counter_finished)
+	if BattleManager.has_signal("boss_cadence_bark"):
+		BattleManager.boss_cadence_bark.connect(_on_boss_cadence_bark)
 	if BattleManager.has_signal("boss_jailbreak_landed"):
 		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
 	# Wave G — end-of-fight boss gloat line (victory / defeat).
@@ -690,6 +692,8 @@ func _exit_tree() -> void:
 	if BattleManager.has_signal("monster_counter_started") and BattleManager.monster_counter_started.is_connected(_on_monster_counter_started):
 		BattleManager.monster_counter_started.disconnect(_on_monster_counter_started)
 		BattleManager.monster_counter_finished.disconnect(_on_monster_counter_finished)
+	if BattleManager.has_signal("boss_cadence_bark") and BattleManager.boss_cadence_bark.is_connected(_on_boss_cadence_bark):
+		BattleManager.boss_cadence_bark.disconnect(_on_boss_cadence_bark)
 	if BattleManager.has_signal("boss_jailbreak_landed") and BattleManager.boss_jailbreak_landed.is_connected(_on_boss_jailbreak_landed):
 		BattleManager.boss_jailbreak_landed.disconnect(_on_boss_jailbreak_landed)
 
@@ -8098,6 +8102,15 @@ func _wipe_bark() -> void:
 func _boss_bark(boss: Node, trigger: String) -> void:
 	if boss == null or not is_instance_valid(boss) or not boss.has_meta("is_boss"):
 		return
+	if not _boss_bark_allowed():
+		return
+	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
+	if line != "":
+		SoundManager.play_voiced_line(boss.combatant_name, line, self)
+
+
+## Whether a boss may bark aloud now: never in turbo or the grind console, over a scripted line, a bubble or another voice.
+func _boss_bark_allowed() -> bool:
 	var bubble_up := false
 	for b in BattleSpeechBubble._live:
 		if is_instance_valid(b):
@@ -8105,11 +8118,14 @@ func _boss_bark(boss: Node, trigger: String) -> void:
 			break
 	var blocked: bool = (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible) \
 			or bubble_up or SoundManager.is_voiced_line_playing() or SoundManager._voice_player.playing
-	if not BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked):
+	return BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked)
+
+
+## A cadence boss's authored charge/break bark is voiced when a recording exists; the bubble follows on boss_taunt.
+func _on_boss_cadence_bark(boss: Combatant, line: String) -> void:
+	if boss == null or not is_instance_valid(boss) or not _boss_bark_allowed():
 		return
-	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
-	if line != "":
-		SoundManager.play_voiced_line(boss.combatant_name, line, self)
+	SoundManager.play_voiced_line(boss.combatant_name, line, self)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
