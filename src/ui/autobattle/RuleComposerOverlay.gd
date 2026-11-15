@@ -440,6 +440,8 @@ func _populate_preview(result: Dictionary) -> void:
 		label.name = "PreviewLabel"
 		label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		# Sentences read on the BODY tier, which scales smoothly (main 25814); the scroll below is the fallback.
+		UiFont.as_body(label)
 		_preview_panel.add_child(label)
 		_apply_text_scale()
 	var preview_rules = result.get("rules", [])

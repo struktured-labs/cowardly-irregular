@@ -267,12 +267,32 @@ func _key(keycode: Key) -> InputEventKey:
 	return e
 
 
+## Grown note by note (the composer writes one per repaired rule, up to 64) until it outgrows the box in the face it draws; null if 32 do not.
+func _open_overflowing(scale: float):
+	var o = await _open_populated(scale)
+	var c: Dictionary = COMPOSITION.duplicate(true)
+	var notes: Array = c["notes"]
+	while o._preview_overflow() <= 0.0 and notes.size() < 32:
+		notes.append("%s (rule %d)" % [COMPOSITION["notes"][notes.size() % 3], notes.size() + 1])
+		o._show_preview(c)
+		await _settle()
+	return o
+
+
+func test_the_preview_reads_in_the_body_tier() -> void:
+	var o = await _open_populated(1.0)
+	var preview: Label = o.get_node("Panel/VBox/PreviewPanel/PreviewLabel")
+	assert_eq(UiFont.of(preview), UiFont.body(), "the composition is sentences, so it draws in the reading face (main 25814)")
+
+
 func test_an_overflowing_preview_pages_down_to_its_last_line() -> void:
-	var o = await _open_populated(2.0)
+	var o = await _open_overflowing(2.0)
 	var box := o.get_node("Panel/VBox/PreviewPanel") as Control
 	var preview: Label = o.get_node("Panel/VBox/PreviewPanel/PreviewLabel")
 	var over: float = o._preview_overflow()
-	assert_gt(over, 0.0, "CONTROL: at 200%% the composition must outgrow its box (%.0f in %.0f), or nothing here scrolls" % [preview.size.y, box.size.y])
+	assert_gt(over, 0.0, "CONTROL: a grown composition must outgrow its box at 200%% (%.0f in %.0f), or nothing here scrolls" % [preview.size.y, box.size.y])
+	var status: Label = o.get_node("Panel/VBox/StatusLabel")
+	assert_string_contains(status.text, "Scroll (%s)" % o._scroll_hint_text(), "an overflowing preview says how to scroll it")
 	assert_ne(o._scroll_hint_text(), "", "CONTROL: the scroll hint names an input")
 	var presses: int = int(ceil(over / maxf(1.0, o._preview_page()))) + 1
 	for _i in presses:
@@ -286,7 +306,7 @@ func test_an_overflowing_preview_pages_down_to_its_last_line() -> void:
 
 
 func test_the_right_stick_scrolls_the_preview_too() -> void:
-	var o = await _open_populated(2.0)
+	var o = await _open_overflowing(2.0)
 	assert_gt(o._preview_overflow(), 0.0, "CONTROL: the preview overflows at 200%")
 	var m := InputEventJoypadMotion.new()
 	m.axis = JOY_AXIS_RIGHT_Y
@@ -303,6 +323,7 @@ func test_the_right_stick_scrolls_the_preview_too() -> void:
 
 func test_control_a_preview_that_fits_shows_no_scroll_hint() -> void:
 	var o = await _open_populated(1.0)
+	await _settle()
 	assert_eq(o._preview_overflow(), 0.0, "CONTROL: at 100% the composition fits its box")
 	var status: Label = o.get_node("Panel/VBox/StatusLabel")
 	assert_false(status.text.contains("Scroll"), "a preview that fits never advertises a dead input: '%s'" % status.text)
