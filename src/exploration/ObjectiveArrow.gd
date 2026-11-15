@@ -134,6 +134,12 @@ func _reserved_rects() -> Array:
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
+	# An open tutorial hint is in the way too: at 200% its 880 px panel reached the arrow's right-edge seat.
+	for h in _arrow_label.get_tree().get_nodes_in_group(Toast.HINT_GROUP):
+		if h.has_method("panel_rect") and h.get_viewport() == _arrow_label.get_viewport():
+			var hr: Rect2 = h.panel_rect()
+			if hr.has_area():
+				out.append(hr)
 	return out
 
 
