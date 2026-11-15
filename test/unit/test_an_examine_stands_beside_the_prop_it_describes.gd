@@ -138,7 +138,6 @@ func test_each_door_examine_stands_beside_its_door() -> void:
 const AWAITING := {
 	"brasston_clocktower_plaque": "ruling: Brasston has a Clockwork Loft, not a clocktower",
 	"brasston_redundancy_index": "ruling: a card-catalogue drawer, better moved indoors",
-	"eldertree_gravestone": "a GRAVESTONE prop",
 	"frosthold_cairn": "a CAIRN prop",
 	"harmonia_statue": "a STATUE prop",
 	"ironhaven_furnace_log": "a FURNACE prop",
