@@ -1,8 +1,8 @@
 extends GutTest
 
-## A model line reaches display Labels (the battle bubbles). What no font on the display chain draws is tofu there, so
-## clean_model_text drops it, reading coverage from the live chain so it can never flatten a character the chain draws
-## (main 25572). The second net behind the Latin fallback: a reply in another script is dropped and the caller falls back.
+## A model line reaches display Labels (bubbles) and the reading face (NPC replies). What NEITHER live chain draws is tofu
+## everywhere, so clean_model_text drops it; a character either chain draws is never flattened (main 25572, adhoc 25641).
+## The second net behind the Latin fallback: a reply in another script is dropped and the caller falls back.
 
 const DRAGON := "龍"
 
@@ -18,7 +18,10 @@ func after_each() -> void:
 func _covered(ch: String) -> bool:
 	if ch.unicode_at(0) < 128 or UiFont.draws(ch):
 		return true
-	for f in UiFont.display().fallbacks:
+	var chain: Array = UiFont.display().fallbacks.duplicate()
+	chain.append(UiFont.body())
+	chain.append_array(UiFont.body().fallbacks)
+	for f in chain:
 		if f is Font and (f as Font).has_char(ch.unicode_at(0)):
 			return true
 	return false

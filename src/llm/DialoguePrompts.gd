@@ -1549,12 +1549,16 @@ static func clean_model_text(text: String) -> String:
 const DISPLAY_STAND_INS := {"—": " - ", "–": "-", "…": "...", "‘": "'", "’": "'", "“": "\"", "”": "\""}
 
 
-## A model line can reach a display Label (the battle bubbles), where a character no font in the chain draws is tofu.
-## Coverage is read from the live chain, so nothing it draws is ever touched; with no pixel face installed it is a no-op.
+## A model line reaches display Labels (bubbles) and the reading face (NPC replies), where an undrawn character is tofu.
+## Dropped only when NEITHER live chain draws it, so no surface loses a character its face draws; a no-op with the face off.
 static func display_drawable(text: String) -> String:
 	if not UiFont.is_installed():
 		return text
-	var chain: Array = UiFont.display().fallbacks
+	var chain: Array = UiFont.display().fallbacks.duplicate()
+	var reading: Font = UiFont.body()
+	if reading != null:
+		chain.append(reading)
+		chain.append_array(reading.fallbacks)
 	var out: String = ""
 	for i in text.length():
 		var ch: String = text[i]
