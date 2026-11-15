@@ -909,7 +909,7 @@ var ambient_walker_lines: Dictionary = {}
 func _add_ambient_walkers(roster: Array) -> int:
 	if roster.is_empty() or npcs == null:
 		return 0
-	var runs := _walker_runs(roster.size())
+	var runs := _stable_walker_runs(roster.size())
 	var added: int = 0
 	for spec in roster:
 		if added >= runs.size():
@@ -930,14 +930,64 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
 
 
+## Each walker's line, dealt by ANCHOR rather than by list index: a prop, an examine or an NPC re-deals only the walker it touches.
+func _stable_walker_runs(want: int) -> Array:
+	var anchors := _walker_runs(want, true)
+	var pool: Array = _walker_candidates(false)
+	pool = pool[0] + pool[1]
+	var pairs: Array = []
+	for i in want:
+		for j in pool.size():
+			var d: float = 1.0e6 - float(_run_rect(pool[j]).get_area())
+			if i < anchors.size():
+				d = Vector2(_run_rect(anchors[i]).get_center()).distance_to(Vector2(_run_rect(pool[j]).get_center()))
+			pairs.append([d, i, j])
+	pairs.sort_custom(func(a, b): return a[0] < b[0] if a[0] != b[0] else (a[1] < b[1] if a[1] != b[1] else a[2] < b[2]))
+	var dealt := {}
+	for p in pairs:
+		if dealt.has(p[1]) or dealt.values().any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(pool[p[2]]))):
+			continue
+		dealt[p[1]] = pool[p[2]]
+	var out: Array = []
+	for i in want:
+		if not dealt.has(i):
+			break
+		out.append(dealt[i])
+	return out
+
+
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
 ## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
-func _walker_runs(want: int = 0) -> Array:
+## `structural` reads only the ground, buildings and exits: the anchors a prop or a villager cannot move.
+func _walker_runs(want: int = 0, structural: bool = false) -> Array:
+	var cands: Array = _walker_candidates(structural)
+	if cands[0].is_empty() and cands[1].is_empty():
+		return []
+	var runs: Array = cands[0]
+	var chosen: Array = []
+	for r in runs:
+		var clash := false
+		for c in chosen:
+			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
+				clash = true
+				break
+		if not clash:
+			chosen.append(r)
+	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
+	if chosen.size() < want:
+		for r in cands[1]:
+			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
+				chosen.append(r)
+	return chosen
+
+
+## [rows longest first, columns longest first]; `structural` ignores props, NPCs and treasures.
+func _walker_candidates(structural: bool) -> Array:
 	var size := _walker_grid_size()
 	if size == Vector2i.ZERO:
-		return []
+		return [[], []]
 	var avoid := {}
-	for container in [npcs, buildings, treasures, transitions]:
+	for container in ([buildings, transitions] if structural else [npcs, buildings, treasures, transitions]):
 		if container == null:
 			continue
 		for n in container.get_children():
@@ -946,6 +996,9 @@ func _walker_runs(want: int = 0) -> Array:
 				continue
 			for r in _keep_clear_rects(n as Node2D, container == transitions):
 				_mark_cells(avoid, r)
+	var blocked := _prop_blocked
+	if structural:
+		_prop_blocked = {}
 	var margin: int = 3
 	var runs: Array = []
 	for y in range(margin, size.y - margin):
@@ -967,21 +1020,9 @@ func _walker_runs(want: int = 0) -> Array:
 		var lp: int = p[1].x - p[0].x
 		var lq: int = q[1].x - q[0].x
 		return lp > lq if lp != lq else (p[0].y < q[0].y if p[0].y != q[0].y else p[0].x < q[0].x))
-	var chosen: Array = []
-	for r in runs:
-		var clash := false
-		for c in chosen:
-			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
-				clash = true
-				break
-		if not clash:
-			chosen.append(r)
-	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
-	if chosen.size() < want:
-		for r in _walker_column_runs(size, avoid, margin):
-			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
-				chosen.append(r)
-	return chosen
+	var cols := _walker_column_runs(size, avoid, margin)
+	_prop_blocked = blocked
+	return [runs, cols]
 
 
 func _walker_column_runs(size: Vector2i, avoid: Dictionary, margin: int) -> Array:
