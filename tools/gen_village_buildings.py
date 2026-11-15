@@ -186,6 +186,9 @@ STYLE_PROP = ("A single small 16-bit SNES-era JRPG pixel-art OBJECT -- not a bui
               "text or letters, no ground, no grass, no shadow on the ground, nothing else in the picture. The background "
               "is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The object fills the frame and is centred.")
 PROPS = {
+    "gravestone_medieval": (1, "A single old weathered grey stone headstone with a rounded top, standing upright, seen "
+                               "straight on: cracked and lichen-stained, a little moss and a tuft of grass at its foot, "
+                               "completely blank (NO letters, NO carving, NO date). Short and squat, about as tall as it is wide."),
     "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
                              "growing from the centre of the upper tier. Seen straight-on from the front and a little "
@@ -231,9 +234,6 @@ PROPS = {
                             "holographic label light (no letters)."),
     "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
                             "stripe and stencil-style marks (no readable letters)."),
-    "gravestone_medieval": (1, "A single old weathered grey stone headstone with a rounded top, standing upright, seen "
-                               "straight on: cracked and lichen-stained, a little moss and a tuft of grass at its foot, "
-                               "completely blank (NO letters, NO carving, NO date). Short and squat, about as tall as it is wide."),
     "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
