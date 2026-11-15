@@ -137,7 +137,6 @@ func test_each_door_examine_stands_beside_its_door() -> void:
 ## Village examines whose object no village draws yet (ruling 24242): each names what it waits for. Anchor one and it must leave this list.
 const AWAITING := {
 	"brasston_clocktower_plaque": "ruling: Brasston has a Clockwork Loft, not a clocktower",
-	"brasston_redundancy_index": "ruling: a card-catalogue drawer, better moved indoors",
 	"frosthold_cairn": "a CAIRN prop",
 	"harmonia_statue": "a STATUE prop",
 	"ironhaven_furnace_log": "a FURNACE prop",
@@ -167,4 +166,4 @@ func test_every_village_examine_is_anchored_or_says_what_it_waits_for() -> void:
 		assert_false(anchored and AWAITING.has(id), "%s is anchored now: take it off AWAITING" % id)
 	assert_gt(village, 0, "CONTROL: the pack has village examines")
 	for id in AWAITING:
-		assert_true(pack.has(id), "AWAITING names %s, which is not in the examine pack" % id)
+		assert_true(str((pack.get(id, {}) as Dictionary).get("scene", "")).ends_with("_village"), "AWAITING names %s, which is not a village examine in the pack" % id)
