@@ -87,7 +87,7 @@ func _teardown(n: Node2D) -> void:
 ## measured against a dead host and every size came back **0.0**, which reads as "nothing is too
 ## wide" and is a false clean on the whole corpus. Caught by this file's own width control, not by
 ## the arm: 105 headings all measured 0 px and the arm would have reported them all fitting.
-func _measure(txt: String, font: int, wrap_at: float) -> Vector2:
+func _measure(txt: String, font: int, wrap_at: float, face: Font = null) -> Vector2:
 	if _host == null or not is_instance_valid(_host) or not _host.is_inside_tree():
 		_host = Control.new()
 		_host.size = Vector2(900, 700)
@@ -96,6 +96,8 @@ func _measure(txt: String, font: int, wrap_at: float) -> Vector2:
 	var lab := Label.new()
 	lab.text = txt
 	lab.add_theme_font_size_override("font_size", font)
+	if face != null:
+		lab.add_theme_font_override("font", face)
 	if wrap_at > 0.0:
 		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lab.size = Vector2(wrap_at, 0.0)
@@ -155,7 +157,7 @@ func _pages_of(root: Node, where: String, bad: Array, stats: Dictionary) -> void
 			var body: String = str(e.get("body", ""))
 			var head: String = str(e.get("heading", ""))
 			if body != "":
-				var bh: float = (await _measure(body, ReadableProp.BODY_FONT, box.x)).y
+				var bh: float = (await _measure(body, ReadableProp.BODY_FONT, box.x, UiFont.body())).y
 				stats["tall"] = max(float(stats.get("tall", 0.0)), bh)
 				if bh > box.y:
 					bad.append("%s: '%s' page %d body needs %.0f px of %.0f — %.0f px drawn nowhere, and a %d-page provider gives no arrow to reach it; trim about %.0f px" % [
