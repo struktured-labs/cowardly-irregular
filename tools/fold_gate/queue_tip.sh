@@ -78,6 +78,27 @@ list() {
       if [ -n "$have" ] && [ -n "$miss" ]; then echo "COUPLE BROKEN: queued$have but not$miss — fold all or none"; gone=1; fi
     done < "$cf"
   fi
+  # The fold applies the tips IN THIS ORDER onto origin/main; check that now with merge-tree, chained
+  # through commit-tree so each tip meets everything before it (.804: spite x a glacius tip collided in
+  # BattleScene.gd, found by hand before the fold). Names the first tip that cannot apply and the
+  # earlier queued tip it collides with.
+  local base t tree prior
+  base="$(git -C "$REPO" rev-parse -q --verify refs/remotes/origin/main)" || base=""
+  if [ -n "$base" ] && [ "$gone" = 0 ]; then
+    while IFS=: read -r b sha; do
+      [ -n "$b" ] || continue
+      if tree="$(git -C "$REPO" merge-tree --write-tree "$base" "$sha" 2>/dev/null)"; then
+        base="$(git -C "$REPO" commit-tree "$(printf '%s' "$tree" | head -1)" -p "$base" -p "$sha" -m "queue_tip preview")"
+      else
+        prior=""
+        while IFS=: read -r pb ps; do
+          [ "$pb" = "$b" ] && break
+          git -C "$REPO" merge-tree --write-tree "$ps" "$sha" >/dev/null 2>&1 || prior="$prior $pb"
+        done < "$dir/fold_args_$1.txt"
+        echo "CONFLICT: $b ${sha} does not apply after the tips above it${prior:+ (collides with:$prior)}"; gone=1; break
+      fi
+    done < "$dir/fold_args_$1.txt"
+  fi
   return "$gone"
 }
 
@@ -114,6 +135,16 @@ selftest() {
   git -C "$REPO" update-ref "$ref" "$t3"
   arm "a queued sha the branch lost is GONE"   1 "GONE: no longer on origin/lane/zz-queue-selftest" list 990
   git -C "$REPO" update-ref "$ref" "$t2"
+  local c1 c2 blob1 blob2 tr1 tr2
+  blob1="$(printf 'one\n' | git -C "$REPO" hash-object -w --stdin)"; blob2="$(printf 'two\n' | git -C "$REPO" hash-object -w --stdin)"
+  tr1="$(printf '100644 blob %s\tzz_queue_selftest.txt\n' "$blob1" | git -C "$REPO" mktree)"; tr2="$(printf '100644 blob %s\tzz_queue_selftest.txt\n' "$blob2" | git -C "$REPO" mktree)"
+  c1="$(git -C "$REPO" commit-tree "$tr1" -p "$base" -m "queue selftest conflict 1")"; c2="$(git -C "$REPO" commit-tree "$tr2" -p "$base" -m "queue selftest conflict 2")"
+  git -C "$REPO" update-ref refs/remotes/origin/lane/zz-queue-c1 "$c1"; git -C "$REPO" update-ref refs/remotes/origin/lane/zz-queue-c2 "$c2"
+  arm "a clean pair passes the merge check"   0 "1 tip(s)"                                 list 990
+  queue 991 zz-queue-c1 "${c1:0:9}" >/dev/null 2>&1; QUEUE_DIR="$d" QUEUE_NO_FETCH=1 queue 991 zz-queue-c1 "${c1:0:9}" >/dev/null
+  QUEUE_DIR="$d" QUEUE_NO_FETCH=1 queue 991 zz-queue-c2 "${c2:0:9}" >/dev/null
+  arm "a tip that cannot apply is a CONFLICT"  1 "CONFLICT: zz-queue-c2 .* (collides with: zz-queue-c1)" list 991
+  git -C "$REPO" update-ref -d refs/remotes/origin/lane/zz-queue-c1; git -C "$REPO" update-ref -d refs/remotes/origin/lane/zz-queue-c2
   arm "a couple is recorded"                   0 "coupled: zz-queue-selftest zz-partner"  couple 990 lane/zz-queue-selftest zz-partner
   arm "a half-queued couple is BROKEN"         1 "COUPLE BROKEN: queued zz-queue-selftest but not zz-partner" list 990
   echo "zz-partner:${t2:0:9}" >> "$d/fold_args_990.txt"; echo "${t2:0:9}" >> "$d/fold_verified_990.txt"
