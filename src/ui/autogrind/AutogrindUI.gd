@@ -871,6 +871,18 @@ func _grid_row_height() -> float:
 	return h
 
 
+## The width a Label in this tree draws `text` at `px`: the face's metrics decide it, never a literal box.
+func _text_width_in_tree(text: String, px: int) -> float:
+	if not is_inside_tree():
+		return 0.0
+	var probe := Label.new()
+	add_child(probe)
+	var f: Font = probe.get_theme_font("font")
+	remove_child(probe)
+	probe.queue_free()
+	return 0.0 if f == null else f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+
+
 ## The inner width an action cell's label is given: insetting past the icon costs 20px of it.
 func _action_text_width(action: Dictionary) -> float:
 	var has_icon: bool = action.get("type", "") == "member_ability" and str(action.get("ability", "")) != ""
@@ -1189,7 +1201,7 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 	"""Create [+ Add Rule] button"""
 	if h < 0.0:
 		h = _grid_row_height()
-	var add_w := _grew(100)
+	var add_w: float = max(_grew(100), _text_width_in_tree("[+ Add Rule]", TextScale.scaled(10)) + 8.0)
 	var cell = Control.new()
 	cell.custom_minimum_size = Vector2(add_w, h)
 	cell.set_meta("cell_type", "add_rule")
