@@ -53,6 +53,11 @@ var _cancel_button: Button = null
 var _replace_toggle: CheckBox = null
 ## path -> the font size that node drew at before any override, so 100% is provably the shipped look.
 var _base_px: Dictionary = {}
+## How far the preview is scrolled down, in px; the right stick and PageUp/PageDown move it, the Bestiary's way (main 25805).
+var _preview_scroll: float = 0.0
+var _stick_y: float = 0.0
+var _status_base: String = ""
+var _scroll_hint_on: bool = false
 
 
 func _ready() -> void:
@@ -103,6 +108,7 @@ func _refresh_captions(device_name: String = "") -> void:
 		_confirm_button.text = _caption("Confirm", accept)
 	if _cancel_button != null:
 		_cancel_button.text = _caption("Cancel", _hint("ui_cancel", device_name))
+	_refresh_scroll_hint(device_name)
 
 
 func _hint(action: String, device_name: String) -> String:
@@ -165,6 +171,66 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("battle_advance") and not event.is_echo():
 		_on_regen_pressed()
 		get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadMotion and (event as InputEventJoypadMotion).axis == JOY_AXIS_RIGHT_Y:
+		var v: float = (event as InputEventJoypadMotion).axis_value
+		_stick_y = 0.0 if absf(v) < 0.5 else v
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey:
+		# Only MenuPaging's key branch: the shoulders keep their jobs here (R is Regenerate).
+		var page: int = MenuPaging.page_delta(event)
+		if page != 0 and _scroll_preview_by(float(page) * _preview_page()):
+			get_viewport().set_input_as_handled()
+
+
+func _process(delta: float) -> void:
+	if visible and absf(_stick_y) >= 0.5:
+		_scroll_preview_by(_stick_y * 360.0 * delta)
+
+
+func _preview_label() -> Label:
+	return _preview_panel.get_node_or_null("PreviewLabel") as Label if _preview_panel != null else null
+
+
+## How far the composition runs past its box; 0 when it fits.
+func _preview_overflow() -> float:
+	var label := _preview_label()
+	if label == null or not _preview_panel.visible or _preview_panel.size.y <= 0.0:
+		return 0.0
+	return maxf(0.0, label.get_minimum_size().y - _preview_panel.size.y)
+
+
+## A page keeps one line of context.
+func _preview_page() -> float:
+	var label := _preview_label()
+	if label == null:
+		return 0.0
+	return maxf(_preview_panel.size.y - float(label.get_line_height()), float(label.get_line_height()))
+
+
+## Clamped to the composition, like the Bestiary's detail pane; false when there is nothing to scroll.
+func _scroll_preview_by(dy: float) -> bool:
+	var over: float = _preview_overflow()
+	if over <= 0.0:
+		return false
+	_preview_scroll = clampf(_preview_scroll + dy, 0.0, over)
+	_preview_label().position.y = -_preview_scroll
+	return true
+
+
+## The pad's word for the stick is the same on every family; the keys come from the engine, never typed.
+func _scroll_hint_text() -> String:
+	if not Input.get_connected_joypads().is_empty():
+		return "R-Stick"
+	return "%s/%s" % [OS.get_keycode_string(KEY_PAGEUP), OS.get_keycode_string(KEY_PAGEDOWN)]
+
+
+## The scroll hint names the player's own binding and appears only once the preview overflows; it then stays, so the status line cannot flicker.
+func _refresh_scroll_hint(_device_name: String = "") -> void:
+	if _status_label == null or _status_base == "":
+		return
+	if not _scroll_hint_on and _preview_overflow() > 0.0:
+		_scroll_hint_on = true
+	_status_label.text = _status_base + (" · %s" % _caption("Scroll", _scroll_hint_text()) if _scroll_hint_on else "")
 
 
 func open(domain: String, character_id: String, current_rules: Array) -> void:
@@ -354,6 +420,7 @@ func _show_preview(result: Dictionary) -> void:
 	if _status_label != null:
 		_status_label.remove_theme_color_override("font_color")
 		_status_label.text = "Composed %d rule(s). Confirm to install, or Regenerate." % rule_count
+		_status_base = _status_label.text
 	if _preview_panel != null:
 		_preview_panel.visible = true
 		_populate_preview(result)
@@ -393,6 +460,12 @@ func _populate_preview(result: Dictionary) -> void:
 		for n in (notes as Array):
 			lines.append("  - %s" % str(n))
 	label.text = "\n".join(lines)
+	_preview_scroll = 0.0
+	label.position.y = 0.0
+	_scroll_hint_on = false
+	if not _preview_panel.resized.is_connected(_refresh_scroll_hint):
+		_preview_panel.resized.connect(_refresh_scroll_hint)
+	_refresh_scroll_hint.call_deferred()
 
 
 func _show_error(errors: Array) -> void:
