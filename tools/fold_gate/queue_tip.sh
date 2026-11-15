@@ -3,6 +3,7 @@
 #
 #   tools/fold_gate/queue_tip.sh NNN <branch> <sha>   (branch with or without the lane/ prefix)
 #   tools/fold_gate/queue_tip.sh NNN --list
+#   tools/fold_gate/queue_tip.sh NNN --couple <branch> <branch> ...   (all fold together or none do)
 #   tools/fold_gate/queue_tip.sh --selftest
 #
 # Until now each tip was checked with `git ls-remote` by hand and appended to tmp/fold_args_NNN.txt
@@ -64,7 +65,27 @@ list() {
     else echo "$line   <- GONE: no longer on origin/lane/$b (force-pushed or deleted); fold.sh would SKIP it"; gone=1; fi
   done < "$dir/fold_args_$1.txt"
   echo "-- $a tip(s), $v verified sha(s)"; [ "$a" = "$v" ] || { echo "queue_tip: the two files disagree" >&2; return 1; }
+  # A COUPLE is a set whose evidence was measured only together (.804: a census green only with
+  # threatblock AND toast in the tree). Pulling one member late must pull the rest, so a set that is
+  # partly queued is named here and fails the list.
+  local cf="$dir/fold_couples_$1.txt" set m have miss
+  if [ -f "$cf" ]; then
+    while IFS= read -r set; do
+      [ -n "$set" ] || continue; have=""; miss=""
+      for m in $set; do
+        if awk -F: -v b="$m" '$1==b{f=1} END{exit !f}' "$dir/fold_args_$1.txt"; then have="$have $m"; else miss="$miss $m"; fi
+      done
+      if [ -n "$have" ] && [ -n "$miss" ]; then echo "COUPLE BROKEN: queued$have but not$miss — fold all or none"; gone=1; fi
+    done < "$cf"
+  fi
   return "$gone"
+}
+
+couple() {
+  local nnn="$1" dir; shift; dir="$(dest_dir)"
+  [ "$#" -ge 2 ] || { echo "usage: queue_tip.sh NNN --couple <branch> <branch> ..." >&2; return 2; }
+  mkdir -p "$dir"; local m out=""; for m in "$@"; do out="$out ${m#lane/}"; done
+  echo "${out# }" >> "$dir/fold_couples_$nnn.txt"; echo "coupled:${out}"
 }
 
 selftest() {
@@ -93,6 +114,11 @@ selftest() {
   git -C "$REPO" update-ref "$ref" "$t3"
   arm "a queued sha the branch lost is GONE"   1 "GONE: no longer on origin/lane/zz-queue-selftest" list 990
   git -C "$REPO" update-ref "$ref" "$t2"
+  arm "a couple is recorded"                   0 "coupled: zz-queue-selftest zz-partner"  couple 990 lane/zz-queue-selftest zz-partner
+  arm "a half-queued couple is BROKEN"         1 "COUPLE BROKEN: queued zz-queue-selftest but not zz-partner" list 990
+  echo "zz-partner:${t2:0:9}" >> "$d/fold_args_990.txt"; echo "${t2:0:9}" >> "$d/fold_verified_990.txt"
+  out="$(QUEUE_DIR="$d" "$REPO/tools/fold_gate/queue_tip.sh" 990 --list 2>&1)"
+  printf '%s\n' "$out" | grep -q "COUPLE BROKEN" && { echo "FAIL a whole couple still reads BROKEN: $out"; fails=1; } || echo "ok   a whole couple is not BROKEN"
   local other="$d/other_checkout"; mkdir -p "$other"; git -C "$other" init -q
   out="$(cd "$other" && env -u QUEUE_DIR bash -c "source '$REPO/tools/fold_gate/queue_tip.sh' --source-only; dest_dir")"
   [ "$out" = "$other/tmp" ] && echo "ok   files land in the checkout you stand in" \
@@ -104,5 +130,5 @@ selftest() {
 case "${1:-}" in
   --source-only) return 0 2>/dev/null || exit 0 ;;
   --selftest) selftest ;;
-  *) [ "${2:-}" = "--list" ] && { list "$1"; exit; }; [ "$#" = 3 ] || { sed -n 3,5p "$0" >&2; exit 2; }; queue "$@" ;;
+  *) [ "${2:-}" = "--list" ] && { list "$1"; exit; }; [ "${2:-}" = "--couple" ] && { n="$1"; shift 2; couple "$n" "$@"; exit; }; [ "$#" = 3 ] || { sed -n 3,5p "$0" >&2; exit 2; }; queue "$@" ;;
 esac
