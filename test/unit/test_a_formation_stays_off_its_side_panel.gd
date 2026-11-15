@@ -58,7 +58,7 @@ func _build(lineup: Array) -> Node:
 	return scene
 
 
-## Waits for every party sprite to hold still for 3 frames (bounded), so a gap is read at rest, not mid-tween under load.
+## Waits for every party sprite's x to hold for 3 frames (bounded): y bobs at idle forever, and x is what a gap reads.
 func _settled(scene: Node) -> bool:
 	var last: Array = []
 	var still := 0
@@ -66,7 +66,7 @@ func _settled(scene: Node) -> bool:
 		await get_tree().process_frame
 		var now: Array = []
 		for s in scene.party_sprite_nodes:
-			now.append((s as Node2D).global_position)
+			now.append(snappedf((s as Node2D).global_position.x, 0.01))
 		still = still + 1 if now == last else 0
 		last = now
 		if still >= 3:

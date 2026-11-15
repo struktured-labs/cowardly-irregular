@@ -455,6 +455,11 @@ func _ready() -> void:
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
 	if enemy_panel_for_log:
 		enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)
+	## The turn strip's room is what the two side panels leave, so it refits whenever either one settles at its grown size.
+	for side in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+		var side_panel := get_node_or_null(side) as Control
+		if side_panel != null and _ui_manager != null:
+			side_panel.resized.connect(_ui_manager._fit_turn_info)
 	call_deferred("_reposition_battle_log_panel")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
