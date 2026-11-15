@@ -66,6 +66,8 @@ signal party_combat_line(combatant: Combatant, line: String, voice_trigger: Stri
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
 ## and pops a small bubble above the enemy sprite (non-blocking).
 signal boss_taunt(boss: Combatant, line: String)
+## A cadence boss's authored charge/break bark, sent just before its boss_taunt so the scene can voice it ahead of the bubble.
+signal boss_cadence_bark(boss: Combatant, line: String)
 ## A cadence boss started or stopped charging its signature (edges only: a two-turn charge emits true once).
 signal boss_charge_changed(boss: Combatant, charging: bool)
 ## A stun/silence/sleep landing mid-charge broke the breath.
@@ -2894,6 +2896,7 @@ func _speak_boss_bark(boss: Combatant, line: String) -> void:
 	if line.strip_edges() == "":
 		return
 	_log_boss_line(boss, line)
+	boss_cadence_bark.emit(boss, line)
 	boss_taunt.emit(boss, line)
 
 
