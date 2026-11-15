@@ -3,7 +3,7 @@ extends GutTest
 ## cowir-adhoc store frame / overworld 25378: walking into a shop, the keeper behind the counter was cut off at the view's top edge.
 
 const ShopInteriorScript := preload("res://src/maps/interiors/ShopInterior.gd")
-const EntryFocusScript := preload("res://src/maps/interiors/EntryFocus.gd")
+const EntryFocusScript := preload("res://src/exploration/EntryFocus.gd")
 const VIEW := Vector2(512, 288)
 const LIMITS := Rect2(0, -32, 512, 416)
 

@@ -16,7 +16,7 @@ enum ShopType { ITEM = 0, BLACK_MAGIC = 1, WHITE_MAGIC = 2, BLACKSMITH = 3 }
 @export var shop_name: String = "Shop"
 
 const TILE_SIZE: int = 32
-const EntryFocusScript := preload("res://src/maps/interiors/EntryFocus.gd")
+const EntryFocusScript := preload("res://src/exploration/EntryFocus.gd")
 
 ## Sign text shrinks between these to fit the 4-tile board; below the floor it would be unreadable.
 const SIGN_FONT_MAX: int = 11
