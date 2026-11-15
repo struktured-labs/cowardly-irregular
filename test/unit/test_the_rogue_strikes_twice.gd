@@ -200,7 +200,6 @@ func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
 		var ratio: float = float(rogue_total) / maxf(1.0, plain_total)
 		var want: float = _expected_ratio(rogue, d)
 		assert_almost_eq(ratio, want, RATIO_TOL, "grind: the Rogue's attack deals %.2fx a swing at DEF/ATK %.1f (1.2 raw under a^2/(a+d)); measured %.2f" % [want, d, ratio])
-	res.free()
 
 
 func _rogue_animator(parent: Node) -> ANIMATOR:
@@ -351,4 +350,3 @@ func test_the_grind_a_stored_charge_carries_both_strikes() -> void:
 		res._resolve_attack(rogue, target)
 		return target.amounts.duplicate()
 	_assert_whole_attack_charge("grind", attack, rogue)
-	res.free()
