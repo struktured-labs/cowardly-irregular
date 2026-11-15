@@ -369,6 +369,7 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 	# JSON responses are not cached (high variance + ephemeral by design).
 	var merged_opts: Dictionary = opts.duplicate()
 	merged_opts["json_mode"] = true
+	merged_opts["json_schema"] = to_json_schema(schema)
 
 	var raw: Variant = await _submit_and_wait(prompt, merged_opts)
 	if raw == null:
@@ -771,6 +772,23 @@ func _guard_json(raw: String, schema: Dictionary, fallback: Variant) -> Variant:
 			parsed[key] = member
 
 	return parsed
+
+
+const _JSON_TYPES := {"String": "string", "int": "integer", "float": "number", "bool": "boolean", "Array": "array", "Dictionary": "object"}
+
+
+## The guard's schema as a JSON Schema the server can constrain to; an unknown type name constrains nothing, as in the guard.
+static func to_json_schema(schema: Dictionary) -> Dictionary:
+	var props := {}
+	for key in schema.keys():
+		var spec: Variant = schema[key]
+		if spec is Array:
+			props[key] = {"enum": spec}
+		elif spec is String and _JSON_TYPES.has(spec):
+			props[key] = {"type": _JSON_TYPES[spec]}
+		else:
+			props[key] = {}
+	return {"type": "object", "properties": props, "required": schema.keys()}
 
 
 ## The enum entry `val` names, or null. JSON parses every number as a float and `2.0 in [1, 2, 3]` is false in Godot 4.
