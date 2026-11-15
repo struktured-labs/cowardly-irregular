@@ -2,6 +2,8 @@
 # fold.sh — build fold/v3.33.NNN from origin/main and the announced lane tips, then write its gate scripts.
 #
 #   tools/fold_gate/fold.sh NNN branch:sha [branch:sha ...]     (branch without the lane/ prefix)
+#   tools/fold_gate/fold.sh NNN      (no tips: reads the queue_tip.sh files tmp/fold_args_NNN.txt and
+#                                     tmp/fold_verified_NNN.txt, and refuses if queue_tip.sh NNN --list fails)
 #   FOLD_ALLOW_DELETE="path1 path2" declares deletions a READY said were intentional.
 #   FOLD_VERIFIED="sha1 sha2" vouches for tips whose READY carried the evidence while their history still
 #   holds an [UNVERIFIED] subject. Lanes label before verifying and post the numbers after, and striking a
@@ -30,6 +32,13 @@ vouched() {
 NNN="${1:-}"
 case "$NNN" in ''|*[!0-9]*) echo "usage: tools/fold_gate/fold.sh <release number> branch:sha ..." >&2; exit 2 ;; esac
 shift
+## No tips named: fold the queue. --list must pass first (no GONE sha, no half-queued couple, both files
+## agree), and FOLD_VERIFIED comes from the same queue unless the caller set it.
+if [ "$#" -eq 0 ] && [ -s "tmp/fold_args_$NNN.txt" ]; then
+  tools/fold_gate/queue_tip.sh "$NNN" --list || { echo "fold.sh: queue_tip.sh $NNN --list failed — fix the queue first" >&2; exit 2; }
+  [ -n "${FOLD_VERIFIED:-}" ] || FOLD_VERIFIED="$(tr '\n' ' ' < "tmp/fold_verified_$NNN.txt")"
+  set -- $(cat "tmp/fold_args_$NNN.txt")
+fi
 [ "$#" -gt 0 ] || { echo "fold.sh: no tips given" >&2; exit 2; }
 [ -z "$(git status --porcelain)" ] || { echo "fold.sh: working tree is dirty — refusing to start a fold on it" >&2; exit 2; }
 
