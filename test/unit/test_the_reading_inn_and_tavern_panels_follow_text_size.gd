@@ -198,21 +198,14 @@ func _tavern_edge_line(px: int, inner: float) -> String:
 	return ""
 
 
-func test_a_tavern_line_on_the_rounding_edge_fits_its_panel() -> void:
+## The dial-9 pixel face advances in whole pixels, so no line measures differently at a fractional width and at its floor: the rounding-edge defect cannot occur. This pins that premise; if it reds, the face gained fractional advances and the edge arm (git log -S _tavern_edge_line) must come back.
+func test_the_face_has_no_rounding_edge_for_the_tavern_floor() -> void:
 	GameState.text_size_scale = 0.8
 	var px := TextScale.scaled(TavernScript.DIALOGUE_FONT)
 	var k := k_of(TavernScript.DIALOGUE_FONT)
 	var inner := TavernScript.DIALOGUE_MIN.x * k - TavernScript.DIALOGUE_PAD * 2.0 * k
-	var edge := _tavern_edge_line(px, inner)
-	assert_ne(edge, "", "CONTROL: no candidate line measures differently at %.2f px and at its floor %d at 0.8x, so the tavern's floor changes nothing there; delete this arm" % [inner, int(floorf(inner))])
-	if edge == "":
-		return
-	var text := "*A regular raises a mug.*\n*Another one does too.*\n*The barkeep sighs.*\n" + edge
-	var l := _on_screen(autofree(TavernScript.new())._make_dialogue_layer(text))
-	var panel: Panel = l.get_parent()
-	assert_lte(_drawn_h(l), panel.size.y - TavernScript.DIALOGUE_PAD * 2.0 * k + 0.5,
-		"a tavern line on the rounding edge draws %d lines in a panel sized for fewer at 0.8x" % l.get_line_count())
-
+	assert_ne(inner, floorf(inner), "CONTROL: the 0.8x inner width %.2f must be fractional, else floor and width are the same number and this proves nothing" % inner)
+	assert_eq(_tavern_edge_line(px, inner), "", "a line measures differently at %.2f px and at %d: the face has fractional advances again, so restore the rounding-edge arm" % [inner, int(floorf(inner))])
 
 func test_the_tavern_dialogue_is_screen_space() -> void:
 	var layer = autofree(TavernScript.new())._make_dialogue_layer("*hm*")
