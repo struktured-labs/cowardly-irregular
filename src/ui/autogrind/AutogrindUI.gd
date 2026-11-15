@@ -1226,11 +1226,12 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 	cell.add_child(bg)
 
 	var label = Label.new()
+	## The override goes first: a size set before it is clamped to the minimum at the theme's default size.
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.text = "[+ Add Rule]"
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(add_w - 8.0, h - _grew(16))
-	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
@@ -1245,6 +1246,7 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 		cell.size.x = w
 		bg.size.x = w
 		hit.size.x = w
+		label.size.x = w - 8.0
 	label.minimum_size_changed.connect(fit)
 	fit.call()
 
