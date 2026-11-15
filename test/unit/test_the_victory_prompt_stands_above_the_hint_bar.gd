@@ -114,7 +114,7 @@ func test_no_card_draws_on_the_next_one_at_any_text_size() -> void:
 	assert_gt(judged, 0, "card pairs were judged")
 
 
-func test_at_100_percent_nothing_moves() -> void:
+func test_at_100_percent_the_prompt_rests_clear_of_the_hint_bar() -> void:
 	var s: Array = await _settled(1.0, 5)
 	var o: Control = s[1]
 	var vp: Vector2 = o.get_viewport_rect().size
@@ -122,7 +122,7 @@ func test_at_100_percent_nothing_moves() -> void:
 	assert_not_null(prompt, "CONTROL: the prompt was built")
 	if prompt == null:
 		return
-	## It rests on .792's line unless the hint bar's top is closer, and then sits exactly its gap above that top, no higher.
+	## It rests on .792's line unless the hint bar's top is closer, then sits exactly its gap above it. .792 pinned 662; the pixel face's taller line lifts it to 658 (struktured: the face ships at dial 9).
 	var hint := (s[0] as Node).get_node_or_null("UI/InputHintBar") as Control
 	var rest: float = vp.y - OverlayScript.PROMPT_REST
 	if hint != null and hint.is_visible_in_tree():
