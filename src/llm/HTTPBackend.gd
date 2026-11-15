@@ -45,8 +45,8 @@ signal models_listed(ok: bool, models: PackedStringArray, err: String)
 # Maps request_id → HTTPRequest node.
 var _inflight: Dictionary = {}
 
-# "base_url|model" keys whose server refused response_format json_object; JSON requests to them ask in the prompt only.
-var _json_object_refused: Dictionary = {}
+# "base_url|model" -> {format: true} for every JSON format that server refused; a JSON request steps down past them.
+var _json_refused: Dictionary = {}
 
 # Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
@@ -443,29 +443,39 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 	# Capture id in the lambda via a local variable — GDScript closures capture
 	# by reference, so we bind `_id` separately to avoid id being stale.
 	var _id := id
-	var carried: bool = _carries_json_object(opts)
+	var carried: String = _json_format(opts)
 	http.request_completed.connect(
 		func(result: int, response_code: int, _headers: PackedStringArray, body_bytes: PackedByteArray) -> void:
-			if carried and _retry_without_json_object(_id, prompt, opts, result, response_code, body_bytes):
+			if carried != "" and _retry_without(carried, _id, prompt, opts, result, response_code, body_bytes):
 				return
 			_on_request_completed(_id, result, response_code, body_bytes)
 	)
 
 
-## A server that takes only json_schema/text 400s on json_object, failing every JSON feature; retry once without it.
-func _retry_without_json_object(id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
+## A server that refuses the JSON format a request carried 400s naming it; remember that and retry once a rung lower.
+func _retry_without(format: String, id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
 	if result != HTTPRequest.RESULT_SUCCESS or code != 400:
 		return false
-	if not body.get_string_from_utf8().contains("response_format"):
+	if not body.get_string_from_utf8().contains("response_format" if api_format != "ollama" else "format"):
 		return false
-	_json_object_refused[_json_key()] = true
+	var refused: Dictionary = _json_refused.get(_json_key(), {})
+	refused[format] = true
+	_json_refused[_json_key()] = refused
 	_cleanup(id)
 	submit(id, prompt, opts)
 	return true
 
 
-func _carries_json_object(opts: Dictionary) -> bool:
-	return api_format != "ollama" and bool(opts.get("json_mode", false)) and not _json_object_refused.has(_json_key())
+## The richest JSON format this server has not refused: the caller's schema, then plain JSON mode, then the prompt alone.
+func _json_format(opts: Dictionary) -> String:
+	if not bool(opts.get("json_mode", false)):
+		return ""
+	var refused: Dictionary = _json_refused.get(_json_key(), {})
+	if opts.get("json_schema", {}) is Dictionary and not (opts.get("json_schema", {}) as Dictionary).is_empty() and not refused.has("json_schema"):
+		return "json_schema"
+	if not refused.has("json_object"):
+		return "json_object"
+	return ""
 
 
 func _json_key() -> String:
@@ -518,7 +528,6 @@ func _build_headers() -> PackedStringArray:
 func _build_body(prompt: String, opts: Dictionary) -> String:
 	var max_tokens: int = opts.get("max_tokens", 512)
 	var temperature: float = opts.get("temperature", 0.7)
-	var json_mode: bool = opts.get("json_mode", false)
 
 	var payload: Dictionary
 	match api_format:
@@ -532,8 +541,11 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 					"temperature": temperature,
 				},
 			}
-			if json_mode:
-				payload["format"] = "json"
+			match _json_format(opts):
+				"json_schema":
+					payload["format"] = opts["json_schema"]
+				"json_object":
+					payload["format"] = "json"
 		"openai", _:
 			payload = {
 				"model": model,
@@ -541,8 +553,11 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"max_tokens": max_tokens,
 				"temperature": temperature,
 			}
-			if _carries_json_object(opts):
-				payload["response_format"] = {"type": "json_object"}
+			match _json_format(opts):
+				"json_schema":
+					payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "reply", "schema": opts["json_schema"]}}
+				"json_object":
+					payload["response_format"] = {"type": "json_object"}
 
 	return JSON.stringify(payload)
 
