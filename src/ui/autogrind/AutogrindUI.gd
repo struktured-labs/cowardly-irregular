@@ -1279,23 +1279,25 @@ func _create_and_connector(h: float = -1.0) -> Control:
 func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	"""Draw OR connector between rows"""
 	var px: int = TextScale.scaled(11)
+	var f: Font = _label_face()
+	var line_h: float = 0.0 if f == null else f.get_height(px)
 	var bg = ColorRect.new()
 	bg.name = "R%dOr" % row_idx
 	bg.color = Color(0.5, 0.3, 0.1, 0.6)
 	bg.position = Vector2(4, y_pos - _grew(10))
 	bg.size = Vector2(_grew(28), _grew(20))
+	## The badge clips its label: the face's line box is taller than the badge, and nothing may draw past it.
+	bg.clip_contents = true
 	_grid_container.add_child(bg)
 
 	var label = Label.new()
 	label.name = "R%dOrText" % row_idx
 	label.text = "OR"
-	## The label sits ON the badge, centred in its height, so its box cannot leave the badge at any Text Size.
+	## Authored seat, lifted only when the face's line would hang past the badge into the next row (1.25x).
+	label.position = Vector2(8, minf(y_pos - _grew(8), y_pos + _grew(10) - line_h)) - bg.position
 	label.add_theme_font_size_override("font_size", px)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.position = Vector2(8, bg.position.y)
-	label.size = Vector2(_grew(28) - 8.0, bg.size.y)
 	label.add_theme_color_override("font_color", Color.ORANGE)
-	_grid_container.add_child(label)
+	bg.add_child(label)
 
 func _format_condition(condition: Dictionary) -> String:
 	"""Format condition for display"""
