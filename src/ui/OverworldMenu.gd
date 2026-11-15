@@ -409,19 +409,21 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	# HP Bar
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
 	hp_bar.name = "HPBar"
-	hp_bar.position = Vector2(58, 36.0 * k)
+	# Seated under the job line it DRAWS: at 150% the face steps the 10 px job to 2x while k still follows the name, and its g reached the HP label.
+	var hp_y: float = maxf(36.0 * k, job_label.position.y + job_label.get_minimum_size().y)
+	hp_bar.position = Vector2(58, hp_y)
 	card.add_child(hp_bar)
 
 	# MP Bar
 	var mp_bar = _create_stat_bar("MP", member.current_mp, member.max_mp, Color.CYAN, Color.DARK_CYAN)
 	mp_bar.name = "MPBar"
-	mp_bar.position = Vector2(58, 52.0 * k)
+	mp_bar.position = Vector2(58, hp_y + 16.0 * k)
 	card.add_child(mp_bar)
 
 	# EXP progress indicator
 	var exp_row = _create_exp_indicator(member)
 	exp_row.name = "EXPRow"
-	exp_row.position = Vector2(58, 68.0 * k)
+	exp_row.position = Vector2(58, hp_y + 32.0 * k)
 	card.add_child(exp_row)
 
 	# Dead indicator — always-present, visibility toggled per is_alive so a later Phoenix Down refresh (via _update_party_stats) can clear the overlay without a full rebuild (playtest 2026-07-15: Bard KO status persisted after in-menu revive because the overlay/label were only appended on first build).
@@ -446,7 +448,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	ailment_label.name = "AilmentLabel"
 	ailment_label.text = StatusNames.list_line(member.status_effects)
 	ailment_label.visible = ailment_label.text != ""
-	ailment_label.position = Vector2(58, 84.0 * k)
+	ailment_label.position = Vector2(58, hp_y + 48.0 * k)
 	ailment_label.size = Vector2(180.0 * k, 14.0 * k)
 	ailment_label.clip_text = true
 	ailment_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
