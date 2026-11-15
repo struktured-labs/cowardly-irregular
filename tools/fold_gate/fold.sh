@@ -16,6 +16,7 @@
 # way, .681). A conflicting merge is aborted and reported, never committed. Exit 0 = every tip merged;
 # 1 = some tip was skipped (the fold still exists, built from the rest, so read the report); 2 = usage.
 set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
 ## FOLD_REPO points the fold at another checkout (fold_selftest.sh uses a throwaway worktree).
 cd "${FOLD_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 2
 
@@ -33,17 +34,17 @@ vouched() {
 NNN="${1:-}"
 case "$NNN" in ''|*[!0-9]*) echo "usage: tools/fold_gate/fold.sh <release number> branch:sha ..." >&2; exit 2 ;; esac
 shift
+[ -z "$(git status --porcelain)" ] || { echo "fold.sh: working tree is dirty — refusing to start a fold on it" >&2; exit 2; }
+
+git fetch -q origin || { echo "fold.sh: git fetch failed — tips cannot be verified" >&2; exit 2; }
 ## No tips named: fold the queue. --list must pass first (no GONE sha, no half-queued couple, both files
 ## agree), and FOLD_VERIFIED comes from the same queue unless the caller set it.
 if [ "$#" -eq 0 ] && [ -s "tmp/fold_args_$NNN.txt" ]; then
-  tools/fold_gate/queue_tip.sh "$NNN" --list || { echo "fold.sh: queue_tip.sh $NNN --list failed — fix the queue first" >&2; exit 2; }
+  "$HERE/queue_tip.sh" "$NNN" --list || { echo "fold.sh: queue_tip.sh $NNN --list failed — fix the queue first" >&2; exit 2; }
   [ -n "${FOLD_VERIFIED:-}" ] || FOLD_VERIFIED="$(tr '\n' ' ' < "tmp/fold_verified_$NNN.txt")"
   set -- $(cat "tmp/fold_args_$NNN.txt")
 fi
 [ "$#" -gt 0 ] || { echo "fold.sh: no tips given" >&2; exit 2; }
-[ -z "$(git status --porcelain)" ] || { echo "fold.sh: working tree is dirty — refusing to start a fold on it" >&2; exit 2; }
-
-git fetch -q origin || { echo "fold.sh: git fetch failed — tips cannot be verified" >&2; exit 2; }
 PREV="$(sed -n 's/^const SEMVER := "\(.*\)"$/\1/p' src/meta/Version.gd)"
 [ -n "$PREV" ] || { echo "fold.sh: no SEMVER line in src/meta/Version.gd" >&2; exit 2; }
 NEXT="3.33.$NNN-alpha"
