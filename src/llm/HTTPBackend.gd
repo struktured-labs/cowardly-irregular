@@ -45,6 +45,9 @@ signal models_listed(ok: bool, models: PackedStringArray, err: String)
 # Maps request_id → HTTPRequest node.
 var _inflight: Dictionary = {}
 
+# "base_url|model" keys whose server refused response_format json_object; JSON requests to them ask in the prompt only.
+var _json_object_refused: Dictionary = {}
+
 # Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
 
@@ -427,10 +430,33 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 	# Capture id in the lambda via a local variable — GDScript closures capture
 	# by reference, so we bind `_id` separately to avoid id being stale.
 	var _id := id
+	var carried: bool = _carries_json_object(opts)
 	http.request_completed.connect(
 		func(result: int, response_code: int, _headers: PackedStringArray, body_bytes: PackedByteArray) -> void:
+			if carried and _retry_without_json_object(_id, prompt, opts, result, response_code, body_bytes):
+				return
 			_on_request_completed(_id, result, response_code, body_bytes)
 	)
+
+
+## A server that takes only json_schema/text 400s on json_object, failing every JSON feature; retry once without it.
+func _retry_without_json_object(id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
+	if result != HTTPRequest.RESULT_SUCCESS or code != 400:
+		return false
+	if not body.get_string_from_utf8().contains("response_format"):
+		return false
+	_json_object_refused[_json_key()] = true
+	_cleanup(id)
+	submit(id, prompt, opts)
+	return true
+
+
+func _carries_json_object(opts: Dictionary) -> bool:
+	return api_format != "ollama" and bool(opts.get("json_mode", false)) and not _json_object_refused.has(_json_key())
+
+
+func _json_key() -> String:
+	return "%s|%s" % [_base(), model]
 
 
 func cancel(id: String) -> void:
@@ -502,7 +528,7 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"max_tokens": max_tokens,
 				"temperature": temperature,
 			}
-			if json_mode:
+			if _carries_json_object(opts):
 				payload["response_format"] = {"type": "json_object"}
 
 	return JSON.stringify(payload)
