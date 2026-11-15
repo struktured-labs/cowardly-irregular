@@ -21,22 +21,26 @@ def git(*a):
     return subprocess.run(["git", *a], capture_output=True, text=True, check=True).stdout
 
 
-def commits(sha):
+def commits(sha, seen):
+    # A commit reachable from two queued tips (a lane stacked on another, or a merge re-tip) is one
+    # change: list it under the first tip that carries it, never twice.
     out = git("log", "--no-merges", "--format=%H %s", f"origin/main..{sha}")
     for row in out.splitlines():
         h, _, subj = row.partition(" ")
-        if subj and not subj.startswith("chore: bump"):
-            yield subj, git("show", "--name-only", "--format=", h).split()
+        if h in seen or not subj or subj.startswith("chore: bump"):
+            continue
+        seen.add(h)
+        yield subj, git("show", "--name-only", "--format=", h).split()
 
 
 def main(nnn):
-    players, behind = [], []
+    players, behind, seen = [], [], set()
     for line in open(f"tmp/fold_args_{nnn}.txt"):
         line = line.strip()
         if not line:
             continue
         branch, sha = line.split(":", 1)
-        for subj, paths in commits(sha):
+        for subj, paths in commits(sha, seen):
             if ships(paths):
                 players.append(subj)
             else:
@@ -49,6 +53,9 @@ def main(nnn):
 
 
 def selftest():
+    seen = {"aaa"}
+    dup = [r for r in ["aaa", "bbb", "bbb"] if not (r in seen or seen.add(r))]
+    dedupe_ok = dup == ["bbb"]
     arms = [
         ("tools only is behind the scenes", ["tools/fold_gate/fold.sh"], False),
         ("a test only is behind the scenes", ["test/unit/test_x.gd"], False),
@@ -58,7 +65,8 @@ def selftest():
         ("project.godot ships", ["project.godot"], True),
         ("a path merely containing src/ does not", ["tools/src/x.py"], False),
     ]
-    fails = 0
+    fails = 0 if dedupe_ok else 1
+    print(("ok   " if dedupe_ok else "FAIL ") + "a commit already listed is not listed again")
     for label, paths, want in arms:
         ok = ships(paths) == want
         fails += not ok
