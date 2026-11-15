@@ -8035,6 +8035,11 @@
       "tier": "T1",
       "source": "gpt-image-2, straight-on medieval street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. T1, artist veto applies."
     },
+    "signpost_medieval": {
+      "path": "res://assets/sprites/props/medieval/signpost.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on medieval waymarker: three blank arrow boards over a notice board, post bottom-centre, 24x64 so it stands 1x2 tiles (struktured 2026-11-01: procgen props must go; asked for by cowir-overworld for Sandrift's caravan marker and Grimhollow's notice) -- tools/gen_village_buildings.py --props signpost_medieval. T1, artist veto applies."
+    },
     "lamp_post_suburban": {
       "path": "res://assets/sprites/props/suburban/lamp_post.png",
       "tier": "T1",

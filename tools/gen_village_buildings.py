@@ -231,6 +231,11 @@ PROPS = {
                             "holographic label light (no letters)."),
     "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
                             "stripe and stencil-style marks (no readable letters)."),
+    "signpost_medieval": (1, "A single weathered wooden village signpost, exactly TWICE as tall as it is wide: one straight "
+                             "upright wooden post, near its top three short painted wooden arrow boards pointing left, right "
+                             "and left (blank, no letters), and below them a small square wooden notice board nailed to the "
+                             "post with a pinned blank paper. The post meets the bottom edge in the centre. Narrow: the arrows "
+                             "stick out only a little either side of the post."),
     "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
@@ -238,7 +243,7 @@ KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
 ## Props whose art must stand a fixed height: the lamp's light anchor sits 50px above its base (VillageProp), and the
 ## TREE prop's footprint is 1x3, so 96px.
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
-               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96}
+               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96, "signpost_medieval": 64}
 
 ## Frosthold's pine stands the TREE footprint's 96px like tree_medieval.
 PROP_HEIGHT["tree_frosthold"] = 96
