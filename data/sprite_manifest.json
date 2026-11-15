@@ -8080,6 +8080,11 @@
       "tier": "T1",
       "source": "gpt-image-2, straight-on round stone well with a peaked roof and winch; keyed everywhere so the backdrop between its posts is clear, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     },
+    "gravestone_medieval": {
+      "path": "res://assets/sprites/props/medieval/gravestone.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on weathered rounded-top headstone, blank (no lettering, no date), moss and grass at its foot, 32x33 on a 1x1 footprint (struktured 2026-11-01: procgen props must go; asked for by cowir-overworld for Eldertree's Unmarked Grave) -- tools/gen_village_buildings.py --props gravestone_medieval. T1, artist veto applies."
+    },
     "barrel": {
       "path": "res://assets/sprites/props/common/barrel.png",
       "tier": "T1",
