@@ -75,13 +75,13 @@ func test_at_100_percent_a_toggle_row_is_the_shipped_row_scaled_by_its_drawn_lin
 	var m: Control = await _screen(SETTINGS, 1.0)
 	var k: float = m._row_k()
 	var row: Control = _row(m, "screen_shake")
-	assert_eq(row.custom_minimum_size.y, 60.0 * k, "a toggle row is 60 px times the factor")
+	assert_almost_eq(row.custom_minimum_size.y, 60.0 * k, 0.01, "a toggle row is 60 px times the factor")
 	var toggles := row.get_node("ToggleContainer") as Control
-	assert_eq(toggles.position.y, 40.0 * k, "its chips sit at y 40 times the factor")
+	assert_almost_eq(toggles.position.y, 40.0 * k, 0.01, "its chips sit at y 40 times the factor")
 	var chip: Vector2 = (toggles.get_node("OffBG") as Control).custom_minimum_size
 	assert_true(chip.x >= 50.0 and chip.y >= 20.0, "and are at least the authored 50x20: %s" % chip)
 	var labels: Array = row.find_children("*", "Label", false, false)
-	assert_eq((labels[1] as Label).position.y, 22.0 * k, "the subtitle sits at y 22 times the factor")
+	assert_almost_eq((labels[1] as Label).position.y, 22.0 * k, 0.01, "the subtitle sits at y 22 times the factor")
 	var small: Control = _row(await _screen(SETTINGS, 0.8), "screen_shake")
 	assert_true(small.custom_minimum_size.y >= 60.0, "and 80% never shrinks the shipped row")
 

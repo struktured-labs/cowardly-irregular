@@ -284,7 +284,7 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 		row.add_child(sub)
 
 	# The authored height is a floor: the pixel face draws in whole steps, so the row is seated from the font's line (off-tree a Label's minimum is stale).
-	var f: Font = ThemeDB.fallback_font
+	var f: Font = UiFont.display()
 	var need: float = label.position.y + (f.get_height(TextScale.scaled(18)) if f else 24.0 * k)
 	var sub_node := row.get_node_or_null("Subtitle") as Label
 	if sub_node:
