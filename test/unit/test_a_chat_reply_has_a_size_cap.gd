@@ -175,3 +175,31 @@ func test_control_a_normal_listing_is_ready_and_listed() -> void:
 	var got: Dictionary = await _list(b)
 	assert_true(bool(got.get("ok", false)), "CONTROL: and lists its models, err=%s" % str(got.get("err", "")))
 	assert_eq(Array(got.get("models", PackedStringArray())), ["llama3"])
+
+
+## Files under src/ where HTTPRequest.new() outnumbers body_size_limit assignments; code only, comments stripped.
+func _uncapped(dir_path: String, out: Dictionary) -> int:
+	var seen: int = 0
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return 0
+	for sub in d.get_directories():
+		if not sub.begins_with("."):
+			seen += _uncapped(dir_path + "/" + sub, out)
+	for f in d.get_files():
+		if not f.ends_with(".gd"):
+			continue
+		var code: String = GdSource.code_of(dir_path + "/" + f)
+		var made: int = RegEx.create_from_string("HTTPRequest\\.new\\(\\)").search_all(code).size()
+		var capped: int = RegEx.create_from_string("\\.body_size_limit\\s*=").search_all(code).size()
+		seen += made
+		if made > capped:
+			out[dir_path + "/" + f] = "%d request(s), %d cap(s)" % [made, capped]
+	return seen
+
+
+func test_every_http_request_in_src_has_a_body_cap() -> void:
+	var bad := {}
+	var seen: int = _uncapped("res://src", bad)
+	assert_gte(seen, 4, "CONTROL: the walk finds the LLM and TTS clients' requests")
+	assert_eq(bad, {}, "an HTTPRequest with no body_size_limit reads a player-set server unbounded: %s" % str(bad))
