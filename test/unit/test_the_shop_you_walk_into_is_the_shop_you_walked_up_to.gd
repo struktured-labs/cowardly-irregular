@@ -288,6 +288,9 @@ func test_every_authored_shop_name_fits_on_its_own_sign() -> void:
 	assert_lte(block.x, board_px, "the wrapped name is %.0f px on a %.0f px board" % [block.x, board_px])
 	assert_lte(block.y, float(board.texture.get_height()), "the wrapped name needs %.0f px of a %.0f px board" % [block.y, float(board.texture.get_height())])
 	assert_eq(big_label.size, Vector2(board_px, float(board.texture.get_height())), "the wrapped label is the board's own box")
+	## The built node, not a font query: it must lay the name out on 2+ lines and show every one of them (cowir-adhoc 25894).
+	assert_gt(big_label.get_line_count(), 1, "the BUILT sign draws the long name on %d line(s), size %s" % [big_label.get_line_count(), str(big_label.size)])
+	assert_eq(big_label.get_visible_line_count(), big_label.get_line_count(), "the board shows %d of the sign's %d lines (size.y %.0f)" % [big_label.get_visible_line_count(), big_label.get_line_count(), big_label.size.y])
 	var short_label: Label = sign_label
 	assert_eq(short_label.autowrap_mode, TextServer.AUTOWRAP_OFF, "a name that fits one line does not wrap")
 
