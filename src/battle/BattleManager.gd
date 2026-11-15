@@ -66,8 +66,13 @@ signal party_combat_line(combatant: Combatant, line: String, voice_trigger: Stri
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
 ## and pops a small bubble above the enemy sprite (non-blocking).
 signal boss_taunt(boss: Combatant, line: String)
+## A cadence boss's authored charge/break bark, sent just before its boss_taunt so the scene can voice it ahead of the bubble.
+signal boss_cadence_bark(boss: Combatant, line: String)
 ## A cadence boss started or stopped charging its signature (edges only: a two-turn charge emits true once).
 signal boss_charge_changed(boss: Combatant, charging: bool)
+## A monster counter is about to resolve (started) and has resolved (finished): BattleScene lifts its numbers out of the attacker's swing and lands them on a beat of their own.
+signal monster_counter_started(monster: Combatant, target: Combatant, ability_id: String)
+signal monster_counter_finished(monster: Combatant, target: Combatant, ability_id: String)
 ## A stun/silence/sleep landing mid-charge broke the breath.
 signal boss_charge_broken(boss: Combatant, status: String)
 ## boss_jailbreak_landed: emitted after a player directive trips a
@@ -2894,6 +2899,7 @@ func _speak_boss_bark(boss: Combatant, line: String) -> void:
 	if line.strip_edges() == "":
 		return
 	_log_boss_line(boss, line)
+	boss_cadence_bark.emit(boss, line)
 	boss_taunt.emit(boss, line)
 
 
@@ -10502,8 +10508,10 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 		if persona_text != "":
 			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % DialoguePrompts.unrun_hyphens(persona_text)
 	var sample_block: String = ""
-	if voice_sample.strip_edges() != "":
-		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(voice_sample.strip_edges())
+	## Authored lines are "Name: 'text'"; the rules below forbid a speaker label, so the sample must not model one.
+	var sample_said: String = DialoguePrompts.spoken_line(voice_sample).strip_edges()
+	if sample_said != "":
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(sample_said)
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -11440,10 +11448,20 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	## a Scriptweaver-custom ability without a "name" field would
 	## surface as "monster counters with raw_snake_id!" in the
 	## log. Standard prettifier as fallback.
-	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
+	## A boss's first counter of the battle speaks BEFORE it lands; the combatant is new each battle, so the meta is per battle.
+	var bark_key := "counter_spoken_" + ability_id
+	if not monster.has_meta(bark_key):
+		monster.set_meta(bark_key, true)
+		var boss_dlg = get_node_or_null("/root/BossDialogue")
+		var line: String = boss_dlg.get_counter_first_line(_boss_persona_id(monster)) if boss_dlg != null and boss_dlg.has_method("get_counter_first_line") else ""
+		if line != "":
+			_log_boss_line(monster, line)
+			boss_taunt.emit(monster, line)
+	battle_log_message.emit("[color=%s]%s %s %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, str(ability.get("counter_verb", "counters with")), ability.get("name", ability_id.replace("_", " ").capitalize())])
 	## Skipping AP and MP — counters are free. Support (Adapt) must not fall through to a physical strike: the log already named the ability, and that path never applies its effect.
 	var targets: Array = _counter_targets(monster, attacker, ability)
 	var atype: String = str(ability.get("type", "physical"))
+	monster_counter_started.emit(monster, attacker, ability_id)
 	match atype:
 		"magic":
 			_execute_magic_ability(monster, ability, targets)
@@ -11453,6 +11471,7 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 			_execute_support_ability(monster, ability, targets)
 		_:
 			_execute_physical_ability(monster, ability, targets)
+	monster_counter_finished.emit(monster, attacker, ability_id)
 
 
 ## Who a counter actually lands on. Adapt and the duel stances are self/ally buffs; a strike still hits the attacker.

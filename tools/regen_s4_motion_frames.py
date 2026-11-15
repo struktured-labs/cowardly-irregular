@@ -12,7 +12,7 @@ So each connected piece goes, whole, to the panel holding its centroid; the seam
 
 Usage: uv run python tools/regen_s4_motion_frames.py <monster> <anim> [--quality medium] [--model M] [--dry]
        python3 tools/regen_s4_motion_frames.py --selftest
---selftest reaches numpy, PIL and scipy in memory only: no file opened, no directory walked, no subprocess, no network, nothing written."""
+--selftest reaches numpy, PIL and scipy in memory only (the ledger arms write to a list): no file opened, no directory walked, no subprocess, no network, nothing written."""
 import base64, io, json, sys, time
 import numpy as np
 from PIL import Image
@@ -99,6 +99,15 @@ def grade(frames, idle):
     return res
 
 
+def ledgered(rec, post, write):
+    """The call is already paid for when post-processing starts, so the ledger row is written whatever post() does:
+    a decode or normalise crash after the charge used to skip the write, and the batch's cap then undercounted."""
+    try:
+        post(rec)
+    finally:
+        write(rec)
+
+
 def _width(frame):
     xs = np.where((np.array(frame)[..., 3] >= 128).any(axis=0))[0]
     return int(xs.max() - xs.min() + 1) if len(xs) else 0
@@ -127,9 +136,21 @@ def selftest():
     lone = canvas(False); lone.paste((40, 160, 40, 255), (700, 700, 730, 730))   # a separate piece left of the seam stays left
     if _width(normalise(lone, idle)[1]) != 120:
         fails.append("a separate piece on the left of the seam was given to the strike frame")
+    rows = []
+    def crash(rec): raise ValueError("normalise blew up after the charge")
+    try:
+        ledgered({"usage": {"output_tokens": 1}}, crash, rows.append)
+        fails.append("a post-processing crash was swallowed; the caller would read a half-made record as a success")
+    except ValueError:
+        pass
+    if len(rows) != 1:
+        fails.append(f"a paid call whose post-processing crashed wrote {len(rows)} ledger rows, expected 1: the cap would not count it")
+    ok_rows = []; ledgered({}, lambda r: r.update(grade=[1]), ok_rows.append)   # CONTROL: a clean call writes one row, graded
+    if ok_rows != [{"grade": [1]}]:
+        fails.append(f"CONTROL: a clean call wrote {ok_rows}, expected one graded row")
     for f in fails:
         print("SELFTEST FAIL:", f)
-    print("selftest:", "FAIL" if fails else "ok (seam-crossing strike kept whole; control; a lone piece stays in its panel)")
+    print("selftest:", "FAIL" if fails else "ok (seam-crossing strike kept whole; control; a lone piece stays in its panel; a crash after the charge is still on the ledger)")
     return 1 if fails else 0
 
 
@@ -151,14 +172,16 @@ if __name__ == "__main__":
     t0 = time.time()
     resp = OpenAI().images.edit(model=model, image=buf, prompt=PROMPT.format(desc=desc, verb=verb, poses=poses),
                                 size="1536x1024", quality=quality, background="transparent", output_format="png", n=1)
-    dt = time.time() - t0
-    raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json)))
-    raw.save(f"{OUT}/{tag}__raw.png")
-    frames = normalise(raw, idle)
-    strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
-    for k, f in enumerate(frames): strip.alpha_composite(f, (k * 256, 0))
-    strip.save(f"{OUT}/{tag}__strip.png")
     usage = resp.usage.model_dump() if getattr(resp, "usage", None) else None
-    rec = {"tag": tag, "model": model, "monster": monster, "anim": anim, "quality": quality, "seconds": round(dt, 1), "usage": usage, "grade": grade(frames, idle), "raw_mode": raw.mode, "raw_size": raw.size}
-    open(f"{OUT}/calls.jsonl", "a").write(json.dumps(rec) + "\n")
+    rec = {"tag": tag, "model": model, "monster": monster, "anim": anim, "quality": quality, "seconds": round(time.time() - t0, 1), "usage": usage, "grade": None}
+
+    def post(rec):
+        raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json)))
+        raw.save(f"{OUT}/{tag}__raw.png")
+        frames = normalise(raw, idle)
+        strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
+        for k, f in enumerate(frames): strip.alpha_composite(f, (k * 256, 0))
+        strip.save(f"{OUT}/{tag}__strip.png")
+        rec.update(grade=grade(frames, idle), raw_mode=raw.mode, raw_size=raw.size)
+    ledgered(rec, post, lambda r: open(f"{OUT}/calls.jsonl", "a").write(json.dumps(r) + "\n"))
     print(json.dumps(rec))

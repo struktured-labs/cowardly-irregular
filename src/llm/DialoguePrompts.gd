@@ -503,21 +503,6 @@ static func build_npc_opening(
 	)
 
 
-## Build a prompt asking the LLM for a contextual NPC opening, with an explicit
-## topic hint to guide flavour (e.g. "a recent boss defeat" or "the party's low HP").
-##
-## Convenience overload of build_npc_opening; the topic is appended to persona.
-static func build_npc_opening_topical(
-	npc_name: String,
-	npc_persona: String,
-	location: String,
-	topic: String,
-	recent_events: Array,
-) -> String:
-	var extended_persona: String = "%s — today's topic: %s" % [npc_persona, topic]
-	return build_npc_opening(npc_name, extended_persona, location, recent_events)
-
-
 # ── Prompt builder: NPC sign-off ─────────────────────────────────────────────
 
 ## Build a prompt asking the LLM to generate a single CLOSING line — the
@@ -1535,7 +1520,7 @@ static func flatten_line(line: String) -> String:
 ## quotes its whole reply despite every prompt saying not to, so the box printed the marks and the log doubled them.
 ## Only a MATCHED outer pair goes, and only when that mark appears nowhere inside, so quoted speech in a line stays.
 static func clean_model_text(text: String) -> String:
-	var t: String = text.strip_edges()
+	var t: String = drop_reasoning(text).strip_edges()
 	for pair in [["\"", "\""], ["“", "”"], ["'", "'"], ["‘", "’"]]:
 		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
 			var inner: String = t.substr(1, t.length() - 2)
@@ -1543,6 +1528,20 @@ static func clean_model_text(text: String) -> String:
 				t = inner.strip_edges()
 				break
 	return unrun_hyphens(t)
+
+
+## A reasoning model (qwen3, deepseek-r1 on a BYOK endpoint) writes its thoughts in <think> tags ahead of the reply.
+## Every closed block goes; an unclosed one (cut off by the token cap) takes the rest, so the caller falls back.
+static func drop_reasoning(text: String) -> String:
+	var t: String = REASONING_BLOCK.sub(text, "", true)
+	var open: RegExMatch = REASONING_OPEN.search(t)
+	if open != null:
+		t = t.substr(0, open.get_start())
+	return t
+
+
+static var REASONING_BLOCK: RegEx = RegEx.create_from_string("(?is)<(think|thinking|reasoning)>.*?</\\1>")
+static var REASONING_OPEN: RegEx = RegEx.create_from_string("(?i)<(think|thinking|reasoning)>")
 
 
 ## Longest run of hyphen-joined words a model line keeps; longer runs read as one unbroken word (struktured, Voltharion).
