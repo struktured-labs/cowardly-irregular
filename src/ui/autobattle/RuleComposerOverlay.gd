@@ -224,12 +224,11 @@ func _scroll_hint_text() -> String:
 	return "%s/%s" % [OS.get_keycode_string(KEY_PAGEUP), OS.get_keycode_string(KEY_PAGEDOWN)]
 
 
-## The scroll hint names the player's own binding and appears only once the preview overflows; it then stays, so the status line cannot flicker.
+## The scroll hint names the player's own binding and shows while the settled box overflows; a mid-layout size must not latch it.
 func _refresh_scroll_hint(_device_name: String = "") -> void:
 	if _status_label == null or _status_base == "":
 		return
-	if not _scroll_hint_on and _preview_overflow() > 0.0:
-		_scroll_hint_on = true
+	_scroll_hint_on = _preview_overflow() > 0.0
 	_status_label.text = _status_base + (" · %s" % _caption("Scroll", _scroll_hint_text()) if _scroll_hint_on else "")
 
 
