@@ -1542,7 +1542,34 @@ static func clean_model_text(text: String) -> String:
 			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
 				t = inner.strip_edges()
 				break
-	return unrun_hyphens(t)
+	return unrun_hyphens(display_drawable(t)).strip_edges()
+
+
+## What a model may write that the display fonts do not draw becomes a stand-in when there is one, else nothing.
+const DISPLAY_STAND_INS := {"—": " - ", "–": "-", "…": "...", "‘": "'", "’": "'", "“": "\"", "”": "\""}
+
+
+## A model line can reach a display Label (the battle bubbles), where a character no font in the chain draws is tofu.
+## Coverage is read from the live chain, so nothing it draws is ever touched; with no pixel face installed it is a no-op.
+static func display_drawable(text: String) -> String:
+	if not UiFont.is_installed():
+		return text
+	var chain: Array = UiFont.display().fallbacks
+	var out: String = ""
+	for i in text.length():
+		var ch: String = text[i]
+		if ch.unicode_at(0) < 128 or UiFont.draws(ch) or _a_fallback_draws(ch, chain):
+			out += ch
+		else:
+			out += str(DISPLAY_STAND_INS.get(ch, ""))
+	return out
+
+
+static func _a_fallback_draws(ch: String, chain: Array) -> bool:
+	for f in chain:
+		if f is Font and (f as Font).has_char(ch.unicode_at(0)):
+			return true
+	return false
 
 
 ## Longest run of hyphen-joined words a model line keeps; longer runs read as one unbroken word (struktured, Voltharion).
