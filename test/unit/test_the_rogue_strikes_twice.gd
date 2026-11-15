@@ -143,6 +143,17 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 ## (autogrind 25200: two strikes each meeting the full defence came to 0.97x on W1 armour). Defence meets the attack once.
 ## A kill ends the attack; the dummy's HP outlasts every trial so no total here is cut short by one.
 const DEF_PER_ATK := [0.0, 0.5, 1.0, 2.0]
+## Noise on a 300-trial mean ratio; the failures the bands guard sit at 0.97x and 2.0x.
+const RATIO_TOL := 0.08
+
+
+## What a Rogue attack deals over a swing under take_damage's a^2/(a+d), defence met once: s^2 (1+d)/(s+d), s the summed strike scales.
+## So 1.2 raw is 1.2 at no defence and climbs toward s^2 = 1.44 as defence grows (the grind's "1.33-1.37, cause unmeasured").
+func _expected_ratio(rogue: Combatant, def_per_atk: float) -> float:
+	var s := 0.0
+	for st in rogue.basic_attack_strikes():
+		s += float(st["scale"])
+	return s * s * (1.0 + def_per_atk) / (s + def_per_atk)
 
 
 func _live_mean_per_attack(bm, attacker: Combatant, target: Combatant) -> float:
@@ -167,7 +178,8 @@ func test_live_deals_six_tenths_per_strike_at_every_defence() -> void:
 	for d in DEF_PER_ATK:
 		var target := _make("Dummy", "", false, int(60 * d))
 		var ratio: float = _live_mean_per_attack(bm, rogue, target) / maxf(1.0, _live_mean_per_attack(bm, plain, target))
-		assert_between(ratio, 1.05, 1.35, "live: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
+		var want: float = _expected_ratio(rogue, d)
+		assert_almost_eq(ratio, want, RATIO_TOL, "live: the Rogue's attack deals %.2fx a swing at DEF/ATK %.1f (1.2 raw under a^2/(a+d)); measured %.2f" % [want, d, ratio])
 
 
 func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
@@ -186,8 +198,8 @@ func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
 			plain_total += res._resolve_attack(plain, target)
 		assert_gt(float(rogue_hits) / maxf(1.0, target.hits), 1.7, "the grind's Rogue must land ~2 strikes per attack at DEF/ATK %.1f (%d vs %d)" % [d, rogue_hits, target.hits])
 		var ratio: float = float(rogue_total) / maxf(1.0, plain_total)
-		## Grind top is 1.45: it measured 1.33-1.37 at DEF/ATK >= 1 over 300 trials (cause unmeasured); the failures it guards are 0.97x and 2.0x.
-		assert_between(ratio, 1.05, 1.45, "grind: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
+		var want: float = _expected_ratio(rogue, d)
+		assert_almost_eq(ratio, want, RATIO_TOL, "grind: the Rogue's attack deals %.2fx a swing at DEF/ATK %.1f (1.2 raw under a^2/(a+d)); measured %.2f" % [want, d, ratio])
 	res.free()
 
 
