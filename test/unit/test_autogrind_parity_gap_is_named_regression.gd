@@ -57,7 +57,6 @@ const DECLARED := {
 	## ── the four UNDECIDED_LIVE_SIDE entries, resolved 2026-09-17; see that const for the method ──
 	"multiplier": "NOT an ability-field read: 0 as `ability[\"multiplier\"]`. Four whole-file hits, four different dictionaries — two EXP-bonus dicts (:1062/:1064), a FOLLOWUP dict (:1541), and a dict WRITE (:5367). None reaches an ability",
 	"penalty": "NOT an ability-field read: 0 as `ability[\"penalty\"]`. :1075 reads injury[\"penalty\"] off a permanent injury and :7353 writes a dict key. warp_to_boss authors it and live enforces nothing — BattleManager:6799 says so in its own comment — so both engines ignore it equally",
-	"name": "presentation only — the grind renders nothing",
 	"description": "presentation only — the grind renders nothing",
 	"summon_id": "live's own spawn is SCENE-SIDE: _execute_summon only emits monster_summoned, and BattleScene builds the combatant. Porting it headless also decides whether summoned enemies grant EXP, which changes the grind's reward economy — struktured's call, not a repair",
 	"summon_count": "see summon_id — same scene-side spawn",
@@ -68,7 +67,7 @@ const DECLARED := {
 	"reflect_damage_element": "UNREACHABLE in a grind, measured not assumed: frost_armor is the only ability authoring it and ice_dragon (Glacius) its only caster, a W1 boss that is not autogrind_spawned, in no encounter pool and no job kit. Live wired the retaliation 2026-10-06 (struktured, 'do them all'); the grind needs it the day a caster becomes reachable, which DECLARED_UNREACHABLE re-measures every run",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
-	## Same presentation class as `name`/`description`, but it earned a measurement rather than an
+	## Same presentation class as `description`, but it earned a measurement rather than an
 	## assumption: the comment at BattleManager.gd:6219 says it threads through "so BattleScene's
 	## THREAT_CLASS_BUFFS visual can key off it", and that consumer is REAL — BattleScene.gd:278
 	## declares it, :4789 reads it off the buff. Combatant.add_buff stores the tag under "class" and
