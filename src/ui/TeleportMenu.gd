@@ -148,7 +148,7 @@ func _build_ui() -> void:
 	# Subtitle / instructions (mention all input methods)
 	var sub = Label.new()
 	sub.name = "Instructions"
-	## Wrap and size are set BEFORE the text and the width AFTER add_child: text set first cached a one-line minimum (1018 px at the default size) that the width was clamped up to (adhoc 25890).
+	## Wrap and font size are set BEFORE the text: text set first cached a one-line minimum (1018 px at the default size) that the width was clamped up to (adhoc 25890).
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -161,8 +161,8 @@ func _build_ui() -> void:
 	sub.position = Vector2(16, _sub_y())
 	var sub_font: Font = get_theme_font("font", "Label")
 	_sub_h = sub_font.get_multiline_string_size(sub.text, HORIZONTAL_ALIGNMENT_LEFT, panel.size.x - 32.0, TextScale.scaled(11)).y if sub_font else 0.0
-	panel.add_child(sub)
 	sub.size = Vector2(panel.size.x - 32.0, 0)
+	panel.add_child(sub)
 
 	# Scroll container (so list works at any vertical resolution)
 	_scroll = ScrollContainer.new()
