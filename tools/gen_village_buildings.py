@@ -240,6 +240,9 @@ KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
                "banner": 64, "banner_steampunk": 64, "tree_medieval": 96}
 
+## Frosthold's pine stands the TREE footprint's 96px like tree_medieval.
+PROP_HEIGHT["tree_frosthold"] = 96
+
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
               "fills the ENTIRE square frame edge to edge with no border, no frame and no background colour of its own. "
