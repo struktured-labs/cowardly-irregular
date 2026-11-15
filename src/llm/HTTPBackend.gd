@@ -81,6 +81,13 @@ const PROBE_TIMEOUT_SEC: float = 1.5
 ## How stale a probe result may get before is_ready() kicks off a fresh one.
 const PROBE_INTERVAL_SEC: float = 30.0
 
+## The URL is player-set, so no reply is read unbounded. A 512-token completion is tens of KB.
+const MAX_REPLY_BYTES := 1024 * 1024
+## The probe and the model list read the listing endpoint; a hosted catalogue runs to a few MB.
+const MAX_LISTING_BYTES := 8 * 1024 * 1024
+var max_reply_bytes: int = MAX_REPLY_BYTES
+var max_listing_bytes: int = MAX_LISTING_BYTES
+
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -100,6 +107,7 @@ func _start_probe() -> void:
 	_probe_request = HTTPRequest.new()
 	_probe_request.name = "Probe"
 	_probe_request.timeout = PROBE_TIMEOUT_SEC
+	_probe_request.body_size_limit = max_listing_bytes
 	add_child(_probe_request)
 	_probe_request.request_completed.connect(_on_probe_completed)
 
@@ -196,6 +204,7 @@ func list_models() -> void:
 	_list_request = HTTPRequest.new()
 	_list_request.name = "ModelList"
 	_list_request.timeout = PROBE_TIMEOUT_SEC
+	_list_request.body_size_limit = max_listing_bytes
 	add_child(_list_request)
 	_list_request.request_completed.connect(_on_list_completed)
 	# Bound to a local like _start_probe's: a local assigned from a key-carrying call registers as
@@ -210,6 +219,9 @@ func list_models() -> void:
 
 func _on_list_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	_cleanup_list()
+	if result == HTTPRequest.RESULT_BODY_SIZE_LIMIT_EXCEEDED:
+		models_listed.emit(false, PackedStringArray(), "%s sent a model list over the %d-byte cap" % [_probe_url(), max_listing_bytes])
+		return
 	if result != HTTPRequest.RESULT_SUCCESS:
 		models_listed.emit(false, PackedStringArray(), "%s did not answer" % _probe_url())
 		return
@@ -411,6 +423,7 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 	if effective_timeout <= 0.0:
 		effective_timeout = 30.0
 	http.timeout = effective_timeout
+	http.body_size_limit = max_reply_bytes
 	add_child(http)
 	_inflight[id] = http
 
@@ -552,6 +565,8 @@ func _on_request_completed(id: String, result: int, response_code: int, body_byt
 
 	if result != HTTPRequest.RESULT_SUCCESS:
 		var err_msg: String = _result_to_error(result)
+		if result == HTTPRequest.RESULT_BODY_SIZE_LIMIT_EXCEEDED:
+			err_msg = "reply passed the %d-byte cap" % max_reply_bytes
 		request_finished.emit(id, false, "", err_msg)
 		return
 
