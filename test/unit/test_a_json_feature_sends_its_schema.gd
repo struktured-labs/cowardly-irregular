@@ -13,6 +13,8 @@ var _bodies: Array = []
 var _svc: Node
 var _orig_backends: Array = []
 var _orig_enabled: bool = false
+var _orig_active: Variant = null
+var _wired: HTTPBackend = null
 
 
 func after_each() -> void:
@@ -24,11 +26,15 @@ func after_each() -> void:
 	if _server != null:
 		_server.stop()
 	if _svc != null:
+		if _wired != null and is_instance_valid(_wired) and _wired.request_finished.is_connected(_svc._on_backend_finished):
+			_wired.request_finished.disconnect(_svc._on_backend_finished)
 		_svc._backends.clear()
 		for b in _orig_backends:
 			_svc._backends.append(b)
+		_svc._active_backend = _orig_active
 		_svc.llm_enabled = _orig_enabled
 		_svc = null
+		_wired = null
 
 
 func _respond(code: int, body: String) -> PackedByteArray:
@@ -177,8 +183,11 @@ func test_complete_json_puts_its_schema_on_the_wire() -> void:
 	assert_not_null(_svc, "CONTROL: the LLMService autoload exists")
 	_orig_backends = _svc._backends.duplicate()
 	_orig_enabled = _svc.llm_enabled
+	_orig_active = _svc._active_backend
 	_svc._backends.clear()
 	_svc._backends.append(b)
+	b.request_finished.connect(_svc._on_backend_finished)
+	_wired = b
 	_svc.llm_enabled = true
 	var done := [false]
 	var out := [null]
@@ -191,6 +200,7 @@ func test_complete_json_puts_its_schema_on_the_wire() -> void:
 		_serve()
 		await get_tree().process_frame
 	assert_true(done[0], "CONTROL: complete_json returned")
+	assert_true(_svc.is_idle(), "CONTROL: the service took the reply and is idle, so nothing carries into the next file")
 	assert_eq(_formats(), ["json_schema"], "the feature's own schema reached the server")
 	assert_eq(_bodies[0]["response_format"]["json_schema"]["schema"], LLMService.to_json_schema(SCHEMA))
 	assert_eq(str((out[0] as Dictionary).get("intent", "")), "hold", "and the guarded reply comes back to the caller")
