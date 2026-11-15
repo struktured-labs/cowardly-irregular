@@ -15,8 +15,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	if _res != null:
-		_res.free()
+	## HeadlessBattleResolver is RefCounted: dropping the reference frees it, and free() is a script error.
 	_res = null
 
 
