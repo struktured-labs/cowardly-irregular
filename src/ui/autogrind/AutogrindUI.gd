@@ -746,7 +746,11 @@ func _build_footer(vp_size: Vector2) -> void:
 	footer.text = _hint_strip_text()
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	var tog_w := _grew(200)
+	var tog_px: int = TextScale.scaled(11)
+	var ls_key: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X), "H")
+	## Each toggle is as wide as its own widest caption ("OFF") in the face: 200 held 304 px of PERMADEATH at 1.25x.
+	var tog_w: float = maxf(_grew(200), maxf(_text_width_in_tree("%s LUDICROUS: OFF" % ls_key, tog_px),
+		_text_width_in_tree("OPTIONS / [P] PERMADEATH: OFF", tog_px)) + 2.0 * _grew(8))
 	var tog_h := _grew(28)
 	# One line at 1.0x, three at 2.0x: anchor the strip by its own height or it leaves the screen.
 	footer.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -769,9 +773,9 @@ func _build_footer(vp_size: Vector2) -> void:
 	_add_pixel_border(ls_btn, ls_btn.size)
 
 	_ludicrous_toggle_label = Label.new()
-	_ludicrous_toggle_label.text = "%s LUDICROUS: %s" % [_pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X), "H"), "ON" if _ludicrous_speed_enabled else "OFF"]
+	_ludicrous_toggle_label.text = "%s LUDICROUS: %s" % [ls_key, "ON" if _ludicrous_speed_enabled else "OFF"]
 	_ludicrous_toggle_label.position = Vector2(_grew(8), _grew(6))
-	_ludicrous_toggle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	_ludicrous_toggle_label.add_theme_font_size_override("font_size", tog_px)
 	_ludicrous_toggle_label.add_theme_color_override(
 		"font_color",
 		Color.WHITE if _ludicrous_speed_enabled else DISABLED_COLOR
@@ -799,7 +803,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	_permadeath_toggle_label = Label.new()
 	_permadeath_toggle_label.text = "OPTIONS / [P] PERMADEATH: %s" % ("ON" if _staking_on() else "OFF")
 	_permadeath_toggle_label.position = Vector2(_grew(8), _grew(6))
-	_permadeath_toggle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	_permadeath_toggle_label.add_theme_font_size_override("font_size", tog_px)
 	_permadeath_toggle_label.add_theme_color_override(
 		"font_color",
 		Color.WHITE if _staking_on() else DISABLED_COLOR
@@ -950,7 +954,8 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 	arrow.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	arrow.add_theme_color_override("font_color", HEADER_COLOR)
 	_grid_container.add_child(arrow)
-	x_offset += CONNECTOR_WIDTH
+	## The gap holds the arrow it draws: at 2.0x "=>" ran 1 px into the first action cell.
+	x_offset += maxf(CONNECTOR_WIDTH, 4.0 + _text_width_in_tree("=>", TextScale.scaled(14)) + 2.0)
 
 	# Actions
 	for i in range(actions.size()):
@@ -1256,20 +1261,24 @@ func _create_and_connector(h: float = -1.0) -> Control:
 
 func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	"""Draw OR connector between rows"""
+	var px: int = TextScale.scaled(11)
 	var bg = ColorRect.new()
 	bg.name = "R%dOr" % row_idx
 	bg.color = Color(0.5, 0.3, 0.1, 0.6)
-	bg.position = Vector2(4, y_pos - _grew(10))
-	bg.size = Vector2(_grew(28), _grew(20))
 	_grid_container.add_child(bg)
 
 	var label = Label.new()
 	label.name = "R%dOrText" % row_idx
 	label.text = "OR"
-	label.position = Vector2(8, y_pos - _grew(8))
-	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	label.add_theme_font_size_override("font_size", px)
 	label.add_theme_color_override("font_color", Color.ORANGE)
 	_grid_container.add_child(label)
+	## Badge and text centre on the gap by the BUILT label's size: at 1.25x a top-anchored "OR" hung past its badge into the next row.
+	var ink: Vector2 = label.get_minimum_size()
+	var bg_h: float = maxf(_grew(20), ink.y)
+	bg.size = Vector2(maxf(_grew(28), 4.0 + ink.x + 4.0), bg_h)
+	bg.position = Vector2(4, y_pos - bg_h / 2.0)
+	label.position = Vector2(8, y_pos - ink.y / 2.0)
 
 
 func _format_condition(condition: Dictionary) -> String:
