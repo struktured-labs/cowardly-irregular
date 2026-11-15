@@ -119,3 +119,83 @@ func test_his_right_row_is_drawn_not_mirrored() -> void:
 		if left.get_data() == right.get_data():
 			mirrored += 1
 	assert_eq(mirrored, 0, "walk_right frames that are just walk_left mirrored: the artist's own East was replaced")
+
+
+## Feet = centre of the bottom 6 rows' alpha extent: what the eye reads as "where he stands".
+func _feet_centre(img: Image) -> float:
+	var lo := img.get_width()
+	var hi := -1
+	var bottom := -1
+	for y in img.get_height():
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.0:
+				bottom = y
+	for y in range(maxi(0, bottom - 5), bottom + 1):
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.0:
+				lo = mini(lo, x)
+				hi = maxi(hi, x)
+	return (lo + hi) * 0.5
+
+
+## His feet sat 5.75px apart facing left vs right (mean of 4 frames: 28.50 / 34.25), so pacing the wall he hopped at every turn; per frame the corrected gap is 0.5/4.5/0.5/1.5.
+func test_the_knight_does_not_hop_when_he_turns() -> void:
+	var w = WanderingNPC.new()
+	w.sprite_archetype = "village_knight"
+	add_child_autofree(w)
+	await get_tree().process_frame
+	var spr := w.find_child("Sprite", true, false) as Sprite2D
+	assert_not_null(spr, "CONTROL: the wanderer has a sprite")
+	var raw := {}
+	var placed := {}
+	for d in [1, 2]:
+		raw[d] = 0.0
+		placed[d] = 0.0
+		for frame in 4:
+			w._current_dir = d
+			w._anim_frame = frame
+			w._update_archetype_frame()
+			var f := _feet_centre(spr.texture.get_image())
+			raw[d] += f / 4.0
+			placed[d] += (f + spr.offset.x) / 4.0
+	assert_gt(absf(raw[1] - raw[2]), 4.0, "PRECONDITION: uncorrected, his feet move %.2fpx when he turns" % absf(raw[1] - raw[2]))
+	assert_lte(absf(placed[1] - placed[2]), 2.0,
+		("his feet move %.2fpx at a turn. <= 2 is the bound OverworldPlayer's bbox rule can reach on this sheet (1.75 measured): "
+		+ "his halberd widens the bbox on the side he faces, so feet cannot land exactly with the shared rule") % absf(placed[1] - placed[2]))
+
+
+func test_a_standing_knight_does_not_hop_when_he_turns_to_talk() -> void:
+	var n = OverworldNPC.new()
+	n.sprite_archetype = "village_knight"
+	add_child_autofree(n)
+	await get_tree().process_frame
+	var spr := n.find_child("Sprite", true, false) as Sprite2D
+	assert_not_null(spr, "CONTROL: the NPC has a sprite")
+	var placed := {}
+	for d in [2, 3]:
+		placed[d] = 0.0
+		for col in 4:
+			n.facing_direction = d
+			n._walk_col = col
+			n._apply_facing()
+			placed[d] += (_feet_centre(spr.texture.get_image()) + spr.offset.x) / 4.0
+	assert_lte(absf(placed[2] - placed[3]), 2.0, "a standing NPC uses the same rule; his feet move %.2fpx when he turns to talk" % absf(placed[2] - placed[3]))
+
+
+func test_the_shared_rule_leaves_an_unmoving_sheet_alone_and_cancels_a_shift() -> void:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for row in 4:
+		for col in 4:
+			img.fill_rect(Rect2i(col * 16 + 6, row * 16 + 4, 4, 10), Color.WHITE)
+	var rows := {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
+	var still: Dictionary = WanderingNPC.sheet_registration(img, Vector2i(16, 16), rows)
+	for d in still:
+		assert_eq(float(still[d]), 0.0, "CONTROL: rows that sit at one x get no offset")
+	assert_eq(still.size(), 4, "CONTROL: every direction is measured")
+	var shifted := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for row in 4:
+		for col in 4:
+			shifted.fill_rect(Rect2i(col * 16 + 6 + (3 if row == 1 else 0), row * 16 + 4, 4, 10), Color.WHITE)
+	var moved: Dictionary = WanderingNPC.sheet_registration(shifted, Vector2i(16, 16), rows)
+	assert_eq(float(moved[OverworldPlayer.Direction.LEFT]), -3.0, "a left row drawn 3px right is drawn 3px back")
+	assert_eq(float(moved[OverworldPlayer.Direction.RIGHT]), 0.0, "and the unmoved rows are left alone")
