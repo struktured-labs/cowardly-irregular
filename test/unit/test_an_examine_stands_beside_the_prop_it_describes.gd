@@ -2,7 +2,7 @@ extends GutTest
 
 ## An examine that describes a prop its village already draws is read beside that prop, not at an offset from the spawn (main 24242, census group B).
 
-const BV := preload("res://src/maps/villages/BaseVillage.gd")
+const BV_PATH := "res://src/maps/villages/BaseVillage.gd"
 const VP := preload("res://src/exploration/VillageProp.gd")
 const EXAMINES := "res://data/examine_texts.json"
 const TILE := 32
@@ -11,8 +11,13 @@ const N4: Array = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, 
 const BESIDE: Array = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
 
 
+## Read at runtime: a class_name preload makes get_script_constant_map() a parse-time static call, which is a parse error.
+func _bv_consts() -> Dictionary:
+	return (load(BV_PATH) as GDScript).get_script_constant_map()
+
+
 func _described() -> Dictionary:
-	return BV.get_script_constant_map().get("_EXAMINE_DESCRIBES", {})
+	return _bv_consts().get("_EXAMINE_DESCRIBES", {})
 
 
 func _pack() -> Dictionary:
@@ -99,7 +104,7 @@ func test_each_described_examine_stands_beside_a_prop_of_its_kind() -> void:
 
 ## Census group B's two door anchors: the incident board and the threshold sign are read just beside the door they describe.
 func test_each_door_examine_stands_beside_its_door() -> void:
-	var by_door: Dictionary = BV.get_script_constant_map().get("_EXAMINE_BESIDE_DOOR", {})
+	var by_door: Dictionary = _bv_consts().get("_EXAMINE_BESIDE_DOOR", {})
 	assert_gt(by_door.size(), 0, "CONTROL: BaseVillage._EXAMINE_BESIDE_DOOR must name at least one examine")
 	var pack := _pack()
 	var checked := 0
@@ -149,7 +154,7 @@ const BY_OVERRIDE := {"harmonia_well": "res://src/maps/villages/HarmoniaVillage.
 
 func test_every_village_examine_is_anchored_or_says_what_it_waits_for() -> void:
 	var by_prop := _described()
-	var by_door: Dictionary = BV.get_script_constant_map().get("_EXAMINE_BESIDE_DOOR", {})
+	var by_door: Dictionary = _bv_consts().get("_EXAMINE_BESIDE_DOOR", {})
 	assert_gt(by_prop.size() + by_door.size(), 0, "CONTROL: the anchor tables must be read")
 	for id in BY_OVERRIDE:
 		var src := FileAccess.get_file_as_string(BY_OVERRIDE[id])
