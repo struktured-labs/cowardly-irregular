@@ -178,6 +178,23 @@ func test_control_a_normal_listing_is_ready_and_listed() -> void:
 
 
 ## Files under src/ where HTTPRequest.new() outnumbers body_size_limit assignments; code only, comments stripped.
+## Per variable name, requests made under it minus caps set on it; a request made without a name can never be capped.
+func _short_by_name(code: String) -> Dictionary:
+	var made := {}
+	for m in RegEx.create_from_string("(?m)^(.*?)HTTPRequest\\.new\\(\\)").search_all(code):
+		var lhs := RegEx.create_from_string("(\\w+)\\s*:?=\\s*$").search(m.get_string(1))
+		var name: String = lhs.get_string(1) if lhs != null else "<unnamed>"
+		made[name] = int(made.get(name, 0)) + 1
+	for m in RegEx.create_from_string("(\\w+)\\.body_size_limit\\s*=").search_all(code):
+		if made.has(m.get_string(1)):
+			made[m.get_string(1)] = int(made[m.get_string(1)]) - 1
+	var short := {}
+	for name in made:
+		if int(made[name]) > 0:
+			short[name] = int(made[name])
+	return short
+
+
 func _uncapped(dir_path: String, out: Dictionary) -> int:
 	var seen: int = 0
 	var d := DirAccess.open(dir_path)
@@ -190,12 +207,26 @@ func _uncapped(dir_path: String, out: Dictionary) -> int:
 		if not f.ends_with(".gd"):
 			continue
 		var code: String = GdSource.code_of(dir_path + "/" + f)
-		var made: int = RegEx.create_from_string("HTTPRequest\\.new\\(\\)").search_all(code).size()
-		var capped: int = RegEx.create_from_string("\\.body_size_limit\\s*=").search_all(code).size()
-		seen += made
-		if made > capped:
-			out[dir_path + "/" + f] = "%d request(s), %d cap(s)" % [made, capped]
+		seen += RegEx.create_from_string("HTTPRequest\\.new\\(\\)").search_all(code).size()
+		var short: Dictionary = _short_by_name(code)
+		if not short.is_empty():
+			out[dir_path + "/" + f] = "uncapped request(s) by name: %s" % str(short)
 	return seen
+
+
+func test_control_one_request_capped_twice_does_not_cover_another() -> void:
+	var code := "a = HTTPRequest.new()\na.body_size_limit = 1\na.body_size_limit = 2\nvar b := HTTPRequest.new()\n"
+	assert_eq(_short_by_name(code), {"b": 1}, "CONTROL (adhoc 25848): two caps on a, none on b, is b uncapped")
+
+
+func test_control_one_cap_on_a_shared_name_covers_one_request() -> void:
+	var code := "func f():\n\tvar req := HTTPRequest.new()\n\treq.body_size_limit = 1\nfunc g():\n\tvar req := HTTPRequest.new()\n"
+	assert_eq(_short_by_name(code), {"req": 1}, "CONTROL (adhoc 25850): two requests named req, one cap")
+
+
+func test_control_an_unnamed_request_is_never_capped() -> void:
+	assert_eq(_short_by_name("add_child(HTTPRequest.new())\n"), {"<unnamed>": 1}, "CONTROL: nothing can set its limit")
+	assert_eq(_short_by_name("var r := HTTPRequest.new()\nr.body_size_limit = 9\n"), {}, "CONTROL: one request, one cap")
 
 
 func test_every_http_request_in_src_has_a_body_cap() -> void:
