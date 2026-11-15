@@ -73,4 +73,5 @@ func test_a_step_hands_the_camera_back() -> void:
 	while cam.offset != Vector2.ZERO and Time.get_ticks_msec() - start < 3000:
 		await get_tree().process_frame
 	assert_eq(cam.offset, Vector2.ZERO, "after a step the camera follows the player plainly again (waited %d ms)" % (Time.get_ticks_msec() - start))
+	await get_tree().process_frame
 	assert_null(shop.get_node_or_null("EntryFocus"), "the focus is gone once it handed back")
