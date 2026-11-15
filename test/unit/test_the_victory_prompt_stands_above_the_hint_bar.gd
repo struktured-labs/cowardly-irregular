@@ -122,7 +122,12 @@ func test_at_100_percent_nothing_moves() -> void:
 	assert_not_null(prompt, "CONTROL: the prompt was built")
 	if prompt == null:
 		return
-	assert_almost_eq(prompt.position.y, vp.y - OverlayScript.PROMPT_REST, 0.01, "the prompt rests where .792 put it")
+	## It rests on .792's line unless the hint bar's top is closer, and then sits exactly its gap above that top, no higher.
+	var hint := (s[0] as Node).get_node_or_null("UI/InputHintBar") as Control
+	var rest: float = vp.y - OverlayScript.PROMPT_REST
+	if hint != null and hint.is_visible_in_tree():
+		rest = minf(rest, hint.get_global_rect().position.y - OverlayScript.PROMPT_GAP - o.get_theme_default_font().get_height(TextScale.scaled(OverlayScript.PROMPT_FONT)))
+	assert_almost_eq(prompt.position.y, rest, 1.0, "the prompt rests on .792's line, lifted only as far as the hint bar needs")
 	assert_almost_eq(o._bottom_margin(vp.y), OverlayScript.STRIP_BOTTOM_MARGIN, 0.01, "and the column keeps .792's bottom margin")
 	assert_almost_eq(o._ch(), OverlayScript.CARD_H, 0.01, "a card keeps its .792 height: its content fits inside it")
 	assert_almost_eq(o._gap, OverlayScript.CARD_GAP, 0.01, "and the cards keep their .792 gap")
