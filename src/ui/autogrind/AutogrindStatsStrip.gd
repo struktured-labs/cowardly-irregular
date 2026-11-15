@@ -56,7 +56,7 @@ var _last_region: String = ""
 
 
 static func _text_w(t: String, fs: int) -> float:
-	return UiFont.display().get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	return ThemeDB.fallback_font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 
 
 ## A field's font at the live Text Size: the authored 9/10 px were literals, so the setting never reached this strip.

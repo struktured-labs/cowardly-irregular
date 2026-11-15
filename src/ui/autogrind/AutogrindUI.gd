@@ -875,16 +875,22 @@ func _grid_row_height() -> float:
 	return h
 
 
-## The width a Label in this tree draws `text` at `px`: the face's metrics decide it, never a literal box.
+## The width a Label here draws `text` at `px`: the face's metrics decide it, never a literal box.
 func _text_width_in_tree(text: String, px: int) -> float:
+	var f: Font = _label_face()
+	return 0.0 if f == null else f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+
+
+## The font a Label here draws in; the grid is built before the console enters the tree, so off-tree it is the installed face.
+func _label_face() -> Font:
 	if not is_inside_tree():
-		return 0.0
+		return UiFont.display()
 	var probe := Label.new()
 	add_child(probe)
 	var f: Font = probe.get_theme_font("font")
 	remove_child(probe)
 	probe.queue_free()
-	return 0.0 if f == null else f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	return f
 
 
 ## The inner width an action cell's label is given: insetting past the icon costs 20px of it.
@@ -1262,24 +1268,23 @@ func _create_and_connector(h: float = -1.0) -> Control:
 func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	"""Draw OR connector between rows"""
 	var px: int = TextScale.scaled(11)
+	var f: Font = _label_face()
+	var line_h: float = 0.0 if f == null else f.get_height(px)
 	var bg = ColorRect.new()
 	bg.name = "R%dOr" % row_idx
 	bg.color = Color(0.5, 0.3, 0.1, 0.6)
+	bg.position = Vector2(4, y_pos - _grew(10))
+	bg.size = Vector2(_grew(28), _grew(20))
 	_grid_container.add_child(bg)
 
 	var label = Label.new()
 	label.name = "R%dOrText" % row_idx
 	label.text = "OR"
+	## Authored seat, lifted only when the face's line would hang past the badge into the next row (1.25x).
+	label.position = Vector2(8, minf(y_pos - _grew(8), y_pos + _grew(10) - line_h))
 	label.add_theme_font_size_override("font_size", px)
 	label.add_theme_color_override("font_color", Color.ORANGE)
 	_grid_container.add_child(label)
-	## Badge and text centre on the gap by the BUILT label's size: at 1.25x a top-anchored "OR" hung past its badge into the next row.
-	var ink: Vector2 = label.get_minimum_size()
-	var bg_h: float = maxf(_grew(20), ink.y)
-	bg.size = Vector2(maxf(_grew(28), 4.0 + ink.x + 4.0), bg_h)
-	bg.position = Vector2(4, y_pos - bg_h / 2.0)
-	label.position = Vector2(8, y_pos - ink.y / 2.0)
-
 
 func _format_condition(condition: Dictionary) -> String:
 	"""Format condition for display"""
