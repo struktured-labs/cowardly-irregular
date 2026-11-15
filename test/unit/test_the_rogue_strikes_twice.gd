@@ -33,18 +33,20 @@ class TimedScene extends "res://src/battle/BattleScene.gd":
 	var holds: Array = []
 	var asked_at: Array = []
 	var longest_frame := 0.0
+	var clock := 0.0
 	func _process(delta: float) -> void:
 		longest_frame = maxf(longest_frame, delta)
+		clock += delta
 		super(delta)
 	func _hold_melee_damage(lands_in: float, safety: float = 0.25) -> int:
 		holds.append(lands_in + safety)
-		asked_at.append(Time.get_ticks_msec() * 0.001 * Engine.time_scale)
+		asked_at.append(clock)
 		return super(lands_in, safety)
 	func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 		if _full_render_dmg_buffer != null:
 			super(target, amount, is_crit, element, elemental_mod)
 			return
-		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames(), maxf(longest_frame, get_process_delta_time())])
+		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames(), maxf(longest_frame, get_process_delta_time()), clock, get_process_delta_time()])
 
 
 func before_each() -> void:
@@ -285,10 +287,10 @@ func test_turbo_still_lands_two_separate_numbers() -> void:
 	assert_lte(wait, SCENE.STRIKE_STAGGER + 0.05, "turbo's bolt waits STRIKE_STAGGER, not a safety timer (%.3f s vs %.2f)" % [wait, SCENE.STRIKE_STAGGER])
 	var gap: float = landed[1][1] - landed[0][1]
 	assert_lt(gap, SCENE.STRIKE_STAGGER + 0.2, "and on the clock it lands well before any safety timer (%.3f s apart)" % gap)
-	## Read from the bolt's own request, not the blade's landing: the blade's number itself lands a frame or two after the call.
-	var early: float = maxf(float(landed[0][3]), float(landed[1][3])) + 0.01
-	var waited: float = landed[1][1] - float(_last_asked.back()) if not _last_asked.is_empty() else 0.0
-	assert_gte(waited, wait - early, "on the clock the bolt is at most its longest frame early of what it asked for (%.3f s after asking, asked %.3f, longest frame %.3f)" % [waited, wait, early - 0.01])
+	## Read on the frame clock the timer itself counts: after a slow frame the engine's jitter fix runs game time ahead of the wall.
+	var early: float = float(landed[1][5]) + 0.001
+	var waited: float = float(landed[1][4]) - float(_last_asked.back()) if not _last_asked.is_empty() else 0.0
+	assert_gte(waited, wait - early, "on the frame clock the bolt is at most its landing frame early of what it asked for (%.3f s after asking, asked %.3f, landing frame %.3f)" % [waited, wait, early - 0.001])
 
 
 func _mean(a: Array) -> float:
