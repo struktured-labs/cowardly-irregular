@@ -7849,6 +7849,11 @@
       "tier": "T1",
       "source": "gpt-image-2, a straight-on slender poplar 20x96, exactly the TREE prop's 1x3 footprint height and narrow enough to clear a door beside it (the first 64px oak drew across Harmonia's ForgeEntrance arch) (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     },
+    "tree_frosthold": {
+      "path": "res://assets/sprites/props/medieval/tree_frosthold.png",
+      "tier": "T1",
+      "source": "gpt-image-2, a straight-on snow-laden pine 58x96 for Frosthold, whose one TREE prop drew Harmonia's green poplar in a frozen outpost; the per-village key <kind>_<village> (0dc9d3259) outranks tree_medieval there only. Standing among SNOW_TREE tiles beside the east wall at (24,9), no door within 8 cells -- tools/gen_village_buildings.py --props (staged 2026-11-01, refit to 96px, 16 key-purple fringe pixels remapped to the outline colour); T1, artist veto applies."
+    },
     "floor_shop_item_harmonia": {
       "path": "res://assets/sprites/interiors/harmonia/floor_shop_item.png",
       "tier": "T1",
