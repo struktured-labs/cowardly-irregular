@@ -8055,6 +8055,11 @@
       "tier": "T1",
       "source": "gpt-image-2, straight-on wooden hand cart with sacks and hay, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     },
+    "cart_ironhaven": {
+      "path": "res://assets/sprites/props/medieval/cart_ironhaven.png",
+      "tier": "T1",
+      "source": "gpt-image-2, a riveted iron mine cart heaped with coal and glowing ore on a short length of rail, 64x51 over the 2-tile CART footprint, for Ironhaven (the volcanic forge town on mining terraces), whose one CART at (8,4) drew Harmonia's wooden hay cart; the per-village key <kind>_<village> outranks cart_medieval there only. Keyed everywhere (the backdrop between its wheels is enclosed) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
     "cart_suburban": {
       "path": "res://assets/sprites/props/suburban/cart.png",
       "tier": "T1",
