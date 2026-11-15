@@ -59,10 +59,10 @@ const DESTINATIONS: Array = [
 	{"id": "sandrift_glassmaker",    "label": "Glassmaker (Sandrift)", "spawn": "entrance",    "section": ""},
 	{"id": "grimhollow_witch_hut",   "label": "Witch's Hut (Grimhollow)","spawn": "entrance",  "section": ""},
 	{"id": "ironhaven_watchtower",   "label": "Watchtower (Ironhaven)","spawn": "entrance",  "section": ""},
-	{"id": "maple_heights_arcade",   "label": "Arcade (MapleHeights)","spawn": "entrance",   "section": ""},
+	{"id": "maple_heights_arcade",   "label": "Arcade (Maple Heights)","spawn": "entrance",   "section": ""},
 	{"id": "brasston_clockwork_loft","label": "Clockwork Loft (Brasston)","spawn": "entrance","section": ""},
-	{"id": "rivet_row_union_hall",   "label": "Union Hall (RivetRow)", "spawn": "entrance",    "section": ""},
-	{"id": "node_prime_daemon_lounge","label": "Daemon Lounge (NodePrime)","spawn": "entrance","section": ""},
+	{"id": "rivet_row_union_hall",   "label": "Union Hall (Rivet Row)", "spawn": "entrance",    "section": ""},
+	{"id": "node_prime_daemon_lounge","label": "Daemon Lounge (Node Prime)","spawn": "entrance","section": ""},
 	{"id": "vertex_threshold",       "label": "The Threshold (Vertex)","spawn": "entrance",   "section": ""},
 	# --- Scriptura capital district (W1) ---
 	{"id": "scriptura_plaza",        "label": "Scriptura Plaza",      "spawn": "entrance",    "section": "Scriptura (W1)"},
@@ -70,7 +70,7 @@ const DESTINATIONS: Array = [
 	{"id": "scriptura_bookshop",     "label": "Aldrin's Books",       "spawn": "entrance",    "section": ""},
 	# --- W2 quest locations ---
 	{"id": "maple_heights_strip_mall", "label": "Birchwood Commons (Strip Mall)", "spawn": "entrance", "section": "W2 Quest Spots"},
-	{"id": "maple_community_center",   "label": "Community Center (MapleHeights)", "spawn": "entrance", "section": ""},
+	{"id": "maple_community_center",   "label": "Community Center (Maple Heights)", "spawn": "entrance", "section": ""},
 	{"id": "enrichment_annex",         "label": "Enrichment Annex", "spawn": "entrance", "section": ""},
 ]
 
