@@ -231,6 +231,9 @@ PROPS = {
                             "holographic label light (no letters)."),
     "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
                             "stripe and stencil-style marks (no readable letters)."),
+    "gravestone_medieval": (1, "A single old weathered grey stone headstone with a rounded top, standing upright, seen "
+                               "straight on: cracked and lichen-stained, a little moss and a tuft of grass at its foot, "
+                               "completely blank (NO letters, NO carving, NO date). Short and squat, about as tall as it is wide."),
     "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
