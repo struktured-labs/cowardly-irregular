@@ -77,12 +77,13 @@ func test_the_corpus_is_real() -> void:
 ## the text rect the panel actually gives it.
 func test_every_authored_line_fits_at_every_text_size() -> void:
 	var rows: Array = _lines()
-	var font: Font = ThemeDB.fallback_font
-	assert_not_null(font, "CONTROL: a theme font is needed to measure wrapping")
 	for scale in PRESETS:
 		var p: Dictionary = await _panel(scale)
 		var lbl: RichTextLabel = p["lbl"]
 		assert_not_null(lbl, "CONTROL: the panel must build a text label at scale %.2f" % scale)
+		## Measured in the face the body DRAWS: under the pixel UI face the fallback is the display face, not the body's.
+		var font: Font = UiFont.of(lbl)
+		assert_eq(font, UiFont.body(), "CONTROL: the dialogue body draws in the reading face at scale %.2f" % scale)
 		var px: int = TextScale.scaled(16)
 		var line_h: float = maxf(1.0, float(font.get_height(px)))
 		var holds: int = int(floor(lbl.size.y / line_h))
