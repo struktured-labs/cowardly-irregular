@@ -64,6 +64,8 @@ const CONTROL_MIN_H := 30.0
 const BUTTON_H := 36.0
 const BUTTON_MIN_W := 160.0
 const BUTTON_FONT := 14
+## A caption never steps below its 100% size: the pixel face snaps, so a lower floor would draw 2x captions at 1x.
+const BUTTON_FONT_MIN := BUTTON_FONT
 const HEADER_FONT := 18
 const NOTE_FONT := 11
 const LABEL_FONT := 14
@@ -264,7 +266,7 @@ func _build_ui() -> void:
 	_test_btn.text = "Test Connection"
 	var bw: float = _button_w()
 	var btn_y: float = panel_y + panel_h - _button_h() - 20.0
-	_test_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_test_btn.add_theme_font_size_override("font_size", _button_px())
 	_test_btn.position = Vector2(panel_x + 24, btn_y)
 	_test_btn.size = Vector2(bw, _button_h())
 	_test_btn.pressed.connect(_on_test_pressed)
@@ -272,7 +274,7 @@ func _build_ui() -> void:
 
 	_save_btn = Button.new()
 	_save_btn.text = "Save & Apply"
-	_save_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_save_btn.add_theme_font_size_override("font_size", _button_px())
 	_save_btn.position = Vector2(panel_x + panel_w - 24 - bw - ROW_GAP - bw, btn_y)
 	_save_btn.size = Vector2(bw, _button_h())
 	_save_btn.pressed.connect(_on_save_pressed)
@@ -280,7 +282,7 @@ func _build_ui() -> void:
 
 	_cancel_btn = Button.new()
 	_cancel_btn.text = "Cancel"
-	_cancel_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_cancel_btn.add_theme_font_size_override("font_size", _button_px())
 	_cancel_btn.position = Vector2(panel_x + panel_w - 24 - bw, btn_y)
 	_cancel_btn.size = Vector2(bw, _button_h())
 	_cancel_btn.pressed.connect(_on_cancel_pressed)
@@ -379,6 +381,16 @@ func _button_w() -> float:
 	## allowed to overlap — my guard caught Test Connection over Save & Apply at 2.0x.
 	var room: float = (_panel_w() - 48.0 - 2.0 * ROW_GAP) / 3.0
 	return clampf(widest + 28.0, BUTTON_MIN_W, maxf(BUTTON_MIN_W, room))
+
+
+## The capped width holds a caption only if the font steps down with it; a Button grows to its text, so a too-wide caption overlapped its neighbour.
+func _button_px() -> int:
+	var px: int = TextScale.scaled(BUTTON_FONT)
+	var f: Font = UiFont.display()
+	var room: float = _button_w() - 28.0
+	while px > BUTTON_FONT_MIN and f.get_string_size("Test Connection", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
+		px -= 1
+	return px
 
 
 ## _add_label returns its clamped height so the caller advances by what DREW, not by a literal.
