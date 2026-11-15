@@ -233,10 +233,9 @@ func test_turning_does_not_move_the_creature() -> void:
 		+ "proved on nothing — wolf and snake drifted 3.0px and 4.0px when this was written"))
 
 
-## ⛔ THE SCOPE DECISION, RATCHETED. Only RoamingMonster corrects registration; OverworldPlayer and
-## OverworldNPC/WanderingNPC carry the same defect and are unfixed. That is defensible ONLY while
-## the severe end lives in the sheets this file renders — which is a fact about today's art, not a
-## property of the code, and it is the fact the decision rests on.
+## ⛔ THE SCOPE DECISION, RATCHETED. RoamingMonster corrected registration first; OverworldPlayer later, and the villagers
+## (WanderingNPC + OverworldNPC, one shared rule) on 2026-11-15 when the Village Knight's sheet drifted 7.5px. The player
+## section is still judged raw against this file's; the villager section is judged AFTER correction, on its own worst sheet.
 ##
 ## 🔑 DERIVED HERE RATHER THAN WRITTEN IN A HEADER, per CLAUDE.md:21 — "three true music numbers
 ## and three true SFX numbers exist; say which you mean; bare counts here drifted for months". The
@@ -247,12 +246,14 @@ func test_turning_does_not_move_the_creature() -> void:
 func test_the_severe_registration_drift_is_in_the_sheets_this_file_renders() -> void:
 	var m := _manifest_root()
 	var worst := {}
+	var worst_id := {}
 	var counted := 0
 	for section in ["overworld_monster_sheets", "overworld_player_sheets", "overworld_npc_sheets"]:
 		var node = m.get(section, {})
 		if not (node is Dictionary):
 			continue
 		var top := 0.0
+		var top_id := ""
 		for id in node:
 			var e = node[id]
 			if not (e is Dictionary):
@@ -268,9 +269,12 @@ func test_the_severe_registration_drift_is_in_the_sheets_this_file_renders() -> 
 			var fh: int = int(e.get("frame_height", 32))
 			var lc := _mean_bbox_centre(img, fw, fh, int((anims["walk_left"] as Dictionary).get("row", 0)))
 			var rc := _mean_bbox_centre(img, fw, fh, int((anims["walk_right"] as Dictionary).get("row", 0)))
-			top = maxf(top, absf(lc - rc))
+			if absf(lc - rc) > top:
+				top = absf(lc - rc)
+				top_id = str(id)
 			counted += 1
 		worst[section] = snappedf(top, 0.01)
+		worst_id[section] = top_id
 	assert_gt(counted, 45, "ANTI-VACUITY: only %d sheets were measured" % counted)
 	gut.p("systematic registration drift, worst per section (px): %s" % [worst])
 
@@ -278,7 +282,22 @@ func test_the_severe_registration_drift_is_in_the_sheets_this_file_renders() -> 
 	assert_gt(mine, 0.5,
 		("ANTI-VACUITY: the sheets this file renders no longer drift at all (%.2fpx), so the "
 		+ "comparison below is between three zeros") % mine)
-	for other in ["overworld_player_sheets", "overworld_npc_sheets"]:
+	## The villagers correct registration since 2026-11-15 (WanderingNPC.sheet_registration, the player's rule), so their
+	## severe end is judged AFTER correction, on the section's own worst sheet: its left and right rows must land together.
+	var npc_id := str(worst_id.get("overworld_npc_sheets", ""))
+	var npc_e: Dictionary = m["overworld_npc_sheets"][npc_id]
+	var npc_img: Image = (load(str(npc_e["path"])) as Texture2D).get_image()
+	var nfw := int(npc_e.get("frame_width", 32))
+	var nfh := int(npc_e.get("frame_height", 32))
+	var nrows: Dictionary = {}
+	for k in ["walk_down", "walk_left", "walk_right", "walk_up"]:
+		nrows[k] = int((npc_e["animations"][k] as Dictionary).get("row", 0))
+	var reg: Dictionary = WanderingNPC.sheet_registration(npc_img, Vector2i(nfw, nfh), nrows)
+	var placed_l := _mean_bbox_centre(npc_img, nfw, nfh, nrows["walk_left"]) + float(reg.get(OverworldPlayer.Direction.LEFT, 0.0))
+	var placed_r := _mean_bbox_centre(npc_img, nfw, nfh, nrows["walk_right"]) + float(reg.get(OverworldPlayer.Direction.RIGHT, 0.0))
+	assert_almost_eq(placed_l, placed_r, 0.01,
+		"the villagers' worst sheet (%s, raw drift %.2fpx) must be registered by the walkers' rule; it still drifts" % [npc_id, worst["overworld_npc_sheets"]])
+	for other in ["overworld_player_sheets"]:
 		assert_true(float(worst[other]) <= mine,
 			("%s now drifts %.2fpx against %.2fpx here, so the SEVERE end has moved out of the one "
 			+ "consumer that corrects registration. Fixing only RoamingMonster was justified by this "

@@ -534,6 +534,8 @@ var _archetype_id: String = ""
 var _archetype_rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
 ## The sheet's own cell size; 32px for the placeholders, taller for an artist walker (never resampled).
 var _archetype_frame := Vector2i(32, 32)
+## facing_direction (same order as OverworldPlayer.Direction) -> Sprite.offset.x, so turning to talk does not move the NPC.
+var _registration: Dictionary = {}
 
 
 ## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
@@ -558,6 +560,7 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 		push_warning("[OverworldNPC] '%s' sheet is %s, under the floor for a 4x4 grid of %dx%d frames — falling back to procedural" % [archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()]), _archetype_frame.x, _archetype_frame.y])
 		return false
 	_archetype_sheet = img
+	_registration = WanderingNPC.sheet_registration(img, _archetype_frame, _archetype_rows)
 	_apply_facing()
 	# Note: scale is set in _generate_sprite() via _get_context_scale()
 	# (3x for open overworld / Mode 7, 1x for village/dungeon).
@@ -590,6 +593,7 @@ func _apply_facing() -> void:
 	sprite.texture = _frame_cache[key]
 	# A cell taller than 32px is lifted so the feet stand where a 32px walker's do
 	sprite.offset.y = -(_archetype_frame.y - 32) / 2.0
+	sprite.offset.x = float(_registration.get(facing_direction, 0.0))
 
 
 ## Point this NPC at target_pos (struktured msg 2764 item 1: "when you
