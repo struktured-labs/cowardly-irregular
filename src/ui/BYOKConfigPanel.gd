@@ -64,7 +64,7 @@ const CONTROL_MIN_H := 30.0
 const BUTTON_H := 36.0
 const BUTTON_MIN_W := 160.0
 const BUTTON_FONT := 14
-## A caption never steps below its 100% size: the pixel face snaps, so a lower floor would draw 2x captions at 1x.
+## A caption never steps to its 100% size or below; above 100% it stays at least one pixel larger, as every Text Size arm requires.
 const BUTTON_FONT_MIN := BUTTON_FONT
 const HEADER_FONT := 18
 const NOTE_FONT := 11
@@ -386,9 +386,10 @@ func _button_w() -> float:
 ## The capped width holds a caption only if the font steps down with it; a Button grows to its text, so a too-wide caption overlapped its neighbour.
 func _button_px() -> int:
 	var px: int = TextScale.scaled(BUTTON_FONT)
+	var floor_px: int = BUTTON_FONT_MIN + 1 if px > BUTTON_FONT_MIN else px
 	var f: Font = UiFont.display()
 	var room: float = _button_w() - 28.0
-	while px > BUTTON_FONT_MIN and f.get_string_size("Test Connection", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
+	while px > floor_px and f.get_string_size("Test Connection", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
 		px -= 1
 	return px
 
