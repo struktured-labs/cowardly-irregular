@@ -59,7 +59,7 @@ func test_the_index_is_read_inside_the_archive() -> void:
 		return
 	var ts: int = room.TILE_SIZE
 	var at := Vector2i(floori(ex.position.x / ts), floori(ex.position.y / ts))
-	var want := Vector2i(room.spawn_points["entrance"]) + room._examine_offset_for("brasston_redundancy_index")
+	var want: Vector2i = Vector2i(room.spawn_points["entrance"]) + room._examine_offset_for("brasston_redundancy_index")
 	assert_eq(at, want, "the index stands where it is authored, not where a sweep pushed it")
 	assert_eq(str(room._get_layout()[at.y])[at.x], ".", "the index stands on open floor")
 	for n in room.npcs.get_children():
