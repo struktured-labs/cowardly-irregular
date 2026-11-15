@@ -6380,7 +6380,6 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
-## Lunges a hit-stop paused and then played again; a finished one is never played (test seam).
 
 
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
