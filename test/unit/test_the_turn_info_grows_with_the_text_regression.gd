@@ -138,9 +138,8 @@ func test_every_preset_moves_it_monotonically() -> void:
 ## narrow-glyph long one. So this drives EVERY authored name through EVERY real format and measures
 ## with get_string_size, not with len().
 ##
-## A font query is valid here: TurnInfo has no autowrap_mode in the scene, so it is single-line and
-## the default break flags are the ones it draws with — cowir-autogrind's flags hazard needs a
-## wrapping node and cannot reach this one.
+## One-line lines are measured by font query; a WRAPPED line by the built Label's own line count and
+## its widest word, since a default-flags multiline query is not what WORD_SMART draws (cowir-autogrind's hazard).
 func _real_turn_lines() -> Array[String]:
 	var names: Array[String] = []
 	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
@@ -177,11 +176,15 @@ func test_every_real_turn_line_fits_the_strip_at_every_preset() -> void:
 		var ui = _scene._ui_manager
 		var f := label.get_theme_font(&"font")
 		assert_true(ui != null and ui.has_method("_fit_turn_info"),
-			"FLOOR: the shrink-to-fit the strip relies on must exist and be reachable at %sx" % str(s))
+			"FLOOR: the fit the strip relies on must exist and be reachable at %sx" % str(s))
 		assert_false(f == null, "fixture: the strip must resolve a font at %sx" % str(s))
 		if f == null or ui == null or not ui.has_method("_fit_turn_info"):
 			return
-		var avail: float = panel.size.x
+		var sb := panel.get_theme_stylebox(&"panel")
+		var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
+		var room: float = ui.turn_strip_room()
+		var scaled: int = TextScale.scaled(int(label.get_meta(&"base_font_px", 0)))
+		var avail: float = 0.0
 		var over: Array = []
 		var worst: String = ""
 		var worst_w: float = 0.0
@@ -192,12 +195,25 @@ func test_every_real_turn_line_fits_the_strip_at_every_preset() -> void:
 			label.text = line
 			ui._fit_turn_info()
 			var px: int = label.get_theme_font_size(&"font_size")
+			avail = panel.size.x - inset
+			var wrap: bool = label.autowrap_mode != TextServer.AUTOWRAP_OFF
 			var w: float = f.get_string_size(line, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x
+			if wrap:
+				w = 0.0
+				for word in line.split(" ", false):
+					w = maxf(w, f.get_string_size(word, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x)
+				var lines_h: float = float(label.get_line_count()) * f.get_height(px)
+				if label.get_line_count() < 2 or lines_h > panel.get_combined_minimum_size().y + 0.5:
+					over.append("'%s' wrapped to %d line(s), %.0f px, in a %.0f px strip" % [line, label.get_line_count(), lines_h, panel.get_combined_minimum_size().y])
 			if w > worst_w:
 				worst_w = w
-				worst = "'%s' @%dpx" % [line, px]
+				worst = "'%s' @%dpx%s" % [line, px, " wrapped" if wrap else ""]
+			if px != scaled:
+				over.append("'%s' drew at %dpx, not the setting's %d (the fit must add room, never shrink)" % [line, px, scaled])
 			if w > avail + 0.5:
 				over.append("'%s' @%dpx needs %.0f of %.0f" % [line, px, w, avail])
+			if panel.size.x > maxf(room, 400.0) + 0.5:
+				over.append("'%s' widened the strip to %.0f, past the %.0f between the side panels" % [line, panel.size.x, room])
 		gut.p("%sx widest fitted line: %.0fpx of %.0f — %s" % [str(s), worst_w, avail, worst])
 		assert_eq(over, [],
 			("at %sx a REAL turn line still overflowed the strip AFTER the fit ran: %s. The corpus is "
@@ -242,29 +258,30 @@ func test_scaling_the_turn_strip_leaves_the_logs_budget_alone() -> void:
 
 
 ## CONTROL — the fit must ENGAGE on a long line and SPARE a short one. Without this, "every real
-## line fits" is satisfied by a strip that shrank everything to the 8px floor.
+## line fits" is satisfied by a strip that was always as wide as the room. Engaging now means ADDING
+## room (main 25819): the long line widens the strip, and wraps only past the room; the font never shrinks.
 func test_the_fit_engages_on_a_long_line_and_spares_a_short_one() -> void:
 	_scene = await _build(2.0)
 	var label: Label = _scene.get_node_or_null(TURN_INFO)
 	var ui = _scene._ui_manager
-	assert_false(label == null or ui == null, "fixture: the strip and its UI manager must exist")
-	if label == null or ui == null:
+	var panel: Control = _scene.get_node_or_null("UI/TurnInfoPanel")
+	assert_false(label == null or ui == null or panel == null, "fixture: the strip, its panel and its UI manager must exist")
+	if label == null or ui == null or panel == null:
 		return
 	var full: int = int(label.get_meta(&"base_font_px", 0))
 	assert_gt(full, 0, "FLOOR: the scale capture must have run, or there is no base to recover to")
 	var scaled: int = TextScale.scaled(full)
-	label.text = "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)"
-	ui._fit_turn_info()
-	var long_px: int = label.get_theme_font_size(&"font_size")
-	assert_lt(long_px, scaled,
-		"the longest real line must be SHRUNK at 200%%: got %d, unfitted it would be %d"
-		% [long_px, scaled])
-	assert_gt(long_px, 8, "and not collapsed to the floor: got %d" % long_px)
 	label.text = "Round 7"
 	ui._fit_turn_info()
+	var short_w: float = panel.size.x
+	assert_eq(label.get_theme_font_size(&"font_size"), scaled, "CONTROL: a short line keeps the full scaled size (%d)" % scaled)
+	assert_eq(label.autowrap_mode, TextServer.AUTOWRAP_OFF, "CONTROL: and stays one line")
+	assert_almost_eq(short_w, 400.0, 0.5, "CONTROL: and leaves the strip its shipped 400px")
+	label.text = "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)"
+	ui._fit_turn_info()
 	assert_eq(label.get_theme_font_size(&"font_size"), scaled,
-		"CONTROL: a SHORT line must keep the full scaled size (%d), or the fit is just a smaller font"
-		% scaled)
+		"the longest real line keeps the setting's %d px at 200%%: got %d" % [scaled, label.get_theme_font_size(&"font_size")])
+	assert_gt(panel.size.x, short_w + 0.5, "and WIDENS the strip past %.0f (got %.0f)" % [short_w, panel.size.x])
 
 
 ## ⛔ THE RECOVERY ARM, AND IT REDS ON A BUG THIS FIX SHIPPED WITH. _fit_turn_info read the meta
@@ -289,6 +306,8 @@ func test_a_long_line_does_not_shrink_the_strip_forever() -> void:
 		label.text = "Round %d" % (i + 1)
 		ui._fit_turn_info()
 		seen.append(label.get_theme_font_size(&"font_size"))
+		var strip: Control = label.get_parent() as Control
+		assert_almost_eq(strip.size.x, 400.0, 0.5, "and the strip returns to its shipped 400px after the long line (turn %d)" % (i + 1))
 	for v in seen:
 		assert_eq(int(v), scaled,
 			("after a long line, a SHORT line must return to the full size %d. Got %s across four "
