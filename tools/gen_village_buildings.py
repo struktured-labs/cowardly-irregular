@@ -208,6 +208,10 @@ PROPS = {
     "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
                           "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
                           "slightly above, wider than it is tall."),
+    "cart_ironhaven": (2, "A single small iron mine cart for a volcanic forge town: a riveted dark-iron tub with a "
+                          "rust-orange rim, on four small flanged wheels sitting on a short piece of rail track, heaped "
+                          "with chunks of black coal and glowing orange ore. Seen from the side and slightly above, "
+                          "wider than it is tall."),
     "stall_medieval": (2, "A single small village market stall: a wooden counter under a striped red-and-cream cloth awning on "
                           "two posts, with baskets of apples, bread and pottery on the counter."),
     "stall_steampunk": (2, "A single small Victorian steampunk market stall: a brass-trimmed wooden counter under a riveted "
@@ -234,7 +238,7 @@ PROPS = {
     "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
-KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban", "cart_ironhaven"}
 ## Props whose art must stand a fixed height: the lamp's light anchor sits 50px above its base (VillageProp), and the
 ## TREE prop's footprint is 1x3, so 96px.
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
