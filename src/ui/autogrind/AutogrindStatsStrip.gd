@@ -56,7 +56,7 @@ var _last_region: String = ""
 
 
 static func _text_w(t: String, fs: int) -> float:
-	return ThemeDB.fallback_font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	return UiFont.display().get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 
 
 ## A field's font at the live Text Size: the authored 9/10 px were literals, so the setting never reached this strip.
@@ -92,7 +92,8 @@ static func compute_layout(strip_w: float) -> Dictionary:
 		var group: Array = FIELDS[g]
 		var row_h: float = ROW_H
 		for f in group:
-			row_h = maxf(row_h, float(maxi(font_px(int(f[2])), font_px(int(f[3])))) + 8.0)
+			var px: int = maxi(font_px(int(f[2])), font_px(int(f[3])))
+			row_h = maxf(row_h, maxf(float(px) + 8.0, UiFont.display().get_height(px) + 4.0))
 		var placed: Array = []
 		if _authored_fits(group, strip_w):
 			for f in group:

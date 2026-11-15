@@ -194,10 +194,14 @@ func _build_ui() -> void:
 		## below. A raw size here was consistent only while the label's was raw too, and the default
 		## flags were inert only while no token exceeded the width -- measured elsewhere today, a
 		## mismatched pair derived a 120px box for 140px of text, and it bit at 125%, not just at 2.0x.
-		advice_h = ThemeDB.fallback_font.get_multiline_string_size(
+		advice_h = UiFont.display().get_multiline_string_size(
 			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, TextScale.scaled(ADVICE_FONT_SIZE),
 			-1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
-	var head_h: float = _grew(68.0) if advice == "" else _grew(56.0) + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
+	## The header stacks by the face's own line heights, so a taller line box pushes the next line down instead of under it.
+	var title_y: float = _grew(12.0)
+	var reason_y: float = maxf(_grew(38.0), title_y + UiFont.display().get_height(TextScale.scaled(18)) + 2.0)
+	var advice_y: float = maxf(_grew(56.0), reason_y + UiFont.display().get_height(TextScale.scaled(12)) + 2.0)
+	var head_h: float = maxf(_grew(68.0), advice_y + _grew(12.0)) if advice == "" else advice_y + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
 	var rows_per_col: int = stats_data.size()
 	## The footer (separator at -40, prompt at -30) scales with Text Size; a literal 50 reserved 1.0x's footer at 2.0x and overflowed onto it.
 	var footer_h: float = _grew(50.0)
@@ -253,14 +257,14 @@ func _build_ui() -> void:
 
 	var title = Label.new()
 	title.text = "AUTOGRIND COMPLETE"
-	title.position = Vector2(_grew(20.0), _grew(12.0))
+	title.position = Vector2(_grew(20.0), title_y)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	panel.add_child(title)
 
 	var reason_lbl = Label.new()
 	reason_lbl.text = "Stopped: %s" % _reason
-	reason_lbl.position = Vector2(_grew(20.0), _grew(38.0))
+	reason_lbl.position = Vector2(_grew(20.0), reason_y)
 	reason_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	reason_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	panel.add_child(reason_lbl)
@@ -274,7 +278,7 @@ func _build_ui() -> void:
 		advice_lbl.text = advice
 		advice_lbl.add_theme_font_size_override("font_size", TextScale.scaled(ADVICE_FONT_SIZE))
 		advice_lbl.add_theme_color_override("font_color", ADVICE_COLOR)
-		advice_lbl.position = Vector2(_grew(20.0), _grew(56.0))
+		advice_lbl.position = Vector2(_grew(20.0), advice_y)
 		advice_lbl.size = Vector2(panel_w - _grew(40.0), maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))))
 		panel.add_child(advice_lbl)
 
@@ -548,7 +552,7 @@ static func split_session_new(split: Array, session_ids: Array) -> Array:
 func _measure_badge_width(a: Dictionary) -> float:
 	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
 	var px: int = TextScale.scaled(CHIP_FONT_SIZE)
-	var w: float = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	var w: float = UiFont.display().get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	return maxf(_grew(72.0), w + _grew(16.0))
 
 
