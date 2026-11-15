@@ -267,16 +267,29 @@ func test_every_authored_shop_name_fits_on_its_own_sign() -> void:
 		ShopInteriorScript.fit_font_size(absurd, font, board_px)).x
 	assert_gt(absurd_w, board_px, "CONTROL: the width check cannot report an overrun at all")
 
-	## The shrink itself, on a name no authored one reaches: nothing above exercises it.
+	## A name no authored one reaches, on the BUILT sign: in the dial-9 bitmap face the shrink cannot narrow it (every size draws at one step), so the board wraps it onto two lines (main 25553 rule c).
 	var long_name := "Boilerman's Apothecary and Sundries"
-	var chosen: int = ShopInteriorScript.fit_font_size(long_name, font, board_px)
-	assert_lt(chosen, ShopInteriorScript.SIGN_FONT_MAX,
-		"a name too wide at full size was not shrunk at all")
-	assert_lte(font.get_string_size(long_name, HORIZONTAL_ALIGNMENT_CENTER, -1, chosen).x, board_px,
-		"the size it shrank to still does not fit the board")
 	assert_gt(font.get_string_size(long_name, HORIZONTAL_ALIGNMENT_CENTER, -1,
-		ShopInteriorScript.SIGN_FONT_MAX).x, board_px,
-		"CONTROL: this name already fits at full size, so the shrink assert above is free")
+		ShopInteriorScript.fit_font_size(long_name, font, board_px)).x, board_px,
+		"CONTROL: this name fits one line at the size the shrink picks, so the wrap below is free")
+	var big = ShopInteriorScript.new()
+	big.shop_type = 0
+	big.shop_name = long_name
+	add_child_autofree(big)
+	await get_tree().process_frame
+	var big_label: Label = _find_label(big, long_name)
+	assert_not_null(big_label, "CONTROL: the long-named shop built its sign label")
+	if big_label == null:
+		return
+	assert_eq(big_label.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "a name the shrink cannot fit must wrap on the board")
+	var px: int = big_label.get_theme_font_size("font_size")
+	var flags := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	var block: Vector2 = font.get_multiline_string_size(long_name, HORIZONTAL_ALIGNMENT_CENTER, board_px, px, -1, flags)
+	assert_lte(block.x, board_px, "the wrapped name is %.0f px on a %.0f px board" % [block.x, board_px])
+	assert_lte(block.y, float(board.texture.get_height()), "the wrapped name needs %.0f px of a %.0f px board" % [block.y, float(board.texture.get_height())])
+	assert_eq(big_label.size, Vector2(board_px, float(board.texture.get_height())), "the wrapped label is the board's own box")
+	var short_label: Label = sign_label
+	assert_eq(short_label.autowrap_mode, TextServer.AUTOWRAP_OFF, "a name that fits one line does not wrap")
 
 
 ## The hanging board: the only sign-shaped sprite in the room, 4 tiles by 1.
