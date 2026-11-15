@@ -23,6 +23,7 @@ const ShotGuard = preload("res://tools/shot_guard.gd")
 ## struktured plays on it.
 
 const ALERT_RADIUS := 150.0   ## RoamingMonster.ALERT_RADIUS — the tell's trigger distance
+var _tell_hidden := false   ## set at the tell-gate line; a hidden tell exits 4 (the saved frame lacks the tell)
 const VOID_BYTES := 20000
 ## Shifts the view down so the elite, which the ground plane's projection pushes well below
 ## the player, lands in frame. Measured against the rendered result, not derived.
@@ -154,7 +155,12 @@ func _init() -> void:
 		print("[SHOT] zoom %s is not positive — falling back to %s" % [str(zoom_f), str(DEFAULT_ZOOM)])
 		zoom_f = DEFAULT_ZOOM
 	print("[SHOT] camera zoom: %sx" % str(zoom_f))
-	var target: Vector2 = ow.player.global_position + off
+	# AIM FROM WHERE THE PLAYER IS DRAWN. Since dd8561ce6 (.792) every roamer's alert / chase / elite-watch
+	# gate measures to RoamingMonster._player_seen_pos() = player + seen_offset() (Mode 7 draws the player
+	# 140.6 px north of their true point). Aimed from the TRUE point, (90,-20) sat 150.5 px from the seen
+	# point, just outside ALERT_RADIUS 150, so the purple tell never showed and the log said "dist 92".
+	var seen: Vector2 = RoamingMonster.seen_offset()
+	var target: Vector2 = ow.player.global_position + seen + off
 	# Screen position is what matters and the overworld does not map world->screen linearly
 	# (the ground is drawn on a skewed plane), so report both and let the offset be tuned
 	# against the measurement rather than against a guess.
@@ -184,11 +190,16 @@ func _init() -> void:
 		cam2.zoom = Vector2(zoom_f, zoom_f)
 
 	var tell = elite.get_node_or_null("MoodTell")
+	# The SAME distance the game's gate uses: elite to the seen player. One parseable line for the slot/selftest.
+	var seen_dist: float = elite.global_position.distance_to(ow.player.global_position + seen)
+	print("[SHOT] tell gate: seen_dist=%.1f radius=%.1f visible=%s" % [seen_dist, ALERT_RADIUS,
+		str(tell != null and tell.visible)])
+	_tell_hidden = tell == null or not tell.visible
 	if tell == null:
 		print("[SHOT] ⚠ no MoodTell node — capturing anyway, but the prompt will be absent")
 	elif not tell.visible:
 		print("[SHOT] ⚠ MoodTell is HIDDEN (dist=%.1f, ALERT_RADIUS=%.1f) — the shot will not show the prompt"
-			% [elite.global_position.distance_to(ow.player.global_position), ALERT_RADIUS])
+			% [seen_dist, ALERT_RADIUS])
 	else:
 		# `tell.visible` is a NODE PROPERTY. It says the distance gate fired, NOT that the
 		# label lands inside the captured frame — and the old line printed "tell visible"
@@ -226,7 +237,9 @@ func _init() -> void:
 	# that the game would not. Driving real contact would additionally exercise the collision
 	# path, which this shot does not claim to cover.
 	if not _wants_prompt(user_args):
-		quit(3 if ShotGuard.refused > 0 else 0)
+		# 4: the frame was saved but advertises an elite WITHOUT its tell. A store shot missing the one thing it
+		# exists to show is a failure, not a pass (the .804 dry run exited 0 on exactly that).
+		quit(3 if ShotGuard.refused > 0 else (4 if _tell_hidden else 0))
 		return
 	if not elite.has_method("_present_elite_prompt"):
 		_die("RoamingMonster._present_elite_prompt absent — the choice entry point moved")
@@ -265,7 +278,7 @@ func _init() -> void:
 		fa2.close()
 	print("[SHOT] field_elite_prompt_%s %d B (%dx%d)%s" % [world, sz2, img2.get_width(), img2.get_height(),
 		"  ⚠ SUSPECT: likely an empty void" if sz2 < VOID_BYTES else ""])
-	quit(3 if ShotGuard.refused > 0 else 0)
+	quit(3 if ShotGuard.refused > 0 else (4 if _tell_hidden else 0))
 
 
 func _find_elite(sp) -> Node:
