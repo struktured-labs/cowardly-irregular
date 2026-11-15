@@ -46,6 +46,12 @@ run "a labelled tip vouched by FOLD_VERIFIED merges" 0 "VOUCHED by FOLD_VERIFIED
 run "a vouch for ANOTHER sha does not cover it" 1 "SKIP zz-selftest-label: an \[UNVERIFIED\] commit would ride in" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="${DEL:0:9}" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a branch:sha vouch (the args-file form) merges" 0 "VOUCHED by FOLD_VERIFIED" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="zz-selftest-label:$(git rev-parse --short=9 "$REF2")" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a vouch naming no commit refuses the fold" 2 "names no commit" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="zz-selftest-label:0000000feedface" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
+## No tips named: fold.sh folds the queue_tip.sh files, and refuses when the queue's --list fails.
+mkdir -p "$WT/tmp"; echo "zz-selftest-del:${DEL:0:9}" > "$WT/tmp/fold_args_997.txt"; echo "${DEL:0:9}" > "$WT/tmp/fold_verified_997.txt"
+run "no tips named folds the queue"   0 "MERGED zz-selftest-del"               FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997
+echo "zz-selftest-del zz-selftest-partner" > "$WT/tmp/fold_couples_997.txt"
+run "a queue whose --list fails is refused" 2 "list failed — fix the queue first" FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997
+rm -f "$WT"/tmp/fold_args_997.txt "$WT"/tmp/fold_verified_997.txt "$WT"/tmp/fold_couples_997.txt
 ## A first tip that could fast-forward must still land as a merge commit, or release_note.sh never names it (.767: Mordaine's re-cast).
 env FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997 "zz-selftest-del:${DEL:0:9}" >/dev/null 2>&1
 P2="$(git -C "$WT" log -1 --format=%P fold/v3.33.997~1 2>/dev/null | wc -w)"
