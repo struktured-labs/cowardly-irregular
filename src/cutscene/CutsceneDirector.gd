@@ -1970,7 +1970,10 @@ func _step_boss_intro(step: Dictionary) -> void:
 		title_label = Label.new()
 		title_label.text = boss_title
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.position = Vector2(0, screen_size.y * 0.4 + float(bim["gap"]))
+		var sub_y: float = screen_size.y * 0.4 + float(bim["gap"])
+		if bi_name_px > 36:  # the pixel face steps in whole multiples, so seat the subtitle below the title's built box
+			sub_y = maxf(sub_y, screen_size.y * 0.4 + maxf(name_label.size.y, name_label.get_combined_minimum_size().y) + 2.0)
+		title_label.position = Vector2(0, sub_y)
 		title_label.size = Vector2(screen_size.x, float(bim["sub_h"]))
 		title_label.clip_text = false
 		title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
