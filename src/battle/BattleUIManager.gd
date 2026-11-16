@@ -915,16 +915,10 @@ func update_action_buttons() -> void:
 		_scene.btn_bide.disabled = true
 
 
-## Scale to the player's setting, then shrink only if THIS line still does not fit — the same
-## shrink-to-fit shape _place_victory_banner uses, so a short line ("Round 1") keeps the chosen size
-## and only a long one gives any back.
-##
-## Reads the CAPTURED base from meta, never the current override: get_theme_font_size() returns the
-## override once set, so starting from it would shrink cumulatively and never recover when the line
-## gets shorter again. Measured on the shared helper: re-reading takes 16px to 512 in five calls.
-##
-## A font query is correct here rather than a node read: the Label is single-line, so the default
-## break flags are the ones it draws with, and its rect is the thing being fitted TO.
+## Scale to the player's setting and never give it back: a line wider than the strip WIDENS the strip into the room
+## the side panels leave, and only a line wider than that room wraps. The pixel face draws whole steps, so a shrink
+## to fit fell back to the 100% step at 200% and the setting did nothing (adhoc r6: 100%=22 200%=22); main 25819.
+## Reads the CAPTURED base, never the current override (re-reading compounds: 16px reached 512 in five calls).
 func _fit_turn_info() -> void:
 	if _scene == null or not is_instance_valid(_scene):
 		return
@@ -934,31 +928,42 @@ func _fit_turn_info() -> void:
 	var font := label.get_theme_font(&"font")
 	if font == null:
 		return
-	## ⛔ A PRE-LAYOUT RECT IS NOT A MEASUREMENT. TurnInfoPanel is a PanelContainer that sizes its
-	## child during its own sort step, so on the FIRST call — at scene build, before any layout pass
-	## — label.size.x is the Label's own TEXT minimum (~85px for "Round 1"), not the strip's 400. The
-	## fit shrank against that and hit the `px > 8` floor, and nothing re-fits until the next turn, so
-	## every battle opened with an 8px strip at EVERY Text Size. The panel's width comes from its
-	## anchors at _ready, so it is credible immediately; the inset is derived from its own stylebox
-	## rather than assumed to be zero.
-	var avail: float = label.size.x
-	var strip := label.get_parent() as Control
-	if strip != null:
-		var sb := strip.get_theme_stylebox(&"panel")
-		var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
-		avail = maxf(avail, strip.size.x - inset)
-	if avail <= 0.0:
-		return  ## genuinely sizeless; the next turn update fits it, and turn info updates every turn
-	## ⛔ THE KEY MUST BE THE ONE THE CAPTURE WRITES. This read `text_scale_base_font_size`, which
-	## nothing writes — _scale_themed_font captures `base_font_px` — so the default fired and the
-	## "base" WAS the shrunken override: one long name shrank the strip and no later turn recovered it.
-	## Exactly what the note above forbids, in the line below it.
-	var base: int = int(label.get_meta(&"base_font_px",
-		label.get_theme_font_size(&"font_size")))
+	var base: int = int(label.get_meta(&"base_font_px", label.get_theme_font_size(&"font_size")))
 	var px: int = TextScale.scaled(base)
-	while px > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x > avail:
-		px -= 1
 	label.add_theme_font_size_override(&"font_size", px)
+	var strip := label.get_parent() as Control
+	if strip == null:
+		return
+	if not strip.has_meta(&"base_strip"):
+		strip.set_meta(&"base_strip", Vector2(strip.offset_right - strip.offset_left, strip.offset_bottom - strip.offset_top))
+	var base_strip: Vector2 = strip.get_meta(&"base_strip")
+	var sb := strip.get_theme_stylebox(&"panel")
+	var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
+	var room: float = turn_strip_room()
+	var need: float = font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x + inset
+	var cap: float = room if room > 0.0 else base_strip.x
+	var w: float = clampf(need, minf(base_strip.x, cap), cap)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF if need <= w + 0.5 else TextServer.AUTOWRAP_WORD_SMART
+	label.update_minimum_size()
+	strip.offset_left = -w * 0.5
+	strip.offset_right = w * 0.5
+	strip.offset_bottom = strip.offset_top + base_strip.y
+	strip.notification(Container.NOTIFICATION_SORT_CHILDREN)  ## the line breaks at the new width now, not on the next frame
+	strip.offset_bottom = strip.offset_top + base_strip.y
+
+
+## The widest centred strip that stays clear of the enemy column and the party panel (8 px each side).
+func turn_strip_room() -> float:
+	var vp_w: float = _scene.get_viewport_rect().size.x
+	var half: float = vp_w * 0.5
+	var left := _scene.get_node_or_null("UI/EnemyStatusPanel") as Control
+	var right := _scene.get_node_or_null("UI/PartyStatusPanel") as Control
+	var room_half: float = half
+	if left != null:
+		room_half = minf(room_half, half - left.get_global_rect().end.x - 8.0)
+	if right != null:
+		room_half = minf(room_half, right.get_global_rect().position.x - half - 8.0)
+	return maxf(0.0, room_half * 2.0)
 
 
 func update_turn_info() -> void:
@@ -986,9 +991,7 @@ func update_turn_info() -> void:
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
 
-	## The strip is a single-line Label with no autowrap in a 400px panel, so a long line overflows
-	## SIDEWAYS rather than wrapping. "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)" is
-	## 57 chars and does not fit at the larger presets.
+	## A 57-char line ("Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)") outgrows the 400px strip; the fit widens it, then wraps.
 	_fit_turn_info()
 
 	# Update turn order strip

@@ -376,8 +376,12 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	leader_label.name = "LeaderStar"
 	leader_label.text = "★" if is_leader else ""
 	var k: float = _card_k()
-	leader_label.position = Vector2(4, 82.0 * k)
-	leader_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	var star_px: int = TextScale.scaled(10)
+	var mf: Font = _menu_font()
+	## Seated above the card's bottom border by its DRAWN line: the face steps the star to 2x at 150% while k still follows the name.
+	var star_h: float = mf.get_height(star_px) if mf != null else 18.0 * k
+	leader_label.position = Vector2(4, minf(82.0 * k, 100.0 * k - RetroPanel.TILE_SIZE - star_h))
+	leader_label.add_theme_font_size_override("font_size", star_px)
 	leader_label.add_theme_color_override("font_color", Color.YELLOW)
 	card.add_child(leader_label)
 
