@@ -57,7 +57,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -1202,6 +1202,19 @@ func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: floa
 const COUNTER_CHANCE := 0.4
 
 
+## Shared by live and grind: the chance of a monster's next counter this round, COUNTER_CHANCE * counter_decay^(counters already this round).
+static func counter_chance(decay: float, monster: Object, round_no: int) -> float:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	return COUNTER_CHANCE * pow(clampf(decay, 0.0, 1.0), n)
+
+
+## Records one fired counter against the round it fired in (counter_chance reads it back).
+static func note_counter(monster: Object, round_no: int) -> void:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	monster.set_meta("counter_round", round_no)
+	monster.set_meta("counters_this_round", n + 1)
+
+
 ## Twin of BattleManager._trigger_monster_counter: per landed strike, a monster's authored counter fires free at the attacker.
 func _maybe_monster_counter(monster, attacker) -> void:
 	if monster == null or not is_instance_valid(monster) or not monster.is_alive:
@@ -1221,8 +1234,9 @@ func _maybe_monster_counter(monster, attacker) -> void:
 	if not (counters is Array) or (counters as Array).is_empty():
 		return
 	var ability_id := str(counters[randi() % counters.size()])
-	if randf() > COUNTER_CHANCE:
+	if randf() > counter_chance(float((row as Dictionary).get("counter_decay", 1.0)), monster, _current_round):
 		return
+	note_counter(monster, _current_round)
 	var js = _get_autoload("JobSystem")
 	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
 	if ability.is_empty():
