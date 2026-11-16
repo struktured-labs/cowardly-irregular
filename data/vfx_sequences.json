@@ -283,7 +283,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 18,
+          "count": 24,
           "palette": "flame"
         },
         {
@@ -302,7 +302,7 @@
           "kind": "eruption",
           "at": 0.88,
           "power": 1.0,
-          "boost": 1.6,
+          "boost": 1.8,
           "sfx": "beat_fire_impact",
           "element": "fire"
         },
@@ -326,6 +326,42 @@
           "min_tier": 3,
           "palette": "fire",
           "scale": 4.0
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.2,
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 2.5,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.06
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 2.8,
+          "palette": "flame",
+          "palette_t3": "fire"
         }
       ]
     },
@@ -968,7 +1004,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 34,
+          "count": 40,
           "palette": "flame"
         },
         {
@@ -1074,6 +1110,42 @@
           "min_tier": 3,
           "palette": "fire",
           "scale": 8.0
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.68,
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 3.5,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.084
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 3.92,
+          "palette": "flame",
+          "palette_t3": "fire"
         }
       ],
       "tint": [
@@ -2028,7 +2100,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 26,
+          "count": 32,
           "palette": "flame"
         },
         {
@@ -2091,6 +2163,42 @@
           "trail_palette": "ember",
           "trail_spacing": 8,
           "size": 1.3
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.44,
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.072
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 3.36,
+          "palette": "flame",
+          "palette_t3": "fire"
         }
       ],
       "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action"
@@ -3159,7 +3267,33 @@
           "kind": "rise",
           "at": 0.47,
           "dur": 0.6,
-          "count": 10,
+          "count": 14,
+          "palette": "holy"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.22,
+          "dur": 0.12,
+          "size": 2.0,
+          "alpha": 0.6
+        },
+        {
+          "kind": "tint",
+          "at": 0.42,
+          "dur": 0.5,
+          "color": [
+            1.25,
+            1.2,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.5,
+          "dur": 0.6,
+          "scale": 1.6,
           "palette": "holy"
         }
       ]
@@ -3237,6 +3371,32 @@
           "dur": 0.6,
           "count": 14,
           "palette": "mana"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.22,
+          "dur": 0.12,
+          "size": 2.2,
+          "alpha": 0.6
+        },
+        {
+          "kind": "tint",
+          "at": 0.46,
+          "dur": 0.55,
+          "color": [
+            1.25,
+            1.2,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.54,
+          "dur": 0.66,
+          "scale": 1.76,
+          "palette": "holy"
         }
       ]
     },
@@ -3567,6 +3727,25 @@
           "offset": [
             -44,
             -6
+          ]
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.45,
+          "scale": 1.2,
+          "palette": "holy"
+        },
+        {
+          "kind": "tint",
+          "at": 0.5,
+          "dur": 0.4,
+          "color": [
+            1.2,
+            1.15,
+            0.95,
+            1.0
           ]
         }
       ]
@@ -3956,7 +4135,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 18,
+          "count": 24,
           "palette": "frost"
         },
         {
@@ -3998,6 +4177,40 @@
           "min_tier": 3,
           "palette": "frost",
           "scale": 4.0
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.2,
+          "palette": "frost"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 2.5,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.06
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 2.8,
+          "palette": "frost"
         }
       ]
     },
@@ -4013,7 +4226,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 26,
+          "count": 32,
           "palette": "frost"
         },
         {
@@ -4080,6 +4293,40 @@
           "trail_palette": "frost",
           "trail_spacing": 8,
           "size": 1.2
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.44,
+          "palette": "frost"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.072
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 3.36,
+          "palette": "frost"
         }
       ]
     },
@@ -4095,7 +4342,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 18,
+          "count": 24,
           "palette": "spark"
         },
         {
@@ -4154,6 +4401,40 @@
           "min_tier": 3,
           "palette": "spark",
           "scale": 4.0
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.2,
+          "palette": "spark"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 2.5,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.06
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 2.8,
+          "palette": "spark"
         }
       ]
     },
@@ -4169,7 +4450,7 @@
           "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
-          "count": 26,
+          "count": 32,
           "palette": "spark"
         },
         {
@@ -4261,6 +4542,40 @@
           "palette": "spark",
           "scale": 4.5,
           "sfx": "beat_thunder_ring"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "scale": 1.44,
+          "palette": "spark"
+        },
+        {
+          "kind": "flash",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.7
+        },
+        {
+          "kind": "impact_frame",
+          "at": 0.88,
+          "actor": "target",
+          "frame": 0.04
+        },
+        {
+          "kind": "hitstop",
+          "at": 0.88,
+          "dur": 0.072
+        },
+        {
+          "kind": "ring",
+          "at": 0.94,
+          "dur": 0.6,
+          "scale": 3.36,
+          "palette": "spark"
         }
       ]
     },

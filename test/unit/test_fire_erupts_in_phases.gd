@@ -6,7 +6,8 @@ extends GutTest
 ## a phase (Fira a pillar, Firaga a second detonation). The fractal that was Fire's is Edit Formula's, in glitch cyan.
 ## This is the reference sequence for the authoring guide (docs/vfx/sequence-authoring-guide.md).
 
-const FIRE_KINDS := ["gather", "bolt", "eruption", "pillar", "fall", "flash", "ring", "shake"]
+## impact_frame and hitstop are the target's punch at the eruption (struktured via main 26106: starter magic "even more amazing").
+const FIRE_KINDS := ["gather", "bolt", "eruption", "pillar", "fall", "flash", "ring", "shake", "impact_frame", "hitstop"]
 const FRACTAL_KINDS := ["emit", "spin_fling"]
 
 

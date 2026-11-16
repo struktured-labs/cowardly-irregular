@@ -268,6 +268,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.on_shake = _trigger_screen_shake
 	fx.on_sfx = play_phase_sfx
 	fx.on_element_phase = run_element_phase
+	fx.on_tint = _tint_battle_background
 	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX), compact)
 	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)}
 

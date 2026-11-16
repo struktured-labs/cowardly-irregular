@@ -78,6 +78,8 @@ var on_shake: Callable = Callable()
 var on_sfx: Callable = Callable()
 ## (kind, at, from, power, phase) — the shared phases EffectSystem draws: eruption (an element's original burst), pillar, gather, fall, rise.
 var on_element_phase: Callable = Callable()
+## (color, duration_s) — a screen-level wash; the caller owns the backdrop and the Reduce Flashes gate.
+var on_tint: Callable = Callable()
 var spawned: int = 0
 var rng := RandomNumberGenerator.new()
 var _ramps: Dictionary = {}
@@ -250,6 +252,9 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 			_plates(at_pos, phase, power)
 		"cue":
 			pass  # a sound-only beat: its "sfx" already fired above
+		"tint":
+			if on_tint.is_valid():
+				on_tint.call(_color(phase.get("color", [1.3, 1.25, 1.1, 1.0])), float(phase.get("dur", 0.4)))
 		"eruption", "pillar", "gather", "fall", "rise":
 			if on_element_phase.is_valid():
 				on_element_phase.call(str(phase["kind"]), at_pos, from, power, phase)
@@ -765,7 +770,9 @@ func _impact_frame(p: Dictionary) -> void:
 	who.material = mat
 	var tw := who.create_tween()
 	tw.tween_interval(frame)
-	tw.tween_callback(func() -> void: mat.set_shader_parameter("tint", Color(1, 1, 1, 1)))
+	## Reduce Flashes keeps the dark beat and drops the white one, the frame a player would look away from.
+	if not reduce_flashes:
+		tw.tween_callback(func() -> void: mat.set_shader_parameter("tint", Color(1, 1, 1, 1)))
 	tw.tween_interval(frame * 1.5)
 	tw.tween_callback(func() -> void:
 		if is_instance_valid(who):
