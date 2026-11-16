@@ -218,12 +218,15 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed settings. Labels are engine*4, so engine 0.25 reads "1x".
 ## struktured 2026-10-30 (overriding his 2026-07-11 ruling that 1x is the default): "2x I find a bit
 ## hard to see animations but 1x feels too slow" — so a 1.5x rung exists and IS the default.
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"]
+## struktured 2026-11-15: "add the rung for now" -- 2.5x between 2x and 4x, the doubling he plays across (speed_scale_v5).
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 0.625, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "2.5x", "4x", "8x", "16x", "32x", "64x"]
 const DEFAULT_BATTLE_SPEED_INDEX: int = 1
 const DEFAULT_BATTLE_SPEED: float = 0.375
 ## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
 const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+## The ladder before the 2.5x rung, for reading a battle_speed_index saved before speed_scale_v5.
+const LEGACY_V4_BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
 ## Tap the speed button = one rung UP (wrapping, as always); hold it this long = one rung DOWN, clamped at
 ## the slowest (struktured 2026-11-01). Wall clock, like Win98Menu's Auto hold: battle time is scaled.
