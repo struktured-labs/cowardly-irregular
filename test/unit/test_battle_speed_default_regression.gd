@@ -36,9 +36,9 @@ func test_default_speed_index_is_the_1_5x_rung() -> void:
 
 func test_speed_and_label_arrays_stay_paired() -> void:
 	var bs = load(BATTLE_SCENE_PATH)
-	assert_eq(Array(bs.BATTLE_SPEEDS), [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0],
-		"the ladder: 1x, the 1.5x default, then the doubling rungs")
-	assert_eq(Array(bs.BATTLE_SPEED_LABELS), ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"],
+	assert_eq(Array(bs.BATTLE_SPEEDS), [0.25, 0.375, 0.5, 0.625, 1.0, 2.0, 4.0, 8.0, 16.0],
+		"the ladder: 1x, the 1.5x default, 2x, the 2.5x rung (2026-11-15), then the doubling rungs")
+	assert_eq(Array(bs.BATTLE_SPEED_LABELS), ["1x", "1.5x", "2x", "2.5x", "4x", "8x", "16x", "32x", "64x"],
 		"labels must stay index-paired with speeds or the display lies")
 
 
