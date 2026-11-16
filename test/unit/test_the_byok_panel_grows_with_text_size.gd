@@ -133,6 +133,11 @@ func test_the_fields_and_buttons_scale_too() -> void:
 		assert_gt(int((pair2[1] as Button).get_theme_font_size("font_size")),
 			int((pair2[0] as Button).get_theme_font_size("font_size")),
 			"'%s' is a caption the player reads" % (pair2[0] as Button).text)
+		var sb := pair2[0] as Button
+		var lb := pair2[1] as Button
+		var drawn_small: float = UiFont.of(sb).get_height(sb.get_theme_font_size("font_size"))
+		var drawn_large: float = UiFont.of(lb).get_height(lb.get_theme_font_size("font_size"))
+		assert_gt(drawn_large, drawn_small, "'%s' must DRAW taller at 200%% (%.0f vs %.0f): the face snaps, so px alone can grow invisibly" % [sb.text, drawn_large, drawn_small])
 
 
 # ── the grown text FITS — rect vs rect, at EVERY preset ─────────────────────
@@ -253,18 +258,27 @@ func test_the_status_box_never_reaches_past_its_own_panel() -> void:
 		"a status box sized by what it WANTS rather than by the room it has draws outside the panel: %s" % str(bad))
 
 
-func test_three_buttons_share_one_row_at_every_preset() -> void:
+## A caption keeps its scaled size (main 25799: a stepped-down caption draws at 100% in the snapping face); the row wraps instead.
+func test_the_buttons_never_overlap_and_keep_their_size_at_every_preset() -> void:
 	var bad: Array = []
 	for scale in PRESETS:
 		var p := _panel_at(float(scale))
 		var btns: Array = [p._test_btn, p._save_btn, p._cancel_btn]
+		for b in btns:
+			var bt := b as Button
+			var px: int = bt.get_theme_font_size("font_size")
+			if px != TextScale.scaled(BYOKConfigPanel.BUTTON_FONT):
+				bad.append("%sx: '%s' drawn at %dpx, not its scaled %dpx" % [str(scale), bt.text, px, TextScale.scaled(BYOKConfigPanel.BUTTON_FONT)])
+			var ink: float = UiFont.of(bt).get_string_size(bt.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			if ink > bt.size.x:
+				bad.append("%sx: '%s' needs %.0fpx of a %.0fpx button" % [str(scale), bt.text, ink, bt.size.x])
 		for i in btns.size():
 			for j in range(i + 1, btns.size()):
 				if _rect(btns[i]).intersects(_rect(btns[j])):
 					bad.append("%sx: '%s' over '%s'" % [str(scale), (btns[i] as Button).text, (btns[j] as Button).text])
 			if not _panel_rect(p).encloses(_rect(btns[i])):
 				bad.append("%sx: '%s' outside the panel" % [str(scale), (btns[i] as Button).text])
-	assert_eq(bad.size(), 0, "three captions share one row at every text size: %s" % str(bad))
+	assert_eq(bad.size(), 0, "the buttons overlap, leave the panel, or shrink their captions: %s" % str(bad))
 
 
 # ── the overrun at large text is MEASURED and BOUNDED ───────────────────────
