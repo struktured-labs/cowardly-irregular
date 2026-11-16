@@ -35,11 +35,21 @@ func test_default_speed_index_is_the_1_5x_rung() -> void:
 
 
 func test_speed_and_label_arrays_stay_paired() -> void:
+	## Derived, not a literal list, so a later rung (his "maybe 3x") does not re-pin this file.
 	var bs = load(BATTLE_SCENE_PATH)
-	assert_eq(Array(bs.BATTLE_SPEEDS), [0.25, 0.375, 0.5, 0.625, 1.0, 2.0, 4.0, 8.0, 16.0],
-		"the ladder: 1x, the 1.5x default, 2x, the 2.5x rung (2026-11-15), then the doubling rungs")
-	assert_eq(Array(bs.BATTLE_SPEED_LABELS), ["1x", "1.5x", "2x", "2.5x", "4x", "8x", "16x", "32x", "64x"],
-		"labels must stay index-paired with speeds or the display lies")
+	assert_eq(bs.BATTLE_SPEEDS.size(), bs.BATTLE_SPEED_LABELS.size(), "every rung names itself")
+	for i in bs.BATTLE_SPEEDS.size():
+		var x: float = bs.BATTLE_SPEEDS[i] * 4.0
+		var want: String = ("%dx" % int(x)) if is_equal_approx(x, roundf(x)) else ("%sx" % str(x))
+		assert_eq(bs.BATTLE_SPEED_LABELS[i], want, "labels are engine*4: rung %d is engine %s" % [i, bs.BATTLE_SPEEDS[i]])
+		if i > 0:
+			assert_gt(bs.BATTLE_SPEEDS[i], bs.BATTLE_SPEEDS[i - 1], "the ladder strictly climbs at rung %d" % i)
+	var r: int = Array(bs.BATTLE_SPEED_LABELS).find("2.5x")
+	assert_gt(r, 0, "the 2.5x rung (2026-11-15) is on the ladder")
+	if r > 0:
+		assert_eq(bs.BATTLE_SPEED_LABELS[r - 1], "2x", "between 2x")
+		assert_eq(bs.BATTLE_SPEED_LABELS[r + 1], "4x", "and 4x")
+	assert_eq(bs.BATTLE_SPEED_LABELS[0], "1x", "the ladder still starts at 1x")
 
 
 func test_save_system_reads_via_preload_const() -> void:

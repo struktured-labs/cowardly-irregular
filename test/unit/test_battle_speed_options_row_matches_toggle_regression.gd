@@ -109,7 +109,7 @@ func test_in_battle_speed_button_updates_the_options_row() -> void:
 
 func test_save_load_keeps_the_options_row_on_the_speed_battles_run() -> void:
 	# The shape a v3 save wrote when the button had reached 32x (v3 index 5) and the default was
-	# still 1x. Since the 1.5x rung (v4) that speed is index 6: same speed, shifted index.
+	# still 1x. Later rungs (1.5x in v4, 2.5x in v5) moved its index; the speed is found by value below.
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	assert_not_null(f, "fixture settings.json must be writable")
 	if f == null:
@@ -131,5 +131,5 @@ func test_save_load_keeps_the_options_row_on_the_speed_battles_run() -> void:
 		"reload must not put the stale 1x default back on top of that speed")
 	assert_eq(Engine.time_scale, GameState.default_battle_speed,
 		"the battle after reload runs at the reloaded speed")
-	assert_eq(_speed_chip_text(menu), BattleSceneScript.BATTLE_SPEED_LABELS[6],
+	assert_eq(_speed_chip_text(menu), BattleSceneScript.BATTLE_SPEED_LABELS[at],
 		"after reload the options chip names the speed the next battle runs at")
