@@ -8371,6 +8371,15 @@ func _gloat_speaker_name(_is_victory: bool) -> String:
 	return "The Boss"
 
 
+## The banner's top: 60 px, or 6 px under the turn strip when a wrapped turn line has grown it past that.
+func banner_top() -> float:
+	var top := 60.0
+	var strip := get_node_or_null("UI/TurnInfoPanel") as Control
+	if strip != null and strip.is_visible_in_tree():
+		top = maxf(top, strip.get_global_rect().end.y + 6.0)
+	return top
+
+
 func _show_address_banner(text: String) -> void:
 	"""Spawns a transient banner Label centered at the top of the viewport,
 	fades in/holds/fades out via create_tween. Suppressed during turbo /
@@ -8409,7 +8418,7 @@ func _show_address_banner(text: String) -> void:
 	var banner_w: float = maxf(300.0, panel.get_combined_minimum_size().x)
 	panel.offset_left = -banner_w * 0.5
 	panel.offset_right = banner_w * 0.5
-	panel.offset_top = 60.0
+	panel.offset_top = banner_top()
 	panel.modulate = Color(1, 1, 1, 0)
 	panel.z_index = 200
 	add_child(panel)
