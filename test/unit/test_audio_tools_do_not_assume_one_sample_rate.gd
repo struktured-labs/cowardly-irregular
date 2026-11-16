@@ -43,6 +43,7 @@ const NOT_A_REWRITER := {
 	"gen_bolt_cues.py": "GENERATES the Rogue's crossbow-bolt hit and its crit from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"gen_royal_spite.py": "GENERATES the Rat King's Royal Spite counter cue from numpy synthesis at 44.1 kHz (gen_sequence_beats.SR), the rate the samples are MADE at; no master is its input, and its encode passes no -ar",
 	"gen_chiptune_sfx.py": "GENERATES; a fixed synthesis rate is the source of truth, not an assumption",
+	"gen_grounded_sfx.py": "GENERATES the grounded (no-chip) battle cues from numpy synthesis at 44.1 kHz (gen_sequence_beats.SR), the rate the samples are MADE at; no master is its input, and its encode passes no -ar",
 	"compose_inn_ditty.py": "GENERATES inn_rest_ditty.ogg from numpy synthesis at 44.1 kHz, the rate it is MADE at; no master is its input. Its padding trim goes through trim_wrap_padding.py, which this file audits",
 	"gen_freight_lift.sh": "GENERATES freight_lift.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master's rate can disagree with it. Its `sox -R` seed is load-bearing for provenance, not its rate",
 	"gen_block_seat.sh": "GENERATES block_seat.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master's rate can disagree with it",

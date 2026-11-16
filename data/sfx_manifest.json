@@ -47,28 +47,28 @@
     },
     "ability_fire": {
       "file": "assets/audio/sfx/ability_fire.ogg",
-      "prompt": "SYNTHESISED, not generated — the cast: pre-swell into a falling noise burst with a 90Hz sub. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
-      "duration_seconds": 1.5,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_fire), not generated. The cast: a held breath at the hand, then ignition: a whump, a roar falling dark, embers. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 1.06,
       "prompt_influence": 0.8,
       "variants": [
         "ability_fire_v2",
         "ability_fire_v3"
       ],
-      "source": "tools/gen_chiptune_sfx.py fire"
+      "source": "tools/gen_grounded_sfx.py ability_fire"
     },
     "ability_fire_v2": {
       "file": "assets/audio/sfx/ability_fire_v2.ogg",
-      "prompt": "SYNTHESISED, not generated — rotation sibling: shorter, harder, no pre-swell. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
-      "duration_seconds": 1.2,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_fire_v2), not generated. Rotation sibling: shorter and harder, no breath: the flame is already lit. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.72,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py fire_burst"
+      "source": "tools/gen_grounded_sfx.py ability_fire_v2"
     },
     "ability_fire_v3": {
       "file": "assets/audio/sfx/ability_fire_v3.ogg",
-      "prompt": "SYNTHESISED, not generated — rotation sibling: longest, sustained rumble that crumbles. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
-      "duration_seconds": 1.2,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_fire_v3), not generated. Rotation sibling: the longest, a sustained rumble that crumbles into embers. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 1.15,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py fire_roar"
+      "source": "tools/gen_grounded_sfx.py ability_fire_v3"
     },
     "escape_run": {
       "file": "assets/audio/sfx/escape_run.ogg",
@@ -115,53 +115,53 @@
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
-      "duration_seconds": 1.2,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_ice), not generated. Frost hiss, then the crystal forming: glass partials, one clean crack. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.95,
       "prompt_influence": 0.7,
       "variants": [
         "ability_ice_v2",
         "ability_ice_v3"
       ],
-      "source": "tools/gen_chiptune_sfx.py ice"
+      "source": "tools/gen_grounded_sfx.py ability_ice"
     },
     "ability_ice_v2": {
       "file": "assets/audio/sfx/ability_ice_v2.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
-      "duration_seconds": 1.2,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_ice_v2), not generated. Rotation sibling: the shatter: many tiny shards at once, a brittle burst. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.53,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py ice_shatter"
+      "source": "tools/gen_grounded_sfx.py ability_ice_v2"
     },
     "ability_ice_v3": {
       "file": "assets/audio/sfx/ability_ice_v3.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_ice_v3), not generated. Rotation sibling: the freeze: a low creak as it sets, settling chimes. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py ice_freeze"
+      "source": "tools/gen_grounded_sfx.py ability_ice_v3"
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
-      "duration_seconds": 1.5,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_lightning), not generated. A crack and its rumble, with a fizz of static before it. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.84,
       "prompt_influence": 0.8,
       "variants": [
         "ability_lightning_v2",
         "ability_lightning_v3"
       ],
-      "source": "tools/gen_chiptune_sfx.py lightning"
+      "source": "tools/gen_grounded_sfx.py ability_lightning"
     },
     "ability_lightning_v2": {
       "file": "assets/audio/sfx/ability_lightning_v2.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
-      "duration_seconds": 1.0,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_lightning_v2), not generated. Rotation sibling: the snap: the crack alone, a short tail. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.56,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py lightning_snap"
+      "source": "tools/gen_grounded_sfx.py ability_lightning_v2"
     },
     "ability_lightning_v3": {
       "file": "assets/audio/sfx/ability_lightning_v3.ogg",
-      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
-      "duration_seconds": 1.0,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_lightning_v3), not generated. Rotation sibling: the chain: three cracks walking away, each darker. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.95,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py lightning_chain"
+      "source": "tools/gen_grounded_sfx.py ability_lightning_v3"
     },
     "ability_mind_swap": {
       "file": "assets/audio/sfx/ability_mind_swap.ogg",
@@ -172,10 +172,10 @@
     },
     "ability_mp_restore": {
       "file": "assets/audio/sfx/ability_mp_restore.ogg",
-      "prompt": "SYNTHESISED, not generated — a low intake pulse then two held bells a fourth apart. pray (Cleric) and channel (Mage) are those jobs' FREE MOVES and played ability_physical, a sword unsheathing. Deliberately NOT ability_heal: that is the angelic HP restore, and MP returning should read quieter and more inward. Run the tool.",
-      "duration_seconds": 0.7,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_mp_restore), not generated. Pray and Channel: a low intake of breath, then two held bells a fourth apart. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.68,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py mp_restore"
+      "source": "tools/gen_grounded_sfx.py ability_mp_restore"
     },
     "ability_permakill": {
       "file": "assets/audio/sfx/ability_permakill.ogg",
@@ -199,24 +199,24 @@
     },
     "ability_revive": {
       "file": "assets/audio/sfx/ability_revive.ogg",
-      "prompt": "SYNTHESISED, not generated — a low breath resolving into a C major triad arriving together. `raise` (Anima Reddita) is the one moment a dead party member returns and it played a sword hit. Fundamentals held at 260-520 Hz so it reads warm, not as the birdsong chirp that got the old cure cue rejected. Run the tool.",
-      "duration_seconds": 1.15,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_revive), not generated. Raise: a low breath resolving into a C major triad, soft bells arriving together. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 1.13,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py revive"
+      "source": "tools/gen_grounded_sfx.py ability_revive"
     },
     "ability_riff": {
       "file": "assets/audio/sfx/ability_riff.ogg",
-      "prompt": "SYNTHESISED, not generated — root + tritone + minor 2nd struck together with a noise transient. The Bard's Free Move IS her attack and is type=physical, so it resolved to ability_physical, a sword unsheathing, against its own shipped description: 'a sour, clashing chord struck like a weapon'. Dissonant by construction, no glide. Run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_riff), not generated. The Bard's sour Riff: root, tritone and minor second struck together on strings, with a pick scrape. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.55,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py riff"
+      "source": "tools/gen_grounded_sfx.py ability_riff"
     },
     "ability_song": {
       "file": "assets/audio/sfx/ability_song.ogg",
-      "prompt": "SYNTHESISED, not generated — a three-step major triad on a reedy 25% pulse with vibrato on the sustain. The bard's four songs (battle_hymn, lullaby, discord, inspiring_melody) had no cue and fell through to ability_physical, a sword thump. Steps, never a slide: an arpeggio is discrete pitch, so it cannot become the glide struktured rejected. A text prompt would give a real instrument, not chiptune — run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py ability_song), not generated. A strummed lute: a major triad plucked low to high, the top note held with a little vibrato. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.85,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py song"
+      "source": "tools/gen_grounded_sfx.py ability_song"
     },
     "ability_summon": {
       "file": "assets/audio/sfx/ability_summon.ogg",
@@ -361,31 +361,31 @@
     },
     "advance_flourish_2": {
       "file": "assets/audio/sfx/advance_flourish_2.ogg",
-      "prompt": "SYNTHESISED — advance flourish at 2 queued actions. ONE sound getting more committed across 2..5, parameterised from a single voice so the family cannot drift into five different sounds. Run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py advance_flourish_2), not generated.  Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.34,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_flourish_2"
+      "source": "tools/gen_grounded_sfx.py advance_flourish_2"
     },
     "advance_flourish_3": {
       "file": "assets/audio/sfx/advance_flourish_3.ogg",
-      "prompt": "SYNTHESISED — advance flourish at 3 queued actions. See advance_flourish_2.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py advance_flourish_3), not generated.  Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.42,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_flourish_3"
+      "source": "tools/gen_grounded_sfx.py advance_flourish_3"
     },
     "advance_flourish_4": {
       "file": "assets/audio/sfx/advance_flourish_4.ogg",
-      "prompt": "SYNTHESISED — advance flourish at 4 queued actions. See advance_flourish_2.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py advance_flourish_4), not generated.  Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.52,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_flourish_4"
+      "source": "tools/gen_grounded_sfx.py advance_flourish_4"
     },
     "advance_flourish_5": {
       "file": "assets/audio/sfx/advance_flourish_5.ogg",
-      "prompt": "SYNTHESISED — advance flourish at 5 queued actions (struktured 2026-09-09: 4 actions becomes SOMETIMES 5). The 4->5 step is the LARGEST by construction — +1.9 dB rms and +0.26s against +1.1/+0.10 for 3->4 — because the visuals put their biggest jump there. Octave-lower root and a sixth voice, not one more increment. Run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py advance_flourish_5), not generated.  Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.78,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
+      "source": "tools/gen_grounded_sfx.py advance_flourish_5"
     },
     "menu_force_queue": {
       "file": "assets/audio/sfx/menu_force_queue.ogg",
@@ -514,10 +514,10 @@
     },
     "advance_queue_full": {
       "file": "assets/audio/sfx/advance_queue_full.ogg",
-      "prompt": "SYNTHESISED — the REFUSED Advance press at a full queue (struktured 2026-09-14: Advance no longer commits). It will be MASHED — every momentum press past five lands here — so it is 0.17s: two held low blips a semitone apart, DOWN, a 'no'. On the bank's F so it reads as the bank refusing, not a menu error. Own voice (play_advance_queue_full): on _battle_player it cut the job's 3s fifth rung, still ringing. Run the tool.",
-      "duration_seconds": 0.17,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py advance_queue_full), not generated. Refused: two dull knocks on wood. The press did nothing. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.16,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_queue_full"
+      "source": "tools/gen_grounded_sfx.py advance_queue_full"
     },
     "advance_rogue_1": {
       "file": "assets/audio/sfx/advance_rogue_1.ogg",
@@ -707,17 +707,17 @@
     },
     "attack_hit_piano_scythe_crit": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe_crit.ogg",
-      "source": "tools/gen_chiptune_sfx.py scythe_crit",
-      "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
-      "duration_seconds": 0.9,
+      "source": "tools/gen_grounded_sfx.py attack_hit_piano_scythe_crit",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py attack_hit_piano_scythe_crit), not generated. The piano scythe's crit: a blade slice, then the struck chord ringing out from the frame. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 1.03,
       "prompt_influence": 0.0
     },
     "attack_hit_staff": {
       "file": "assets/audio/sfx/attack_hit_staff.ogg",
-      "prompt": "SYNTHESISED. Glided downward; found only after the audit stopped silently skipping cues whose loud part is under 3 windows. Run the tool.",
-      "duration_seconds": 0.5,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py attack_hit_staff), not generated. A staff on a body: a wooden thwack with a dull thud under it. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.3,
       "prompt_influence": 0.7,
-      "source": "tools/gen_chiptune_sfx.py staff_hit"
+      "source": "tools/gen_grounded_sfx.py attack_hit_staff"
     },
     "attack_hit_staff_crit": {
       "file": "assets/audio/sfx/attack_hit_staff_crit.ogg",
@@ -1273,17 +1273,17 @@
     },
     "full_bank_charged": {
       "file": "assets/audio/sfx/full_bank_charged.ogg",
-      "prompt": "SYNTHESISED — the bank LOCKING FULL at 5/5 while queueing. NOT advance_flourish_5 (the wind-up at resolution) and NOT full_bank_unleash (the discharge): a latch click then a HELD open fifth with no third, because it fires in the SAME FRAME as the job's own fifth rung and a missing third cannot clash with a key nobody controls. Own voice (play_full_bank_charged); on _battle_player one of the two was always eaten. Run the tool.",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py full_bank_charged), not generated. The bank LOCKING full: a metal latch, then a held resonant ring over a low hum. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
       "duration_seconds": 0.62,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py full_bank_charged"
+      "source": "tools/gen_grounded_sfx.py full_bank_charged"
     },
     "full_bank_unleash": {
       "file": "assets/audio/sfx/full_bank_unleash.ogg",
-      "prompt": "SYNTHESISED — the bank EMPTYING, deliberately NOT a louder advance_flourish_5. They fire together: the flourish is the character winding up, this is the discharge. Struck together with no stagger, rooted an octave below the flourish so the two occupy different space — measured 617Hz centroid apart. Run the tool.",
-      "duration_seconds": 0.85,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py full_bank_unleash), not generated. The bank EMPTYING, NOT a louder advance_flourish_5: a deep release, a falling gust, the ring let go. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.8,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py full_bank_unleash"
+      "source": "tools/gen_grounded_sfx.py full_bank_unleash"
     },
     "goblin_fanfare": {
       "file": "assets/audio/sfx/goblin_fanfare.ogg",
@@ -1502,9 +1502,9 @@
     },
     "party_ko": {
       "file": "assets/audio/sfx/party_ko.ogg",
-      "source": "tools/gen_chiptune_sfx.py party_ko",
-      "prompt": "SYNTHESISED (tools/gen_chiptune_sfx.py party_ko), not an ElevenLabs render. A party member falling. The battle LOG closed this parity at tick 176 -- _on_party_hp_changed emits 'X has fallen!' to match _on_enemy_died's line -- while the AUDIO parity stayed open: an enemy death plays enemy_death on the dedicated _death_player with a thud under it, and an ally dropping played NOTHING. Four discrete steps down an A-minor shape (A4 F4 C4, holding on A3) with a short filtered breath; stepped and never slid, because a descending glide is the whoop struktured rejected three times pointed the other way. Deliberately mid-register and 0.52s: play_death already lays DEATH_THUD under it on _sub_player, and this moment can repeat several times in one fight.",
-      "duration_seconds": 0.52,
+      "source": "tools/gen_grounded_sfx.py party_ko",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py party_ko), not generated. A party member falling: a body hitting the floor, cloth, a buckle settling. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.35,
       "prompt_influence": 0.4
     },
     "phase_execute": {
@@ -1776,10 +1776,10 @@
     },
     "status_cured": {
       "file": "assets/audio/sfx/status_cured.ogg",
-      "prompt": "SYNTHESISED, not generated — a short noise wash settling onto a clean held fifth. Using an Antidote/Eye Drops/Echo Herb was SILENT: the item arm plays an animation and no cue, and only effects that emit healing_done made any sound. Distinct from the status_* cues, which announce an affliction ARRIVING; this is one leaving. Run the tool.",
-      "duration_seconds": 0.6,
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py status_cured), not generated. An item cure: a short wash settling onto a clean held fifth. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.58,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py cure"
+      "source": "tools/gen_grounded_sfx.py status_cured"
     },
     "status_curse": {
       "file": "assets/audio/sfx/status_curse.ogg",
@@ -1893,9 +1893,9 @@
     },
     "strike_dark": {
       "file": "assets/audio/sfx/strike_dark.ogg",
-      "source": "tools/gen_chiptune_sfx.py strike_dark_hit",
-      "prompt": "SYNTHESISED. struktured heard the whoop on IMPACT after every cast cue was clean. This one swept downward (2670->144Hz, 18.6x) — a fall is a sweep too. Impacts land, they do not glide. Run the tool.",
-      "duration_seconds": 0.175,
+      "source": "tools/gen_grounded_sfx.py strike_dark",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py strike_dark), not generated. A weapon's dark bite: a muffled blow, smothered as it lands. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.2,
       "prompt_influence": 0.0
     },
     "strike_fire": {
@@ -1921,9 +1921,9 @@
     },
     "strike_lightning": {
       "file": "assets/audio/sfx/strike_lightning.ogg",
-      "source": "tools/gen_chiptune_sfx.py strike_lightning_hit",
-      "prompt": "SYNTHESISED. struktured heard the whoop on IMPACT after every cast cue was clean. This one swept downward (3495->947Hz, 3.7x) — a fall is a sweep too. Impacts land, they do not glide. Run the tool.",
-      "duration_seconds": 0.09,
+      "source": "tools/gen_grounded_sfx.py strike_lightning",
+      "prompt": "SYNTHESISED (tools/gen_grounded_sfx.py strike_lightning), not generated. A weapon's lightning bite: a crack and a quick sizzle, no tail. Replaces the chip version from gen_chiptune_sfx.py: struktured 2026-11-15 found the chip set 'a little arcady, even for me'. No square or pulse waves, no bit-crusher, and nothing glides upward while loud (the September whoop rule, re-measured by tools/audit_whoop.py).",
+      "duration_seconds": 0.16,
       "prompt_influence": 0.0
     },
     "surprised_chime": {

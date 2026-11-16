@@ -64,8 +64,6 @@ const WIDE_PENDING := {
 	"buff": [7.0, 3.9],
 	## wide on DESKTOP only; the mono tier is inside the limit
 	"debuff": [6.1, 3.0],
-	## all-mono, so the two tiers agree — a flat gain WOULD fix this one on both
-	"ability_ice": [5.2, 5.2],
 	## ⛔ THE ONE THAT GETS WORSE ON WEB: 5.2 desktop, 9.9 MONO. All-stereo members with different
 	## stereo widths, so the downmix pushes them APART. Nobody had seen this; it is the largest
 	## variant mismatch in the bank and it only exists in the shipped web build.
