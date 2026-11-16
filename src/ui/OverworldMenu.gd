@@ -322,7 +322,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	panel.add_child(gold_lbl)
 
 	# Party member cards
-	var card_height: float = 100.0 * _card_k()
+	var card_height: float = _card_height()
 	var y_offset: float = 28.0 * _card_k()
 	var card_pitch: float = card_height + 8.0
 
@@ -413,19 +413,21 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	# HP Bar
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
 	hp_bar.name = "HPBar"
-	hp_bar.position = Vector2(58, 36.0 * k)
+	# Seated under the job line it DRAWS: at 150% the face steps the 10 px job to 2x while k still follows the name, and its g reached the HP label.
+	var hp_y: float = _card_hp_y()
+	hp_bar.position = Vector2(58, hp_y)
 	card.add_child(hp_bar)
 
 	# MP Bar
 	var mp_bar = _create_stat_bar("MP", member.current_mp, member.max_mp, Color.CYAN, Color.DARK_CYAN)
 	mp_bar.name = "MPBar"
-	mp_bar.position = Vector2(58, 52.0 * k)
+	mp_bar.position = Vector2(58, hp_y + _card_row_step())
 	card.add_child(mp_bar)
 
 	# EXP progress indicator
 	var exp_row = _create_exp_indicator(member)
 	exp_row.name = "EXPRow"
-	exp_row.position = Vector2(58, 68.0 * k)
+	exp_row.position = Vector2(58, hp_y + 2.0 * _card_row_step())
 	card.add_child(exp_row)
 
 	# Dead indicator — always-present, visibility toggled per is_alive so a later Phoenix Down refresh (via _update_party_stats) can clear the overlay without a full rebuild (playtest 2026-07-15: Bard KO status persisted after in-menu revive because the overlay/label were only appended on first build).
@@ -450,7 +452,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	ailment_label.name = "AilmentLabel"
 	ailment_label.text = StatusNames.list_line(member.status_effects)
 	ailment_label.visible = ailment_label.text != ""
-	ailment_label.position = Vector2(58, 84.0 * k)
+	ailment_label.position = Vector2(58, hp_y + 3.0 * _card_row_step())
 	ailment_label.size = Vector2(180.0 * k, 14.0 * k)
 	ailment_label.clip_text = true
 	ailment_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
@@ -458,6 +460,26 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	card.add_child(ailment_label)
 
 	return card
+
+
+## The 10 px stat line as the face DRAWS it; the stat rows step by it, not by k, which follows the 14 px name.
+func _card_line10() -> float:
+	var f: Font = _menu_font()
+	return f.get_height(TextScale.scaled(10)) if f else 14.0 * _card_k()
+
+
+func _card_hp_y() -> float:
+	return maxf(36.0 * _card_k(), 22.0 * _card_k() + _card_line10())
+
+
+## HP to MP to EXP to ailment: the shipped 16 px step, or the drawn line when the face draws it taller (r7: 4.8 px overlap at 150%).
+func _card_row_step() -> float:
+	return maxf(16.0 * _card_k(), _card_line10())
+
+
+## Tall enough for the ailment row, the last one; 100 px at 100% exactly as shipped.
+func _card_height() -> float:
+	return maxf(100.0 * _card_k(), _card_hp_y() + 3.0 * _card_row_step() + maxf(14.0 * _card_k(), _card_line10()) + 2.0 * _card_k())
 
 
 func _create_stat_bar(label: String, current: int, maximum: int, color_full: Color, color_low: Color) -> Control:

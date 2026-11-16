@@ -210,3 +210,23 @@ func test_a_scrolling_party_keeps_the_selected_card_in_view() -> void:
 	await get_tree().process_frame
 	assert_lte(last.get_global_rect().end.y, scroller.get_global_rect().end.y + 1.5, "selected, the fifth card is inside the window")
 	assert_gte(last.get_global_rect().position.y, scroller.get_global_rect().position.y - 1.5, "from its top")
+
+
+## r7 (adhoc 26093): each stat row clears the line above as DRAWN (150% overlapped 4.8 px), and the card holds the hidden ailment row.
+func test_each_stat_row_clears_the_drawn_line_above_it() -> void:
+	var seen := 0
+	for s in _presets():
+		var m: Control = await _menu(s)
+		var card: Control = m._party_panels[0]
+		var rows: Array = ["HPBar", "MPBar", "EXPRow", "AilmentLabel"].map(func(n): return card.get_node(n) as Control)
+		for i in range(1, rows.size()):
+			var above: Array = [rows[i - 1]] if rows[i - 1] is Label else (rows[i - 1] as Control).find_children("*", "Label", true, false)
+			assert_gt(above.size(), 0, "CONTROL @%s: %s has a label" % [s, rows[i - 1].name])
+			var lb := above[0] as Label
+			var line: float = lb.get_theme_font("font").get_height(lb.get_theme_font_size("font_size"))
+			seen += 1
+			assert_gte(rows[i].position.y - rows[i - 1].position.y, line - SLACK, "@%s %s starts %.1f px under %s, whose drawn line is %.1f" % [s, rows[i].name, rows[i].position.y - rows[i - 1].position.y, rows[i - 1].name, line])
+		var ail := rows[3] as Label
+		var ail_bottom: float = ail.position.y + ail.get_theme_font("font").get_height(ail.get_theme_font_size("font_size"))
+		assert_lte(ail_bottom, card.size.y + SLACK, "@%s the ailment row ends %.1f px inside a %.1f px card" % [s, card.size.y - ail_bottom, card.size.y])
+	assert_eq(seen, 3 * _presets().size(), "CONTROL: three steps judged per Text Size")

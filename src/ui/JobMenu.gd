@@ -282,6 +282,10 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	level_label.position = Vector2(panel_size.x - 50, 8)
 	level_label.add_theme_font_size_override("font_size", TextScale.scaled(LEVEL_FONT))
 	level_label.add_theme_color_override("font_color", TEXT_COLOR)
+	# The authored x is kept while it fits; a wider drawn level moves left so it ends inside the card.
+	var lf: Font = UiFont.display()
+	if lf:
+		level_label.position.x = minf(level_label.position.x, panel_size.x - lf.get_string_size(level_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(LEVEL_FONT)).x - PANEL_PAD)
 	panel.add_child(level_label)
 
 	# HP/MP compact
