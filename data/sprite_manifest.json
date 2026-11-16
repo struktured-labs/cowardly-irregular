@@ -2852,7 +2852,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "T1 gpt-image-2, one edit call anchored on the Cave Rat King's idle frame (tools/gen_rat_guard_sprites.py; struktured 2026-11-15 via cowir-main 26105: the minions looked much worse than the King). His grey fur, purple and gold livery, a helm and the bestiary's small spear. Six poses in one call at one scale and one palette; hit 4-5 = the flinch then idle; dead 6-7 = a kneel, upright by prompt. Faces right, no flip. Replaces the legacy olive sheet."
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
