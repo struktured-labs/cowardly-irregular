@@ -57,7 +57,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -1174,6 +1174,7 @@ func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: floa
 	if roll["fate"] == "barrier":
 		target.remove_status("barrier")
 		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
+		_maybe_monster_counter(target, attacker)
 		return 0
 
 	## reflect and physical_reflect bounce the pre-defense swing onto the attacker. Live does not
@@ -1181,6 +1182,7 @@ func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: floa
 	if roll["fate"] == "reflect":
 		var bounced: int = attacker.take_damage(int(damage), false)
 		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
+		_maybe_monster_counter(target, attacker)
 		return 0
 
 	## take_damage owns the one defence formula (and defending, vulnerability, exposed), as in live's _execute_attack. This file used to run the formula here AND there, so every swing in a grind met the defence twice.
@@ -1192,7 +1194,71 @@ func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: floa
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
+	_maybe_monster_counter(target, attacker)
 	return dealt
+
+
+## Live's chance that a struck monster with counter_abilities strikes back (BattleManager._trigger_monster_counter).
+const COUNTER_CHANCE := 0.4
+
+
+## Shared by live and grind: the chance of a monster's next counter this round, COUNTER_CHANCE * counter_decay^(counters already this round).
+static func counter_chance(decay: float, monster: Object, round_no: int) -> float:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	return COUNTER_CHANCE * pow(clampf(decay, 0.0, 1.0), n)
+
+
+## Records one fired counter against the round it fired in (counter_chance reads it back).
+static func note_counter(monster: Object, round_no: int) -> void:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	monster.set_meta("counter_round", round_no)
+	monster.set_meta("counters_this_round", n + 1)
+
+
+## Twin of BattleManager._trigger_monster_counter: per landed strike, a monster's authored counter fires free at the attacker.
+func _maybe_monster_counter(monster, attacker) -> void:
+	if monster == null or not is_instance_valid(monster) or not monster.is_alive:
+		return
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if not (monster in _enemy_party):
+		return
+	if not monster.has_method("get_meta") or not monster.has_meta("monster_type"):
+		return
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return
+	var db: Variant = enc.monster_database
+	var row: Variant = (db as Dictionary).get(str(monster.get_meta("monster_type", "")), {}) if db is Dictionary else {}
+	var counters: Variant = (row as Dictionary).get("counter_abilities", []) if row is Dictionary else []
+	if not (counters is Array) or (counters as Array).is_empty():
+		return
+	var ability_id := str(counters[randi() % counters.size()])
+	if randf() > counter_chance(float((row as Dictionary).get("counter_decay", 1.0)), monster, _current_round):
+		return
+	note_counter(monster, _current_round)
+	var js = _get_autoload("JobSystem")
+	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
+	if ability.is_empty():
+		return
+	## The verb is the ability's own (`counter_verb`, cowir-battle's Royal Spite), as live reads it.
+	_log("%s %s %s!" % [monster.combatant_name, str(ability.get("counter_verb", "counters with")), str(ability.get("name", ability_id.replace("_", " ").capitalize()))])
+	_resolve_ability(monster, ability_id, _counter_targets(monster, attacker, ability), true)
+
+
+## Twin of BattleManager._counter_targets: a self/ally buff lands on the monster's side, a strike on the attacker.
+func _counter_targets(monster, attacker, ability: Dictionary) -> Array:
+	match str(ability.get("target_type", "single_enemy")):
+		"self", "single_ally":
+			return [monster]
+		"all_allies":
+			var allies: Array = _enemy_party.filter(func(e): return e != null and is_instance_valid(e) and e.is_alive)
+			return allies if not allies.is_empty() else [monster]
+		"all_enemies":
+			var foes: Array = _player_party.filter(func(p): return p != null and is_instance_valid(p) and p.is_alive)
+			return foes if not foes.is_empty() else [attacker]
+		_:
+			return [attacker]
 
 
 ## Twin of BattleManager._apply_familiar_weight_bonus (:3120). returned_sword's "Familiar Weight":
@@ -1474,7 +1540,7 @@ func _retarget_ability_targets(caster, ability_id: String, targets: Array) -> Ar
 	return [one] if one != null else []
 
 
-func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
+func _resolve_ability(caster, ability_id: String, targets: Array, free: bool = false) -> void:
 	var js = _get_autoload("JobSystem")
 	var ability: Dictionary = {}
 	if js and js.has_method("get_ability"):
@@ -1492,11 +1558,12 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	## silenced character kept casting while live refuses at BattleManager:4669. Mirrors live exactly,
 	## including that the TURN IS CONSUMED and no MP is spent: live logs and returns before its own
 	## spend. Checked here rather than at selection because this is the one point every cast passes.
-	if caster.has_status("silence"):
+	## A counter is free and unsilenceable, as live's _trigger_monster_counter calls the executor directly.
+	if not free and caster.has_status("silence"):
 		_log("%s is silenced — %s won't come out" % [caster.combatant_name, ability_id])
 		return
 
-	var mp_cost = ability.get("mp_cost", 5)
+	var mp_cost = 0 if free else ability.get("mp_cost", 5)
 	if not caster.spend_mp(mp_cost):
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])
 		return

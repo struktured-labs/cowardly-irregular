@@ -70,7 +70,7 @@ func _menu_at(scale: float, row_count: int = 24) -> Control:
 	add_child_autofree(m)
 	m.size = Vector2(1280, 720)
 	## ⛔ THE REAL DESTINATIONS, NOT INVENTED ONES. This first built "Whispering Cave Depths %d" --
-	## 25 chars against a real worst of 31 ("Community Center (MapleHeights)"), so the arm that
+	## 25 chars against a real worst of 32 ("Community Center (Maple Heights)"), so the arm that
 	## checks the name clears the cost column was testing a string SHORTER than the game produces.
 	## Same flaw as the grid's worst-by-length corpus of one, and @cowir-battle declared the
 	## identical thing in their TurnInfo arm within the hour: a fit arm on a string the game never

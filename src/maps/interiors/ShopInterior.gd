@@ -16,6 +16,7 @@ enum ShopType { ITEM = 0, BLACK_MAGIC = 1, WHITE_MAGIC = 2, BLACKSMITH = 3 }
 @export var shop_name: String = "Shop"
 
 const TILE_SIZE: int = 32
+const EntryFocusScript := preload("res://src/exploration/EntryFocus.gd")
 
 ## Sign text shrinks between these to fit the 4-tile board; below the floor it would be unreadable.
 const SIGN_FONT_MAX: int = 11
@@ -31,6 +32,7 @@ var npcs: Node2D
 var transitions: Node2D
 var decorations: Node2D
 var controller: Node
+var _keeper: Node2D
 
 ## Spawn points
 var spawn_points: Dictionary = {
@@ -109,6 +111,7 @@ func _ready() -> void:
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
+	_attach_entry_focus()
 	_setup_controller()
 	# Walls, the counter and the shelves are solid.
 	InteriorWalls.build(self, SHOP_LAYOUT, SOLID_GLYPHS)
@@ -451,11 +454,25 @@ func _create_hanging_sign() -> void:
 	label.add_theme_color_override("font_color", _pal_accent.lightened(0.3))
 	decorations.add_child(label)
 	# Sized after adoption: the theme font only resolves inside the tree.
-	label.add_theme_font_size_override("font_size", fit_font_size(shop_name, label.get_theme_font("font"), sw))
+	var font: Font = label.get_theme_font("font")
+	var fs: int = fit_font_size(shop_name, font, sw)
+	label.add_theme_font_size_override("font_size", fs)
+	# A bitmap face draws every size in SIGN_FONT_MIN..MAX at one step, so a name the shrink cannot fit wraps onto the board's two lines instead.
+	var wraps: bool = sign_wraps(shop_name, font, sw)
+	if wraps:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# clip_text drops text from the minimum size, which otherwise clamps the box 2px past the board.
 	label.clip_text = true
 	label.size = Vector2(sw, sh)
-	label.position = Vector2(6.0 * TILE_SIZE - sw / 2.0, 0.6 * TILE_SIZE)
+	label.position = Vector2(6.0 * TILE_SIZE - sw / 2.0, (0.0 if wraps else 0.6) * TILE_SIZE)
+
+
+## True when `name` overruns the board even at the size fit_font_size picks, so the sign must wrap it.
+static func sign_wraps(name: String, font: Font, max_px: float) -> bool:
+	if font == null:
+		return false
+	return font.get_string_size(name, HORIZONTAL_ALIGNMENT_CENTER, -1, fit_font_size(name, font, max_px)).x > max_px
 
 
 ## Largest size keeping `name` inside `max_px` -- measured, since two 22-char names differ by 7px.
@@ -1447,6 +1464,7 @@ func _setup_npcs() -> void:
 		if child.get("npc_name") == keeper_name:
 			keeper_npc = child
 			break
+	_keeper = keeper_npc as Node2D
 	if keeper_npc:
 		keeper_npc.portrait_override = load("res://src/exploration/ShopScene.gd").pictured_keeper_key(shop_type, keeper_name)
 	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
@@ -1657,6 +1675,15 @@ func _setup_camera() -> void:
 	else:
 		add_child(camera)
 		camera.position = Vector2(MAP_WIDTH * TILE_SIZE / 2, MAP_HEIGHT * TILE_SIZE / 2)
+
+
+## Walking in, the keeper behind the counter is framed with you instead of cut off at the top edge.
+func _attach_entry_focus() -> void:
+	var focus: Node = EntryFocusScript.new()
+	if focus.setup(camera, player, _keeper):
+		add_child(focus)
+	else:
+		focus.free()
 
 
 func spawn_player_at(spawn_name: String) -> void:

@@ -211,6 +211,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(9, 11))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 16))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(5, 16))
+	# The waterside notice stands at the swamp's edge, read from the path below it.
+	_add_prop(VillagePropScript.Kind.SIGNPOST, Vector2i(10, 10))
 	## LAST, so it defers to every building above. Rotten slate.
 	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["R", "C", "D"], [Color(0.30, 0.24, 0.36), Color(0.26, 0.30, 0.26)], "timber")

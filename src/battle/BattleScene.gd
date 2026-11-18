@@ -65,8 +65,8 @@ const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04
 const SIGNATURE_HITSTOP := 0.14  # seconds of hit-stop on a signature's impact
 const SIGNATURE_TINT_ALPHA := 0.32  # how strongly the backdrop takes the boss's colour during its signature
 var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
-## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
-const ENEMY_EDGE_SHIFT := -24.0
+## The enemies stand this much nearer their edge (struktured 2026-11-01); -24 left 9 px at 200% and the pixel face's wider column took 14.
+const ENEMY_EDGE_SHIFT := -12.0
 const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
 const PARTY_RANK_GAP := 8.0  # between neighbouring members' bodies across the two ranks
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
@@ -455,6 +455,11 @@ func _ready() -> void:
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
 	if enemy_panel_for_log:
 		enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)
+	## The turn strip's room is what the two side panels leave, so it refits whenever either one settles at its grown size.
+	for side in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+		var side_panel := get_node_or_null(side) as Control
+		if side_panel != null and _ui_manager != null:
+			side_panel.resized.connect(_ui_manager._fit_turn_info)
 	call_deferred("_reposition_battle_log_panel")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
@@ -6380,7 +6385,6 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
-## Lunges a hit-stop paused and then played again; a finished one is never played (test seam).
 
 
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
@@ -8367,6 +8371,15 @@ func _gloat_speaker_name(_is_victory: bool) -> String:
 	return "The Boss"
 
 
+## The banner's top: 60 px, or 6 px under the turn strip when a wrapped turn line has grown it past that.
+func banner_top() -> float:
+	var top := 60.0
+	var strip := get_node_or_null("UI/TurnInfoPanel") as Control
+	if strip != null and strip.is_visible_in_tree():
+		top = maxf(top, strip.get_global_rect().end.y + 6.0)
+	return top
+
+
 func _show_address_banner(text: String) -> void:
 	"""Spawns a transient banner Label centered at the top of the viewport,
 	fades in/holds/fades out via create_tween. Suppressed during turbo /
@@ -8400,12 +8413,12 @@ func _show_address_banner(text: String) -> void:
 	panel.add_child(label)
 	# Anchor at top-center.
 	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	panel.position = Vector2(-150, 60)
-	panel.size = Vector2(300, 0)  # auto-resize via child
-	## ...and that auto-resize grows RIGHTWARD by default, so the banner sat off-centre. Measured:
-	## the one string both callers pass renders 332px inside this 300px box, centre 656 vs 640 — 16px
-	## right, every time, because the text is a fixed literal. Same class as the hint bar's fallback.
+	## Grow BOTH before any size is set: the label measures off-tree, so a wider face clamped the box END-ward at `size =`.
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var banner_w: float = maxf(300.0, panel.get_combined_minimum_size().x)
+	panel.offset_left = -banner_w * 0.5
+	panel.offset_right = banner_w * 0.5
+	panel.offset_top = banner_top()
 	panel.modulate = Color(1, 1, 1, 0)
 	panel.z_index = 200
 	add_child(panel)

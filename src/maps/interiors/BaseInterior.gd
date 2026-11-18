@@ -381,6 +381,8 @@ const _EXAMINE_OFFSETS := {
 	## blacksmith_interior
 	"blacksmith_order_board": Vector2i(-4, -2),
 	"blacksmith_quench_barrel": Vector2i(4, -2),
+	## brasston_redundancy_archive: the index stands at the drawer wall, right of the door, clear of Shelf 7 and the shelves.
+	"brasston_redundancy_index": Vector2i(5, -3),
 	## harmonia_chapel
 	"harmonia_chapel_ledger": Vector2i(3, -1),
 	"harmonia_chapel_requests": Vector2i(-3, -2),

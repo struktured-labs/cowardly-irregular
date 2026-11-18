@@ -45,6 +45,9 @@ signal models_listed(ok: bool, models: PackedStringArray, err: String)
 # Maps request_id → HTTPRequest node.
 var _inflight: Dictionary = {}
 
+# "base_url|model" -> {format: true} for every JSON format that server refused; a JSON request steps down past them.
+var _json_refused: Dictionary = {}
+
 # Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
 
@@ -81,6 +84,13 @@ const PROBE_TIMEOUT_SEC: float = 1.5
 ## How stale a probe result may get before is_ready() kicks off a fresh one.
 const PROBE_INTERVAL_SEC: float = 30.0
 
+## The URL is player-set, so no reply is read unbounded. A 512-token completion is tens of KB.
+const MAX_REPLY_BYTES := 1024 * 1024
+## The probe and the model list read the listing endpoint; a hosted catalogue runs to a few MB.
+const MAX_LISTING_BYTES := 8 * 1024 * 1024
+var max_reply_bytes: int = MAX_REPLY_BYTES
+var max_listing_bytes: int = MAX_LISTING_BYTES
+
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -100,6 +110,7 @@ func _start_probe() -> void:
 	_probe_request = HTTPRequest.new()
 	_probe_request.name = "Probe"
 	_probe_request.timeout = PROBE_TIMEOUT_SEC
+	_probe_request.body_size_limit = max_listing_bytes
 	add_child(_probe_request)
 	_probe_request.request_completed.connect(_on_probe_completed)
 
@@ -196,6 +207,7 @@ func list_models() -> void:
 	_list_request = HTTPRequest.new()
 	_list_request.name = "ModelList"
 	_list_request.timeout = PROBE_TIMEOUT_SEC
+	_list_request.body_size_limit = max_listing_bytes
 	add_child(_list_request)
 	_list_request.request_completed.connect(_on_list_completed)
 	# Bound to a local like _start_probe's: a local assigned from a key-carrying call registers as
@@ -210,6 +222,9 @@ func list_models() -> void:
 
 func _on_list_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	_cleanup_list()
+	if result == HTTPRequest.RESULT_BODY_SIZE_LIMIT_EXCEEDED:
+		models_listed.emit(false, PackedStringArray(), "%s sent a model list over the %d-byte cap" % [_probe_url(), max_listing_bytes])
+		return
 	if result != HTTPRequest.RESULT_SUCCESS:
 		models_listed.emit(false, PackedStringArray(), "%s did not answer" % _probe_url())
 		return
@@ -411,6 +426,7 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 	if effective_timeout <= 0.0:
 		effective_timeout = 30.0
 	http.timeout = effective_timeout
+	http.body_size_limit = max_reply_bytes
 	add_child(http)
 	_inflight[id] = http
 
@@ -427,10 +443,43 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 	# Capture id in the lambda via a local variable — GDScript closures capture
 	# by reference, so we bind `_id` separately to avoid id being stale.
 	var _id := id
+	var carried: String = _json_format(opts)
 	http.request_completed.connect(
 		func(result: int, response_code: int, _headers: PackedStringArray, body_bytes: PackedByteArray) -> void:
+			if carried != "" and _retry_without(carried, _id, prompt, opts, result, response_code, body_bytes):
+				return
 			_on_request_completed(_id, result, response_code, body_bytes)
 	)
+
+
+## A server that refuses the JSON format a request carried 400s naming it; remember that and retry once a rung lower.
+func _retry_without(format: String, id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
+	if result != HTTPRequest.RESULT_SUCCESS or code != 400:
+		return false
+	if not body.get_string_from_utf8().contains("response_format" if api_format != "ollama" else "format"):
+		return false
+	var refused: Dictionary = _json_refused.get(_json_key(), {})
+	refused[format] = true
+	_json_refused[_json_key()] = refused
+	_cleanup(id)
+	submit(id, prompt, opts)
+	return true
+
+
+## The richest JSON format this server has not refused: the caller's schema, then plain JSON mode, then the prompt alone.
+func _json_format(opts: Dictionary) -> String:
+	if not bool(opts.get("json_mode", false)):
+		return ""
+	var refused: Dictionary = _json_refused.get(_json_key(), {})
+	if opts.get("json_schema", {}) is Dictionary and not (opts.get("json_schema", {}) as Dictionary).is_empty() and not refused.has("json_schema"):
+		return "json_schema"
+	if not refused.has("json_object"):
+		return "json_object"
+	return ""
+
+
+func _json_key() -> String:
+	return "%s|%s" % [_base(), model]
 
 
 func cancel(id: String) -> void:
@@ -479,7 +528,6 @@ func _build_headers() -> PackedStringArray:
 func _build_body(prompt: String, opts: Dictionary) -> String:
 	var max_tokens: int = opts.get("max_tokens", 512)
 	var temperature: float = opts.get("temperature", 0.7)
-	var json_mode: bool = opts.get("json_mode", false)
 
 	var payload: Dictionary
 	match api_format:
@@ -493,8 +541,11 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 					"temperature": temperature,
 				},
 			}
-			if json_mode:
-				payload["format"] = "json"
+			match _json_format(opts):
+				"json_schema":
+					payload["format"] = opts["json_schema"]
+				"json_object":
+					payload["format"] = "json"
 		"openai", _:
 			payload = {
 				"model": model,
@@ -502,8 +553,11 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"max_tokens": max_tokens,
 				"temperature": temperature,
 			}
-			if json_mode:
-				payload["response_format"] = {"type": "json_object"}
+			match _json_format(opts):
+				"json_schema":
+					payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "reply", "schema": opts["json_schema"]}}
+				"json_object":
+					payload["response_format"] = {"type": "json_object"}
 
 	return JSON.stringify(payload)
 
@@ -582,6 +636,8 @@ func _on_request_completed(id: String, result: int, response_code: int, body_byt
 
 	if result != HTTPRequest.RESULT_SUCCESS:
 		var err_msg: String = _result_to_error(result)
+		if result == HTTPRequest.RESULT_BODY_SIZE_LIMIT_EXCEEDED:
+			err_msg = "reply passed the %d-byte cap" % max_reply_bytes
 		request_finished.emit(id, false, "", err_msg)
 		return
 

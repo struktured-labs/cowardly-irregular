@@ -36,6 +36,9 @@
 class_name RebalanceDaemon
 extends RefCounted
 
+## Every line consider() writes to the player's log, as a value a test can count.
+signal logged(line: String)
+
 ## Trigger types — what kind of event provoked a rebalance consideration.
 ## Match EventLog.TYPE_* constants where there's overlap so the daemon
 ## can be wired without translation.
@@ -168,15 +171,18 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 		elapsed = int(min_consideration_interval_sec)
 	if since > 0 and elapsed < int(min_consideration_interval_sec):
 		throttled_since_last += 1
-		if throttled_since_last == 1:
-			print("[REBALANCE] throttled (%ds since last) — trigger=%s; further throttled triggers are counted" % [
+		if significant:
+			_log("[REBALANCE] held %s: %ds since the last one was considered (needs %ds)" % [
+				trigger_type, elapsed, int(min_consideration_interval_sec)])
+		elif throttled_since_last == 1:
+			_log("[REBALANCE] throttled (%ds since last) — trigger=%s; further throttled triggers are counted" % [
 				elapsed, trigger_type])
 		return false
 	_last_consideration_ts = now
 	if significant:
 		_last_significant_ts = now
 	if throttled_since_last > 1:
-		print("[REBALANCE] %d triggers were throttled since the last consideration" % throttled_since_last)
+		_log("[REBALANCE] %d triggers were throttled since the last consideration" % throttled_since_last)
 	throttled_since_last = 0
 	# Stub proposal — what the LLM-driven version will eventually return.
 	# Recorded so the pending UI (later tick) has something to display
@@ -187,13 +193,26 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 		"context_summary": _summarize_context(context),
 		"status": "stub",  # request_llm_proposal flips to awaiting_llm → proposed
 		"deltas": [],
+		"boss_fight": bool(context.get("boss_fight", false)),
 	}
 	pending.append(proposal)
 	while pending.size() > PENDING_CAP:
 		pending.pop_front()
-	print("[REBALANCE] considered trigger=%s context=%s (awaiting LLM proposal)"
+	_log("[REBALANCE] considered trigger=%s context=%s (awaiting LLM proposal)"
 		% [trigger_type, proposal["context_summary"]])
 	return true
+
+
+func _log(line: String) -> void:
+	print(line)
+	logged.emit(line)
+
+
+## A boss wall is beaten by grinding (struktured, Rat King no-nerf ruling); a wipe there must never cut encounters.
+static func boss_safe_deltas(deltas: Array, boss_fight: bool) -> Array:
+	if not boss_fight:
+		return deltas
+	return deltas.filter(func(d): return not (d is Dictionary and str(d.get("constant", "")) == "encounter_rate" and float(d.get("multiplier", 1.0)) < 1.0))
 
 
 ## Build the LLM prompt for a rebalance consideration. Public so tests
@@ -286,6 +305,9 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	# summarized to a string at consider() time. The summary is enough
 	# for the LLM to react; richer context is a future ehancement.
 	var ctx: Dictionary = {"summary": context_summary}
+	var boss_fight: bool = bool(proposal.get("boss_fight", false))
+	if boss_fight:
+		ctx["boss_fight"] = "yes: grinding is how this wall is meant to be beaten, so do NOT lower encounter_rate"
 	var prompt: String = build_prompt(trigger, ctx, recent_events)
 	proposal["status"] = "awaiting_llm"
 	proposal["prompt_chars"] = prompt.length()
@@ -315,9 +337,12 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		proposal["fail_reason"] = "deltas not a list"
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
-	proposal["verdict"]    = str(r.get("verdict", "no_change"))
+	var kept: Array = boss_safe_deltas(deltas as Array, boss_fight)
+	if kept.size() < (deltas as Array).size():
+		_log("[REBALANCE] %s dropped an encounter_rate cut: a boss wall keeps its grind" % trigger)
+	proposal["verdict"]    = str(r.get("verdict", "no_change")) if not (kept.is_empty() and not (deltas as Array).is_empty()) else "no_change"
 	proposal["confidence"] = float(r.get("confidence", 0.0))
-	proposal["deltas"]     = deltas
+	proposal["deltas"]     = kept
 	proposal["reason"]     = str(r.get("reason", ""))
 	proposal["status"]     = "proposed"
 	print(outcome_line(str(trigger), str(proposal["status"]), proposal))

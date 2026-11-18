@@ -46,3 +46,32 @@ func test_shelf_seven_reads_real_save_state() -> void:
 	assert_true("get_most_recent_slot" in src, "reads the REAL most-recent save")
 	assert_true("deeply uncomfortable" in src, "the never-saved case keeps its discomfort")
 	assert_true("The Spare Archivist" in src, "the spare archivist is on duty (the primary is on break)")
+
+
+## The Redundancy Index is a card catalogue, so it is read indoors at the archive's drawer wall, not outside on the street (census group C).
+func test_the_index_is_read_inside_the_archive() -> void:
+	var room: Node = InteriorScript.new()
+	add_child_autofree(room)
+	await get_tree().process_frame
+	var ex: Node2D = room.npcs.get_node_or_null("Examine_brasston_redundancy_index")
+	assert_not_null(ex, "the archive must place the Redundancy Index")
+	if ex == null:
+		return
+	var ts: int = room.TILE_SIZE
+	var at := Vector2i(floori(ex.position.x / ts), floori(ex.position.y / ts))
+	var want: Vector2i = Vector2i(room.spawn_points["entrance"]) + room._examine_offset_for("brasston_redundancy_index")
+	assert_eq(at, want, "the index stands where it is authored, not where a sweep pushed it")
+	assert_eq(str(room._get_layout()[at.y])[at.x], ".", "the index stands on open floor")
+	for n in room.npcs.get_children():
+		if n != ex and n is Node2D:
+			assert_ne(Vector2i(floori(n.position.x / ts), floori(n.position.y / ts)), at, "%s shares the index's cell" % n.name)
+
+
+## And Brasston's street no longer carries it: the row moved scenes, so the village must not place a second copy.
+func test_the_street_does_not_carry_the_index() -> void:
+	var v: Node = load("res://src/maps/villages/BrasstonVillage.gd").new()
+	add_child_autofree(v)
+	await get_tree().process_frame
+	assert_gt(v.npcs.get_child_count(), 0, "CONTROL: Brasston built its npcs")
+	assert_not_null(v.npcs.get_node_or_null("Examine_brasston_clocktower_plaque"), "CONTROL: Brasston still places its own examine")
+	assert_null(v.npcs.get_node_or_null("Examine_brasston_redundancy_index"), "the index belongs to the archive, not the street")

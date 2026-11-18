@@ -220,6 +220,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.CART, Vector2i(5, 8))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(24, 10))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(26, 15))
+	# The unmarked grave, beside the tree that leans toward it; read from the cell in front.
+	_add_prop(VillagePropScript.Kind.GRAVESTONE, Vector2i(25, 13))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(3, 18))
 	_add_lamp_post(Vector2i(9, 18))
 	_add_lamp_post(Vector2i(16, 18))

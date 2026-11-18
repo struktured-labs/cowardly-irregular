@@ -207,7 +207,7 @@
     },
     "brasston_redundancy_index": {
       "world": 3,
-      "scene": "brasston_village",
+      "scene": "brasston_redundancy_archive",
       "prop": "card_catalogue",
       "name": "The Redundancy Index",
       "text": "A card catalogue listing every backup the archive holds, and the backups of those. Item one is the index itself. Item two is a backup of item one. The drawer is full and the entries are all accounted for, which is the most worrying thing about it."

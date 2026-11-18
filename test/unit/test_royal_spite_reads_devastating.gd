@@ -124,7 +124,6 @@ func test_the_beat_lands_at_full_weight_and_the_generic_counter_does_not() -> vo
 	assert_eq(float(scene_script.counter_impact(spite, [], hero)["w"]), 0.0, "a miss lands no weight")
 	assert_almost_eq(scene_script.counter_lead(true, 0.4), 0.4 + scene_script.COUNTER_GAP, 0.0001, "the beat waits for the hero's own contact")
 	assert_almost_eq(scene_script.counter_lead(false, 0.4), scene_script.COUNTER_GAP, 0.0001, "and only the gap when no swing is in flight")
-	assert_almost_eq(scene_script.counter_windup(0.125), 0.125, 0.0001, "the hit lands on the art's own lunge frame (sprites: frame 9 of 8-9 at 8 fps)")
 	assert_almost_eq(scene_script.counter_windup(0.0), scene_script.COUNTER_WINDUP, 0.0001, "art with no impact frame poses for the default windup")
 	assert_almost_eq(scene_script.counter_windup(2.0), scene_script.COUNTER_WINDUP_MAX, 0.0001, "and a long sheet cannot hold the stage past the cap")
 
@@ -150,3 +149,31 @@ func test_the_counter_number_leaves_the_heros_swing() -> void:
 	(_scene._full_render_dmg_buffer as Array).append([hero, 9, false, "", 1.0])
 	assert_eq(_scene._lift_counter_entries().size(), 1)
 	assert_null(_scene._full_render_dmg_buffer, "and closes it again, so later numbers are not swallowed")
+
+
+## Sprites' seam probe (.804 slot, S3): the real sheet through the real loader, animator and resolver, so a re-timed sheet moves the beat with it.
+func test_the_counter_beat_lands_on_the_shipped_sheets_own_impact_frame() -> void:
+	var frames: SpriteFrames = HybridSpriteLoader.load_monster_sprite_frames("cave_rat_king")
+	assert_not_null(frames, "the Rat King's sheet loads")
+	if frames == null:
+		return
+	var spr := AnimatedSprite2D.new()
+	spr.sprite_frames = frames
+	add_child_autofree(spr)
+	var anim = load("res://src/battle/BattleAnimator.gd").new()
+	anim.setup(spr)
+	add_child_autofree(anim)
+	var scene = load(SCENE).new()
+	add_child_autofree(scene)
+	var ability: Dictionary = JobSystem.get_ability("royal_spite")
+	assert_eq(scene._ability_sheet_anim(ability, anim), "royal_spite", "the counter beat asks for the bespoke art, not play_attack")
+	var t: float = anim.impact_time("royal_spite")
+	assert_gt(t, 0.0, "the sheet names an impact frame for the beat to land on")
+	assert_almost_eq(load(SCENE).counter_windup(t), minf(t, load(SCENE).COUNTER_WINDUP_MAX), 0.0001, "the windup IS the art's impact time, capped, not a number copied from it")
+	var spr2 := AnimatedSprite2D.new()
+	spr2.sprite_frames = HybridSpriteLoader.load_monster_sprite_frames("slime")
+	add_child_autofree(spr2)
+	var other = load("res://src/battle/BattleAnimator.gd").new()
+	other.setup(spr2)
+	add_child_autofree(other)
+	assert_eq(scene._ability_sheet_anim(ability, other), "", "CONTROL: a sheet without the art resolves to nothing")
