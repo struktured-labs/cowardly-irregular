@@ -3411,6 +3411,16 @@ func signature_sound_allowed() -> bool:
 	return not turbo_mode and not autogrind_console_mode
 
 
+## The leader's limit-break stinger, or "" at turbo / in the console, where swapping the bed every limit break was a dropout.
+func limit_break_stinger_key(participants: Array) -> String:
+	if not signature_sound_allowed() or participants.is_empty() or not participants[0] is Combatant:
+		return ""
+	var leader: Combatant = participants[0]
+	var job_id: String = str(leader.job.get("id", "fighter")) if leader.job else "fighter"
+	var stinger_key := "job_%s_special" % job_id
+	return stinger_key if SoundManager.music_is_available(stinger_key) else ""
+
+
 ## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
 func signature_cue(caster: Combatant) -> String:
 	if caster == null or not is_instance_valid(caster):
@@ -5499,21 +5509,10 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		match group_type:
 			"limit_break":
 				SoundManager.play_flourish("group_limit_break")
-				# Play job stinger for party leader on limit break
-				if participants.size() > 0 and participants[0] is Combatant:
-					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
-					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself, duplicating
-					## the manifest's knowledge of where the file lives; music_is_available() is the
-					## predicate CutsceneDirector and JukeboxMenu already use, so the manifest stays the
-					## single place that knows. That reason stands on its own and is the whole reason.
-					## ⚠️ The justification here USED to be "ResourceLoader.exists() reports FALSE inside a
-					## web PCK". MEASURED FALSE 2026-09-17 (cowir-main, probe inside a real .pck): it is
-					## correct for imported resources, and FileAccess.file_exists() is the broken one.
-					## SoundManager carries the correction; do not reinstate the claim or cite line
-					## numbers for it — this comment cited two that had already moved.
-					var stinger_key: String = "job_%s_special" % job_id
-					if SoundManager.music_is_available(stinger_key):
-						SoundManager.play_music(stinger_key)
+				# Job stinger for the party leader; the helper owns the turbo/console gate.
+				var stinger_key := limit_break_stinger_key(participants)
+				if stinger_key != "":
+					SoundManager.play_music(stinger_key)
 			"combo_magic":
 				SoundManager.play_flourish("group_combo_magic")
 			_:
