@@ -20,7 +20,8 @@
     {
       "type": "boss_intro",
       "name": "Pyrroth",
-      "title": "The Ember Wyrm"
+      "title": "The Ember Wyrm",
+      "color": "#ff8a3d"
     },
     {
       "type": "wait",
@@ -99,7 +100,8 @@
     },
     {
       "type": "screen_flash",
-      "duration": 0.15
+      "duration": 0.15,
+      "color": "#ff7a2a"
     },
     {
       "type": "letterbox_out",

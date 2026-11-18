@@ -20,7 +20,8 @@
     {
       "type": "boss_intro",
       "name": "Voltharion",
-      "title": "The Storm's Edge"
+      "title": "The Storm's Edge",
+      "color": "#ffe75a"
     },
     {
       "type": "wait",
@@ -87,7 +88,8 @@
     },
     {
       "type": "screen_flash",
-      "duration": 0.15
+      "duration": 0.15,
+      "color": "#fff4a0"
     },
     {
       "type": "letterbox_out",

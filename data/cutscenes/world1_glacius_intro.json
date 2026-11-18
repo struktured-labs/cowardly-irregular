@@ -20,7 +20,8 @@
     {
       "type": "boss_intro",
       "name": "Glacius",
-      "title": "The Frozen Sovereign"
+      "title": "The Frozen Sovereign",
+      "color": "#9fdcff"
     },
     {
       "type": "wait",
@@ -87,7 +88,8 @@
     },
     {
       "type": "screen_flash",
-      "duration": 0.15
+      "duration": 0.15,
+      "color": "#bfe8ff"
     },
     {
       "type": "letterbox_out",

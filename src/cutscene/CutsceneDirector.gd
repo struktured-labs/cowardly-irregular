@@ -1925,9 +1925,10 @@ func _step_chapter_title(step: Dictionary) -> void:
 
 func _step_boss_intro(step: Dictionary) -> void:
 	"""Show a dramatic boss introduction card with name, title, and screen effects.
-	Usage: {"type": "boss_intro", "name": "Warden of the Old Guard", "title": "Masterite — World 1"}"""
+	Usage: {"type": "boss_intro", "name": "Warden of the Old Guard", "title": "Masterite — World 1", "color": "#ff7a2a" (optional name colour)}"""
 	var boss_name = step.get("name", "???")
 	var boss_title = step.get("title", "")
+	var name_color: Color = Color(str(step["color"])) if step.has("color") else Color(0.95, 0.3, 0.2)  # a boss may enter in its own colour
 
 	if _skipping:
 		return
@@ -1959,7 +1960,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 	name_label.clip_text = false
 	name_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	name_label.add_theme_font_size_override("font_size", bi_name_px)
-	name_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.2))
+	name_label.add_theme_color_override("font_color", name_color)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.modulate.a = 0.0
 	add_child(name_label)

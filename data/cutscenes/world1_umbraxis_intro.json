@@ -20,7 +20,8 @@
     {
       "type": "boss_intro",
       "name": "Umbraxis",
-      "title": "The Void Render"
+      "title": "The Void Render",
+      "color": "#b98aff"
     },
     {
       "type": "wait",
@@ -99,7 +100,8 @@
     },
     {
       "type": "screen_flash",
-      "duration": 0.15
+      "duration": 0.15,
+      "color": "#3a1060"
     },
     {
       "type": "letterbox_out",

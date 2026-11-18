@@ -35,7 +35,7 @@ const STEP_SCHEMA := {
 	"dialogue":      {"required": ["lines"], "optional": []},
 	"narration":     {"required": [], "optional": ["text", "lines"]},  # text OR lines
 	"chapter_title": {"required": ["title"], "optional": ["subtitle", "duration"]},
-	"boss_intro":    {"required": ["name"], "optional": ["title"]},
+	"boss_intro":    {"required": ["name"], "optional": ["title", "color"]},
 	"roll_credits":  {"required": ["world"], "optional": ["music"]},
 
 	# Screen fx
