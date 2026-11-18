@@ -86,6 +86,7 @@ func _snapshot(m: Control) -> Dictionary:
 		fonts.append(int((pair["label"] as Label).get_theme_font_size("font_size")))
 	return {
 		"row_font": int(m._row_font()),
+		"row_line": (m.get_theme_font("font", "Label") as Font).get_height(int(m._row_font())),
 		"want_font": TextScale.scaled(14),
 		"row_h": int(m._row_h()),
 		"col_w": (m._col_w() as Array).duplicate(),
@@ -246,13 +247,18 @@ func test_a_binding_labels_effective_font_actually_grows() -> void:
 
 
 ## ARM 7 — the documented limit, pinned so it cannot drift into a silent regression. At 2.0x the
-## rows deliberately do NOT reach the requested size; what must hold is that they grow at all.
+## rows deliberately do NOT reach the requested size; what must hold is that they never draw SMALLER than 100%.
+## Was "strictly bigger font size": the pixel face (UiFont) snaps, so its next step (3x) does not fit 14 rows,
+## and the fit loop walked 14 (2x) down to 13 (1x) -- a bigger setting drawing half-height text (.804 dial 9).
 func test_the_capped_size_is_still_an_increase() -> void:
 	var base: Dictionary = _snapshot(await _menu_at(1.0))
 	var big: Dictionary = _snapshot(await _menu_at(2.0))
-	assert_gt(int(big["row_font"]), int(base["row_font"]),
-		"200%% must still be bigger than 100%% even though it cannot reach the full request: "
-		+ "100%% gave %d, 200%% gave %d" % [base["row_font"], big["row_font"]])
+	assert_gte(int(big["row_font"]), int(base["row_font"]),
+		"200%% must not ask for a smaller row font than 100%%: 100%% gave %d, 200%% gave %d"
+			% [base["row_font"], big["row_font"]])
+	assert_gte(float(big["row_line"]), float(base["row_line"]),
+		"200%% rows must not DRAW shorter than 100%% rows: 100%% line %.1f, 200%% line %.1f"
+			% [float(base["row_line"]), float(big["row_line"])])
 	assert_lt(int(big["row_font"]), int(big["want_font"]),
 		"this arm documents a CAP; if 200%% now reaches the full %d the cap is gone and this "
 			% int(big["want_font"]) + "file's header is stale")

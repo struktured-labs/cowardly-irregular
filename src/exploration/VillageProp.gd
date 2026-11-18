@@ -2,7 +2,7 @@ class_name VillageProp
 extends Node2D
 ## Y-sorted procedural prop: origin at the bottom-centre of its base cell, art drawn upward, footprint cells become a StaticBody2D on the wall layer.
 
-enum Kind { TREE, LAMP_POST, BARREL, CRATE, STALL, FENCE, WELL, BANNER, CART, PLANTER, HOUSE }
+enum Kind { TREE, LAMP_POST, BARREL, CRATE, STALL, FENCE, WELL, BANNER, CART, PLANTER, HOUSE, SIGNPOST, GRAVESTONE }
 
 const TILE := 32
 
@@ -11,7 +11,7 @@ const FOOTPRINTS := {
 	Kind.TREE: [Vector2i(0, 0)], Kind.LAMP_POST: [Vector2i(0, 0)], Kind.BARREL: [Vector2i(0, 0)],
 	Kind.CRATE: [Vector2i(0, 0)], Kind.STALL: [Vector2i(0, 0), Vector2i(1, 0)], Kind.FENCE: [Vector2i(0, 0)],
 	Kind.WELL: [Vector2i(0, 0), Vector2i(1, 0)], Kind.BANNER: [], Kind.CART: [Vector2i(0, 0), Vector2i(1, 0)],
-	Kind.PLANTER: [Vector2i(0, 0)],
+	Kind.PLANTER: [Vector2i(0, 0)], Kind.SIGNPOST: [Vector2i(0, 0)], Kind.GRAVESTONE: [Vector2i(0, 0)],
 	## HOUSE blocks nothing of its own: its cells are already WALL tiles in the village's
 	## map_data, and a second collider on the same cells would be two sources for one fact.
 	Kind.HOUSE: [],
@@ -20,7 +20,7 @@ const FOOTPRINTS := {
 const SIZES := {
 	Kind.TREE: Vector2i(1, 3), Kind.LAMP_POST: Vector2i(1, 2), Kind.BARREL: Vector2i(1, 1), Kind.CRATE: Vector2i(1, 1),
 	Kind.STALL: Vector2i(2, 2), Kind.FENCE: Vector2i(1, 1), Kind.WELL: Vector2i(2, 2), Kind.BANNER: Vector2i(1, 2),
-	Kind.CART: Vector2i(2, 2), Kind.PLANTER: Vector2i(1, 1),
+	Kind.CART: Vector2i(2, 2), Kind.PLANTER: Vector2i(1, 1), Kind.SIGNPOST: Vector2i(1, 2), Kind.GRAVESTONE: Vector2i(1, 1),
 	## A default only: a house is sized to the building block it covers, via size_tiles.
 	Kind.HOUSE: Vector2i(3, 4),
 }
@@ -219,6 +219,19 @@ func _paint(img: Image, size: Vector2i) -> void:
 			_disc(img, Vector2i(10, 12), 5, LEAF)
 			_disc(img, Vector2i(18, 10), 6, LEAF_LIGHT)
 			_disc(img, Vector2i(24, 13), 4, CLOTH_A)
+		Kind.GRAVESTONE:
+			img.fill_rect(Rect2i(9, h - 24, 14, 22), STONE)
+			img.fill_rect(Rect2i(11, h - 27, 10, 3), STONE)
+			img.fill_rect(Rect2i(9, h - 24, 14, 2), STONE_DARK)
+			img.fill_rect(Rect2i(6, h - 3, 20, 3), LEAF)
+		Kind.SIGNPOST:
+			img.fill_rect(Rect2i(w / 2 - 2, h - 40, 4, 40), WOOD)
+			for i in 3:
+				var y := h - 56 + i * 9
+				var left := i % 2 == 1
+				img.fill_rect(Rect2i(w / 2 - 12, y, 24, 7), WOOD_LIGHT)
+				img.fill_rect(Rect2i(w / 2 - 14 if left else w / 2 + 12, y + 2, 2, 3), WOOD_LIGHT)
+				img.fill_rect(Rect2i(w / 2 - 8, y + 3, 16, 1), WOOD)
 
 
 ## A facade: roof above, wall below, drawn upward so the player walks BEHIND the roof.

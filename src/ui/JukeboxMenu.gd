@@ -14,6 +14,8 @@ var TRACKS: Array = []  # [[id, display_name], ...] populated by _load_manifest_
 ## How many rows to show at once in the scroll window
 const VISIBLE_ROWS = 14
 const ROW_HEIGHT = 32
+## The title's authored size at 100%; the subtitle seat measures the title's growth from this.
+const TITLE_BASE_PX := 18
 ## Reserved under the list for the "Now Playing" line and the footer, at 100%.
 const BOTTOM_RESERVE := 56.0
 
@@ -216,13 +218,13 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "JUKEBOX"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
+	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_BASE_PX))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
 	var subtitle = Label.new()
 	subtitle.text = "[DEBUG] Music track browser"
-	subtitle.position = Vector2(16, 30.0 * us)
+	subtitle.position = Vector2(16, _subtitle_y(title, us))
 	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
@@ -433,6 +435,16 @@ func _input(event: InputEvent) -> void:
 ## The layout multiplier: the same factor the fonts take, never below 1.0 so 100% is unchanged.
 func _ui_scale() -> float:
 	return maxf(1.0, float(TextScale.scaled(1000)) / 1000.0)
+
+
+## Seats the subtitle below the title's MEASURED growth: a pixel face steps in whole multiples (18 px is 2x, 23 px is 3x), so 30·us alone lets it crowd.
+func _subtitle_y(title: Label, us: float) -> float:
+	var f: Font = UiFont.of(title)
+	var fs: int = title.get_theme_font_size("font_size")
+	if f == null or fs <= 0:
+		return 30.0 * us
+	var grown: float = (f.get_ascent(fs) + f.get_descent(fs)) - (f.get_ascent(TITLE_BASE_PX) + f.get_descent(TITLE_BASE_PX))
+	return maxf(30.0 * us, 30.0 + grown)
 
 
 ## A row's band, scaled with its label's font.

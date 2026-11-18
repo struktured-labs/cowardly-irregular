@@ -79,3 +79,39 @@ func test_the_address_banner_is_centred_on_the_viewport() -> void:
 	assert_almost_eq(centre, want, 2.0,
 		"the banner must sit on the viewport centre — PRESET_CENTER_TOP centres the BOX, and a panel "
 		+ "that outgrows its box grows END-ward unless grow_horizontal says otherwise")
+
+
+## A wrapped turn line grows the strip downward; the banner must seat under it, not over it (.805 pixel face).
+func test_the_banner_seats_under_a_grown_turn_strip() -> void:
+	_scene = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child_autofree(_scene)
+	await get_tree().process_frame
+	var strip := _scene.get_node_or_null("UI/TurnInfoPanel") as Control
+	var label := _scene.get_node_or_null("UI/TurnInfoPanel/TurnInfo") as Label
+	var enemy := _scene.get_node_or_null("UI/EnemyStatusPanel") as Control
+	assert_false(strip == null or label == null or enemy == null, "fixture: the strip, its label and the enemy column must exist")
+	if strip == null or label == null or enemy == null:
+		return
+	_scene._show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var short_banner := _banner_of(_scene)
+	assert_not_null(short_banner, "PRECONDITION: the banner must be in the tree")
+	if short_banner != null:
+		assert_almost_eq(short_banner.position.y, 60.0, 0.5, "CONTROL: under a one-line strip ending at %.0f the banner keeps its 60 px top" % strip.get_global_rect().end.y)
+		short_banner.free()
+	enemy.offset_right = 500.0
+	label.text = "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)"
+	_scene._ui_manager._fit_turn_info()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var bottom: float = strip.get_global_rect().end.y
+	assert_gt(bottom, 54.0, "CONTROL: the wrapped strip must reach past the 60 px banner line (ends %.0f, %d lines)" % [bottom, label.get_line_count()])
+	_scene._show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var banner := _banner_of(_scene)
+	assert_not_null(banner, "PRECONDITION: the second banner must be in the tree")
+	if banner == null:
+		return
+	assert_gte(banner.position.y, bottom + 6.0 - 0.5, "the banner (top %.0f) must sit under the grown turn strip (ends %.0f)" % [banner.position.y, bottom])

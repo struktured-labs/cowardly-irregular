@@ -20,6 +20,13 @@
     "reason": "All broad traits match: adult male, bald with short hair, facial hair, and similar outfit.",
     "who": "Osric @ TavernInterior.gd"
   },
+  "bill|bill": {
+    "face_sha256": "45f2ea8bc8e4683caffefe9b9a7c836d33a9a812273ce23ff3f64cd48b033493",
+    "body_sha256": "970a2542cf43fdfc9c26c89997d444329ca2c50f8cd94e023e96b0bca7da8822",
+    "verdict": "match",
+    "reason": "All major traits match: mohawk, face paint, no facial hair, similar outfit and weapon.",
+    "who": "Bill @ HarmoniaVillage.gd"
+  },
   "blacksmith|blacksmith": {
     "face_sha256": "20f43c6324bc145af2f54d66e21021f79adeea24fa376c337168feb2c88dc0d9",
     "body_sha256": "9a00cfc4a863d4dafb8c88d0d5ca45f9db438e762ba8bb9a3829e1d264dd3a53",
@@ -271,6 +278,13 @@
     "verdict": "match",
     "reason": "Both wear brown hooded/cloaked outfits and match in apparent age and sex.",
     "who": "Melody @ TavernInterior.gd, Knuckles @ TavernInterior.gd, Madame Orrery @ BrasstonVillage.gd, Rowan @ HarmoniaVillage.gd, Madame Orrery @ MapleStripMall.gd, Madame Orrery @ RivetRowVillage.gd, Caravan Master Kes @ SandriftVillage.gd, PACKET-LOSS @ NodePrimeVillage.gd, Dune Pilgrim Sefa @ SandriftVillage.gd"
+  },
+  "village_knight|village_knight": {
+    "face_sha256": "049bf0608c426fc8cdc4178215c53f3674adffdbdd51c0c9c2ebd34e572cc5e1",
+    "body_sha256": "d68a987946de2364a5df3f0e555c995ecb21c44a1d4db748a828ce0af2eac2b5",
+    "verdict": "match",
+    "reason": "Armor, helmet with red plume, and polearm all match.",
+    "who": "Village Knight @ HarmoniaVillage.gd"
   },
   "young_man|young_man": {
     "face_sha256": "8e4f37d8da79bb7299d148c2a0817d57e11d8c224888adef54997adbf1205339",

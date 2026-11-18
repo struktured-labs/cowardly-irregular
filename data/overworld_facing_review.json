@@ -56,6 +56,11 @@
       "strip": "res://docs/art/facing/overworld_npc_sheets/arbiter.png",
       "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
     },
+    "overworld_npc_sheets/bill": {
+      "sheet_sha256": "970a2542cf43fdfc9c26c89997d444329ca2c50f8cd94e023e96b0bca7da8822",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/bill.png",
+      "reviewed": "2026-11-15, cowir-sprites, by eye at 2x strip + 4x sheet: DOWN face, UP back of head (knight: plume centred, no visor), LEFT/RIGHT profile toward travel (knight: halberd leads, plume trails)"
+    },
     "overworld_npc_sheets/blacksmith": {
       "sheet_sha256": "9a00cfc4a863d4dafb8c88d0d5ca45f9db438e762ba8bb9a3829e1d264dd3a53",
       "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith.png",
@@ -740,6 +745,11 @@
       "sheet_sha256": "dd96f257085cc5b5285d08bff1a0c378e1e3ed2534c342fa9b0c022d1c2501f7",
       "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_suburban.png",
       "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/village_knight": {
+      "sheet_sha256": "d68a987946de2364a5df3f0e555c995ecb21c44a1d4db748a828ce0af2eac2b5",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/village_knight.png",
+      "reviewed": "2026-11-15, cowir-sprites, by eye at 2x strip + 4x sheet: DOWN face, UP back of head (knight: plume centred, no visor), LEFT/RIGHT profile toward travel (knight: halberd leads, plume trails)"
     },
     "overworld_npc_sheets/warden": {
       "sheet_sha256": "6ad1355831581ec7b41229ad72c963f882795a43e47d711bb50ca38a33d40c59",

@@ -28,10 +28,13 @@ func _enter_tree() -> void:
 			push_warning("[FontFallbacks] failed to load %s" % path)
 	if chain.is_empty():
 		push_warning("[FontFallbacks] no fallback fonts loaded — symbol glyphs will tofu")
+		UiFont.install()
 		return
 	var base := ThemeDB.fallback_font
 	if base != null:
 		base.fallbacks = chain
+	# After the chain: the pixel face hangs the old face AND its symbols behind itself.
+	UiFont.install()
 	get_tree().node_added.connect(_on_node_added)
 
 

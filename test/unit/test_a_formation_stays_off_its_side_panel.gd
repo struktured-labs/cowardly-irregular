@@ -3,7 +3,8 @@ extends GutTest
 ## struktured 2026-11-01: "move the party and monsters slightly towards the edges of the screen (party slightly
 ## closer to the right and monsters slightly closer to left). see if we got the space for that", then "the rogue/bard
 ## are sorta stacked on top of each other in battle ... I think its systemic". Measured in real battles: the enemies
-## had 71px to the left column at 100% text and 33px at 200%, so they stand 24px nearer it (ENEMY_EDGE_SHIFT). The
+## had 71px to the left column at 100% text and 33px at 200%, so they stood 24px nearer it; the pixel face widened that column ~14px
+## at 200% (a goblin at x 199.75 against its 205 edge), so ENEMY_EDGE_SHIFT is now 12. The
 ## party stood in one diagonal 45px apart with 150-230px bodies (Rogue 68% inside the Mage, 90% in Diamond), under the
 ## AUTO/speed badges. Now the badges ride in the PARTY header and the party stands in two ranks spaced by its measured
 ## widths, PARTY_PANEL_GAP from its panel at any Text Size. This holds all of it, on each body's opaque frame.
@@ -57,6 +58,21 @@ func _build(lineup: Array) -> Node:
 	return scene
 
 
+## Waits for every party sprite's x to hold for 3 frames (bounded): y bobs at idle forever, and x is what a gap reads.
+func _settled(scene: Node) -> bool:
+	var last: Array = []
+	var still := 0
+	for i in 600:
+		await get_tree().process_frame
+		var now: Array = []
+		for s in scene.party_sprite_nodes:
+			now.append(snappedf((s as Node2D).global_position.x, 0.01))
+		still = still + 1 if now == last else 0
+		last = now
+		if still >= 3:
+			return true
+	return false
+
 func _touches(scene: Node, sprites: Array, wall_names: Array, tag: String) -> Array:
 	var out: Array = []
 	var w: Dictionary = Body.walls(scene)
@@ -96,8 +112,7 @@ func test_no_party_member_touches_the_party_panel_or_a_badge_at_any_size() -> vo
 	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
-		for i in 3:
-			await get_tree().process_frame
+		assert_true(await _settled(scene), "text %.2f: the party came to rest after the build" % ts)
 		var w: Dictionary = Body.walls(scene)
 		assert_eq(scene.party_sprite_nodes.size(), 5, "CONTROL: the full party stands")
 		assert_true(w.has("PartyStatusPanel") and w.has("SpeedPanel") and w.has("AutoToggleButton"),
@@ -105,7 +120,7 @@ func test_no_party_member_touches_the_party_panel_or_a_badge_at_any_size() -> vo
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene.cycle_formation()
-				await get_tree().create_timer(0.4).timeout
+				assert_true(await _settled(scene), "text %.2f: the party came to rest in %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]])
 			var tag := "text %.2f %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]]
 			bad.append_array(_touches(scene, scene.party_sprite_nodes, ["PartyStatusPanel", "SpeedPanel", "AutoToggleButton"], tag))
 			bad.append_array(_touches(scene, scene.enemy_sprite_nodes, ["SpeedPanel", "AutoToggleButton"], tag))
@@ -149,12 +164,11 @@ func test_no_two_party_members_stack_in_any_formation() -> void:
 	for ts in [1.0, 2.0]:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
-		for i in 3:
-			await get_tree().process_frame
+		assert_true(await _settled(scene), "text %.2f: the party came to rest after the build" % ts)
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene.cycle_formation()
-				await get_tree().create_timer(0.4).timeout
+				assert_true(await _settled(scene), "text %.2f: the party came to rest in %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]])
 			var figs: Array = []
 			for s in scene.party_sprite_nodes:
 				figs.append(_figure(s))
@@ -231,14 +245,13 @@ func test_the_party_stands_its_gap_from_the_panel_at_every_size() -> void:
 	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
-		for i in 3:
-			await get_tree().process_frame
+		assert_true(await _settled(scene), "text %.2f: the party came to rest after the build" % ts)
 		var panel_left: float = (scene.get_node("UI/PartyStatusPanel") as Control).get_global_rect().position.x
 		var nearest := INF
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene.cycle_formation()
-				await get_tree().create_timer(0.4).timeout
+				assert_true(await _settled(scene), "text %.2f: the party came to rest in %s" % [ts, BS.FORMATION_NAMES[BS.current_formation]])
 			for s in scene.party_sprite_nodes:
 				nearest = minf(nearest, panel_left - _figure(s).end.x)
 		assert_almost_eq(nearest, BS.PARTY_PANEL_GAP, 1.5,

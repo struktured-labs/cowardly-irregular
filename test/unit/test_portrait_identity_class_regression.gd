@@ -217,6 +217,7 @@ const DISTINCT_CHARACTERS := {
 	"cave_rat_king": "the same boss under his monster id: still not the king of Harmonia",
 	"hooded_mage": "a distinct NPC, not the Mage job portrait",
 	"time_mage": "the Time Mage job, not the Mage job",
+	"village_knight": "the artist's Village Knight in Harmonia (2026-11-03 drop), his own face; not the generic knight archetype",
 }
 
 

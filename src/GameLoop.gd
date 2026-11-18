@@ -4425,6 +4425,7 @@ func _on_battle_ended(victory: bool) -> void:
 				# matching comment in _on_party_leveled_up.
 				"world":       GameState.current_world,
 				"worlds_unlocked": GameState.worlds_unlocked,
+				"boss_fight":  wipe_was_a_boss_fight(BattleManager.enemy_party, _stashed_boss_defeat),
 			}
 			GameState.event_log.record(
 				EventLog.TYPE_PARTY_WIPE,
@@ -4540,6 +4541,16 @@ func _record_boss_defeat_event(spec: Dictionary) -> void:
 
 
 ## The boss the battle itself marked (is_miniboss, as BattleScene._check_for_boss reads), by the name it was shown under; else the flag, humanized.
+## A dungeon boss arms pending_boss_defeat; a duel miniboss carries is_miniboss. Either makes the wipe a boss wall.
+static func wipe_was_a_boss_fight(enemies: Array, boss_spec: Dictionary) -> bool:
+	if not boss_spec.is_empty():
+		return true
+	for e in enemies:
+		if e is Combatant and is_instance_valid(e) and bool(e.get_meta("is_miniboss", false)):
+			return true
+	return false
+
+
 static func defeated_boss_name(enemies: Array, flag: String) -> String:
 	for e in enemies:
 		if e is Combatant and is_instance_valid(e) and bool(e.get_meta("is_miniboss", false)) and str(e.combatant_name) != "":

@@ -410,6 +410,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_signature_fired", "_cadence", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
 	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
+	"counter_round", "counters_this_round",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -11438,9 +11439,10 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	var ability_id: String = str(counters[randi() % counters.size()])
 	if ability_id == "":
 		return
-	# Probabilistic to avoid every hit triggering a full counter chain.
-	if randf() > 0.4:
+	# Probabilistic, and each counter this round halves the next one's odds where counter_decay says so (the Rat King, struktured 2026-11-15).
+	if randf() > HeadlessBattleResolver.counter_chance(float(entry.get("counter_decay", 1.0)), monster, current_round):
 		return
+	HeadlessBattleResolver.note_counter(monster, current_round)
 	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
 	if ability.is_empty():
 		return

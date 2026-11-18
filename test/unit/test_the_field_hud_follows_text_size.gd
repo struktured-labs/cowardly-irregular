@@ -147,7 +147,14 @@ func test_a_live_change_reaches_every_built_surface() -> void:
 func test_the_authored_layout_holds_at_1x() -> void:
 	GameState.text_size_scale = 1.0
 	var a := _arrow_at_right_edge()
-	assert_eq(a._arrow_label.size, ArrowScript.MIN_BOX, "at 1.0x the arrow keeps its authored 120x20 box")
+	## Re-pinned for the dial-9 pixel face (main 25553 rule a): its widest arrow and its line outgrow the authored 120x20 at 1x, so MIN_BOX is a floor and the box is the text's own extent.
+	var lab: Label = a._arrow_label
+	var widest := 0.0
+	for t in ArrowScript.ARROWS.values():
+		widest = maxf(widest, _text_w(lab, str(t)))
+	var want := Vector2(maxf(ArrowScript.MIN_BOX.x, widest + 8.0), maxf(ArrowScript.MIN_BOX.y, lab.get_theme_font("font").get_height(_px(lab))))
+	assert_eq(lab.size, want, "at 1.0x the arrow box is its widest text + 8 by one line, floored at the authored 120x20")
+	assert_true(lab.size.x >= ArrowScript.MIN_BOX.x and lab.size.y >= ArrowScript.MIN_BOX.y, "and never smaller than the authored box")
 	var b := _border()
 	var n: Label = b._labels["north"]
 	assert_eq(n.size, BorderScript.MIN_LABEL, "at 1.0x a border label keeps its authored 80x20 box")

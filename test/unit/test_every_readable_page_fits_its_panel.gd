@@ -87,7 +87,7 @@ func _teardown(n: Node2D) -> void:
 ## measured against a dead host and every size came back **0.0**, which reads as "nothing is too
 ## wide" and is a false clean on the whole corpus. Caught by this file's own width control, not by
 ## the arm: 105 headings all measured 0 px and the arm would have reported them all fitting.
-func _measure(txt: String, font: int, wrap_at: float) -> Vector2:
+func _measure(txt: String, font: int, wrap_at: float, face: Font = null) -> Vector2:
 	if _host == null or not is_instance_valid(_host) or not _host.is_inside_tree():
 		_host = Control.new()
 		_host.size = Vector2(900, 700)
@@ -96,6 +96,8 @@ func _measure(txt: String, font: int, wrap_at: float) -> Vector2:
 	var lab := Label.new()
 	lab.text = txt
 	lab.add_theme_font_size_override("font_size", font)
+	if face != null:
+		lab.add_theme_font_override("font", face)
 	if wrap_at > 0.0:
 		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lab.size = Vector2(wrap_at, 0.0)
@@ -106,6 +108,30 @@ func _measure(txt: String, font: int, wrap_at: float) -> Vector2:
 	lab.queue_free()
 	await get_tree().process_frame
 	return sz
+
+
+## A heading built to be wider than the band in the CURRENT face, so a wrap control cannot go vacuous when the face narrows.
+func _band_probe(min_ratio: float = 1.3) -> String:
+	var band: float = ReadableProp.heading_box().x
+	var words: Array = ["Layer", "four,", "printed,", "laminated,", "drilled", "and", "bolted", "through", "the", "other", "three"]
+	var txt := ""
+	var i := 0
+	while (await _measure(txt, ReadableProp.HEADING_FONT, 0.0)).x <= band * min_ratio and i < 200:
+		txt = (txt + " " + str(words[i % words.size()])).strip_edges()
+		i += 1
+	return txt
+
+
+## The wrapped measure must show a second line for a probe wider than the band, or a corpus green says nothing about wrapping.
+func _assert_wrap_is_visible(where: String) -> void:
+	var box := ReadableProp.heading_box()
+	var probe: String = await _band_probe()
+	var one: float = (await _measure("Layer", ReadableProp.HEADING_FONT, box.x)).y
+	var wide: float = (await _measure(probe, ReadableProp.HEADING_FONT, 0.0)).x
+	var two: float = (await _measure(probe, ReadableProp.HEADING_FONT, box.x)).y
+	assert_gt(wide, box.x, "CONTROL (%s): the band probe is %.0f px, not wider than the %.0f px band" % [where, wide, box.x])
+	assert_gt(two, one, "CONTROL (%s): a %.0f px heading wrapped at %.0f px measured %.0f px tall, no taller than one line (%.0f) — the measure cannot see wrapping" % [where, wide, box.x, two, one])
+	assert_true(two <= box.y, "CONTROL (%s): the band probe needs %.0f px of a %.0f px band, so the probe is too long to be a fair fixture" % [where, two, box.y])
 
 
 ## Every page of every ReadableProp in `root`, measured through the prop's own accessors.
@@ -131,7 +157,7 @@ func _pages_of(root: Node, where: String, bad: Array, stats: Dictionary) -> void
 			var body: String = str(e.get("body", ""))
 			var head: String = str(e.get("heading", ""))
 			if body != "":
-				var bh: float = (await _measure(body, ReadableProp.BODY_FONT, box.x)).y
+				var bh: float = (await _measure(body, ReadableProp.BODY_FONT, box.x, UiFont.body())).y
 				stats["tall"] = max(float(stats.get("tall", 0.0)), bh)
 				if bh > box.y:
 					bad.append("%s: '%s' page %d body needs %.0f px of %.0f — %.0f px drawn nowhere, and a %d-page provider gives no arrow to reach it; trim about %.0f px" % [
@@ -211,11 +237,8 @@ func test_every_readable_page_fits_the_panel_that_shows_it() -> void:
 	for b in bad:
 		gut.p("DOESNOTFIT %s" % str(b))
 	assert_eq(bad, [], "a readable page does not fit its panel: %s" % "; ".join(bad))
-	## The heading corpus must still reach PAST one line, or this file would pass with the band back
-	## at 22 px and nothing would record that wrapping is load-bearing.
-	assert_gt(float(stats.get("head_wide", 0.0)), ReadableProp.heading_box().x,
-		"CONTROL: widest heading is %.0f px against a %.0f px band — nothing needs a second line, so a green says nothing about wrapping" % [
-			float(stats.get("head_wide", 0.0)), ReadableProp.heading_box().x])
+	## No authored heading wraps in the pixel face (widest is printed below), so the control is a band-derived probe through the same measure.
+	await _assert_wrap_is_visible("runtime walk")
 	gut.p("  %d scenes, %d props, %d pages; tallest body %.0f/%.0f px; tallest heading %.0f/%.0f px (widest unwrapped %.0f px over a %.0f px band)" % [
 		scenes, int(stats.get("props", 0)), int(stats.get("pages", 0)),
 		float(stats.get("tall", 0.0)), ReadableProp.body_box().y,
@@ -233,7 +256,7 @@ func after_all() -> void:
 ## above still passes while the panel clips again, silently reverting the fix they exist to defend.
 ## This arm drives the real panel and asks the real label how many lines it took.
 func test_the_real_heading_label_wraps_in_the_built_panel() -> void:
-	var long_head := "Layer four, printed, laminated, drilled and bolted through the other three"
+	var long_head: String = await _band_probe()
 	var prop := ReadableProp.new()
 	prop.setup("WrapProbe", func(): return [{"heading": long_head, "body": "body"}])
 	add_child_autofree(prop)
@@ -296,8 +319,7 @@ func test_every_authored_heading_fits_the_band_whatever_state_reveals_it() -> vo
 					over.append("%s: '%s' needs %.0f px of %.0f wrapped at %.0f" % [str(fn), head, hh, box.y, box.x])
 	assert_gt(seen.size(), 100,
 		"CONTROL: only %d authored headings found — the scan missed the corpus and a green says nothing" % seen.size())
-	assert_gt(widest, box.x,
-		"CONTROL: widest authored heading is %.0f px against a %.0f px band — nothing needs a second line, so this arm proves nothing about wrapping" % [widest, box.x])
+	await _assert_wrap_is_visible("authored corpus")
 	over.sort()
 	for o in over:
 		gut.p("  OVERFLOWS %s" % o)

@@ -701,7 +701,7 @@ func _try_load_overworld_sheet() -> Dictionary:
 
 
 ## Horizontal centre of a frame's alpha bounding box, or -1 for an empty frame.
-func _bbox_centre_x(img: Image) -> float:
+static func _bbox_centre_x(img: Image) -> float:
 	var lo: int = img.get_width()
 	var hi: int = -1
 	for x in img.get_width():
@@ -731,7 +731,7 @@ func _bbox_centre_x(img: Image) -> float:
 ## places 1.0px apart — the same spread, mirrored. Caught by the guard reddening on correct code.
 ## Fractional is also free here: the avatar already occupies fractional world positions every
 ## frame it walks, so this adds no sub-pixel placement that was not happening already.
-func _registration_offsets(row_centre: Dictionary) -> Dictionary:
+static func _registration_offsets(row_centre: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	if not row_centre.has(Direction.DOWN):
 		return out

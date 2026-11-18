@@ -1268,7 +1268,6 @@ const _EXAMINE_OFFSETS := {
 	"grimhollow_lantern_ledger": Vector2i(-3, -1),
 	## cowir-story 2026-10-13 — second looks for the remaining six. Each is an institutional
 	## document, like that village's first entry, and each offset clears the first one's cell.
-	"brasston_redundancy_index": Vector2i(3, -1),
 	"ironhaven_strike_ledger": Vector2i(-1, 3),
 	"maple_heights_appendix_form": Vector2i(1, 3),
 	"rivet_row_incident_numbers": Vector2i(-3, 2),
@@ -1287,6 +1286,93 @@ func _examine_offset_for(examine_id: String) -> Vector2i:
 
 ## Virtual: the walkable cell beside the drawn thing this examine describes (a well, a statue), where it is read from; (-1, -1) for none.
 func _examine_anchor_cell(_examine_id: String) -> Vector2i:
+	return Vector2i(-1, -1)
+
+
+## The prop kind an examine's text describes; it is read beside the nearest such prop its village draws (census tmp/examine_census.md, group B).
+const _EXAMINE_DESCRIBES := {
+	"eldertree_grafted_branch": VillagePropScript.Kind.TREE,
+	"frosthold_meltwater_mark": VillagePropScript.Kind.FENCE,
+	"grimhollow_lantern_ledger": VillagePropScript.Kind.LAMP_POST,
+	"eldertree_gravestone": VillagePropScript.Kind.GRAVESTONE,
+	"grimhollow_warning": VillagePropScript.Kind.SIGNPOST,
+	"sandrift_caravan_post": VillagePropScript.Kind.SIGNPOST,
+}
+## Where a readable may stand beside a footprint cell: in front first, then either side; never behind, where the art grows up over it.
+const _BESIDE_STEPS: Array = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
+
+
+## The free walkable cell in front of (else beside) the drawn prop this examine describes, nearest props first; (-1, -1) if the village draws none.
+func _described_prop_cell(examine_id: String, want: Vector2i, taken: Array) -> Vector2i:
+	if not _EXAMINE_DESCRIBES.has(examine_id) or props == null:
+		return Vector2i(-1, -1)
+	var bases: Array = []
+	for p in props.get_children():
+		if p is VillageProp and p.kind == _EXAMINE_DESCRIBES[examine_id]:
+			bases.append([p, Vector2i(floori(p.position.x / TILE_SIZE), roundi(p.position.y / TILE_SIZE) - 1)])
+	bases.sort_custom(func(a, b): return Vector2(a[1] - want).length() < Vector2(b[1] - want).length())
+	for entry in bases:
+		var foot: Array = entry[0].footprint_cells(entry[1])
+		for step in _BESIDE_STEPS:
+			for f in foot:
+				var c: Vector2i = f + step
+				if not foot.has(c) and not taken.has(c) and _is_cell_walkable(c):
+					return c
+	return Vector2i(-1, -1)
+
+
+## The door an examine's text describes (its board or sign is on that building); it is read just beside the door's approach (census group B).
+const _EXAMINE_BESIDE_DOOR := {
+	"rivet_row_incident_numbers": "IncidentBoardDoor",
+	"vertex_threshold_tally": "ThresholdDoor",
+	"sandrift_rain_tally": "RainLedgerDoor",
+	"ironhaven_strike_ledger": "StrikeRegistryDoor",
+	"rivet_row_union_board": "UnionHallDoor",
+	"maple_heights_hoa_board": "CommunityCenterDoor",
+	"maple_heights_appendix_form": "CommunityCenterDoor",
+}
+
+
+## The cells a door's trigger box covers.
+func _door_box_cells(door: Node) -> Array:
+	var out: Array = []
+	var col := door.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if col == null:
+		for c in door.get_children():
+			if c is CollisionShape2D:
+				col = c
+	if col == null or not (col.shape is RectangleShape2D):
+		return out
+	var size: Vector2 = (col.shape as RectangleShape2D).size
+	var r := Rect2(door.position + col.position - size * 0.5, size)
+	for y in range(floori(r.position.y / TILE_SIZE), ceili(r.end.y / TILE_SIZE)):
+		for x in range(floori(r.position.x / TILE_SIZE), ceili(r.end.x / TILE_SIZE)):
+			out.append(Vector2i(x, y))
+	return out
+
+
+## The free walkable cell just left or right of the door's approach (its box's front row, then the row below); (-1, -1) if none.
+func _door_side_cell(examine_id: String, taken: Array) -> Vector2i:
+	if not _EXAMINE_BESIDE_DOOR.has(examine_id) or buildings == null:
+		return Vector2i(-1, -1)
+	var door := buildings.get_node_or_null(str(_EXAMINE_BESIDE_DOOR[examine_id]))
+	if door == null:
+		return Vector2i(-1, -1)
+	var box: Array = _door_box_cells(door)
+	if box.is_empty():
+		return Vector2i(-1, -1)
+	var x0: int = box[0].x
+	var x1: int = box[0].x
+	var y1: int = box[0].y
+	for c in box:
+		x0 = mini(x0, c.x)
+		x1 = maxi(x1, c.x)
+		y1 = maxi(y1, c.y)
+	for y in [y1, y1 + 1]:
+		for x in [x0 - 1, x1 + 1]:
+			var c := Vector2i(x, y)
+			if not box.has(c) and not taken.has(c) and _is_cell_walkable(c):
+				return c
 	return Vector2i(-1, -1)
 
 
@@ -1359,6 +1445,10 @@ func _place_authored_examines() -> void:
 			continue
 		# An examine anchored to something the village DRAWS stands on the authored cell beside it, not by offset from the spawn.
 		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
+		if anchor.x < 0:
+			anchor = _described_prop_cell(str(examine_id), spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		if anchor.x < 0:
+			anchor = _door_side_cell(str(examine_id), taken)
 		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
 			continue
