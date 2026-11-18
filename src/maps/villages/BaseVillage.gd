@@ -930,30 +930,61 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
 
 
-## Each walker's line, dealt by ANCHOR rather than by list index: a prop, an examine or an NPC re-deals only the walker it touches.
+## Each walker keeps the free stretch of its own structural ANCHOR line, so a prop, an examine or an NPC moves only the walker it touches.
 func _stable_walker_runs(want: int) -> Array:
 	var anchors := _walker_runs(want, true)
 	var pool: Array = _walker_candidates(false)
 	pool = pool[0] + pool[1]
-	var pairs: Array = []
-	for i in want:
-		for j in pool.size():
-			var d: float = 1.0e6 - float(_run_rect(pool[j]).get_area())
-			if i < anchors.size():
-				d = Vector2(_run_rect(anchors[i]).get_center()).distance_to(Vector2(_run_rect(pool[j]).get_center()))
-			pairs.append([d, i, j])
-	pairs.sort_custom(func(a, b): return a[0] < b[0] if a[0] != b[0] else (a[1] < b[1] if a[1] != b[1] else a[2] < b[2]))
 	var dealt := {}
-	for p in pairs:
-		if dealt.has(p[1]) or dealt.values().any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(pool[p[2]]))):
+	for i in mini(want, anchors.size()):
+		var kept: Array = _free_stretch_of(anchors[i], pool)
+		if not kept.is_empty():
+			dealt[i] = kept
+	for i in want:
+		if dealt.has(i):
 			continue
-		dealt[p[1]] = pool[p[2]]
+		for strict in [true, false]:
+			var best: Array = []
+			var best_d: float = INF
+			for c in pool:
+				var cr := _run_rect(c)
+				if dealt.values().any(func(t): return _run_rect(t).grow(2).intersects(cr)):
+					continue
+				if strict and range(anchors.size()).any(func(k): return k != i and _run_rect(anchors[k]).grow(2).intersects(cr)):
+					continue
+				var d: float = 1.0e6 - float(cr.get_area())
+				if i < anchors.size():
+					d = Vector2(_run_rect(anchors[i]).get_center()).distance_to(Vector2(cr.get_center()))
+				if d < best_d:
+					best_d = d
+					best = c
+			if not best.is_empty():
+				dealt[i] = best
+				break
 	var out: Array = []
 	for i in want:
 		if not dealt.has(i):
 			break
 		out.append(dealt[i])
 	return out
+
+
+## The longest free piece of `anchor`'s own line, clipped to its span; [] when none is long enough to walk.
+func _free_stretch_of(anchor: Array, pool: Array) -> Array:
+	var ar := _run_rect(anchor)
+	var row: bool = ar.size.y == 1 and (ar.size.x > 1 or anchor[0].y == anchor[1].y)
+	var best: Array = []
+	var best_n: int = 0
+	for c in pool:
+		var cr := _run_rect(c)
+		var cut := ar.intersection(cr)
+		if not cut.has_area() or (row and cr.size.y != 1) or (not row and cr.size.x != 1):
+			continue
+		var n: int = cut.size.x if row else cut.size.y
+		if n >= WALKER_MIN_RUN and n > best_n:
+			best_n = n
+			best = [cut.position, cut.end - Vector2i.ONE]
+	return best
 
 
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
