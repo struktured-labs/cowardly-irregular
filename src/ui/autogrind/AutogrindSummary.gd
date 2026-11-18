@@ -197,8 +197,23 @@ func _build_ui() -> void:
 		advice_h = ThemeDB.fallback_font.get_multiline_string_size(
 			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, TextScale.scaled(ADVICE_FONT_SIZE),
 			-1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
-	var head_h: float = _grew(68.0) if advice == "" else _grew(56.0) + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
+	## The header stacks by the face's own line heights, so a taller line box pushes the next line down instead of under it.
+	var title_y: float = _grew(12.0)
+	var reason_y: float = maxf(_grew(38.0), title_y + UiFont.display().get_height(TextScale.scaled(18)) + 2.0)
+	var advice_y: float = maxf(_grew(56.0), reason_y + UiFont.display().get_height(TextScale.scaled(12)) + 2.0)
+	var head_h: float = maxf(_grew(68.0), advice_y + _grew(12.0)) if advice == "" else advice_y + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
 	var rows_per_col: int = stats_data.size()
+	## The value box starts past the widest label the face draws, at the largest row font: VALUE_BOX_LEFT scales by 1.25 where the face doubles.
+	var probe_px: int = TextScale.scaled(13)
+	var label_w: float = 0.0
+	var value_w: float = 0.0
+	for entry in stats_data:
+		if entry.has("fit_reason"):
+			continue
+		label_w = maxf(label_w, UiFont.display().get_string_size(str(entry["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, probe_px).x)
+		if not entry.has("fit_items"):
+			value_w = maxf(value_w, UiFont.display().get_string_size(str(entry["value"]), HORIZONTAL_ALIGNMENT_LEFT, -1, probe_px).x)
+	var value_left: float = maxf(_grew(VALUE_BOX_LEFT), _grew(30.0) + label_w + _grew(8.0))
 	## The footer (separator at -40, prompt at -30) scales with Text Size; a literal 50 reserved 1.0x's footer at 2.0x and overflowed onto it.
 	var footer_h: float = _grew(50.0)
 	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
@@ -213,7 +228,7 @@ func _build_ui() -> void:
 		## ⛔ TWO COLUMNS ONLY IF A COLUMN CAN HOLD A ROW. At 2.0x a 510px column cannot: the value box
 		## starts before the label ends and "Battles Won" draws over "148" (measured). One tall column
 		## is worse vertically and the row cap below handles that; an overlapping row is unreadable.
-		if (panel_w - 20.0) / 2.0 >= _grew(VALUE_BOX_LEFT) + _grew(170.0) + _grew(30.0):
+		if (panel_w - 20.0) / 2.0 >= value_left + maxf(_grew(170.0), value_w + 2.0) + _grew(30.0):
 			rows_per_col = int(ceil(stats_data.size() / 2.0))
 		badge_layout = _layout_badges(all_badges, panel_w)
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
@@ -253,14 +268,14 @@ func _build_ui() -> void:
 
 	var title = Label.new()
 	title.text = "AUTOGRIND COMPLETE"
-	title.position = Vector2(_grew(20.0), _grew(12.0))
+	title.position = Vector2(_grew(20.0), title_y)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	panel.add_child(title)
 
 	var reason_lbl = Label.new()
 	reason_lbl.text = "Stopped: %s" % _reason
-	reason_lbl.position = Vector2(_grew(20.0), _grew(38.0))
+	reason_lbl.position = Vector2(_grew(20.0), reason_y)
 	reason_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	reason_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	panel.add_child(reason_lbl)
@@ -274,7 +289,7 @@ func _build_ui() -> void:
 		advice_lbl.text = advice
 		advice_lbl.add_theme_font_size_override("font_size", TextScale.scaled(ADVICE_FONT_SIZE))
 		advice_lbl.add_theme_color_override("font_color", ADVICE_COLOR)
-		advice_lbl.position = Vector2(_grew(20.0), _grew(56.0))
+		advice_lbl.position = Vector2(_grew(20.0), advice_y)
 		advice_lbl.size = Vector2(panel_w - _grew(40.0), maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))))
 		panel.add_child(advice_lbl)
 
@@ -306,7 +321,7 @@ func _build_ui() -> void:
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		val.text = s["value"]
 		## The box used to be a fixed 170 px while the panel offers far more, so a long value ran off the SCREEN.
-		var box_w: float = maxf(_grew(170.0), col_w - _grew(VALUE_BOX_LEFT) - _grew(30.0))
+		var box_w: float = maxf(_grew(170.0), col_w - value_left - _grew(30.0))
 		val.position = Vector2(x0 + col_w - _grew(30.0) - box_w, y)
 		val.size = Vector2(box_w, _grew(20.0))
 		panel.add_child(val)

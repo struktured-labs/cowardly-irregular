@@ -140,6 +140,20 @@ func _gold_col_w() -> float:
 
 
 ## The name column's left edge, and the gold readout's band in the header.
+## The panel widens so the longest shown name keeps a margin from the cost column, as TeleportMenu's does. 0.52 is the authored fraction and the floor.
+func _panel_w_frac() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	if size.x <= 0.0 or fnt == null:
+		return 0.52
+	var name_w: float = 0.0
+	for row in _rows:
+		name_w = maxf(name_w, fnt.get_string_size(str((row as Dictionary).get("label", "")),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(ROW_FONT_SIZE)).x)
+	# name column + name width + an 8 px margin + the cost column and its 10 px inset + the list's 32 px of panel padding.
+	var needed: float = _name_x() + name_w + 8.0 + _cost_col_w() + 10.0 + 32.0
+	return clampf(needed / size.x, 0.52, 0.96)
+
+
 func _name_x() -> float:
 	return maxf(26.0, 26.0 * _tf())
 
@@ -161,8 +175,9 @@ func _build_ui() -> void:
 	MenuMouseHelper.add_right_click_cancel(bg, _close)
 
 	var panel = Control.new()
-	panel.position = Vector2(size.x * 0.24, size.y * 0.14)
-	panel.size = Vector2(size.x * 0.52, size.y * 0.72)
+	var pw: float = _panel_w_frac()
+	panel.position = Vector2(size.x * (1.0 - pw) * 0.5, size.y * 0.14)
+	panel.size = Vector2(size.x * pw, size.y * 0.72)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(panel)
 

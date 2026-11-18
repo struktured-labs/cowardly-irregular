@@ -245,6 +245,8 @@ func _open_panel() -> void:
 	_body_label.position = Vector2(14, BODY_TOP) * k
 	_body_label.size = body_box()
 	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(BODY_FONT))
+	## Prose reads in the BODY tier (main 25808): continuous, so body_box()'s scaled(12)/12 is what draws; the heading stays DISPLAY.
+	UiFont.as_body(_body_label)
 	_body_label.add_theme_color_override("font_color", Color(0.88, 0.86, 0.80))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP

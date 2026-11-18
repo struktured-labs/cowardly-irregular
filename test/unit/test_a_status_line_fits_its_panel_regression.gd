@@ -38,13 +38,26 @@ func test_the_composers_no_llm_notice_keeps_the_panel_on_screen() -> void:
 	assert_gte(label.get_visible_line_count(), label.get_line_count(), "part of the no-LLM notice is cut off")
 
 
+## The failure grown past one line of this label's own width in its own face, so a narrower face cannot strand the CONTROL.
+func _wider_than(label: Label, base: String) -> String:
+	var font: Font = label.get_theme_font("font")
+	var px: int = label.get_theme_font_size("font_size")
+	var msg: String = base
+	for _i in 8:
+		if font.get_string_size(msg, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > label.size.x * 1.5:
+			break
+		msg += " — " + base
+	return msg
+
+
 func test_a_long_byok_failure_wraps_inside_its_frame() -> void:
 	var p = PanelScript.new()
 	add_child_autofree(p)
 	await _settle()
-	p._set_status(LONG_FAILURE, Color(1, 0.4, 0.4))
-	await _settle()
 	var label: Label = p._status_label
+	var msg: String = _wider_than(label, LONG_FAILURE)
+	p._set_status(msg, Color(1, 0.4, 0.4))
+	await _settle()
 	assert_gt(label.get_line_count(), 1, "CONTROL: a failure naming model, endpoint and error must need more than one line at this width")
 	assert_gte(label.get_visible_line_count(), label.get_line_count(), "part of the failure status is cut off")
 	assert_lte(label.get_rect().end.y, p._test_btn.position.y, "the wrapped failure status runs into the buttons")

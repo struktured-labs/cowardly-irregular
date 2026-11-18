@@ -5,6 +5,8 @@ extends GutTest
 ## every Label, even one drawing only Latin text: baselines sat 6px low at 16px, descenders were clipped in every 24px
 ## menu row, and wrapped text was double-spaced. Their hhea/typo ascent/descent were rewritten to 1069/293 (OFL permits
 ## it; no Reserved Font Name). A fallback added later with a taller box reds here, naming the font and the size.
+## The base is now the pixel face (ascent 9 / descent 3 per step), so the box was rewritten again, to 9/13 and 3/13 em
+## (tools/fit_fallback_metrics.py, which also checks every size 6-96 px); the old face left the pixel face's chain.
 
 const SIZES := [9, 10, 12, 13, 15, 16, 20, 24, 32, 48]
 

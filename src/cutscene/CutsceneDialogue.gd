@@ -631,16 +631,18 @@ func _box_metrics() -> Dictionary:
 	var speaker_px := _scaled_font_size(18)
 	var body_px := _scaled_font_size(16)
 	var hint_px := _scaled_font_size(12)
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()  # the speaker and hint are Labels
+	var body_font: Font = UiFont.body()  # the body is a RichTextLabel, which draws the reading face
 	var speaker_h := 26.0
 	var line_h := 23.0
 	var line_base := 23.0
 	var hint_h := 16.0
 	if font:
 		speaker_h = float(font.get_height(speaker_px))
-		line_h = maxf(1.0, float(font.get_height(body_px)))
-		line_base = maxf(1.0, float(font.get_height(16)))
 		hint_h = float(font.get_height(hint_px))
+	if body_font:
+		line_h = maxf(1.0, float(body_font.get_height(body_px)))
+		line_base = maxf(1.0, float(body_font.get_height(16)))
 	var text_y := float(TILE_SIZE * 2 + 22)
 	var text_h := float(BOX_HEIGHT - TILE_SIZE * 4 - 30)
 	var box_h := float(BOX_HEIGHT)
@@ -843,7 +845,7 @@ func open_backlog() -> void:
 	## line you missed, and a player on 200% text is the one most likely to have missed it. Same
 	## defect family as the dialogue panel itself (`_box_metrics`), one surface over.
 	var title_h: float = 28.0
-	var title_font: Font = ThemeDB.fallback_font
+	var title_font: Font = UiFont.display()
 	if title_font != null:
 		title_h = maxf(28.0, float(title_font.get_height(_scaled_font_size(18))))
 	title.text = "Already said"
