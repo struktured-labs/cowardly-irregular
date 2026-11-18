@@ -44,10 +44,11 @@ func _impact(seq: Dictionary) -> float:
 	return FX.impact_time(seq) - float(seq.get("start", 0.0))
 
 
+## The pose's release frame is where the gather ends (Thunder's bolt leaves later, from the hand ring), as test_the_mage_casts_in_phases defines it.
 func _release(seq: Dictionary) -> float:
 	for ph in seq.get("phases", []):
-		if str(ph.get("kind", "")) == "bolt":
-			return float(ph.get("at", 0.0))
+		if str(ph.get("kind", "")) == "gather":
+			return float(ph.get("at", 0.0)) + float(ph.get("dur", 0.0))
 	return -1.0
 
 
