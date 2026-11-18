@@ -1,7 +1,7 @@
 """Install paid regen_s4_motion_frames strips into a T1 monster sheet, so the monster attacks, flinches and dies as itself.
 Spends nothing: the strips are the normalised output of calls already on the spend ledger (tmp/gpt2_trial/out/calls.jsonl).
 
-Frame 0 (the shipped idle) is kept. Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
+Frame 0 (the shipped idle) is kept, its alpha snapped at 128 like the strips. Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
 past 7 (the Rat King's royal_spite) is kept. The ranges go back to idle 0-1 / attack 2-3 / hit 4-5 / dead 6-7.
 Refuses a sheet whose tier is not T1, and a strip that is not two 256 px frames with binary alpha.
 Prints, per monster, the EYE_REVIEWED pins test_a_monster_stays_one_creature needs, so a look is pinned to those pixels.
@@ -63,6 +63,8 @@ def drop_strays(frame: np.ndarray) -> list:
 def build(sheet: np.ndarray, strips: dict, log=None) -> np.ndarray:
     """sheet: H x W x 4 with W >= 8 frames; strips: anim -> 256x512x4. Returns the new sheet."""
     out = sheet.copy()
+    # Frame 0's legacy soft edge is snapped like every strip frame, or the idle loop flickers soft/hard and the import rewrites it.
+    out[:, :FW, 3] = np.where(out[:, :FW, 3] >= 128, 255, 0)
     for f, (anim, k) in FILL.items():
         fr = strips[anim][:, k * FW:(k + 1) * FW].copy()
         gone = drop_strays(fr)
@@ -142,6 +144,10 @@ def selftest() -> int:
     out = build(sheet, strips)
     if out[0, 0, 0] != 0 or out[0, 0, 1] != 0:
         fails.append("frame 0 must stay the shipped idle")
+    soft = sheet.copy(); soft[0, 0, 3] = 127; soft[0, 1, 3] = 128
+    o2 = build(soft, strips)
+    if o2[0, 0, 3] != 0 or o2[0, 1, 3] != 255:
+        fails.append("frame 0's alpha must snap at 128 like the strips")
     if not (out[0, 8 * FW, 0] == 8 and out[0, 9 * FW, 0] == 9):
         fails.append("frames past 7 (royal_spite) must be kept")
     for f, (a, k) in FILL.items():
