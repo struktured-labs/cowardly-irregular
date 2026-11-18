@@ -69,3 +69,77 @@ func test_each_bar_has_a_fill_that_reads_as_a_bar() -> void:
 	var hp_fill: StyleBoxFlat = (box.get_node("HP") as ProgressBar).get_theme_stylebox("fill")
 	var mp_fill: StyleBoxFlat = (box.get_node("MP") as ProgressBar).get_theme_stylebox("fill")
 	assert_ne(hp_fill.bg_color, mp_fill.bg_color, "HP and MP read apart at a glance")
+
+
+## controller 26234: at 200% the battle PARTY panel cut its "HP: 90/90" glyphs, because the bars kept the ruled 22/18 (16/12)
+## while their numbers scaled. Each bar now grows with its number; at 100% it is still the ruled bar.
+const SETTINGS := "res://src/ui/SettingsMenu.gd"
+const SLACK := 0.5
+
+
+func _presets() -> Array:
+	var p: Array = (load(SETTINGS) as GDScript).get_script_constant_map().get("TEXT_SIZE_PRESETS", [])
+	assert_gt(p.size(), 1, "FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must hold more than one step")
+	return p
+
+
+func _measure(s: float, members: int) -> Dictionary:
+	var saved := float(GameState.text_size_scale)
+	GameState.text_size_scale = s
+	var box := _box(_party(members))
+	GameState.text_size_scale = saved
+	await wait_physics_frames(2)
+	var out := {}
+	for pair in [["HP", "HPLabel"], ["MP", "MPLabel"]]:
+		var bar: ProgressBar = box.get_node(pair[0])
+		var label: Label = bar.get_node(pair[1])
+		var px: int = label.get_theme_font_size("font_size")
+		out[pair[0]] = {"bar": bar.size.y, "px": px, "line": label.get_theme_font("font").get_height(px)}
+	return out
+
+
+func test_the_floor_names_what_this_file_drives() -> void:
+	assert_true(UIM.new(null).has_method("_create_character_status_box"), "BattleUIManager._create_character_status_box must exist")
+	assert_true(UIM.new(null).has_method("bar_height_for_text"), "BattleUIManager.bar_height_for_text must exist")
+
+
+## Arm 1: the numbers' font really grows with Text Size, or the fit arm below judges nothing.
+func test_the_numbers_grow_with_the_text() -> void:
+	for members in [4, 5]:
+		var base: Dictionary = await _measure(1.0, members)
+		var grew := 0
+		for s in _presets():
+			if float(s) <= 1.0:
+				continue
+			var m: Dictionary = await _measure(float(s), members)
+			for k in ["HP", "MP"]:
+				assert_gt(int(m[k]["px"]), int(base[k]["px"]), "@%s x%d the %s number's font grew" % [s, members, k])
+				grew += 1
+		assert_gt(grew, 0, "CONTROL x%d: a preset above 100%% was judged" % members)
+
+
+## Arm 2 (THE DEFECT): the number never takes a bigger share of its bar than at 100%, where the ruled bar holds the digits.
+## Judged on the BUILT bar against the label's drawn line, so it reds on any bar that does not grow with the face.
+func test_each_bar_grows_with_its_number_at_every_text_size() -> void:
+	var bad: Array = []
+	for members in [4, 5]:
+		var base: Dictionary = await _measure(1.0, members)
+		for s in _presets():
+			var m: Dictionary = await _measure(float(s), members)
+			for k in ["HP", "MP"]:
+				var need: float = float(base[k]["bar"]) * float(m[k]["line"]) / float(base[k]["line"])
+				if float(m[k]["bar"]) < need - SLACK:
+					bad.append("@%s x%d %s bar %.0f px for a %.1f px line (100%%: %.0f for %.1f) needs %.1f" % [s, members, k, m[k]["bar"], m[k]["line"], base[k]["bar"], base[k]["line"], need])
+	assert_eq(bad, [], "a party bar holds its number at every Text Size:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## CONTROL: at 100% (and below) the bars are exactly the ruled 22/18 and 16/12 a player sees today.
+func test_at_100_percent_the_bars_are_the_ruled_bars() -> void:
+	var four: Dictionary = await _measure(1.0, 4)
+	var five: Dictionary = await _measure(1.0, 5)
+	assert_almost_eq(float(four["HP"]["bar"]), 22.0, 0.01, "4-party HP bar")
+	assert_almost_eq(float(four["MP"]["bar"]), 18.0, 0.01, "4-party MP bar")
+	assert_almost_eq(float(five["HP"]["bar"]), 16.0, 0.01, "5-party HP bar")
+	assert_almost_eq(float(five["MP"]["bar"]), 12.0, 0.01, "5-party MP bar")
+	var small: Dictionary = await _measure(0.8, 5)
+	assert_almost_eq(float(small["HP"]["bar"]), 16.0, 0.01, "80% never shrinks a bar under its ruled height")

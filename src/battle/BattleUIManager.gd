@@ -278,8 +278,8 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	## (first box) header. Scene now grows downward only (grow_vertical=1)
 	## and the 5-party heights below are tightened further so the stack
 	## actually fits the slot instead of relying on overflow.
-	var hp_bar_h: int = 22 if party_size <= 4 else 16
-	var mp_bar_h: int = 18 if party_size <= 4 else 12
+	var hp_bar_h: int = bar_height_for_text(22 if party_size <= 4 else 16, 15)
+	var mp_bar_h: int = bar_height_for_text(18 if party_size <= 4 else 12, 13)
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
@@ -380,6 +380,11 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	_update_stat_mods_label(stat_label, member)
 
 	return box
+
+
+## A party bar's ruled height grown with its number's Text Size, never below the ruled height (controller 26234: 200% cut the digits).
+static func bar_height_for_text(ruled: int, base_px: int) -> int:
+	return int(ceil(float(ruled) * maxf(1.0, float(TextScale.scaled(base_px)) / float(base_px))))
 
 
 ## BBCode color for an AP readout. +4 (full bank) is gold so a maxed bar is not more lime.
