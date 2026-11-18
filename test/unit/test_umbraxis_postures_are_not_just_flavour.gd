@@ -109,7 +109,7 @@ func test_umbraxis_casts_more_under_its_own_aggressive_posture() -> void:
 	assert_gt(pressing, guarding,
 		"the shadow dragon must cast MORE under its press posture than its guard posture")
 	assert_gt(pressing - guarding, 0.15,
-		"and the gap must be a mechanical swing, not sampling noise (1.4x vs 0.6x on a 0.75 base)")
+		"and the gap must be a mechanical swing, not sampling noise (1.4x vs the 1.0 floor null_field keeps for the spell it names, on a 0.75 base)")
 
 
 func test_the_swing_matches_the_posture_it_delegates_to() -> void:
