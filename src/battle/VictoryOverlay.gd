@@ -205,6 +205,37 @@ func _fit_gap(count: int, vp_y: float) -> float:
 	return clampf(spare / float(count - 1), MIN_CARD_GAP, CARD_GAP)
 
 
+## Banners that fire BEFORE this overlay exists (it waits for the downbeat), so they could not dodge what it places.
+const STALE_BANNERS: Array[String] = ["OneShotFlash", "AutobattleFlash"]
+
+
+## A banner whose drawn text lands on the title, strip or a card steps aside: the 11-16 .807 still had ONE-SHOT!/Rank: under the Rogue card.
+func _clear_stale_banners() -> void:
+	if _scene == null or not is_instance_valid(_scene):
+		return
+	var vp := get_viewport_rect().size
+	for bname in STALE_BANNERS:
+		var flash := (_scene as Node).get_node_or_null(bname) as Control
+		if flash != null and flash.visible and not banner_text_hits(flash, _occupied, vp).is_empty():
+			flash.visible = false
+
+
+## The drawn text of each label in a centre-anchored banner that lands on any of `rects` (its measured width, not its 400 px box).
+static func banner_text_hits(flash: Node, rects: Array, vp: Vector2) -> Array:
+	var out: Array = []
+	for c in flash.get_children():
+		if not (c is Label) or (c as Label).text == "":
+			continue
+		var l := c as Label
+		var box := Rect2(vp.x / 2.0 + l.offset_left, vp.y / 2.0 + l.offset_top, l.offset_right - l.offset_left, l.offset_bottom - l.offset_top)
+		var tw: float = l.get_minimum_size().x
+		var drawn := Rect2(box.get_center().x - tw / 2.0, box.position.y, tw, box.size.y)
+		for r in rects:
+			if (r as Rect2).has_area() and drawn.intersects(r):
+				out.append("'%s' %s on %s" % [l.text, drawn, r])
+	return out
+
+
 func occupied_rects() -> Array[Rect2]:
 	return _occupied.duplicate()
 
@@ -250,6 +281,7 @@ func build(results: Dictionary, scene) -> void:
 	_reserve_prompt()
 	_build_cards(results.get("char_results", []), flourish)
 	_build_prompt()
+	_clear_stale_banners()
 	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
 		show_restores(BattleManager.last_post_battle_restore)
 
