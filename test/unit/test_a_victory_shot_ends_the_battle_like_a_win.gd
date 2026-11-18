@@ -7,6 +7,25 @@ const SCENE := preload("res://src/battle/BattleScene.tscn")
 const SRC := "res://src/battle/BattleScene.gd"
 const TOOLS := ["res://tools/victory_card_shots.gd", "res://tools/victory_clip.gd"]
 const HUD := ["UI/TurnInfoPanel", "UI/InputHintBar"]
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
+var _guard
+
+
+func before_each() -> void:
+	AutobattleSystem._test_disable_persistence = true
+	_guard = BattleStateGuard.new()
+	_guard.snapshot()
+
+
+## A BattleScene starts a battle; without this the next files read BattleManager mid-battle (state=3, the .807 slot).
+func after_each() -> void:
+	_guard.restore()
+
+
+func after_all() -> void:
+	SoundState.restore()
 
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
