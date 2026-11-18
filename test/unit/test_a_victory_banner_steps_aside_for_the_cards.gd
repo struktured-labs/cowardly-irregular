@@ -44,6 +44,9 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	var s: Array = (load("res://src/battle/BattleScene.gd") as GDScript).get_script_method_list().map(func(x): return str(x["name"]))
 	for f in ["_on_one_shot_achieved", "_on_autobattle_victory"]:
 		assert_has(s, f, "BattleScene.%s must exist" % f)
+	var h: Array = (load("res://src/ui/TutorialHint.gd") as GDScript).get_script_method_list().map(func(x): return str(x["name"]))
+	for f in ["show_hint", "step_aside", "panel_rect"]:
+		assert_has(h, f, "TutorialHint.%s must exist" % f)
 
 
 func _results() -> Dictionary:
@@ -133,3 +136,32 @@ func test_a_banner_clear_of_the_overlay_keeps_showing() -> void:
 	await wait_frames(2)
 	assert_eq(OverlayScript.banner_text_hits(flash, o.occupied_rects(), vp), [], "CONTROL: moved to the right edge at mid-height, it lands on nothing")
 	assert_true(flash.visible, "a banner clear of the overlay is not hidden")
+
+
+## The faint VICTORY! under the Group Attacks hint (grokbot 26157): an open hint over the docked title steps aside and re-arms.
+func test_a_tutorial_hint_over_the_title_steps_aside_and_shows_again_later() -> void:
+	const ID := "zz_victory_title_probe"
+	GameState.game_constants.erase("tutorial_" + ID)
+	GameState.text_size_scale = 1.0
+	var scene = SCENE.instantiate()
+	scene.encounter_enemies = ["goblin"]
+	add_child_autofree(scene)
+	await wait_frames(6)
+	var hint: TutorialHint = TutorialHint.new()
+	add_child_autofree(hint)
+	await wait_frames(1)
+	hint.show_hint(ID, "Group Attacks", "Pool every member's AP into one strike.")
+	await wait_frames(2)
+	var before: Rect2 = hint.panel_rect()
+	assert_true(before.has_area(), "CONTROL: the hint is open (%s)" % before)
+	var o: Control = OverlayScript.new()
+	o.name = "VictoryResults"
+	scene.add_child(o)
+	o.build(_results(), scene)
+	o.complete_now()
+	await wait_frames(2)
+	assert_true(o.occupied_rects().any(func(r): return (r as Rect2).intersects(before)), "CONTROL: the hint sat on the overlay's ground (%s vs %s)" % [before, o.occupied_rects()])
+	assert_false(hint.visible, "a hint over the victory title steps aside")
+	assert_false(TutorialHint.is_any_active(), "stepping aside releases the input gate")
+	assert_false(bool(GameState.game_constants.get("tutorial_" + ID, false)), "a hint that stepped aside is re-armed, so it still teaches")
+	GameState.game_constants.erase("tutorial_" + ID)

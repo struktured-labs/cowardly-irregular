@@ -218,6 +218,19 @@ func _clear_stale_banners() -> void:
 		var flash := (_scene as Node).get_node_or_null(bname) as Control
 		if flash != null and flash.visible and not banner_text_hits(flash, _occupied, vp).is_empty():
 			flash.visible = false
+	## A tutorial hint open over the title (group_attacks fires on the winning strike) steps aside and re-arms (grokbot 26157).
+	for h in get_tree().get_nodes_in_group(Toast.HINT_GROUP):
+		if h.has_method("step_aside") and h.has_method("panel_rect") and _lands_on_occupied(h.panel_rect()):
+			h.step_aside()
+
+
+func _lands_on_occupied(r: Rect2) -> bool:
+	if not r.has_area():
+		return false
+	for o in _occupied:
+		if o.has_area() and r.intersects(o):
+			return true
+	return false
 
 
 ## The drawn text of each label in a centre-anchored banner that lands on any of `rects` (its measured width, not its 400 px box).
