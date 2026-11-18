@@ -6,7 +6,9 @@ const OverlapAudit = preload("res://test/unit/helpers/overlap_audit.gd")
 const CM := "res://src/ui/ControlsMenu.gd"
 
 ## Intended overlaps, {"a|b": "reason"}, each from a census. Empty until a census says otherwise.
-const DECLARED := {}
+const DECLARED := {
+	"Panel/Title|Panel/DeviceLabel": "the subtitle sits inside the title's leading by design (ControlsMenu._device_y); the 2 px is line box, not ink",
+}
 
 var _saved = null
 

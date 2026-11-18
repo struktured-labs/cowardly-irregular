@@ -256,6 +256,17 @@ func _row_font() -> int:
 	return fs
 
 
+## A cell's font, grown with Text Size only as far as its drawn line fits the row (census 116c3b8a8: scaled(13) spilled into the next row at 200%).
+func _cell_font(base: int) -> int:
+	var fs: int = TextScale.scaled(base)
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null or not (_panel and is_instance_valid(_panel)):
+		return fs
+	while fs > base and fnt.get_height(fs) + 8.0 > float(_row_h()):
+		fs -= 1
+	return fs
+
+
 func _row_h() -> int:
 	## +3, not +1: Reset to Default, Test Buttons and Map This Pad all follow the action rows.
 	var fnt: Font = get_theme_font("font", "Label")
@@ -395,6 +406,7 @@ func _build_ui() -> void:
 
 	# Main panel
 	_panel = Control.new()
+	_panel.name = "Panel"
 	_panel.position = Vector2((size.x - size.x * _panel_w_frac()) * 0.5, size.y * 0.1)
 	## 0.80 until 2026-10-12: the field-menu row made eight remappable rows and the last one
 	## ended 24px BELOW the conflict line. The footer lines are placed from the panel's bottom, so
@@ -411,6 +423,7 @@ func _build_ui() -> void:
 
 	# Title
 	var title = Label.new()
+	title.name = "Title"
 	title.text = "CONTROLS"
 	title.position = Vector2(16, 8)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
@@ -421,6 +434,7 @@ func _build_ui() -> void:
 	# whether SDL had a mapping for the attached pad, and unmapped every index below is a lie —
 	# that absence is what made the 2026-07-25 controller hunt expensive.
 	_device_label = Label.new()
+	_device_label.name = "DeviceLabel"
 	_device_label.position = Vector2(16, _device_y())
 	_device_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_panel.add_child(_device_label)
@@ -551,14 +565,14 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		var arrows_left = Label.new()
 		arrows_left.text = "<"
 		arrows_left.position = Vector2(200.0 * _tf(), 4)
-		arrows_left.add_theme_font_size_override("font_size", TextScale.scaled(14))
+		arrows_left.add_theme_font_size_override("font_size", _cell_font(14))
 		arrows_left.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_left)
 
 		var value = Label.new()
 		value.text = value_text
 		value.position = Vector2(220.0 * _tf(), 4)
-		value.add_theme_font_size_override("font_size", TextScale.scaled(14))
+		value.add_theme_font_size_override("font_size", _cell_font(14))
 		value.add_theme_color_override("font_color", Color.YELLOW)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
@@ -566,8 +580,10 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 
 		var arrows_right = Label.new()
 		arrows_right.text = ">"
-		arrows_right.position = Vector2(420.0 * _tf(), 4)
-		arrows_right.add_theme_font_size_override("font_size", TextScale.scaled(14))
+		## After the value's drawn end, never on it: "ON   Confirm = east face" ran past the authored 420 at 100%.
+		var value_end: float = 220.0 * _tf() + value.get_theme_font("font").get_string_size(value_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _cell_font(14)).x + 8.0 * _tf()
+		arrows_right.position = Vector2(maxf(420.0 * _tf(), value_end), 4)
+		arrows_right.add_theme_font_size_override("font_size", _cell_font(14))
 		arrows_right.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_right)
 	elif not is_action_btn and value_text != "":
@@ -587,7 +603,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		value.text = value_text
 		value.position = Vector2(_col_x()[1], 4)
 		value.size = Vector2(_col_w()[0], _row_h() - 8)
-		value.add_theme_font_size_override("font_size", TextScale.scaled(13))
+		value.add_theme_font_size_override("font_size", _cell_font(13))
 		value.add_theme_color_override("font_color", OPTION_SELECTED)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
@@ -603,7 +619,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 			kb_label.text = kb_label_text
 			kb_label.position = Vector2(_col_x()[2], 4)
 			kb_label.size = Vector2(_col_w()[1], _row_h() - 8)
-			kb_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
+			kb_label.add_theme_font_size_override("font_size", _cell_font(13))
 			# Slightly muted color since it's not remappable here
 			kb_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(kb_label)
@@ -614,7 +630,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 			mouse_label.text = mouse_label_text
 			mouse_label.position = Vector2(_col_x()[3], 4)
 			mouse_label.size = Vector2(_col_w()[2], _row_h() - 8)
-			mouse_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
+			mouse_label.add_theme_font_size_override("font_size", _cell_font(13))
 			mouse_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(mouse_label)
 			_fit_column_label(mouse_label, _col_w()[2])
