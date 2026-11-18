@@ -163,7 +163,8 @@ func test_an_assassin_dragons_intent_tilts_it_toward_what_it_names() -> void:
 
 func test_a_caster_dragons_intent_tilts_it_toward_what_it_names() -> void:
 	var boss := _boss("umbraxis")
-	assert_eq(_bm._get_ai_archetype(boss, []), "caster", "CONTROL: Umbraxis must reach the caster ladder, or this measures another")
+	var kit: Array = (boss.job["abilities"] as Array).map(func(id): return JobSystem.get_ability(id))
+	assert_eq(_bm._get_ai_archetype(boss, kit), "caster", "CONTROL: Umbraxis with his own kit must reach the caster ladder, or this measures another")
 	var without := _pool_share("umbraxis", "", "null_field")
 	var with_intent := _pool_share("umbraxis", "null_field", "null_field")
 	assert_gt(with_intent, without + MIN_SHARE_GAIN,
