@@ -454,11 +454,25 @@ func _create_hanging_sign() -> void:
 	label.add_theme_color_override("font_color", _pal_accent.lightened(0.3))
 	decorations.add_child(label)
 	# Sized after adoption: the theme font only resolves inside the tree.
-	label.add_theme_font_size_override("font_size", fit_font_size(shop_name, label.get_theme_font("font"), sw))
+	var font: Font = label.get_theme_font("font")
+	var fs: int = fit_font_size(shop_name, font, sw)
+	label.add_theme_font_size_override("font_size", fs)
+	# A bitmap face draws every size in SIGN_FONT_MIN..MAX at one step, so a name the shrink cannot fit wraps onto the board's two lines instead.
+	var wraps: bool = sign_wraps(shop_name, font, sw)
+	if wraps:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# clip_text drops text from the minimum size, which otherwise clamps the box 2px past the board.
 	label.clip_text = true
 	label.size = Vector2(sw, sh)
-	label.position = Vector2(6.0 * TILE_SIZE - sw / 2.0, 0.6 * TILE_SIZE)
+	label.position = Vector2(6.0 * TILE_SIZE - sw / 2.0, (0.0 if wraps else 0.6) * TILE_SIZE)
+
+
+## True when `name` overruns the board even at the size fit_font_size picks, so the sign must wrap it.
+static func sign_wraps(name: String, font: Font, max_px: float) -> bool:
+	if font == null:
+		return false
+	return font.get_string_size(name, HORIZONTAL_ALIGNMENT_CENTER, -1, fit_font_size(name, font, max_px)).x > max_px
 
 
 ## Largest size keeping `name` inside `max_px` -- measured, since two 22-char names differ by 7px.

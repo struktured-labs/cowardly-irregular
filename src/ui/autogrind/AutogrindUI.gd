@@ -746,7 +746,11 @@ func _build_footer(vp_size: Vector2) -> void:
 	footer.text = _hint_strip_text()
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	var tog_w := _grew(200)
+	var tog_px: int = TextScale.scaled(11)
+	var ls_key: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X), "H")
+	## Each toggle is as wide as its own widest caption ("OFF") in the face: 200 held 304 px of PERMADEATH at 1.25x.
+	var tog_w: float = maxf(_grew(200), maxf(_text_width_in_tree("%s LUDICROUS: OFF" % ls_key, tog_px),
+		_text_width_in_tree("OPTIONS / [P] PERMADEATH: OFF", tog_px)) + 2.0 * _grew(8))
 	var tog_h := _grew(28)
 	# One line at 1.0x, three at 2.0x: anchor the strip by its own height or it leaves the screen.
 	footer.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -769,9 +773,9 @@ func _build_footer(vp_size: Vector2) -> void:
 	_add_pixel_border(ls_btn, ls_btn.size)
 
 	_ludicrous_toggle_label = Label.new()
-	_ludicrous_toggle_label.text = "%s LUDICROUS: %s" % [_pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X), "H"), "ON" if _ludicrous_speed_enabled else "OFF"]
+	_ludicrous_toggle_label.text = "%s LUDICROUS: %s" % [ls_key, "ON" if _ludicrous_speed_enabled else "OFF"]
 	_ludicrous_toggle_label.position = Vector2(_grew(8), _grew(6))
-	_ludicrous_toggle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	_ludicrous_toggle_label.add_theme_font_size_override("font_size", tog_px)
 	_ludicrous_toggle_label.add_theme_color_override(
 		"font_color",
 		Color.WHITE if _ludicrous_speed_enabled else DISABLED_COLOR
@@ -799,7 +803,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	_permadeath_toggle_label = Label.new()
 	_permadeath_toggle_label.text = "OPTIONS / [P] PERMADEATH: %s" % ("ON" if _staking_on() else "OFF")
 	_permadeath_toggle_label.position = Vector2(_grew(8), _grew(6))
-	_permadeath_toggle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	_permadeath_toggle_label.add_theme_font_size_override("font_size", tog_px)
 	_permadeath_toggle_label.add_theme_color_override(
 		"font_color",
 		Color.WHITE if _staking_on() else DISABLED_COLOR
@@ -871,6 +875,24 @@ func _grid_row_height() -> float:
 	return h
 
 
+## The width a Label here draws `text` at `px`: the face's metrics decide it, never a literal box.
+func _text_width_in_tree(text: String, px: int) -> float:
+	var f: Font = _label_face()
+	return 0.0 if f == null else f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+
+
+## The font a Label here draws in; the grid is built before the console enters the tree, so off-tree it is the installed face.
+func _label_face() -> Font:
+	if not is_inside_tree():
+		return UiFont.display()
+	var probe := Label.new()
+	add_child(probe)
+	var f: Font = probe.get_theme_font("font")
+	remove_child(probe)
+	probe.queue_free()
+	return f
+
+
 ## The inner width an action cell's label is given: insetting past the icon costs 20px of it.
 func _action_text_width(action: Dictionary) -> float:
 	var has_icon: bool = action.get("type", "") == "member_ability" and str(action.get("ability", "")) != ""
@@ -938,7 +960,8 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 	arrow.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	arrow.add_theme_color_override("font_color", HEADER_COLOR)
 	_grid_container.add_child(arrow)
-	x_offset += CONNECTOR_WIDTH
+	## The gap holds the arrow it draws: at 2.0x "=>" ran 1 px into the first action cell.
+	x_offset += maxf(CONNECTOR_WIDTH, 4.0 + _text_width_in_tree("=>", TextScale.scaled(14)) + 2.0)
 
 	# Actions
 	for i in range(actions.size()):
@@ -1189,7 +1212,7 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 	"""Create [+ Add Rule] button"""
 	if h < 0.0:
 		h = _grid_row_height()
-	var add_w := _grew(100)
+	var add_w: float = max(_grew(100), _text_width_in_tree("[+ Add Rule]", TextScale.scaled(10)) + 8.0)
 	var cell = Control.new()
 	cell.custom_minimum_size = Vector2(add_w, h)
 	cell.set_meta("cell_type", "add_rule")
@@ -1203,18 +1226,29 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 	cell.add_child(bg)
 
 	var label = Label.new()
+	## The override goes first: a size set before it is clamped to the minimum at the theme's default size.
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.text = "[+ Add Rule]"
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(add_w - 8.0, h - _grew(16))
-	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
 	# Mouse: click to add rule, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, add_w, h,
+	var hit: Button = MenuMouseHelper.make_clickable(cell, row_idx, add_w, h,
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
+	## The label's own minimum is what it draws; it settles when the theme reaches it in the tree, so the box follows that signal.
+	var fit := func() -> void:
+		var w: float = maxf(add_w, label.get_minimum_size().x + 8.0)
+		cell.custom_minimum_size.x = w
+		cell.size.x = w
+		bg.size.x = w
+		hit.size.x = w
+		label.size.x = w - 8.0
+	label.minimum_size_changed.connect(fit)
+	fit.call()
 
 	return cell
 
@@ -1244,21 +1278,26 @@ func _create_and_connector(h: float = -1.0) -> Control:
 
 func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	"""Draw OR connector between rows"""
+	var px: int = TextScale.scaled(11)
+	var f: Font = _label_face()
+	var line_h: float = 0.0 if f == null else f.get_height(px)
 	var bg = ColorRect.new()
 	bg.name = "R%dOr" % row_idx
 	bg.color = Color(0.5, 0.3, 0.1, 0.6)
 	bg.position = Vector2(4, y_pos - _grew(10))
 	bg.size = Vector2(_grew(28), _grew(20))
+	## The badge clips its label: the face's line box is taller than the badge, and nothing may draw past it.
+	bg.clip_contents = true
 	_grid_container.add_child(bg)
 
 	var label = Label.new()
 	label.name = "R%dOrText" % row_idx
 	label.text = "OR"
-	label.position = Vector2(8, y_pos - _grew(8))
-	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	## Authored seat, lifted only when the face's line would hang past the badge into the next row (1.25x).
+	label.position = Vector2(8, minf(y_pos - _grew(8), y_pos + _grew(10) - line_h)) - bg.position
+	label.add_theme_font_size_override("font_size", px)
 	label.add_theme_color_override("font_color", Color.ORANGE)
-	_grid_container.add_child(label)
-
+	bg.add_child(label)
 
 func _format_condition(condition: Dictionary) -> String:
 	"""Format condition for display"""

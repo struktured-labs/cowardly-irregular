@@ -101,7 +101,8 @@ func _build_ui() -> void:
 
 	var header_h: float = _row_box(HEADER_FONT, HEADER_BOX)
 	var hint_h: float = _row_box(HINT_FONT, HINT_BOX)
-	var empty_h: float = _row_box(EMPTY_FONT, HEADER_BOX)
+	## A Label grows down to its line height, so a box shorter than the face would centre 2px low at 200% (pixel face).
+	var empty_h: float = maxf(_row_box(EMPTY_FONT, HEADER_BOX), float(UiFont.display().get_height(TextScale.scaled(EMPTY_FONT))))
 
 	_header_label = Label.new()
 	_header_label.text = "PENDING REBALANCE PROPOSALS"

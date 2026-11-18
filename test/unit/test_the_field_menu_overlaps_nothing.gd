@@ -11,7 +11,6 @@ const CombatantScript = preload("res://src/battle/Combatant.gd")
 ## Intended overlaps, {"a|b": "reason"}, each from a census and each backed by an arm that measures what the reason claims.
 const DECLARED := {
 	"GutRunner/NameLabel|GutRunner/JobLabel": "the name's 20-line keeps descender room 2*k px into the job row; the letters clear by a pixel at every Text Size (test_a_name_and_its_job_line_do_not_touch_in_ink)",
-	"GutRunner/JobLabel|HPBar/Label#0": "at 150% the job line's box grazes the HP label's box by 1 px of descender room; the letters clear by a pixel (test_a_name_and_its_job_line_do_not_touch_in_ink)",
 }
 
 
