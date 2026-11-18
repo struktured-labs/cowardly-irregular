@@ -3144,7 +3144,9 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
 	cast_chance = clampf(cast_chance, 0.1, 0.99)
 
-	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	## The intent's authored ability bias reaches the caster's picks too, as it does the tank's and assassin's; {} for no intent.
+	var ability_bias: Dictionary = _intent_ability_bias(combatant)
+	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2, ability_bias)
 	if not caster_utility.is_empty():
 		return caster_utility
 
@@ -3157,7 +3159,7 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
 		var scored: Array = magic_abilities.duplicate()
 		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
-		var best_spell = _pick_biased_by_power(scored)
+		var best_spell = _pick_biased_by_power(scored, ability_bias)
 		if best_spell.is_empty():
 			best_spell = magic_abilities[0]
 

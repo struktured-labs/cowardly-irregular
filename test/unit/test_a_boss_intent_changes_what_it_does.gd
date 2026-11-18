@@ -8,7 +8,7 @@ const ROLLS := 12000
 ## A within-pool 1.5x on one of four lifts its share from 1/6 to 0.231; the threshold is the midpoint, about 3.4 sigma from either side at ROLLS.
 const MIN_SHARE_GAIN := 0.032
 const CAP := 1.5
-## Pyrroth and Glacius read the tank ladder, Voltharion the assassin one. Umbraxis (caster) is armed by alias; the duels run elsewhere.
+## Pyrroth and Glacius read the tank ladder, Voltharion the assassin one, Umbraxis the caster one; the duels run elsewhere.
 const DRAGONS := ["pyrroth", "glacius", "voltharion"]
 ## An ability alone in its pool cannot be favoured by a within-pool tilt; only a gate change could, and that is struktured's call.
 ## frost_turtle was here ("needs a gate change"); struktured 2026-10-06 approved it and the tank gate now
@@ -159,6 +159,21 @@ func test_an_assassin_dragons_intent_tilts_it_toward_what_it_names() -> void:
 	var with_intent := _pool_share("voltharion", "static_taunt", "static_field")
 	assert_gt(with_intent, without + MIN_SHARE_GAIN,
 		"Static Taunt left Static Field's share of the damage picks where it was (%.3f vs %.3f without) — the announced posture still changes nothing" % [with_intent, without])
+
+
+func test_a_caster_dragons_intent_tilts_it_toward_what_it_names() -> void:
+	var boss := _boss("umbraxis")
+	assert_eq(_bm._get_ai_archetype(boss, []), "caster", "CONTROL: Umbraxis must reach the caster ladder, or this measures another")
+	var without := _pool_share("umbraxis", "", "null_field")
+	var with_intent := _pool_share("umbraxis", "null_field", "null_field")
+	assert_gt(with_intent, without + MIN_SHARE_GAIN,
+		"Null Field left the Null Field spell's share of the damage picks where it was (%.3f vs %.3f without) — the announced posture still changes nothing" % [with_intent, without])
+
+
+func test_control_a_caster_intent_with_no_ability_bias_keeps_its_odds() -> void:
+	var without := _pool_share("umbraxis", "", "null_field")
+	var other := _pool_share("umbraxis", "existential_dread", "null_field")
+	assert_almost_eq(other, without, MIN_SHARE_GAIN, "CONTROL: an intent that authors no ability bias leaves the caster's spell shares alone")
 
 
 func test_control_no_bias_keeps_the_ladders_own_odds() -> void:
