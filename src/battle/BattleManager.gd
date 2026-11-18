@@ -3137,7 +3137,7 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 
 	# Wave E — BossDialogue intent bias. Scales the 75% spell-cast roll
 	# by the intent's "attack_weight" multiplier (default 1.0 = no change).
-	# 'aggress' tilts toward more spells, 'turtle' tilts away. The roll
+	# 'aggress' tilts toward more spells, 'turtle' away unless the intent names a spell. The roll
 	# remains randomized — the LLM never names the spell.
 	var intent_id: String = combatant.get_meta("llm_intent", "")
 	var bias: Dictionary = _bias_by_intent(intent_id)
@@ -3159,7 +3159,7 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
 		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
 		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
-		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		## stops it being the only entry that can win. Weakness leads the sort unless an intent names a spell.
 		var scored: Array = magic_abilities.duplicate()
 		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
 		## The announced spell takes the top slot; the bias then weighs it as before, so the cap still bounds it.
