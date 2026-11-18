@@ -32,11 +32,18 @@ func test_the_label_clears_a_player_standing_at_the_door() -> void:
 	if label == null:
 		return
 	var player := shop.player as Node2D
-	player.global_position = exit.global_position + Vector2(0, -24)
-	for _i in 2:
-		await get_tree().process_frame
-	var authored := Rect2(exit.global_position + Vector2(label.position.x, exit.FLAT_OFFSET.y), label.size)
-	assert_true(authored.intersects(_player_rect(player)), "CONTROL: at the authored offset the label crosses the player")
+	## The stand is DERIVED: the first spot up from the door where the authored label would cross the player, since the face sets the label's height.
+	var authored := Rect2()
+	var crossed := false
+	for dy in range(-24, -73, -4):
+		player.global_position = exit.global_position + Vector2(0, dy)
+		for _i in 2:
+			await get_tree().process_frame
+		authored = Rect2(exit.global_position + Vector2(label.position.x, exit.FLAT_OFFSET.y), label.size)
+		if label.visible and authored.intersects(_player_rect(player)):
+			crossed = true
+			break
+	assert_true(crossed, "CONTROL: some stand inside the zone puts the authored label across the player (last %s vs %s)" % [authored, _player_rect(player)])
 	assert_true(label.visible, "CONTROL: the label is showing")
 	assert_false(_global_rect(label).intersects(_player_rect(player)),
 		"the exit label %s is drawn over the player %s" % [_global_rect(label), _player_rect(player)])

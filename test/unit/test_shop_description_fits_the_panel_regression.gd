@@ -8,6 +8,8 @@ extends GutTest
 ## the buy list still has to stop above that panel.
 
 const ShopSceneScript := preload("res://src/exploration/ShopScene.gd")
+## The old 120px panel held 3 whole lines below its 16px inset (25px lines + 3px gap); a face change moves the pixels, not this.
+const OLD_PANEL_ROWS := 3
 
 var _prior_party: Array = []
 var _prior_gold: int = 0
@@ -81,8 +83,10 @@ func _assert_every_description_fits(shop: ShopScene, ids: Array, where: String) 
 				where, item_id, bottom, panel.size.y, label.text])
 	assert_gt(tallest_lines, 4,
 		"CONTROL: %s still paints a multi-line description (got %d on %s)" % [where, tallest_lines, tallest_id])
-	assert_gt(tallest_bottom, 120.0,
-		"CONTROL: %s text is taller than the old 120px panel, else this cannot catch the overflow" % where)
+	var pitch := float(label.get_line_height()) + float(label.get_theme_constant("line_spacing"))
+	var old_panel := label.position.y + pitch * OLD_PANEL_ROWS
+	assert_gt(tallest_bottom, old_panel,
+		"CONTROL: %s text (%.1f) overflows a panel holding the old %d rows in this face (%.1f), else this cannot catch the overflow" % [where, tallest_bottom, OLD_PANEL_ROWS, old_panel])
 	var menu: Win98Menu = shop.current_menu
 	assert_not_null(menu, "%s opened a menu" % where)
 	assert_lte(menu.position.y + menu.size.y, panel.position.y,

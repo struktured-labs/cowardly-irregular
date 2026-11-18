@@ -58,6 +58,20 @@ func _scripted_lines() -> Array:
 	return out
 
 
+## The scripted line with the most rows at the shipped width that still fits the target at the cap; derived, so a face change cannot strand it.
+func _widening_fixture() -> String:
+	var best: String = ""
+	var best_rows: int = 0
+	for e in _scripted_lines():
+		var t: String = str(e["text"])
+		var r: int = _rows(t, BubbleScript.MAX_TEXT_WIDTH)
+		if r > BubbleScript.WIDEN_TARGET_ROWS and r > best_rows and _rows(t, BubbleScript.MAX_TEXT_WIDTH_WIDE) <= BubbleScript.WIDEN_TARGET_ROWS:
+			best = t
+			best_rows = r
+	assert_ne(best, "", "PRECONDITION: some scripted line must need widening and fit at the cap, in the face the bubble draws")
+	return best
+
+
 ## A quip that already fits keeps the narrow bubble it has today.
 func test_a_short_quip_keeps_the_narrow_bubble() -> void:
 	var short_line := '"Got it."'
@@ -69,7 +83,7 @@ func test_a_short_quip_keeps_the_narrow_bubble() -> void:
 
 ## A quip that needs three rows gets width instead, and the width it gets actually fixes the rows.
 func test_a_three_row_quip_widens_until_it_fits() -> void:
-	var long_line := '"Verse complete. Wounds tallied, breaths counted, all party members returned to the page."'
+	var long_line: String = _widening_fixture()
 	var before: int = _rows(long_line, BubbleScript.MAX_TEXT_WIDTH)
 	assert_gt(before, BubbleScript.WIDEN_TARGET_ROWS,
 		"PRECONDITION: the fixture must need widening at the shipped width (got %d rows)" % before)
@@ -81,7 +95,7 @@ func test_a_three_row_quip_widens_until_it_fits() -> void:
 
 ## SMALLEST sufficient width: one step narrower must NOT fit. Otherwise "widen" becomes "always widest".
 func test_it_widens_by_the_smallest_step_that_works() -> void:
-	var long_line := '"Verse complete. Wounds tallied, breaths counted, all party members returned to the page."'
+	var long_line: String = _widening_fixture()
 	var w: float = BubbleScript.wrap_width_for(long_line, _font, _fsz)
 	if w <= BubbleScript.MAX_TEXT_WIDTH:
 		return
@@ -127,7 +141,7 @@ func test_every_scripted_party_line_fits_the_target() -> void:
 func test_the_built_bubble_uses_the_chosen_width() -> void:
 	var host := Node2D.new()
 	add_child_autofree(host)
-	var long_line := "Verse complete. Wounds tallied, breaths counted, all party members returned to the page."
+	var long_line: String = _widening_fixture().trim_prefix('"').trim_suffix('"')
 	var bubble = BubbleScript.spawn(host, Vector2(400, 300), "Cleric", long_line)
 	assert_not_null(bubble, "PRECONDITION: the bubble must spawn")
 	if bubble == null:

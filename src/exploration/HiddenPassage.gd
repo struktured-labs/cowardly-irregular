@@ -128,5 +128,6 @@ func _shimmer_away() -> void:
 	## that collapsed the other twelve MISSED IT, because that census keyed on the function name
 	## `_toast` and this one is `_shimmer_away` with a local called `toast`. Its authored base font
 	## is 12, not the 11 the other eleven share, which is why `show` takes the base as a parameter.
-	WorldToast.show(self, "Secret passage!", 104.0, -40.0, Color(0.6, 0.9, 1.0),
+	## 160 not 104: in the pixel face "passage!" alone is 132 px at 200% (base 12), and a token wider than its box drifts the toast off-centre.
+	WorldToast.show(self, "Secret passage!", 160.0, -40.0, Color(0.6, 0.9, 1.0),
 		18.0, 22.0, 1.4, 0.4, false, "WorldToast", -1.0, 12)

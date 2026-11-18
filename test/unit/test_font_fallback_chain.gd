@@ -39,3 +39,31 @@ func test_every_authored_glyph_resolves_in_chain() -> void:
 			missing += ch
 	assert_eq(missing, "",
 		"authored glyphs with no coverage anywhere in the font chain (tofu): '%s'" % missing)
+
+
+## main 25569/25570: a model's bark or gloat reaches a display Label (the speech bubble, the gloat box), so the
+## characters models write that the pixel face does not draw must still resolve behind it. The authored corpus is
+## test_every_rendered_glyph_resolves_regression's job (derived); this is the sample no corpus contains.
+const LLM_SAMPLE := "ÉÑÜßÀÇØ—"
+const CJK_PROBE := "中"
+
+
+func test_what_a_model_writes_resolves_behind_the_pixel_face() -> void:
+	assert_true(UiFont.is_installed(), "CONTROL: the pixel face is installed, so this walks ITS chain")
+	var face: Font = UiFont.display()
+	var chain: Array = [face]
+	chain.append_array(face.fallbacks)
+	var missing := ""
+	for ch in LLM_SAMPLE:
+		var found := false
+		for f in chain:
+			if f != null and f.has_char(ch.unicode_at(0)):
+				found = true
+				break
+		if not found:
+			missing += ch
+	assert_eq(missing, "", "characters a model writes that would draw as tofu in a display Label: '%s'" % missing)
+	var cjk := false
+	for f in chain:
+		cjk = cjk or (f != null and f.has_char(CJK_PROBE.unicode_at(0)))
+	gut.p("INFO: CJK '%s' resolves behind the pixel face: %s (no CJK font ships; not required)" % [CJK_PROBE, cjk])

@@ -70,18 +70,20 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	assert_not_null(t._scroll.get_parent().get_node_or_null("Instructions"), "the Teleport panel names its instruction line")
 
 
-## CONTROL: at 100% a toggle row is exactly the shipped row, so nothing moves at the default size.
-func test_at_100_percent_a_toggle_row_is_the_shipped_row() -> void:
+## CONTROL: at 100% a toggle row is the shipped row scaled by its drawn line. Was exactly 60 / 40 / 50x20 / 22 (factor 1) in the old face; the dial-9 pixel face draws the 14 px title 24 tall, so the row makes room.
+func test_at_100_percent_a_toggle_row_is_the_shipped_row_scaled_by_its_drawn_line() -> void:
 	var m: Control = await _screen(SETTINGS, 1.0)
+	var k: float = m._row_k()
 	var row: Control = _row(m, "screen_shake")
-	assert_eq(row.custom_minimum_size.y, 60.0, "a toggle row is 60 px")
+	assert_almost_eq(row.custom_minimum_size.y, 60.0 * k, 0.01, "a toggle row is 60 px times the factor")
 	var toggles := row.get_node("ToggleContainer") as Control
-	assert_eq(toggles.position.y, 40.0, "its chips sit at y 40")
-	assert_eq((toggles.get_node("OffBG") as Control).custom_minimum_size, Vector2(50, 20), "and are 50x20")
+	assert_almost_eq(toggles.position.y, 40.0 * k, 0.01, "its chips sit at y 40 times the factor")
+	var chip: Vector2 = (toggles.get_node("OffBG") as Control).custom_minimum_size
+	assert_true(chip.x >= 50.0 and chip.y >= 20.0, "and are at least the authored 50x20: %s" % chip)
 	var labels: Array = row.find_children("*", "Label", false, false)
-	assert_eq((labels[1] as Label).position.y, 22.0, "the subtitle sits at y 22")
+	assert_almost_eq((labels[1] as Label).position.y, 22.0 * k, 0.01, "the subtitle sits at y 22 times the factor")
 	var small: Control = _row(await _screen(SETTINGS, 0.8), "screen_shake")
-	assert_eq(small.custom_minimum_size.y, 60.0, "and 80% never shrinks the shipped row")
+	assert_true(small.custom_minimum_size.y >= 60.0, "and 80% never shrinks the shipped row")
 
 
 ## THE DEFECT: every line a row draws ends inside the row, and a row's subtitle starts a grown title's height below it.
@@ -172,12 +174,17 @@ func test_the_teleport_list_holds_its_header_and_its_rows() -> void:
 	assert_eq(bad.size(), 0, "the Teleport list holds its header and rows:\n%s" % "\n".join(PackedStringArray(bad)))
 
 
-## The factor reads the FONT, not the setting: a face whose 14 px line is taller makes room at 100% too.
+## The factor reads the FONT, not the setting: the title's DRAWN line over the 20 px design line. Was "factor 1 at 100%, ~2 at 200%" in the old face; the dial-9 face draws 24 then 36.
 func test_the_row_factor_follows_the_measured_line() -> void:
-	var m: Control = await _screen(SETTINGS, 1.0)
-	assert_eq(m._row_k(), 1.0, "CONTROL: the shipped face at 100% is the design, factor 1")
-	var big: Control = await _screen(SETTINGS, 2.0)
-	assert_almost_eq(big._row_k(), 2.0, 0.11, "at 200% the title's line is about twice the design line")
+	var ks: Dictionary = {}
+	for s in [1.0, 2.0]:
+		var m: Control = await _screen(SETTINGS, s)
+		var title := _row(m, "screen_shake").find_children("*", "Label", false, false)[0] as Label
+		var line: float = title.get_theme_font("font").get_height(title.get_theme_font_size("font_size"))
+		assert_almost_eq(m._row_k(), maxf(1.0, line / 20.0), 0.05, "at %s the factor is the title's drawn line (%.0f) over 20" % [s, line])
+		ks[s] = m._row_k()
+	assert_gt(ks[1.0], 1.0, "CONTROL: the shipped face's 14 px line is taller than the design line, so 100% makes room")
+	assert_gt(ks[2.0], ks[1.0], "and a bigger Text Size makes more")
 	var src := FileAccess.get_file_as_string(SETTINGS)
 	var at := src.find("func _row_k(")
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)

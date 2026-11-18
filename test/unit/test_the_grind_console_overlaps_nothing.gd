@@ -12,7 +12,6 @@ const UI := "res://src/ui/autogrind/AutogrindUI.gd"
 ## Intended overlaps, {"a|b": "reason"}, each from a census (.799, census 2).
 const DECLARED := {
 	"Cursor/*|Grid/R0Or": "the selection ring is drawn 3 px outside its cell on top of everything (z 10); the OR badge fills the whole row gap, so the ring crosses the badge's top 3 px",
-	"Cursor/*|Grid/R0OrText": "at 80/100% the ring crosses the top 1 px of the OR label's BOX; its letters clear the ring (test_the_cursor_ring_never_touches_the_or_letters)",
 }
 
 var _ag: Dictionary
@@ -128,7 +127,7 @@ func _ink_rows(l: Label) -> Vector2:
 	return Vector2(top, bottom)
 
 
-## The DECLARED R0OrText entry says the ring crosses the label's box but not its letters. This is that measurement, at
+## The ring crosses the OR badge's top (declared above) but never the letters inside it. This is that measurement, at
 ## every Text Size: the cursor's lower band against the ink of "OR".
 func test_the_cursor_ring_never_touches_the_or_letters() -> void:
 	var gaps: Array = []
@@ -148,6 +147,26 @@ func test_the_cursor_ring_never_touches_the_or_letters() -> void:
 		ui.queue_free()
 		await get_tree().process_frame
 	gut.p("cursor ring -> OR ink: %s" % [gaps])
+
+
+## The OR label is CONTENT of its badge: the face's line box is taller than the badge, so the badge clips it, and the
+## letters themselves must still sit inside the badge at every Text Size (nothing is cut).
+func test_the_or_letters_sit_inside_their_badge() -> void:
+	for s in _presets():
+		var ui := await _console(float(s), false)
+		var text := ui.find_child("R0OrText", true, false) as Label
+		var badge := ui.find_child("R0Or", true, false) as ColorRect
+		assert_true(text != null and badge != null, "FLOOR: the OR badge and its label are built at %s" % s)
+		if text == null or badge == null:
+			continue
+		assert_eq(text.get_parent(), badge, "the OR label is a child of its badge at %s, so the badge owns it" % s)
+		assert_true(badge.clip_contents, "the OR badge clips its label at %s, so the line box cannot draw past it" % s)
+		var r: Rect2 = OverlapAudit.screen_rect(badge)
+		var ink: Vector2 = _ink_rows(text)
+		assert_gt(ink.y - ink.x, 2.0, "CONTROL: OR has ink at %s (%s)" % [s, ink])
+		assert_true(ink.x >= r.position.y - 0.5 and ink.y <= r.end.y + 0.5, "the OR letters %s sit inside their badge %.1f..%.1f at %s" % [ink, r.position.y, r.end.y, s])
+		ui.queue_free()
+		await get_tree().process_frame
 
 
 func test_nothing_in_the_grind_console_overlaps_at_any_text_size() -> void:
