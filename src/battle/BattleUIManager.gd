@@ -20,6 +20,10 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 
 ## Dynamic party status UI elements
 var _party_status_boxes: Array = []
+## Rows each status box drops, in order, while the PARTY panel overruns its floor (main 26303: every HP stays visible).
+const PARTY_COMPACT_TIERS := ["StatMods"]
+## How many PARTY_COMPACT_TIERS this battle has applied; it only climbs, so the panel never flickers between layouts.
+var party_compact_tier: int = 0
 
 ## Dynamic enemy status UI elements
 var _enemy_status_boxes: Array = []
@@ -380,8 +384,27 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	stat_label.text = ""
 	box.add_child(stat_label)
 	_update_stat_mods_label(stat_label, member)
+	_apply_party_compaction(box)
 
 	return box
+
+
+func _apply_party_compaction(box: Node) -> void:
+	for t in mini(party_compact_tier, PARTY_COMPACT_TIERS.size()):
+		var row := box.get_node_or_null(PARTY_COMPACT_TIERS[t]) as CanvasItem
+		if row:
+			row.visible = false
+
+
+## One compaction step when the panel's bottom passes `limit_y`; true when a row was dropped (the caller re-measures next frame).
+func compact_party_panel_step(panel_bottom: float, limit_y: float) -> bool:
+	if panel_bottom <= limit_y or party_compact_tier >= PARTY_COMPACT_TIERS.size():
+		return false
+	party_compact_tier += 1
+	for box in _party_status_boxes:
+		if is_instance_valid(box):
+			_apply_party_compaction(box)
+	return true
 
 
 ## A party bar's ruled height grown with its number's Text Size, never below the ruled height (controller 26234: 200% cut the digits).

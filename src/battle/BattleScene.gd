@@ -1127,6 +1127,24 @@ func _run_party_relayout() -> void:
 	_party_relayout_queued = false
 	if is_inside_tree():
 		_place_party(true)
+		_compact_party_panel()
+
+
+## The PARTY panel's floor: just above the hint bar when it shows, else the screen's bottom edge.
+func party_panel_floor_y() -> float:
+	var hint := get_node_or_null("UI/InputHintBar") as Control
+	if hint and hint.is_visible_in_tree():
+		return hint.get_global_rect().position.y - 4.0
+	return get_viewport().get_visible_rect().size.y - 4.0
+
+
+## Drops the next compaction tier while the panel overruns its floor; its resize re-queues the relayout that re-checks.
+func _compact_party_panel() -> void:
+	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+	if panel == null or _ui_manager == null:
+		return
+	if _ui_manager.compact_party_panel_step(panel.get_global_rect().end.y, party_panel_floor_y()):
+		_queue_party_relayout()
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
