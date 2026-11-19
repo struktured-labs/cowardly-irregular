@@ -146,6 +146,16 @@ func _update_dismiss_label() -> void:
 		_dismiss_label.text = READY_DISMISS_TEXT
 
 
+## Yields its ground (a victory overlay docking under it) without spending its one showing: it shows again next time.
+func step_aside() -> void:
+	if not _active:
+		return
+	_shown_hints.erase(_current_hint_id)
+	if GameState:
+		GameState.game_constants.erase("tutorial_" + _current_hint_id)
+	_dismiss()
+
+
 func _dismiss() -> void:
 	if not _active:
 		return
