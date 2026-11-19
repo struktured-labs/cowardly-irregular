@@ -278,8 +278,10 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	## (first box) header. Scene now grows downward only (grow_vertical=1)
 	## and the 5-party heights below are tightened further so the stack
 	## actually fits the slot instead of relying on overflow.
-	var hp_bar_h: int = bar_height_for_text(22 if party_size <= 4 else 16, 15)
-	var mp_bar_h: int = bar_height_for_text(18 if party_size <= 4 else 12, 13)
+	var hp_bar_h: int = 22 if party_size <= 4 else 16
+	var mp_bar_h: int = 18 if party_size <= 4 else 12
+	hp_bar_h = bar_height_for_text(hp_bar_h, 15)
+	mp_bar_h = bar_height_for_text(mp_bar_h, 13)
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 

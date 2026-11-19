@@ -94,7 +94,7 @@ func _measure(s: float, members: int) -> Dictionary:
 		var bar: ProgressBar = box.get_node(pair[0])
 		var label: Label = bar.get_node(pair[1])
 		var px: int = label.get_theme_font_size("font_size")
-		out[pair[0]] = {"bar": bar.size.y, "px": px, "line": label.get_theme_font("font").get_height(px)}
+		out[pair[0]] = {"bar": bar.size.y, "px": px}
 	return out
 
 
@@ -119,7 +119,7 @@ func test_the_numbers_grow_with_the_text() -> void:
 
 
 ## Arm 2 (THE DEFECT): the number never takes a bigger share of its bar than at 100%, where the ruled bar holds the digits.
-## Judged on the BUILT bar against the label's drawn line, so it reds on any bar that does not grow with the face.
+## Judged on the BUILT bar against the label's font px; get_height is the fallback chain's line box (12->24->36), not the digits.
 func test_each_bar_grows_with_its_number_at_every_text_size() -> void:
 	var bad: Array = []
 	for members in [4, 5]:
@@ -127,9 +127,9 @@ func test_each_bar_grows_with_its_number_at_every_text_size() -> void:
 		for s in _presets():
 			var m: Dictionary = await _measure(float(s), members)
 			for k in ["HP", "MP"]:
-				var need: float = float(base[k]["bar"]) * float(m[k]["line"]) / float(base[k]["line"])
+				var need: float = float(base[k]["bar"]) * maxf(1.0, float(m[k]["px"]) / float(base[k]["px"]))
 				if float(m[k]["bar"]) < need - SLACK:
-					bad.append("@%s x%d %s bar %.0f px for a %.1f px line (100%%: %.0f for %.1f) needs %.1f" % [s, members, k, m[k]["bar"], m[k]["line"], base[k]["bar"], base[k]["line"], need])
+					bad.append("@%s x%d %s bar %.0f px for a %d px number (100%%: %.0f for %d) needs %.1f" % [s, members, k, m[k]["bar"], m[k]["px"], base[k]["bar"], base[k]["px"], need])
 	assert_eq(bad, [], "a party bar holds its number at every Text Size:\n%s" % "\n".join(PackedStringArray(bad)))
 
 
