@@ -121,3 +121,37 @@ func test_a_walker_never_paces_through_someone_standing_still() -> void:
 					assert_false(standing.has(Vector2i(x, y)), "%s: a walker's line %s crosses a standing NPC at %s" % [b["path"].get_file(), str(run), str(Vector2i(x, y))])
 			judged += 1
 	assert_gt(judged, 15, "CONTROL: walker lines were judged (%d)" % judged)
+
+
+func test_a_cut_walker_moves_but_never_vanishes() -> void:
+	await _ensure_built()
+	## main 26325: a walker may move but never vanish; dropping is allowed only once nothing walkable is left.
+	var judged: int = 0
+	for b in _built:
+		var v = b["village"]
+		var n: int = v._get_ambient_walkers().size()
+		if n < 1:
+			continue
+		var vname: String = b["path"].get_file()
+		var before: Array = v._stable_walker_runs(n)
+		for k in before.size():
+			var saved: Dictionary = v._prop_blocked
+			v._prop_blocked = saved.duplicate()
+			var rr: Rect2i = v._run_rect(before[k])
+			for y in range(rr.position.y, rr.end.y):
+				for x in range(rr.position.x, rr.end.x):
+					v._prop_blocked[Vector2i(x, y)] = true
+			var after: Array = v._stable_walker_runs(n)
+			v._prop_blocked = saved
+			assert_eq(after.size(), n, "%s: walker %d's whole line blocked and a walker vanished" % [vname, k])
+			judged += 1
+		var every := {}
+		var grid: Vector2i = v._walker_grid_size()
+		for y in grid.y:
+			for x in grid.x:
+				every[Vector2i(x, y)] = true
+		var keep: Dictionary = v._prop_blocked
+		v._prop_blocked = every
+		assert_eq(v._stable_walker_runs(n).size(), 0, "CONTROL: %s: with every cell blocked no walker can stand" % vname)
+		v._prop_blocked = keep
+	assert_gt(judged, 15, "CONTROL: whole-line cuts were judged (%d)" % judged)

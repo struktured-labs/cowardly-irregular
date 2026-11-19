@@ -943,14 +943,14 @@ func _stable_walker_runs(want: int) -> Array:
 	for i in want:
 		if dealt.has(i):
 			continue
-		for strict in [true, false]:
+		for strict in [2, 1, 0]:
 			var best: Array = []
 			var best_d: float = INF
 			for c in pool:
 				var cr := _run_rect(c)
-				if dealt.values().any(func(t): return _run_rect(t).grow(2).intersects(cr)):
+				if strict > 0 and dealt.values().any(func(t): return _run_rect(t).grow(2).intersects(cr)):
 					continue
-				if strict and range(anchors.size()).any(func(k): return k != i and _run_rect(anchors[k]).grow(2).intersects(cr)):
+				if strict > 1 and range(anchors.size()).any(func(k): return k != i and _run_rect(anchors[k]).grow(2).intersects(cr)):
 					continue
 				var d: float = 1.0e6 - float(cr.get_area())
 				if i < anchors.size():
