@@ -1673,7 +1673,7 @@ const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | T
 static func dialog_size(text: String) -> Vector2:
 	var k := float(TextScale.scaled(DIALOG_FONT)) / float(DIALOG_FONT)
 	var w := DIALOG_MIN.x * k
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	# Floored: a Label wraps a line wider than its box, while this measure lets a line a fraction wider stay (345 px in 344.6 at 1.25x).
 	var h: float = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, floorf(w - DIALOG_PAD * 2.0 * k), TextScale.scaled(DIALOG_FONT), -1, WRAP_FLAGS).y if font else 0.0
 	return Vector2(w, maxf(DIALOG_MIN.y * k, h + DIALOG_PAD * 2.0 * k))

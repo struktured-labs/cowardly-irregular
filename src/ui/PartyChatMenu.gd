@@ -113,7 +113,8 @@ func _build_panel() -> void:
 	_hint_label = Label.new()
 	# A/B were Nintendo face letters; both are inverted on an Xbox pad.
 	## Paging is advertised for the same reason the face letters are derived: an unnamed control is one nobody finds.
-	_hint_label.text = "[%s/Enter/Click] Play    [%s/%s] Page    [%s/Esc/RClick] Close    (Wheel scrolls)" % [
+	## "(Wheel scrolls)" dropped for the dial-9 face: the line ran 712 px in a 600 px panel at 125%, and the wheel is the one route a player finds unprompted.
+	_hint_label.text = "[%s/Enter/Click] Play   [%s/%s] Page   [%s/Esc/RClick] Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),

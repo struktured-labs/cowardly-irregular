@@ -37,9 +37,9 @@ const HELP_SCROLL_STEP_PX: float = 48.0
 const TITLE_PX: int = 24
 const BODY_PX: int = 13
 const BODY_BOLD_PX: int = 14
-## The shipped content top, kept as a floor so 100% renders exactly as before.
-const BASE_CONTENT_Y: float = 75.0
-## 6.0 is the gap the authored 75 ENCODES, recovered by measurement: the title measures 34px at
+## The shipped content top, a floor so 100% never moves: was 75 (old face, 34px title); the dial-9 pixel face draws 36, so 35 + 36 + 6 == 77.
+const BASE_CONTENT_Y: float = 77.0
+## 6.0 is the gap the authored 75 ENCODED, recovered by measurement: the old title measured 34px at
 ## 100%, so 35 + 34 + 6 == 75. A 9 here put the derived value at 78 and moved every shipped F1
 ## screenshot down 3px -- caught by the arm that pins the 100% layout, not by reading the diff.
 const TITLE_TO_CONTENT_GAP: float = 6.0
