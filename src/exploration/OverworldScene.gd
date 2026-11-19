@@ -671,7 +671,8 @@ func _apply_zone_encounters(zone: String) -> void:
 	if pool_id == "":
 		return
 	var pool: Array = _load_zone_pool(pool_id)
-	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), pool)
+	## Random encounters carry the story tier; roamers keep catalog ids (their art and permakill match on the bare id).
+	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), EncounterSystem.tiered_pool(pool_id, pool, get_node_or_null("/root/GameState")))
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
 

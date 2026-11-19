@@ -263,6 +263,51 @@ func _generate_enemy_party() -> Array:
 	return enemy_party
 
 
+const W1_TIERS_PATH: String = "res://data/w1_pool_tiers.json"
+
+
+## A W1 overworld pool plus its story tier: after the Rat King, its own species re-levelled by dragons defeated (main 26347).
+static func tiered_pool(pool_id: String, pool: Array, gs: Object) -> Array:
+	var out: Array = pool.duplicate()
+	var tier := w1_tier_for(pool_id, gs)
+	var levels: Array = tier.get("levels", [])
+	if levels.is_empty():
+		return out
+	var species: Array = []
+	for e in pool:
+		var base := spawn_base_id(str(e))
+		if not species.has(base):
+			species.append(base)
+	for i in species.size():
+		out.append("%s%s%d" % [species[i], LEVEL_MARK, int(levels[i % levels.size()])])
+	return out
+
+
+## The tier a W1 pool stands at for this save; {} before the Rat King, for a pool outside W1, or with no save.
+static func w1_tier_for(pool_id: String, gs: Object) -> Dictionary:
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return {}
+	var cfg: Variant = _read_json(W1_TIERS_PATH)
+	if not (cfg is Dictionary) or not (cfg.get("pools", []) as Array).has(pool_id):
+		return {}
+	if not gs.is_story_flag_set(str(cfg.get("opens_with", ""))):
+		return {}
+	var beaten: int = 0
+	for flag in cfg.get("dragon_flags", []):
+		if gs.is_story_flag_set(str(flag)):
+			beaten += 1
+	for t in cfg.get("tiers", []):
+		if t is Dictionary and int(t.get("dragons_defeated", -1)) == beaten:
+			return t
+	return {}
+
+
+static func _read_json(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	return JSON.parse_string(FileAccess.get_file_as_string(path))
+
+
 ## Strips permakilled species from a draw pool (permakill's second promise).
 func _filter_permakilled(pool: Array) -> Array:
 	if GameState == null or not ("permakilled_monster_types" in GameState) \
