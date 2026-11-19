@@ -105,7 +105,7 @@ func test_control_the_index_deal_re_dealt_the_cast() -> void:
 
 func test_a_walker_never_paces_through_someone_standing_still() -> void:
 	await _ensure_built()
-	## Anchors ignore NPCs; the deal itself must not, or a walker paces through a villager who stands still.
+	## Anchors ignore props only, and a walker keeps a free stretch of its line: it must never pace through a villager who stands still.
 	var judged: int = 0
 	for b in _built:
 		var v = b["village"]

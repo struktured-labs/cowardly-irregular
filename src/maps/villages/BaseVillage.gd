@@ -930,7 +930,7 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
 
 
-## Each walker keeps the free stretch of its own structural ANCHOR line, so a prop, an examine or an NPC moves only the walker it touches.
+## Each walker keeps the free stretch of its own ANCHOR line (dealt as if no prop stood), so a prop or an examine moves only the walker it touches.
 func _stable_walker_runs(want: int) -> Array:
 	var anchors := _walker_runs(want, true)
 	var pool: Array = _walker_candidates(false)
@@ -989,7 +989,7 @@ func _free_stretch_of(anchor: Array, pool: Array) -> Array:
 
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
 ## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
-## `structural` reads only the ground, buildings and exits: the anchors a prop or a villager cannot move.
+## `structural` deals as if no prop or examine stood: the anchors a prop cannot move.
 func _walker_runs(want: int = 0, structural: bool = false) -> Array:
 	var cands: Array = _walker_candidates(structural)
 	if cands[0].is_empty() and cands[1].is_empty():
@@ -1012,13 +1012,13 @@ func _walker_runs(want: int = 0, structural: bool = false) -> Array:
 	return chosen
 
 
-## [rows longest first, columns longest first]; `structural` ignores props, NPCs and treasures.
+## [rows longest first, columns longest first]; `structural` ignores props and examine footprints only.
 func _walker_candidates(structural: bool) -> Array:
 	var size := _walker_grid_size()
 	if size == Vector2i.ZERO:
 		return [[], []]
 	var avoid := {}
-	for container in ([buildings, transitions] if structural else [npcs, buildings, treasures, transitions]):
+	for container in [npcs, buildings, treasures, transitions]:
 		if container == null:
 			continue
 		for n in container.get_children():
