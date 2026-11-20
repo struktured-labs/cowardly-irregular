@@ -31,10 +31,6 @@ signal party_leader_changed(new_index: int)
 var _menu_options: Array = []
 
 const BASE_MENU_OPTIONS = [
-	# First on purpose. The controls reference used to be reachable ONLY from the title
-	# screen, so a player who got confused after pressing NEW GAME had no way back to it.
-	# Demo feedback 2026-08-20: "the controls are impossible to figure out."
-	{"id": "controls", "label": "Controls", "enabled": true},
 	{"id": "quest_log", "label": "Quest Log", "enabled": true},
 	{"id": "party", "label": "Party", "enabled": true},
 	{"id": "items", "label": "Items", "enabled": true},
@@ -57,6 +53,8 @@ const BASE_MENU_OPTIONS = [
 	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
+	## Top-level so the reference is reachable in game, directly above Settings and never first (struktured 2026-11-19).
+	{"id": "controls", "label": "Controls", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
 ]
 
