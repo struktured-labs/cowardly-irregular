@@ -207,8 +207,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(20 * TILE_SIZE,13 * TILE_SIZE))
 	# === STRIKE REGISTRY DOOR ===
 	# South face of the MMM building (cols 3-5, rows 11-13) — lightning paperwork.
-	spawn_points["registry_exit"] = Vector2(4 * TILE_SIZE,16.5 * TILE_SIZE)
-	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(4 * TILE_SIZE,15.5 * TILE_SIZE))  ## beside the tavern, not on its facade: one building, one way in
+	spawn_points["registry_exit"] = Vector2(4 * TILE_SIZE,14.5 * TILE_SIZE)
+	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(4 * TILE_SIZE,13.5 * TILE_SIZE))  ## beside the tavern, not on its facade; two rows up clears the chest at (3.5, 16)
 
 
 	# Forge town: ore carts and stock between the workshops, banners on the walls.
