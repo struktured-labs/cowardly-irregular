@@ -2997,7 +2997,8 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		_pending_resume_position = blend
 	_play_parked_position()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
+	## at= is where the bed really started: without it every line read as a restart from 0, so a log could not tell a resume from one.
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s at=%.2f resume=%s" % [track_id, path, should_loop, is_stinger, _last_start_position, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
 	# captured STATE, not a track id: area beds live in _current_area and leave
 	# _current_music empty, so a track-only resume silently did nothing there.
@@ -3136,12 +3137,15 @@ func _play_parked_position() -> void:
 	_pending_resume_position = 0.0
 	## A latched headless mix never returns the driver mutex play() takes (issue #224); the parked position is still consumed.
 	if wav_commit_refused():
+		_last_start_position = -1.0
 		return
 	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
 	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
 		_music_player.play(resume_at)
+		_last_start_position = resume_at
 	else:
 		_music_player.play()
+		_last_start_position = 0.0
 
 
 func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
@@ -3596,6 +3600,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 ## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head,
 ## except one that declares loop_blend_seconds, which enters after that mix.
 var _pending_resume_position: float = 0.0
+## Where the bed last ACTUALLY started (s), read by the [MUSIC] log line; -1.0 when the mix refused the play.
+var _last_start_position: float = 0.0
 
 ## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
 ## other arrival has a bed to inherit, and the inherit path is already correct.
