@@ -20,8 +20,8 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 
 ## Dynamic party status UI elements
 var _party_status_boxes: Array = []
-## Rows each status box drops, in order, while the PARTY panel overruns its floor (main 26303: every HP stays visible).
-const PARTY_COMPACT_TIERS := ["StatMods"]
+## What the PARTY panel gives up, in order, while it overruns its floor: the StatMods row, AP's own row, then the title and gaps.
+const PARTY_COMPACT_TIERS := ["StatMods", "ap_inline", "tight"]
 ## How many PARTY_COMPACT_TIERS this battle has applied; it only climbs, so the panel never flickers between layouts.
 var party_compact_tier: int = 0
 
@@ -390,10 +390,51 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 
 
 func _apply_party_compaction(box: Node) -> void:
-	for t in mini(party_compact_tier, PARTY_COMPACT_TIERS.size()):
-		var row := box.get_node_or_null(PARTY_COMPACT_TIERS[t]) as CanvasItem
-		if row:
-			row.visible = false
+	var tier: int = mini(party_compact_tier, PARTY_COMPACT_TIERS.size())
+	if tier >= 1:
+		var mods := box.get_node_or_null("StatMods") as CanvasItem
+		if mods:
+			mods.visible = false
+	if tier >= 2:
+		_inline_party_ap(box)
+	if tier >= 3:
+		_tighten_party_list(box)
+
+
+## Tier 2 (cowir-main 26471): AP rides on the name row, and the name gives way with an ellipsis; the face never shrinks.
+func _inline_party_ap(box: Node) -> void:
+	var header := box.get_node_or_null("Header") as HBoxContainer
+	var ap := box.get_node_or_null("AP") as RichTextLabel
+	if header == null or ap == null:
+		return
+	ap.reparent(header, false)
+	ap.autowrap_mode = TextServer.AUTOWRAP_OFF
+	ap.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var name_label := header.get_node_or_null("Name") as Label
+	if name_label:
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+
+
+## Tier 3: the PARTY title word goes and the boxes close up; every member's own rows stay.
+func _tighten_party_list(box: Node) -> void:
+	var list := box.get_parent() as VBoxContainer
+	if list == null:
+		return
+	list.add_theme_constant_override("separation", 0)
+	var title := list.get_node_or_null("HeaderRow/Label") as CanvasItem
+	if title:
+		title.visible = false
+
+
+## A member's AP label wherever the compaction tier has seated it: its own row, or the name row.
+static func party_ap_label(box: Node) -> Node:
+	if box == null:
+		return null
+	var ap := box.get_node_or_null("AP")
+	return ap if ap else box.get_node_or_null("Header/AP")
 
 
 ## One compaction step when the panel's bottom passes `limit_y`; true when a row was dropped (the caller re-measures next frame).
@@ -525,7 +566,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			mp_bar.modulate = Color(1, 1, 1, 0.35) if not member.is_alive else Color(1, 1, 1, 1)
 
 	# Update AP and status - try both RichTextLabel and regular Label
-	var ap_label = box.get_node_or_null("AP")
+	var ap_label = party_ap_label(box)
 	if ap_label:
 		var ap_color = _ap_bbcode(member.current_ap)
 
@@ -1336,7 +1377,7 @@ func flash_ap_labels() -> void:
 	for box in _party_status_boxes:
 		if not is_instance_valid(box):
 			continue
-		var ap_label = box.get_node_or_null("AP")
+		var ap_label = party_ap_label(box)
 		if ap_label == null:
 			continue
 		ap_label.pivot_offset = ap_label.size / 2.0

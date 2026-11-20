@@ -98,3 +98,45 @@ func test_five_at_100_percent_drops_statmods_to_fit() -> void:
 	assert_gt(b[0].get("_ui_manager").party_compact_tier, 0, "5 members at 100% overrun, so a row is dropped")
 	var panel := b[0].get_node("UI/PartyStatusPanel") as Control
 	assert_lte(panel.get_global_rect().end.y, b[2], "and the panel then ends above its floor")
+
+
+## cowir-main 26471: AP moves onto the name row only once dropping StatMods is not enough; 100% and 125% keep AP's own row.
+func test_ap_keeps_its_own_row_up_to_125_percent() -> void:
+	for s in [1.0, 1.25]:
+		for n in [4, 5]:
+			var b: Array = await _battle(s, n)
+			assert_lte(b[0].get("_ui_manager").party_compact_tier, 1, "@%s x%d: nothing past the StatMods tier" % [s, n])
+			var box: Node = b[0].get("_ui_manager").get("_party_status_boxes")[0]
+			assert_not_null(box.get_node_or_null("AP"), "@%s x%d: AP sits on its own row, at its shipped path" % [s, n])
+			b[0].queue_free()
+			await get_tree().process_frame
+
+
+## Where AP rides the name row: it is still found, shown and inside the panel, and neither it nor the name shrank its face.
+func test_an_inlined_ap_is_whole_and_the_face_did_not_shrink() -> void:
+	var inlined := 0
+	for s in _presets():
+		for n in [4, 5]:
+			var b: Array = await _battle(float(s), n)
+			var uim = b[0].get("_ui_manager")
+			if uim.party_compact_tier >= 2:
+				var panel := (b[0].get_node("UI/PartyStatusPanel") as Control).get_global_rect()
+				for box in uim.get("_party_status_boxes"):
+					inlined += 1
+					var ap := UIM.party_ap_label(box) as RichTextLabel
+					assert_not_null(ap, "@%s x%d: the AP label is found on the name row" % [s, n])
+					if ap == null:
+						continue
+					assert_eq(str(ap.get_parent().name), "Header", "@%s x%d: AP rides the name row" % [s, n])
+					assert_true(ap.is_visible_in_tree(), "@%s x%d: AP shows" % [s, n])
+					var r: Rect2 = ap.get_global_rect()
+					assert_true(r.position.x >= panel.position.x - 0.5 and r.end.x <= panel.end.x + 0.5, "@%s x%d: AP %d..%d inside the panel %d..%d" % [s, n, int(r.position.x), int(r.end.x), int(panel.position.x), int(panel.end.x)])
+					assert_gte(float(ap.get_content_width()), 1.0, "@%s x%d: AP has text to show" % [s, n])
+					assert_lte(float(ap.get_content_width()), r.size.x + 0.5, "@%s x%d: AP's text %d px fits its %d px label" % [s, n, ap.get_content_width(), int(r.size.x)])
+					assert_eq(ap.get_theme_font_size("normal_font_size"), TextScale.scaled(15), "@%s x%d: AP's face did not shrink" % [s, n])
+					var nm := box.get_node("Header/Name") as Label
+					assert_eq(nm.get_theme_font_size("font_size"), TextScale.scaled(15), "@%s x%d: the name's face did not shrink" % [s, n])
+					assert_gt(nm.size.x, float(TextScale.scaled(15)), "@%s x%d: the name keeps room for more than one letter (%d px)" % [s, n, int(nm.size.x)])
+			b[0].queue_free()
+			await get_tree().process_frame
+	assert_gt(inlined, 0, "CONTROL: some Text Size inlined AP, so the arm judged something")
