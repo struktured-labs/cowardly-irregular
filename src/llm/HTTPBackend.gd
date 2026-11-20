@@ -656,7 +656,7 @@ func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
 static func strike_credentials(text: String, key: String, keep: String = "") -> String:
 	var out: String = text.replace(key, "[key]") if key != "" else text
 	## The player's own model id is already on this status line, so a long one is set aside and not taken for a token.
-	if keep != "" and keep != key:
+	if keep != "":
 		out = out.replace(keep, KEPT_MARK)
 	for pattern in CREDENTIAL_SHAPES:
 		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
