@@ -302,7 +302,7 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 static func fallback_cause(reason: String) -> String:
 	match reason:
 		"request failed or cancelled":
-			return "the request was cancelled or failed before the model answered (a scene change cancels it)"
+			return "the request was cancelled, failed or timed out before the model answered"
 		"no ready backend", "backend cannot produce JSON":
 			return "no backend could answer (%s)" % reason
 		"deltas not a list":
@@ -342,7 +342,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		return false
 	var fallback: Variant = null
 	var report: Dictionary = {}
-	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report, "wire_schema": wire_schema()})
+	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report, "wire_schema": wire_schema(), "outlives_scene_change": true})
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
 		proposal["fail_reason"] = str(report.get("reason", ""))

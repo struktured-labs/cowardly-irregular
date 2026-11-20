@@ -33,6 +33,8 @@ signal inference_succeeded(mode: String)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 const QUEUE_CAP:          int    = 16    # Max queued (waiting) requests.
+## opts key: this request belongs to no scene, so a scene change does not cancel it.
+const OUTLIVES_SCENE_CHANGE := "outlives_scene_change"
 const CACHE_TTL_SECONDS:  float  = 300.0 # 5-minute TTL on cached responses.
 const MAX_TEXT_CHARS:     int    = 2000  # Hard cap on free-text responses.
 const MAX_CHOICE_TOKENS:  int    = 120   # Guard for choice-string length.
@@ -78,6 +80,8 @@ var _cache: Dictionary = {}
 
 # Single in-flight slot: id of the current request, or "" if idle.
 var _inflight_id: String = ""
+## The opts of the request in flight; cancel_all reads whether it outlives a scene change.
+var _inflight_opts: Dictionary = {}
 
 # Queue of pending requests: Array of { id, resolve_signal, prompt, mode, opts, valid_options, fallback }
 var _queue: Array[Dictionary] = []
@@ -465,31 +469,40 @@ func abort_all_conversations() -> void:
 ## _process_queue so re-entrancy is double-safe.
 func cancel_all(reason: String = "scene_change") -> void:
 	_draining = true
+	## A scene change spares a request that belongs to no scene (opts.outlives_scene_change); any other reason cancels everything.
+	var spare: bool = reason == "scene_change"
 
 	# Snapshot the in-flight id so we can mark + resolve it without leaving
 	# state observably half-cleared while we resolve.
 	var in_id: String = _inflight_id
-	_inflight_id = ""
-	if in_id != "":
-		## No _cancelled_ids entry: an in-flight id is never in _queue, so
-		## _process_queue — the only reader — can never see it.
-		_resolve_box(in_id, null)
-		_pending_boxes.erase(in_id)
+	var keep_inflight: bool = spare and in_id != "" and bool(_inflight_opts.get(OUTLIVES_SCENE_CHANGE, false))
+	if not keep_inflight:
+		_inflight_id = ""
+		if in_id != "":
+			## No _cancelled_ids entry: an in-flight id is never in _queue, so
+			## _process_queue — the only reader — can never see it.
+			_resolve_box(in_id, null)
+			_pending_boxes.erase(in_id)
 
 	# Drain the queue — resolve each box with null so awaiting callers unblock.
-	## No _cancelled_ids entries: _queue is cleared below, so nothing marked
-	## here could ever reach the reader.
+	## No _cancelled_ids entries: a drained id leaves _queue below, so nothing marked here could ever reach the reader.
+	var kept: Array[Dictionary] = []
 	for item in _queue:
+		if spare and bool((item["opts"] as Dictionary).get(OUTLIVES_SCENE_CHANGE, false)):
+			kept.append(item)
+			continue
 		var id: String = item["id"]
 		_resolve_box(id, null)
 		_pending_boxes.erase(id)
 	_queue.clear()
+	_queue.append_array(kept)
 
 	# Now tell the backend to abort its HTTPRequest.  Any synchronously emitted
 	# request_finished will hit the stale-id guard cleanly (in_id != _inflight_id="")
 	# and the _draining flag below means even if it did reach _process_queue,
 	# it would no-op.
-	if _active_backend != null:
+	## The service sends one request at a time, so a spared in-flight request is the backend's only one: nothing to abort.
+	if _active_backend != null and not keep_inflight:
 		_active_backend.cancel_all()
 
 	## The response cache is scene-scoped by contract — _get_cache's own severity
@@ -498,6 +511,8 @@ func cancel_all(reason: String = "scene_change") -> void:
 
 	_draining = false
 	print("[LLMService] cancel_all: %s" % reason)
+	## A spared request that was waiting behind a cancelled one goes out now.
+	_process_queue()
 
 
 # ── Internal: request dispatch ────────────────────────────────────────────────
@@ -540,6 +555,7 @@ func _submit_and_wait(prompt: String, opts: Dictionary) -> Variant:
 
 	# No in-flight — submit immediately.
 	_inflight_id = id
+	_inflight_opts = opts
 	_active_backend.submit(id, prompt, opts)
 	await _await_box(id, opts)
 	# B1 (robust return): capture before returning — see note above.
@@ -664,6 +680,7 @@ func _process_queue() -> void:
 		return
 
 	_inflight_id = id
+	_inflight_opts = next["opts"]
 	_active_backend.submit(id, next["prompt"], next["opts"])
 
 
