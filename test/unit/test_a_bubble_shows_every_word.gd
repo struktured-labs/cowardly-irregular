@@ -11,17 +11,22 @@ const SLACK := 0.5
 
 var _saved_time: float = 1.0
 var _saved_scale = null
+var _saved_stretch: float = 1.0
+## His 3440x1362 window over the 1280x720 canvas (cowir-adhoc 26377).
+const HIS_STRETCH := 1.891
 
 
 func before_each() -> void:
 	_saved_time = Engine.time_scale
 	Engine.time_scale = BubbleScript.SUPPRESS_TIME_SCALE * 0.5
 	_saved_scale = GameState.text_size_scale
+	_saved_stretch = get_tree().root.content_scale_factor
 
 
 func after_each() -> void:
 	Engine.time_scale = _saved_time
 	GameState.text_size_scale = _saved_scale
+	get_tree().root.content_scale_factor = _saved_stretch
 	for e in BubbleScript._live:
 		if is_instance_valid(e["bubble"]):
 			e["bubble"].queue_free()
@@ -127,3 +132,24 @@ func test_every_word_of_every_line_shows_at_every_text_size() -> void:
 	assert_gt(judged, 0, "CONTROL: bubbles were judged")
 	gut.p("    judged %d bubbles, %d faults" % [judged, bad.size()])
 	assert_eq(bad.slice(0, 40), [], "a bubble shows every word (%d faults):\n%s" % [bad.size(), "\n".join(PackedStringArray(bad.slice(0, 40)))])
+
+
+## THE DEFECT (cowir-adhoc 26443): after his window changed size the pixel face was emptied, and a bubble BUILT afterwards
+## got line_spacing -12, so a two-row quip sat in a one-row bubble. The window's stretch moves, then the bubbles are built.
+func test_a_bubble_built_after_the_window_changes_size_shows_every_word() -> void:
+	var host := Node2D.new()
+	add_child_autofree(host)
+	GameState.text_size_scale = 1.0
+	assert_eq(await _faults(_lines()[0], ANCHORS[0], host), [], "CONTROL: before the window changes size the longest line shows whole")
+	get_tree().root.content_scale_factor = HIS_STRETCH
+	for f in 10:
+		await get_tree().process_frame
+	var bad: Array = []
+	var judged := 0
+	for line in _lines():
+		for a in ANCHORS:
+			judged += 1
+			for f in await _faults(line, a, host):
+				bad.append("%s \"%s\": %s" % [str(a), line.left(28), f])
+	assert_gt(judged, 0, "CONTROL: bubbles were judged after the change")
+	assert_eq(bad, [], "a bubble built after the window changes size shows every word:\n%s" % "\n".join(PackedStringArray(bad)))
