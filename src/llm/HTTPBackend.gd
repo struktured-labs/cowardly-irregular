@@ -95,6 +95,8 @@ const MAX_LISTING_BYTES := 8 * 1024 * 1024
 const MAX_REASON_CHARS := 100
 ## A run of this many characters shared with the key is a piece of it.
 const KEY_PIECE_CHARS := 6
+## Stands in for the kept model id while the shapes are struck; a control character no pattern matches.
+const KEPT_MARK := "\u0001"
 ## What a credential looks like in server text, whoever's it is: a Bearer value, a masked token, a vendor prefix, a long opaque run.
 const CREDENTIAL_SHAPES: Array[String] = [
 	"(?i)bearer\\s+\\S+",
@@ -646,17 +648,20 @@ func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
 	if code == 401 or code == 403:
 		return ""
 	var said: String = server_error_text(body_bytes.get_string_from_utf8())
-	said = strike_credentials(said, api_key)
+	said = strike_credentials(said, api_key, model)
 	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
 
 
 ## Server text with anything key-shaped struck: the key, a piece or masked form of it, a Bearer value, a vendor-prefixed or 20+ char token.
-static func strike_credentials(text: String, key: String) -> String:
+static func strike_credentials(text: String, key: String, keep: String = "") -> String:
 	var out: String = text.replace(key, "[key]") if key != "" else text
+	## The player's own model id is already on this status line, so a long one is set aside and not taken for a token.
+	if keep != "" and keep != key:
+		out = out.replace(keep, KEPT_MARK)
 	for pattern in CREDENTIAL_SHAPES:
 		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
 	if key.length() < KEY_PIECE_CHARS:
-		return out
+		return out.replace(KEPT_MARK, keep)
 	var runs: Array[RegExMatch] = RegEx.create_from_string("[A-Za-z0-9_\\-]{%d,}" % KEY_PIECE_CHARS).search_all(out)
 	runs.reverse()
 	for run in runs:
@@ -665,7 +670,7 @@ static func strike_credentials(text: String, key: String) -> String:
 			if key.contains(word.substr(i, KEY_PIECE_CHARS)):
 				out = out.substr(0, run.get_start()) + "[key]" + out.substr(run.get_end())
 				break
-	return out
+	return out.replace(KEPT_MARK, keep)
 
 
 ## The message in a JSON error body: OpenAI's error.message, Ollama's error string, or a bare message/detail; "" for anything else.
