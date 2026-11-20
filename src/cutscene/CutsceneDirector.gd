@@ -448,8 +448,16 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 ## STEP EXECUTION
 ## =====================
 
+## The step before the running one and the running one, so a boss card knows whether its scene already scored it.
+var _step_before: String = ""
+var _step_now: String = ""
+const BOSS_CARD_CUE := "boss_intro_stinger"
+
+
 func _execute_step(step: Dictionary) -> void:
 	var step_type = step.get("type", "")
+	_step_before = _step_now
+	_step_now = str(step_type)
 	match step_type:
 		"dialogue":
 			await _step_dialogue(step)
@@ -1931,6 +1939,8 @@ func _step_boss_intro(step: Dictionary) -> void:
 
 	if _skipping:
 		return
+	if _step_before != "play_sfx" and SoundManager:  # a scene that scores its own card keeps its cue; a silent one gets the stinger
+		SoundManager.play_cutscene_sfx(BOSS_CARD_CUE)
 
 	var screen_size = get_viewport().get_visible_rect().size
 
