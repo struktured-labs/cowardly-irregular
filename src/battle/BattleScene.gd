@@ -836,28 +836,31 @@ func _update_speed_indicator() -> void:
 	var speed_label = BATTLE_SPEED_LABELS[_battle_speed_index]
 	var text = ""
 
-	match _battle_speed_index:
-		0:  # 1x - slow (pale grey-cyan)
+	## Keyed by the rung's LABEL, not its index: the 2.5x rung (.808) shifted every index from 4x up, so each wore the next-slower look and 64x had none.
+	match speed_label:
+		"1x":  # slow (pale grey-cyan)
 			text = "[color=#7a9a9a]▸[/color] [color=#cfdede]%s[/color] [color=#5a7a7a]◂[/color]" % speed_label
-		1:  # 1.5x - normal (white/cyan) — the default
+		"1.5x":  # normal (white/cyan) — the default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		2:  # 2x - brisk (green)
+		"2x":  # brisk (green)
 			text = "[color=#66cc88]▸▸[/color] [color=#88ffaa]%s[/color] [color=#44aa66]◂◂[/color]" % speed_label
-		3:  # 4x - fast (yellow)
+		"2.5x":  # quick (yellow-green), between brisk and fast
+			text = "[color=#99bb55]▸▸[/color] [color=#ccee66]%s[/color] [color=#779933]◂◂[/color]" % speed_label
+		"4x":  # fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		4:  # 8x - turbo (orange)
+		"8x":  # turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		5:  # 16x - extreme (red)
+		"16x":  # extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		6:  # 32x - very extreme (magenta)
+		"32x":  # very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		7:  # 64x - maximum (bright magenta). Five arrows like 32x: a sixth pair wrapped the PARTY header at 100% and pushed the panel down (struktured 2026-11-07)
+		"64x":  # maximum (bright magenta). Five arrows like 32x: a sixth pair wrapped the PARTY header at 100% and pushed the panel down (struktured 2026-11-07)
 			text = "[color=#ff22ff]▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂[/color]" % speed_label
 		_:
 			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
 			## empties while the battle genuinely runs faster. Degrade to the plain label instead --
 			## losing the colour ramp is survivable, losing the number is the bug struktured reported.
-			push_warning("[BATTLE] speed index %d has no readout arm; falling back to the bare label" % _battle_speed_index)
+			push_warning("[BATTLE] speed %s (index %d) has no readout arm; falling back to the bare label" % [speed_label, _battle_speed_index])
 			text = "[color=#ffffff]%s[/color]" % speed_label
 
 	if turbo_mode:
@@ -888,9 +891,14 @@ func speed_readout_width() -> float:
 	return ceilf(widest) + 4.0
 
 
-## The arrows each rung draws either side of its label (1, 1, 2, 2, 3, 4, 5, 5), mirroring _update_speed_indicator's arms.
+## Arrows each rung draws either side of its label, keyed by LABEL like _update_speed_indicator's arms; a rung with no row draws none.
+const SPEED_ARROW_COUNTS := {"1x": 1, "1.5x": 1, "2x": 2, "2.5x": 2, "4x": 2, "8x": 3, "16x": 4, "32x": 5, "64x": 5}
+
+
 static func _speed_arrows(index: int, glyph: String) -> String:
-	return glyph.repeat([1, 1, 2, 2, 3, 4, 5, 5][clampi(index, 0, 7)])
+	if index < 0 or index >= BATTLE_SPEED_LABELS.size():
+		return ""
+	return glyph.repeat(int(SPEED_ARROW_COUNTS.get(BATTLE_SPEED_LABELS[index], 0)))
 
 
 func _create_dialogue_system() -> void:
