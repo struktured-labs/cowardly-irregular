@@ -1,0 +1,13 @@
+{
+  "_doc": "W1 L12-25 gap (cowir-main 26347): once the Rat King falls, each W1 overworld pool gains its own species re-levelled with the @L mark. Tier = count of dragons defeated. Every tier's top level must sit in [next boss - 2, next boss], with boss levels read from monsters.json by test_the_w1_map_grows_with_the_dragons.",
+  "opens_with": "rat_king_defeated",
+  "dragon_flags": ["fire_dragon_defeated", "ice_dragon_defeated", "lightning_dragon_defeated", "shadow_dragon_defeated"],
+  "pools": ["overworld_central", "overworld_plains", "overworld_forest", "overworld_ice", "overworld_swamp", "overworld_desert", "overworld_volcanic", "overworld_coast"],
+  "tiers": [
+    {"dragons_defeated": 0, "levels": [15, 14, 13]},
+    {"dragons_defeated": 1, "levels": [17, 16, 15]},
+    {"dragons_defeated": 2, "levels": [18, 17, 16]},
+    {"dragons_defeated": 3, "levels": [20, 19, 18]},
+    {"dragons_defeated": 4, "levels": [23, 22, 21]}
+  ]
+}
