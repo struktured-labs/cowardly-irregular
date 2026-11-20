@@ -89,14 +89,15 @@ func _weapons() -> Dictionary:
 
 ## The action as the battle runs it: damage is noted while the attacker is the acting combatant, the action then ENDS
 ## (the cache is cleared), and only later does the lunge land. Returns [cue path on the battle voice, spark shape].
-func _contact(f: Array, crit: bool, ability_id: String, landing_names_attacker: bool = true) -> Array:
+func _contact(f: Array, crit: bool, ability_id: String, landing_names_attacker: bool = true, damage: int = 10) -> Array:
 	var scene = f[0]; var es: AnimatedSprite2D = f[2]; var hero: Combatant = f[4]
 	scene._current_ability_id = ability_id
 	scene._last_acting_combatant = hero
 	scene._action_serial += 1
-	scene._note_hit_weight(f[1], 10, crit, "", 1.0)
+	scene._note_hit_weight(f[1], damage, crit, "", 1.0)
 	var serial: int = scene._action_serial
-	assert_gt(float(scene._peek_hit_weight(es, hero, serial)["w"]), 0.0, "PREMISE: the hit left its weight on the target (else a crit has nowhere to ride)")
+	if damage > 0:
+		assert_gt(float(scene._peek_hit_weight(es, hero, serial)["w"]), 0.0, "PREMISE: the hit left its weight on the target (else a crit has nowhere to ride)")
 	scene._last_acting_combatant = null  # what _on_action_executed does, in the action's own frame
 	if landing_names_attacker:
 		scene._land_hit_weight(es, hero, serial)
@@ -169,3 +170,13 @@ func test_a_landing_that_names_nobody_falls_back_to_the_acting_combatant() -> vo
 	assert_eq(SCENE.hit_attacker({"w": 0.0, "kill": false}, f[4]), f[4], "no name on the landing: the acting combatant")
 	assert_eq(SCENE.hit_attacker({"by": (f[1] as Combatant).get_instance_id()}, f[4]), f[1], "CONTROL: a named attacker outranks the cache")
 	assert_null(SCENE.hit_attacker({"by": 1}, null), "a stale id is nobody, not a crash")
+
+
+## A swing that dealt nothing (a miss, a blocked hit) notes no weight, so only the lunge itself can say who swung.
+func test_a_hit_that_dealt_nothing_still_lands_as_its_weapon() -> void:
+	var dagger: String = _weapons().get("dagger", "")
+	var f := _fixture(dagger)
+	var got := _contact(f, false, "", true, 0)
+	assert_eq(float(f[0]._peek_hit_weight(f[2], f[4], f[0]._action_serial)["w"]), 0.0, "CONTROL: no weight was noted for this swing")
+	assert_true(str(got[0]).contains("attack_hit_dagger."), "a dagger swing that dealt nothing landed with %s" % got[0])
+	assert_eq(got[1], EffectSystem.hit_spark_shape("dagger"), "and drew the '%s' spark" % got[1])
