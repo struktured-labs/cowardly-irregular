@@ -12,13 +12,20 @@
 | `v3.33.774-alpha` | (none left: `sandrift_village` · `title_screen` re-shot at `.807`) | "re-shot at `v3.33.774-alpha`, a name said once" |
 | `v3.33.802-alpha` | `inn_interior` (`shop_interior` re-shot at `.807`) | "re-shot at `v3.33.802-alpha`, the rooms are drawn" |
 | `v3.33.788-alpha` | (none left: `battle` re-shot at `.807`) | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
-| `v3.33.807-alpha` | `battle` · `battle_storm` · `eldertree_village` · `frosthold_village` · `grimhollow_spiral` · `grimhollow_village` · `ironhaven_village` · `sandrift_village` · `shop_interior` · `title_screen` | "re-shot at `v3.33.807-alpha`, the pixel face" |
+| `v3.33.807-alpha` | `battle` · `battle_storm` · `eldertree_village` · `frosthold_village` · `grimhollow_spiral` · `grimhollow_village` · `sandrift_village` · `shop_interior` · `title_screen` (`ironhaven_village` re-shot at `.810`) | "re-shot at `v3.33.807-alpha`, the pixel face" |
 | `v3.33.809-alpha` | `whispering_cave` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | "re-shot at `v3.33.809-alpha`, the stairs point the way" |
+| `v3.33.810-alpha` | `ironhaven_village` | "re-shot at `v3.33.810-alpha`, who walks there now" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-20: re-shot at `v3.33.810-alpha`, who walks there now.** `.810` re-deals village walkers so each keeps its
+own anchor line. Of the six village frames only `ironhaven_village` moved: 0.45% (4128 px in the strip 25,606 to
+826,693), run A vs run B 0.00%. Read beside the shipped frame: the woman in the apron now walks at the far left of the
+lower street, and a child in red stands where she was. Nothing else in the frame changed. The frame is run A of the
+`.810` publish's own store recheck. Every other village frame read SAME or its known animation phase at `.810`.
 
 **2026-11-20: re-shot at `v3.33.809-alpha`, the stairs point the way.** The four dungeon frames held at `.807`.
 `.809` redraws the pixel face's `▲`/`▼` as a stepped triangle (rows 1, 3, 5), so the stairs markers read as arrows
