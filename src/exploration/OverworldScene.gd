@@ -635,6 +635,19 @@ func biome_char_at(tx: int, ty: int) -> String:
 	return row[tx]
 
 
+## Can a villager or roamer stand at this world point? Judged on the PAINTED map, where they are drawn, not the displaced collider.
+func walker_can_stand(world_pos: Vector2) -> bool:
+	var ch := biome_char_at(int(floor(world_pos.x / TILE_SIZE)), int(floor(world_pos.y / TILE_SIZE)))
+	if ch == "":
+		return false
+	if _walker_blocked_types.is_empty():
+		_walker_blocked_types = TileGeneratorScript.new()._get_impassable_types()
+	return not _walker_blocked_types.has(_char_to_tile_type(ch))
+
+
+var _walker_blocked_types: Array = []
+
+
 ## Painted terrain char -> encounter zone; the authored biome IS the zone
 const BIOME_ZONES := {
 	"i": "ice", "F": "forest", "S": "swamp", "s": "desert",
@@ -700,7 +713,7 @@ func _place_wanderers() -> void:
 			"dialogue": "Harmonia's got the best prices... if you can find it.",
 			"color": Color(0.5, 0.35, 0.2),
 			"archetype": "merchant",
-			"path": [Vector2(31, 22), Vector2(20, 23), Vector2(20, 26), Vector2(31, 25)],
+			"path": [Vector2(31, 22), Vector2(34, 22), Vector2(34, 19), Vector2(31, 19)],
 			"hints": [
 				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
 				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
@@ -714,7 +727,7 @@ func _place_wanderers() -> void:
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
 			"archetype": "traveler",
-			"path": [Vector2(29, 9), Vector2(26, 12), Vector2(30, 14), Vector2(30, 10)],
+			"path": [Vector2(30, 9), Vector2(33, 9), Vector2(33, 13), Vector2(30, 13)],
 			"hints": [
 				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
 				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
