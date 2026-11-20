@@ -58,6 +58,8 @@ func _toast_strings() -> Array:
 	if _corpus_built:
 		return _corpus
 	var out: Array = []
+	var held_constants: Dictionary = GameState.game_constants.duplicate(true) if GameState else {}
+	var held_forced: bool = EncounterSystem.forced_encounter_next_step
 	for path in _map_scripts():
 		var scr = load(path)
 		if scr == null or not scr.can_instantiate():
@@ -65,7 +67,12 @@ func _toast_strings() -> Array:
 		var inst = scr.new()
 		if not (inst is Node):
 			continue
-		add_child_autofree(inst)
+		## Each map gets its OWN physics world and is freed before the next: side by side in the default world, one map's player stood on another's plates and stairs.
+		var vp := SubViewport.new()
+		vp.size = Vector2i(64, 64)
+		vp.world_2d = World2D.new()
+		add_child(vp)
+		vp.add_child(inst)
 		for _i in 3:
 			await get_tree().process_frame
 		for node in _walk(inst):
@@ -76,6 +83,11 @@ func _toast_strings() -> Array:
 				var words: int = t.split(" ", false).size()
 				if words >= PROSE_WORDS:
 					out.append({"map": path.get_file(), "field": field, "words": words, "text": t})
+		vp.free()
+	## A built dungeon writes its floor and thrown switches into the save, and a trap arms the next encounter: hand both back as found.
+	if GameState:
+		GameState.game_constants = held_constants
+	EncounterSystem.forced_encounter_next_step = held_forced
 	_corpus = out
 	_corpus_built = true
 	return out
@@ -86,6 +98,22 @@ func _walk(n: Node) -> Array:
 	for kid in n.get_children():
 		out.append_array(_walk(kid))
 	return out
+
+
+## cowir-main 26466: after this census the save held backwards_warren_switches {sw1: true} and an armed encounter trap, and a later file's warp plate read as spent.
+func test_the_census_leaves_the_save_as_it_found_it() -> void:
+	_corpus_built = false
+	var before: Dictionary = GameState.game_constants.duplicate(true)
+	var forced: bool = EncounterSystem.forced_encounter_next_step
+	var rows: Array = await _toast_strings()
+	assert_gt(rows.size(), 0, "CONTROL: the census built maps")
+	assert_eq(GameState.game_constants, before, "building every map left the save's constants changed")
+	assert_eq(EncounterSystem.forced_encounter_next_step, forced, "building every map left an encounter trap armed")
+	var leftover: int = 0
+	for n in get_children():
+		if n is SubViewport:
+			leftover += 1
+	assert_eq(leftover, 0, "the census left %d built map(s) standing in the tree" % leftover)
 
 
 func test_the_corpus_is_built_and_non_trivial() -> void:
