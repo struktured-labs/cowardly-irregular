@@ -38,6 +38,13 @@ func _init() -> void:
 	_suppress_furniture()
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
 
+	# The weather is a dice roll from the first frame (shot_guard.gd, pin_conditions). This tool never pinned it, so
+	# its three village frames were shot under whatever was rolled: at v3.33.811 the store recheck read
+	# grimhollow_spiral 38% "moved", and it was rain (mean luminance 109.7 against 119.9 clear, every pixel x ~0.85).
+	# Pin before the first shot. battle_storm sets its own storm afterwards, on purpose.
+	if not ShotGuard.pin_conditions(root, "setup"):
+		_fail += 1
+
 	# ── dungeon floors (state-dependent) ────────────────────────────────────
 	await _shoot_floor("warren_wrap_field", "res://src/maps/dungeons/ContrarianDepths.gd", 2)
 	await _shoot_floor("warren_lever_portals", "res://src/maps/dungeons/ContrarianDepths.gd", 3)
