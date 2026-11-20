@@ -924,7 +924,7 @@
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips assembly_line_automaton__idle__1795140959, assembly_line_automaton__attack__1795140897, assembly_line_automaton__hit__1795140917, assembly_line_automaton__dead__1795140939), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -934,16 +934,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -1035,7 +1035,7 @@
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips brass_golem__idle__1795140711, brass_golem__attack__1795140651, brass_golem__hit__1795140672, brass_golem__dead__1795140691), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1045,20 +1045,21 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -1202,7 +1203,7 @@
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips clockwork_sentinel__idle__1795140797, clockwork_sentinel__attack__1795140732, clockwork_sentinel__hit__1795140755, clockwork_sentinel__dead__1795140778), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1212,16 +1213,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -1885,26 +1886,26 @@
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips ironback_beetle__idle__1795141031, ironback_beetle__attack__1795140974, ironback_beetle__hit__1795140994, ironback_beetle__dead__1795141011), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 3,
-          "end": 4
+          "start": 0,
+          "end": 1
         },
         "attack": {
-          "start": 3,
+          "start": 2,
           "end": 3
         },
         "hit": {
-          "start": 3,
-          "end": 3
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 3,
-          "end": 3
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -2808,30 +2809,31 @@
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips pipe_phantom__idle__1795141191, pipe_phantom__attack__1795141124, pipe_phantom__hit__1795141145, pipe_phantom__dead__1795141169), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 2,
-          "end": 2
+          "start": 0,
+          "end": 1
         },
         "attack": {
           "start": 2,
-          "end": 2
+          "end": 3
         },
         "hit": {
-          "start": 2,
-          "end": 2
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 2,
-          "end": 2
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
@@ -2993,7 +2995,7 @@
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips rust_elemental__idle__1795141108, rust_elemental__attack__1795141047, rust_elemental__hit__1795141065, rust_elemental__dead__1795141088), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3003,16 +3005,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -3102,7 +3104,7 @@
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips shift_supervisor__idle__1795141269, shift_supervisor__attack__1795141208, shift_supervisor__hit__1795141226, shift_supervisor__dead__1795141313), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3112,16 +3114,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",

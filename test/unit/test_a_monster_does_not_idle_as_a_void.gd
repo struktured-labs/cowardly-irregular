@@ -8,11 +8,12 @@ extends GutTest
 ## eye at zoom with its facing checked. ghost (a blob ghost) and recursive_loop (a ring) are left alone as plausibly drawn.
 
 const VOID_IDLE_FRAMES := [0, 1]
+## pipe_phantom left 2026-11-19: redrawn, its frame 0 is now its own idle.
 ## Reviewed by eye 2026-11-07. Re-review an entry when its art is redrawn.
 const IDLED_AS_A_VOID := [
 	"corrupted_guardian", "corrupted_sprite", "crystal_golem", "empty_set", "forgotten_variable", "glitch_entity",
 	"masterite_arbiter_futuristic", "masterite_tempo_futuristic", "masterite_warden_abstract",
-	"masterite_warden_futuristic", "memory_leak", "null_entity", "optimization_itself", "pipe_phantom",
+	"masterite_warden_futuristic", "memory_leak", "null_entity", "optimization_itself",
 	"rogue_process", "specter", "the_absence",
 ]
 
