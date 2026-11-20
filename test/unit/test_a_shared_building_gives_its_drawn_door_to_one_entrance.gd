@@ -182,3 +182,37 @@ func test_the_rest_has_one_claimant_and_recall_stands_clear() -> void:
 			moved_inn = true
 			assert_true((m["others"] as Array).is_empty(), "the inn takes the Rest's door alone")
 	assert_true(moved_inn, "the inn was stood under the Rest's drawn door")
+
+
+## Frosthold's chapel and Grimhollow's curio shop each had an interior door added on their own 3-cell facade: the two zones overlapped as
+## shipped and any nudge under the drawn door widened it (measured on bb316d342). The added door now stands beside its building.
+func test_an_added_door_stands_beside_the_building_not_on_it() -> void:
+	var cases := [
+		["res://src/maps/villages/FrostholdVillage.gd", "MeltwaterClockDoor", "clock_exit", Rect2i(Vector2i(14, 4), Vector2i(3, 3)), Vector2(15 * 32, 6.5 * 32)],
+		["res://src/maps/villages/GrimhollowVillage.gd", "LanternDebtDoor", "lantern_exit", Rect2i(Vector2i(15, 8), Vector2i(3, 3)), Vector2(16 * 32, 10.5 * 32)],
+	]
+	for c in cases:
+		var v := _build(c[0])
+		await get_tree().process_frame
+		var door := _named(v, c[1])
+		var block: Rect2i = c[3]
+		var file: String = str(c[0]).get_file()
+		assert_not_null(door, "CONTROL: %s still has %s" % [file, c[1]])
+		if door == null:
+			continue
+		var cell := Vector2i(int(floor(door.position.x / 32.0)), int(floor(door.position.y / 32.0)))
+		assert_false(block.grow_individual(0, 0, 0, 1).has_point(cell), "%s: %s at %s is still on the building %s" % [file, c[1], str(cell), str(block)])
+		assert_true(block.grow_individual(0, 0, 0, 1).has_point(Vector2i(int(floor(c[4].x / 32.0)), int(floor(c[4].y / 32.0)))), "CONTROL: %s: its shipped mark was on the building" % file)
+		var owner_seen: bool = false
+		for m in v.entrance_moves:
+			if m["block"] == block:
+				owner_seen = true
+				assert_true((m["others"] as Array).is_empty(), "%s: the building's own entrance takes its door alone" % file)
+				assert_true(_box(m["moved"]).intersection(_box(door)).get_area() <= 0.0, "%s: %s answers on %s, over the building's entrance at %s" % [file, c[1], str(_box(door)), str(_box(m["moved"]))])
+				assert_gt(Rect2(Vector2(c[4].x - 32.0, c[4].y), _box(door).size).intersection(_box(m["moved"])).get_area(), 0.0, "CONTROL: %s: at its shipped mark the door's zone overlapped the building's entrance" % file)
+		assert_true(owner_seen, "%s: block %s had its entrance stood under its door" % [file, str(block)])
+		assert_true(v.spawn_points.has(c[2]), "CONTROL: %s has the return spawn %s" % [file, c[2]])
+		if v.spawn_points.has(c[2]):
+			var at: Vector2 = v.spawn_points[c[2]]
+			assert_lt(absf(at.x - door.position.x), 2 * 32.0, "%s: leaving lands %.0f px from the door it came out of" % [file, absf(at.x - door.position.x)])
+			assert_true(v._is_cell_walkable(Vector2i(int(at.x / 32.0), int(at.y / 32.0))), "%s: the return spawn %s stands on walkable ground" % [file, str(at)])

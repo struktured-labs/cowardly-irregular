@@ -427,13 +427,13 @@ func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
 	owner_node.position.x = to_x
 
 
-## Which of a block's several entrances the drawn door belongs to: the only one of the kind the door's style names
-## (a shop door opens a shop, any other a way in), else that kind's strictly nearest. Many = undecided.
-func _door_owner_among(found: Array, door: Dictionary, door_x: float) -> Array:
-	var wants_shop: bool = str(door.get("style", "house")) == "shop"
-	var named: Array = found.filter(func(b): return (not (b is AreaTransition)) == wants_shop)
+## Which of a block's several entrances the drawn door belongs to: the building's own establishment (shop, inn, chapel) before any
+## interior door added to its facade; among several of one kind, the strictly nearest. Many = undecided.
+func _door_owner_among(found: Array, _door: Dictionary, door_x: float) -> Array:
+	var own: Array = found.filter(func(b): return not (b is AreaTransition))
+	var named: Array = own if not own.is_empty() else found
 	if named.size() <= 1:
-		return named if named.size() == 1 else found
+		return named
 	named.sort_custom(func(a, b): return absf(a.global_position.x - door_x) < absf(b.global_position.x - door_x))
 	if absf(named[1].global_position.x - door_x) - absf(named[0].global_position.x - door_x) > 1.0:
 		return [named[0]]
