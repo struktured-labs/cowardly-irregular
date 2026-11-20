@@ -127,6 +127,9 @@ func test_a_player_on_the_floor_in_front_talks_to_her_and_she_keeps_dancing() ->
 	assert_not_null(tav.player, "CONTROL: the tavern has its player")
 	if aria == null or tav.player == null:
 		return
+	## Her handler asks the tree for THE player: before_each's tavern has one too, and it stands at the door.
+	_tav.player.remove_from_group("player")
+	assert_eq(get_tree().get_first_node_in_group("player"), tav.player, "CONTROL: the player her handler will judge is the one this arm moves")
 	var t: float = TavernInterior.TILE_SIZE
 	await get_tree().physics_frame
 	await get_tree().physics_frame
