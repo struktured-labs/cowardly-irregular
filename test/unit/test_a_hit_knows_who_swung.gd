@@ -63,6 +63,8 @@ func _fixture(weapon_id: String) -> Array:
 	scene.add_child(es)
 	scene.test_enemies.append(foe)
 	scene.enemy_sprite_nodes.append(es)
+	## One foe per scene: the scene finds a sprite by its index in BattleManager's party, so an earlier fixture's foe must go.
+	BattleManager.enemy_party.clear()
 	BattleManager.enemy_party.append(foe)
 	var animator: ANIMATOR = ANIMATOR.new()
 	animator.setup(es)
@@ -94,6 +96,7 @@ func _contact(f: Array, crit: bool, ability_id: String, landing_names_attacker: 
 	scene._action_serial += 1
 	scene._note_hit_weight(f[1], 10, crit, "", 1.0)
 	var serial: int = scene._action_serial
+	assert_gt(float(scene._peek_hit_weight(es, hero, serial)["w"]), 0.0, "PREMISE: the hit left its weight on the target (else a crit has nowhere to ride)")
 	scene._last_acting_combatant = null  # what _on_action_executed does, in the action's own frame
 	if landing_names_attacker:
 		scene._land_hit_weight(es, hero, serial)
