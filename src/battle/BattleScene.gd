@@ -8490,6 +8490,12 @@ func _show_address_banner(text: String) -> void:
 	tween.tween_callback(panel.queue_free)
 
 
+## The lowest y a bubble may rise to: the round banner's bottom as it is NOW (it wraps to two lines at large Text Sizes).
+func bubble_ceiling_y() -> float:
+	var banner: Control = turn_info.get_parent() as Control if turn_info else null
+	return banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
+
+
 func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "", voice_stream: AudioStream = null) -> void:
 	"""Speech bubble above a sprite — party lines, boss taunts, quips, trash talk.
 	Delegates to BattleSpeechBubble (playtest brief msg 2101): viewport-clamped
@@ -8525,9 +8531,10 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# struktured playtest 2026-08-22 "style the bubble away from them": the old always-left nudge still CENTRED the bubble on the anchor, so it sat on the speaker. Offset to a side instead — right for left-half speakers, left for right-half ones so it stays off the party panel; BattleSpeechBubble flips if the clamp would re-cover them.
 	var prefer_right: bool = anchor.x < vp_w * 0.5
 	# The top party slot's head is above the old 48px clamp, and clamped bubbles covered the SELECT banner (store capture v3.33.345) — ceiling is the banner's real bottom.
-	var banner: Control = turn_info.get_parent() as Control if turn_info else null
-	var ceiling: float = banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
+	var ceiling: float = bubble_ceiling_y()
+	var bubble := BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
+	if bubble != null:
+		bubble.watch_ceiling(bubble_ceiling_y)
 
 
 ## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).
