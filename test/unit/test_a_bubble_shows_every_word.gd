@@ -11,22 +11,23 @@ const SLACK := 0.5
 
 var _saved_time: float = 1.0
 var _saved_scale = null
-var _saved_stretch: float = 1.0
+var _saved_oversampling: float = 1.0
 ## His 3440x1362 window over the 1280x720 canvas (cowir-adhoc 26377).
 const HIS_STRETCH := 1.891
+const FONT_FALLBACKS := "res://src/ui/FontFallbacks.gd"
 
 
 func before_each() -> void:
 	_saved_time = Engine.time_scale
 	Engine.time_scale = BubbleScript.SUPPRESS_TIME_SCALE * 0.5
 	_saved_scale = GameState.text_size_scale
-	_saved_stretch = get_tree().root.content_scale_factor
+	_saved_oversampling = TextServerManager.get_primary_interface().font_get_global_oversampling()
 
 
 func after_each() -> void:
 	Engine.time_scale = _saved_time
 	GameState.text_size_scale = _saved_scale
-	get_tree().root.content_scale_factor = _saved_stretch
+	TextServerManager.get_primary_interface().font_set_global_oversampling(_saved_oversampling)
 	for e in BubbleScript._live:
 		if is_instance_valid(e["bubble"]):
 			e["bubble"].queue_free()
@@ -141,8 +142,10 @@ func test_a_bubble_built_after_the_window_changes_size_shows_every_word() -> voi
 	add_child_autofree(host)
 	GameState.text_size_scale = 1.0
 	assert_eq(await _faults(_lines()[0], ANCHORS[0], host), [], "CONTROL: before the window changes size the longest line shows whole")
-	get_tree().root.content_scale_factor = HIS_STRETCH
-	for f in 10:
+	## What a bigger window does to the fonts, as cowir-adhoc's own guard moves it; the cached corrections predate the change.
+	TextServerManager.get_primary_interface().font_set_global_oversampling(HIS_STRETCH)
+	(load(FONT_FALLBACKS) as GDScript).get("_corrections").clear()
+	for f in 4:
 		await get_tree().process_frame
 	var bad: Array = []
 	var judged := 0
