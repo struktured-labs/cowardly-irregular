@@ -391,6 +391,10 @@ var _door_busy: bool = false
 var door_cue_played: bool = false
 
 
+## Blocks whose drawn door could not be given to exactly one entrance; a player there can stand on the door and be refused.
+var blocks_left_unaligned: Array = []
+
+
 ## The block's ONE entrance (door, shop, inn or bar) stands under the drawn door: struktured 2026-11-01, "you can be right
 ## on the door and not be allowed to enter, but LEFT of the door is fine". Two entrances in one block are left alone.
 func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
@@ -406,8 +410,15 @@ func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
 				found.append(b)
 		elif b is Area2D and b.has_method("interact") and _building_cells(b).intersects(rect):
 			found.append(b)
+	if found.size() > 1:
+		## Two entrances share the block: the drawn door belongs to the kind its style names (a shop door opens the shop, any other a way in).
+		var wants_shop: bool = str(door.get("style", "house")) == "shop"
+		var named: Array = found.filter(func(b): return (not (b is AreaTransition)) == wants_shop)
+		if named.size() == 1:
+			found = named
 	if found.size() != 1:
 		if found.size() > 1:
+			blocks_left_unaligned.append(rect)
 			push_warning("[VILLAGE] block %s has %d entrances; none moved under its drawn door" % [rect, found.size()])
 		return
 	(found[0] as Node2D).position.x = VillageDoor.entrance_x(house, door) - (found[0] as Node2D).get_parent().global_position.x
