@@ -1860,8 +1860,11 @@ static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dic
 	# Accept both shapes: the encoded string the prompt asks for, and the nested
 	# array models actually produce. Anything else stays a parse failure.
 	var raw_rules: Variant = reply.get("rules_json", "")
-	var parsed: Variant = raw_rules if typeof(raw_rules) == TYPE_ARRAY \
+	var parsed: Variant = raw_rules if typeof(raw_rules) in [TYPE_ARRAY, TYPE_DICTIONARY] \
 		else JSON.parse_string(str(raw_rules))
+	## One rule written as a bare object is a rule set of one; an object that is not a rule stays a parse failure.
+	if typeof(parsed) == TYPE_DICTIONARY and (parsed as Dictionary).get("actions") is Array:
+		parsed = [parsed]
 	var rules: Array = []
 	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
 	if parse_ok:
