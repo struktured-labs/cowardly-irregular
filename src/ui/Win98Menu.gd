@@ -960,6 +960,9 @@ func _build_menu() -> void:
 	if is_inside_tree():
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	## A floored chain (battle: the hint bar) caps its rows to the band above the floor, so a long list scrolls there and never overruns it.
+	if screen_floor_y > 0.0:
+		room_for_rows = int(screen_floor_y) - MENU_SCREEN_MARGIN * 2 - chrome_height
 	if bottom_clearance > 0:
 		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
 		var bottom_limit: int = int(viewport_height) - bottom_clearance

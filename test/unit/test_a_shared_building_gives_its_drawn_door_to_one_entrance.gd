@@ -103,7 +103,8 @@ func test_no_move_puts_an_entrance_onto_another() -> void:
 					gut.p("    shared doorway as shipped: %s and %s overlapped by %.0f px2 before the move, %.0f after" % [moved.name, (o as Node).name, before, after])
 				assert_true(after <= before + 0.5, "%s block %s: moving %s widened its overlap with %s from %.0f to %.0f px2" % [path.get_file(), str(m["block"]), moved.name, (o as Node).name, before, after])
 	assert_gt(moves, 10, "CONTROL: entrances were stood under drawn doors (%d)" % moves)
-	assert_gt(shared, 3, "CONTROL: some of them share their building (%d)" % shared)
+	assert_gt(shared, 1, "CONTROL: some of them share their building (%d)" % shared)
+	assert_eq(already, 0, "%d building(s) still hold two entrances whose zones overlapped before any move (cowir-main 26655: none may be left)" % already)
 	assert_gt(Rect2(0, 0, 64, 64).intersection(Rect2(32, 32, 64, 64)).get_area(), 0.0, "CONTROL: two overlapping zones measure an overlap")
 
 
@@ -184,12 +185,14 @@ func test_the_rest_has_one_claimant_and_recall_stands_clear() -> void:
 	assert_true(moved_inn, "the inn was stood under the Rest's drawn door")
 
 
-## Frosthold's chapel and Grimhollow's curio shop each had an interior door added on their own 3-cell facade: the two zones overlapped as
-## shipped and any nudge under the drawn door widened it (measured on bb316d342). The added door now stands beside its building.
+## Four 3-cell buildings (Frosthold's chapel, Grimhollow's curios, Brasston's forge, Ironhaven's tavern) each had an interior door added on
+## their own facade: the two zones overlapped as shipped. The added door now stands beside its building (cowir-main 26655 for the last two).
 func test_an_added_door_stands_beside_the_building_not_on_it() -> void:
 	var cases := [
 		["res://src/maps/villages/FrostholdVillage.gd", "MeltwaterClockDoor", "clock_exit", Rect2i(Vector2i(14, 4), Vector2i(3, 3)), Vector2(15 * 32, 6.5 * 32)],
 		["res://src/maps/villages/GrimhollowVillage.gd", "LanternDebtDoor", "lantern_exit", Rect2i(Vector2i(15, 8), Vector2i(3, 3)), Vector2(16 * 32, 10.5 * 32)],
+		["res://src/maps/villages/BrasstonVillage.gd", "RedundancyArchiveDoor", "archive_exit", Rect2i(Vector2i(15, 4), Vector2i(3, 3)), Vector2(16 * 32, 7.5 * 32)],
+		["res://src/maps/villages/IronhavenVillage.gd", "StrikeRegistryDoor", "registry_exit", Rect2i(Vector2i(5, 13), Vector2i(3, 3)), Vector2(6 * 32, 15.5 * 32)],
 	]
 	for c in cases:
 		var v := _build(c[0])
