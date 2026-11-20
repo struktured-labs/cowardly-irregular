@@ -3137,14 +3137,19 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 
 	# Wave E — BossDialogue intent bias. Scales the 75% spell-cast roll
 	# by the intent's "attack_weight" multiplier (default 1.0 = no change).
-	# 'aggress' tilts toward more spells, 'turtle' tilts away. The roll
+	# 'aggress' tilts toward more spells, 'turtle' away unless the intent names a spell. The roll
 	# remains randomized — the LLM never names the spell.
 	var intent_id: String = combatant.get_meta("llm_intent", "")
 	var bias: Dictionary = _bias_by_intent(intent_id)
+	## The intent's authored ability bias reaches the caster's picks too, as it does the tank's and assassin's; {} for no intent.
+	var ability_bias: Dictionary = _intent_ability_bias(combatant)
+	var favoured: Dictionary = _favoured_in_pool(magic_abilities, ability_bias)
 	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
+	## A posture that names a spell does not cut casting: turtle's 0.6 made "Null Field" mean fewer Null Fields.
+	if not favoured.is_empty():
+		cast_chance = maxf(cast_chance, 0.75)
 	cast_chance = clampf(cast_chance, 0.1, 0.99)
-
-	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2, ability_bias)
 	if not caster_utility.is_empty():
 		return caster_utility
 
@@ -3154,10 +3159,14 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
 		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
 		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
-		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		## stops it being the only entry that can win. Weakness leads the sort unless an intent names a spell.
 		var scored: Array = magic_abilities.duplicate()
 		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
-		var best_spell = _pick_biased_by_power(scored)
+		## The announced spell takes the top slot; the bias then weighs it as before, so the cap still bounds it.
+		if not favoured.is_empty():
+			scored.erase(favoured)
+			scored.push_front(favoured)
+		var best_spell = _pick_biased_by_power(scored, ability_bias)
 		if best_spell.is_empty():
 			best_spell = magic_abilities[0]
 
@@ -3291,6 +3300,18 @@ func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: A
 		"targets": targets,
 		"speed": _compute_action_speed(combatant, "ability", pick)
 	}
+
+
+## The pool's most-favoured ability by the intent's bias (first in pool order on a tie), or {} when the bias favours none of it.
+func _favoured_in_pool(pool: Array, bias: Dictionary) -> Dictionary:
+	var best: Dictionary = {}
+	var best_w: float = 1.0
+	for a in pool:
+		var w: float = float(bias.get(str(a.get("id", "")), 1.0))
+		if w > best_w:
+			best = a
+			best_w = w
+	return best
 
 
 ## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's

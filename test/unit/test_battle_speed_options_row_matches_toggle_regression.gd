@@ -90,13 +90,14 @@ func _open_settings() -> SettingsMenu:
 func test_in_battle_speed_button_updates_the_options_row() -> void:
 	BattleSceneScript._battle_speed_index = 0
 	GameState.default_battle_speed = 0.25
-	# 1x → 1.5x → 2x → 4x → 8x → 16x → 32x. 32x is past the old five-chip row.
-	_cycle_battle_speed(6)
+	# From 1x up to 32x, which is past the old five-chip row. Derived from the labels, so a new rung cannot shift it.
+	var top: int = BattleSceneScript.BATTLE_SPEED_LABELS.find("32x")
+	_cycle_battle_speed(top)
 	_apply_battle_start_speed()
 	var menu := _open_settings()
-	assert_eq(BattleSceneScript._battle_speed_index, 6,
-		"six presses land on 32x (index 6)")
-	assert_eq(GameState.default_battle_speed, BattleSceneScript.BATTLE_SPEEDS[6],
+	assert_eq(BattleSceneScript._battle_speed_index, top,
+		"the presses land on 32x (index %d)" % top)
+	assert_eq(GameState.default_battle_speed, BattleSceneScript.BATTLE_SPEEDS[top],
 		"the button must store the same engine speed the options row displays")
 	assert_eq(Engine.time_scale, GameState.default_battle_speed,
 		"the next battle must run at the speed the options row names")
@@ -108,7 +109,7 @@ func test_in_battle_speed_button_updates_the_options_row() -> void:
 
 func test_save_load_keeps_the_options_row_on_the_speed_battles_run() -> void:
 	# The shape a v3 save wrote when the button had reached 32x (v3 index 5) and the default was
-	# still 1x. Since the 1.5x rung (v4) that speed is index 6: same speed, shifted index.
+	# still 1x. Later rungs (1.5x in v4, 2.5x in v5) moved its index; the speed is found by value below.
 	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	assert_not_null(f, "fixture settings.json must be writable")
 	if f == null:
@@ -123,11 +124,12 @@ func test_save_load_keeps_the_options_row_on_the_speed_battles_run() -> void:
 	SaveSystem.load_settings()
 	_apply_battle_start_speed()
 	var menu := _open_settings()
-	assert_eq(BattleSceneScript._battle_speed_index, 6,
+	var at: int = BattleSceneScript.BATTLE_SPEEDS.find(8.0)  # v3 index 5 was engine 8.0, labelled 32x
+	assert_eq(BattleSceneScript._battle_speed_index, at,
 		"reload keeps the speed the battles were running at")
-	assert_eq(GameState.default_battle_speed, BattleSceneScript.BATTLE_SPEEDS[6],
+	assert_eq(GameState.default_battle_speed, BattleSceneScript.BATTLE_SPEEDS[at],
 		"reload must not put the stale 1x default back on top of that speed")
 	assert_eq(Engine.time_scale, GameState.default_battle_speed,
 		"the battle after reload runs at the reloaded speed")
-	assert_eq(_speed_chip_text(menu), BattleSceneScript.BATTLE_SPEED_LABELS[6],
+	assert_eq(_speed_chip_text(menu), BattleSceneScript.BATTLE_SPEED_LABELS[at],
 		"after reload the options chip names the speed the next battle runs at")

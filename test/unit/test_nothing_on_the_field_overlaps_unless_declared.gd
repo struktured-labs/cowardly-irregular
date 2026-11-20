@@ -77,6 +77,7 @@ func _field() -> SubViewport:
 	chip_layer.layer = 45
 	vp.add_child(chip_layer)
 	chip_layer.add_child(chip)
+	chip.show_count(99)  # the chip shows only while a chat is available; force it so every run judges it, not just a lucky one
 	# The two transient field surfaces: a tutorial hint (the longest authored body) and a full toast stack.
 	GameState.game_constants.erase("tutorial_" + HINT_ID)
 	var hint := TutorialHint.new()

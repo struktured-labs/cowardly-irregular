@@ -148,7 +148,7 @@ func test_the_speed_ladder_is_read_from_the_const() -> void:
 	assert_not_null(bs, "BattleScene.gd must be loadable -- the old comment here denied it")
 	if bs == null:
 		return
-	assert_eq(bs.BATTLE_SPEEDS.size(), 8, "the ladder is eight rungs (1.5x joined 2026-10-30)")
+	assert_eq(bs.BATTLE_SPEEDS.size(), 9, "the ladder is nine rungs (1.5x joined 2026-10-30, 2.5x 2026-11-15)")
 	## Engine values, not labels: 8.0 and 16.0 are the top two rungs, LABELLED 32x and 64x. The tests
 	## this replaces conflated the two units, which is how "8x" became a pre-v3 expectation.
 	assert_true(8.0 in bs.BATTLE_SPEEDS, "engine 8.0 (labelled 32x) is a rung")
