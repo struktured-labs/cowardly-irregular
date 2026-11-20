@@ -218,12 +218,15 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed settings. Labels are engine*4, so engine 0.25 reads "1x".
 ## struktured 2026-10-30 (overriding his 2026-07-11 ruling that 1x is the default): "2x I find a bit
 ## hard to see animations but 1x feels too slow" — so a 1.5x rung exists and IS the default.
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"]
+## struktured 2026-11-15: "add the rung for now" -- 2.5x between 2x and 4x, the doubling he plays across (speed_scale_v5).
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 0.625, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "2.5x", "4x", "8x", "16x", "32x", "64x"]
 const DEFAULT_BATTLE_SPEED_INDEX: int = 1
 const DEFAULT_BATTLE_SPEED: float = 0.375
 ## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
 const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+## The ladder before the 2.5x rung, for reading a battle_speed_index saved before speed_scale_v5.
+const LEGACY_V4_BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
 ## Tap the speed button = one rung UP (wrapping, as always); hold it this long = one rung DOWN, clamped at
 ## the slowest (struktured 2026-11-01). Wall clock, like Win98Menu's Auto hold: battle time is scaled.
@@ -3411,6 +3414,16 @@ func signature_sound_allowed() -> bool:
 	return not turbo_mode and not autogrind_console_mode
 
 
+## The leader's limit-break stinger, or "" at turbo / in the console, where swapping the bed every limit break was a dropout.
+func limit_break_stinger_key(participants: Array) -> String:
+	if not signature_sound_allowed() or participants.is_empty() or not participants[0] is Combatant:
+		return ""
+	var leader: Combatant = participants[0]
+	var job_id: String = str(leader.job.get("id", "fighter")) if leader.job else "fighter"
+	var stinger_key := "job_%s_special" % job_id
+	return stinger_key if SoundManager.music_is_available(stinger_key) else ""
+
+
 ## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
 func signature_cue(caster: Combatant) -> String:
 	if caster == null or not is_instance_valid(caster):
@@ -5504,21 +5517,10 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		match group_type:
 			"limit_break":
 				SoundManager.play_flourish("group_limit_break")
-				# Play job stinger for party leader on limit break
-				if participants.size() > 0 and participants[0] is Combatant:
-					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
-					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself, duplicating
-					## the manifest's knowledge of where the file lives; music_is_available() is the
-					## predicate CutsceneDirector and JukeboxMenu already use, so the manifest stays the
-					## single place that knows. That reason stands on its own and is the whole reason.
-					## ⚠️ The justification here USED to be "ResourceLoader.exists() reports FALSE inside a
-					## web PCK". MEASURED FALSE 2026-09-17 (cowir-main, probe inside a real .pck): it is
-					## correct for imported resources, and FileAccess.file_exists() is the broken one.
-					## SoundManager carries the correction; do not reinstate the claim or cite line
-					## numbers for it — this comment cited two that had already moved.
-					var stinger_key: String = "job_%s_special" % job_id
-					if SoundManager.music_is_available(stinger_key):
-						SoundManager.play_music(stinger_key)
+				# Job stinger for the party leader; the helper owns the turbo/console gate.
+				var stinger_key := limit_break_stinger_key(participants)
+				if stinger_key != "":
+					SoundManager.play_music(stinger_key)
 			"combo_magic":
 				SoundManager.play_flourish("group_combo_magic")
 			_:

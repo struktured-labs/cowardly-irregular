@@ -1465,10 +1465,13 @@ func account_boss_fight_rewards(exp_gained: int, items_gained: Dictionary, grant
 		_grind_stats["total_exp"] += exp_gained
 		for member in grind_party:
 			if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
+				var share: int = exp_gained
 				if grant:
-					member.gain_job_exp(exp_gained)
+					## Live halves a boss's EXP per 3 levels over the fight too; the headless boss paid it whole.
+					share = int(exp_gained * ExpRules.over_level_factor(member.job_level, last_area_level))
+					member.gain_job_exp(share)
 				# Watched fights already paid this in battle. The bar still has to show it.
-				track_character_exp(member.combatant_name, exp_gained)
+				track_character_exp(member.combatant_name, share)
 	var gold: int = int(items_gained.get("gold", 0))
 	if gold > 0:
 		_grind_stats["total_gold"] += gold
