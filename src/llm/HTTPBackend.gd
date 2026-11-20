@@ -93,6 +93,16 @@ const MAX_REPLY_BYTES := 1024 * 1024
 const MAX_LISTING_BYTES := 8 * 1024 * 1024
 ## A server's error message is its own text on the player's screen and in the log, so it is cut to a line.
 const MAX_REASON_CHARS := 100
+## A run of this many characters shared with the key is a piece of it.
+const KEY_PIECE_CHARS := 6
+## What a credential looks like in server text, whoever's it is: a Bearer value, a masked token, a vendor prefix, a long opaque run.
+const CREDENTIAL_SHAPES: Array[String] = [
+	"(?i)bearer\\s+\\S+",
+	"[A-Za-z0-9_\\-]*\\*{2,}[A-Za-z0-9_\\-*]*",
+	"[A-Za-z0-9_\\-]{3,}(\\.{3,}|\u2026)[A-Za-z0-9_\\-]{3,}",
+	"\\b(sk|pk|rk|gsk|xai|hf|key)[-_][A-Za-z0-9_\\-]{8,}",
+	"[A-Za-z0-9_\\-]{20,}",
+]
 var max_reply_bytes: int = MAX_REPLY_BYTES
 var max_listing_bytes: int = MAX_LISTING_BYTES
 
@@ -636,9 +646,26 @@ func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
 	if code == 401 or code == 403:
 		return ""
 	var said: String = server_error_text(body_bytes.get_string_from_utf8())
-	if api_key != "":
-		said = said.replace(api_key, "[key]")
+	said = strike_credentials(said, api_key)
 	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
+
+
+## Server text with anything key-shaped struck: the key, a piece or masked form of it, a Bearer value, a vendor-prefixed or 20+ char token.
+static func strike_credentials(text: String, key: String) -> String:
+	var out: String = text.replace(key, "[key]") if key != "" else text
+	for pattern in CREDENTIAL_SHAPES:
+		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
+	if key.length() < KEY_PIECE_CHARS:
+		return out
+	var runs: Array[RegExMatch] = RegEx.create_from_string("[A-Za-z0-9_\\-]{%d,}" % KEY_PIECE_CHARS).search_all(out)
+	runs.reverse()
+	for run in runs:
+		var word: String = run.get_string()
+		for i in range(word.length() - KEY_PIECE_CHARS + 1):
+			if key.contains(word.substr(i, KEY_PIECE_CHARS)):
+				out = out.substr(0, run.get_start()) + "[key]" + out.substr(run.get_end())
+				break
+	return out
 
 
 ## The message in a JSON error body: OpenAI's error.message, Ollama's error string, or a bare message/detail; "" for anything else.
