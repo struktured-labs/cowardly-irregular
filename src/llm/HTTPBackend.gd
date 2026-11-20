@@ -652,16 +652,27 @@ func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
 	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
 
 
-## Server text with anything key-shaped struck: the key, a piece or masked form of it, a Bearer value, a vendor-prefixed or 20+ char token.
+## Server text with anything key-shaped struck; the player's own model id is set aside first unless it is key-shaped itself.
 static func strike_credentials(text: String, key: String, keep: String = "") -> String:
+	## Judged without the 20+ run rule: a long id is fine, one holding a piece of the key or a vendor token is not kept.
+	if keep == "" or _struck(keep, key, CREDENTIAL_SHAPES.slice(0, -1)) != keep:
+		return _struck(text, key, CREDENTIAL_SHAPES)
+	var exact: String = text.replace(key, "[key]") if key != "" else text
+	## Only where the id stands alone: inside a longer run it would split a token into pieces too short to be struck.
+	var escaped: String = ""
+	for ch in keep:
+		escaped += ch if RegEx.create_from_string("^[A-Za-z0-9]$").search(ch) != null else "\\" + ch
+	var alone: RegEx = RegEx.create_from_string("(?<![A-Za-z0-9_\\-])%s(?![A-Za-z0-9_\\-])" % escaped)
+	return _struck(alone.sub(exact, KEPT_MARK, true), key, CREDENTIAL_SHAPES).replace(KEPT_MARK, keep)
+
+
+## The key, each given shape, then any run sharing KEY_PIECE_CHARS with the key, each replaced by [key].
+static func _struck(text: String, key: String, shapes: Array) -> String:
 	var out: String = text.replace(key, "[key]") if key != "" else text
-	## The player's own model id is already on this status line, so a long one is set aside and not taken for a token.
-	if keep != "":
-		out = out.replace(keep, KEPT_MARK)
-	for pattern in CREDENTIAL_SHAPES:
+	for pattern in shapes:
 		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
 	if key.length() < KEY_PIECE_CHARS:
-		return out.replace(KEPT_MARK, keep)
+		return out
 	var runs: Array[RegExMatch] = RegEx.create_from_string("[A-Za-z0-9_\\-]{%d,}" % KEY_PIECE_CHARS).search_all(out)
 	runs.reverse()
 	for run in runs:
@@ -670,7 +681,7 @@ static func strike_credentials(text: String, key: String, keep: String = "") -> 
 			if key.contains(word.substr(i, KEY_PIECE_CHARS)):
 				out = out.substr(0, run.get_start()) + "[key]" + out.substr(run.get_end())
 				break
-	return out.replace(KEPT_MARK, keep)
+	return out
 
 
 ## The message in a JSON error body: OpenAI's error.message, Ollama's error string, or a bare message/detail; "" for anything else.
