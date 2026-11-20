@@ -30,7 +30,7 @@ battle_storm       26.87%   0.53%   same, and the party at starting levels (the 
 shop_interior      61.47%   0.00%   the camera frames the keeper on entry
 grimhollow_spiral  12.97%   0.00%   a new building and signpost, door labels in the pixel face
 ironhaven_village   1.42%   0.00%   the hay cart is a mine cart
-sandrift_village    0.75%   0.00%   one 256x256 block near the pool (villager or prop; not named)
+sandrift_village    0.75%   0.00%   pool wave phase only (the .808 recheck puts every moved pixel in the pool stripes)
 grimhollow_village  0.46%   0.00%   a signpost; a villager gone
 frosthold_village   0.26%   0.00%   a villager swap at the left edge
 eldertree_village   0.23%   0.00%   "Elder Vesper" in the pixel face
