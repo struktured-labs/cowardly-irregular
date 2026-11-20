@@ -8,6 +8,9 @@ const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const UIM := preload("res://src/battle/BattleUIManager.gd")
 var _guard
 var _saved_scale = null
+var _saved_oversampling: float = 1.0
+## His 3440x1362 window over the 1280x720 canvas (cowir-adhoc 26377): a UI line measures a fraction taller there.
+const HIS_STRETCH := 1.891
 
 
 func before_each() -> void:
@@ -15,10 +18,12 @@ func before_each() -> void:
 	_guard = BattleStateGuard.new()
 	_guard.snapshot()
 	_saved_scale = GameState.text_size_scale
+	_saved_oversampling = TextServerManager.get_primary_interface().font_get_global_oversampling()
 
 
 func after_each() -> void:
 	GameState.text_size_scale = _saved_scale
+	TextServerManager.get_primary_interface().font_set_global_oversampling(_saved_oversampling)
 	_guard.restore()
 
 
@@ -115,18 +120,45 @@ func test_a_panel_that_fits_looks_as_shipped() -> void:
 		await get_tree().process_frame
 
 
-## The other half of 26507: no row of any member sits under the hint bar, at any Text Size.
-func test_the_panel_ends_above_its_floor_at_every_text_size() -> void:
+## Every Text Size x 4/5 whose panel runs past its floor or whose HP label does, as text; empty when all fit.
+func _floor_faults() -> Array:
 	var bad: Array = []
 	for s in _presets():
 		for n in [4, 5]:
 			var b: Array = await _battle(float(s), n)
+			var tier: int = b[0].get("_ui_manager").party_compact_tier
 			var end_y: float = (b[0].get_node("UI/PartyStatusPanel") as Control).get_global_rect().end.y
 			if end_y > b[2] + 0.5:
-				bad.append("@%s x%d panel ends %d vs floor %d at tier %d" % [s, n, int(end_y), int(b[2]), b[0].get("_ui_manager").party_compact_tier])
+				bad.append("@%s x%d panel ends %d vs floor %d at tier %d" % [s, n, int(end_y), int(b[2]), tier])
+			if b[1].size() != n:
+				bad.append("@%s x%d shows %d HP labels" % [s, n, b[1].size()])
+			for l in b[1]:
+				var r: Rect2 = (l as Control).get_global_rect()
+				if r.end.y > b[2] + 0.5:
+					bad.append("@%s x%d an HP label ends %d vs floor %d at tier %d" % [s, n, int(r.end.y), int(b[2]), tier])
 			b[0].queue_free()
 			await get_tree().process_frame
+	return bad
+
+
+## The other half of 26507: no row of any member sits under the hint bar, at any Text Size.
+func test_the_panel_ends_above_its_floor_at_every_text_size() -> void:
+	var bad: Array = await _floor_faults()
 	assert_eq(bad, [], "the panel ends above its floor:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## The same, with the fonts measured as his window measures them (the stretch moves before any panel is built).
+func test_the_panel_ends_above_its_floor_in_his_window() -> void:
+	var probe := Label.new()
+	add_child_autofree(probe)
+	var font: Font = probe.get_theme_font("font")
+	var before: float = font.get_height(TextScale.scaled(15))
+	TextServerManager.get_primary_interface().font_set_global_oversampling(HIS_STRETCH)
+	await get_tree().process_frame
+	gut.p("    a 15 px UI line is %.2f px tall at 1.0 and %.2f at %.3f" % [before, font.get_height(TextScale.scaled(15)), HIS_STRETCH])
+	assert_almost_eq(TextServerManager.get_primary_interface().font_get_global_oversampling(), HIS_STRETCH, 0.001, "CONTROL: the stretch moved")
+	var bad: Array = await _floor_faults()
+	assert_eq(bad, [], "the panel ends above its floor in his window:\n%s" % "\n".join(PackedStringArray(bad)))
 
 
 ## Where AP rides the name row: it is still found, shown and inside the panel, and neither it nor the name shrank its face.
