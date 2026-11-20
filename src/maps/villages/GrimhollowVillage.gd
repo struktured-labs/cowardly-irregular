@@ -195,8 +195,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(6 * TILE_SIZE,11 * TILE_SIZE))
 	# === LANTERN DEBT OFFICE DOOR ===
 	# South face of the CCC building (cols 13-15, rows 6-8) — where the swamp's light is loaned.
-	spawn_points["lantern_exit"] = Vector2(14 * TILE_SIZE,11.5 * TILE_SIZE)
-	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(14 * TILE_SIZE,10.5 * TILE_SIZE))  ## beside Cursed Curios, not on its facade: one building, one way in
+	spawn_points["lantern_exit"] = Vector2(19 * TILE_SIZE,9.5 * TILE_SIZE)
+	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(19 * TILE_SIZE,8.5 * TILE_SIZE))  ## beside Cursed Curios, not on its facade; this side clears Swamp Witch Murk and every walker's line
 
 
 	# The dark one: lamps are the character here, and the pit head is where the gear sits.
