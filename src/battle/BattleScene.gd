@@ -4591,6 +4591,21 @@ func _get_terrain_battle_track() -> String:
 			return "battle"
 
 
+## Hides what only a live turn uses; the results screen and tools/victory_card_shots.gd both call this, so a shot is a real win.
+func retire_battle_hud() -> void:
+	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
+	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
+	if turn_panel:
+		turn_panel.visible = false
+	## Defer/Advance/Speed/Auto mean nothing on the results screen, whose own prompt names the one key that does.
+	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
+	if hint_bar:
+		hint_bar.visible = false
+	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
+	if speed_panel:
+		speed_panel.visible = false
+
+
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_end_advance_run()
@@ -4616,17 +4631,7 @@ func _on_battle_ended(victory: bool) -> void:
 		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
-	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
-	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
-	if turn_panel:
-		turn_panel.visible = false
-	## Defer/Advance/Speed/Auto mean nothing on the results screen, whose own prompt names the one key that does.
-	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
-	if hint_bar:
-		hint_bar.visible = false
-	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
-	if speed_panel:
-		speed_panel.visible = false
+	retire_battle_hud()
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before

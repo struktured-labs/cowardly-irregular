@@ -34,6 +34,8 @@ const ASCENT := 9
 const DESCENT := 3
 const SPACE_ADVANCE := 3
 const ATLAS_COLS := 16
+## The face keeps its own oversampling so a resized window cannot empty it (see _build).
+const OWN_OVERSAMPLING := 1.0
 ## Anonymous Pro, re-boxed and renamed (OFL-AnonymousPro.txt): the Latin behind the pixel face.
 const LATIN_FALLBACK := "res://assets/fonts/fallback/CowirLatinFallback-Regular.ttf"
 const READ_TIER_DEFAULT := "default"
@@ -225,6 +227,12 @@ static func _build(rim: bool) -> FontFile:
 	var img := Image.create(cell.x * ATLAS_COLS, cell.y * grid_rows, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	var f := FontFile.new()
+	# FIRST, before any glyph is drawn into it (setting it clears the font's cache). A window that changes size changes
+	# the engine's global font oversampling, and the engine then CLEARS the size cache of every font that follows it. A
+	# loaded font redraws itself from its file; this one has no file, so its glyphs and metrics were gone for the rest of
+	# the run and every character fell through to the Latin fallback (struktured's 3440x1362 window, 2026-11-19).
+	# A face with its own oversampling is left alone. 1.0 is also simply right: the drawing is whole pixels.
+	f.oversampling = OWN_OVERSAMPLING
 	f.font_name = FACE_NAME
 	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 	f.generate_mipmaps = false
