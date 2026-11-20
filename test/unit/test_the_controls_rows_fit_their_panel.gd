@@ -19,7 +19,7 @@ func _menu() -> Control:
 
 func _headers(m: Control) -> Array:
 	var out: Array = []
-	for c in m._panel.get_children():
+	for c in m._rows_content.get_children():
 		if c is Label and str(c.text) in ["Action", "Gamepad", "Keyboard", "Mouse"]:
 			out.append(c)
 	return out
@@ -30,11 +30,12 @@ func test_no_row_covers_the_footer_lines() -> void:
 	await get_tree().process_frame
 	var rows: Array = m._highlight_refs
 	assert_gt(rows.size(), 10, "CONTROL: the menu built its rows (%d)" % rows.size())
-	var lowest := 0.0
-	for r in rows:
-		lowest = maxf(lowest, (r as Control).position.y + (r as Control).size.y)
+	## The rows scroll in a clipped window (main 26309), so what must clear the bottom labels is the WINDOW.
+	var win: Control = m._rows_clip
+	assert_true(win.clip_contents, "the row window clips, or a scrolled row would draw over the footer")
+	var lowest: float = win.position.y + win.size.y
 	for l in [m._flash_label, m._conflict_label, m._footer_label]:
-		assert_true(lowest <= (l as Label).position.y, "the last row ends at %.0f, above the line at %.0f ('%s')" % [lowest, l.position.y, str(l.text).substr(0, 20)])
+		assert_true(lowest <= (l as Label).position.y, "the row window ends at %.0f, above the line at %.0f ('%s')" % [lowest, l.position.y, str(l.text).substr(0, 20)])
 	assert_true(m._footer_label.position.y + m._footer_label.size.y <= m._panel.size.y, "the footer ends inside the panel")
 
 

@@ -46,6 +46,7 @@ func _init() -> void:
 	## As at a real win: the battle is over, the foes are gone, no menu and no watchdog respawning one.
 	var bm = root.get_node("BattleManager")
 	bm.current_state = bm.BattleState.VICTORY
+	scene.retire_battle_hud()  # what _on_battle_ended hides; without it the turn header sat under VICTORY! (adhoc 26238)
 	var menu = scene.get("active_win98_menu")
 	if menu and is_instance_valid(menu):
 		menu.queue_free()

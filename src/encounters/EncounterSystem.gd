@@ -688,6 +688,8 @@ static func spawn_base_id(enemy_id: String) -> String:
 const BAND_STATS: Array = ["max_hp", "attack", "defense", "magic", "magic_defense"]
 ## Levels above this have no ordinary W1 rows to read (bosses and other worlds' dials), so the band holds its last value.
 const BAND_TOP_LEVEL: int = 15
+## Rewards band as RAW medians per authored level: an L1 slime pays 15 a level where the rest of the catalog pays about 8.5.
+const PAY_KEYS: Array = ["exp_reward", "gold_reward"]
 ## How much of the native band's HP a re-levelled spawn carries; the floor fights are tuned with this one number.
 const SPAWN_HP_DIAL: float = 1.0
 
@@ -710,6 +712,13 @@ static func native_bands(db: Dictionary) -> Dictionary:
 				if not samples[stat].has(lv):
 					samples[stat][lv] = []
 				samples[stat][lv].append(float(stats[stat]) / Combatant.level_multiplier(lv))
+		for pay in PAY_KEYS:
+			if float(row.get(pay, 0)) > 0.0:
+				if not samples.has(pay):
+					samples[pay] = {}
+				if not samples[pay].has(lv):
+					samples[pay][lv] = []
+				samples[pay][lv].append(float(row[pay]))
 	var bands: Dictionary = {}
 	for stat in samples:
 		bands[stat] = {}
@@ -744,6 +753,13 @@ static func band_at(band: Dictionary, level: int, extend: bool = false) -> float
 	return float(band[levels[-1]])
 
 
+## What a re-levelled spawn's reward is multiplied by: the target level's median reward over its own level's; linear in level with no band.
+static func spawn_pay_ratio(band: Dictionary, base_level: int, level: int) -> float:
+	var own := band_at(band, base_level, true)
+	var target := band_at(band, level, true)
+	return target / own if own > 0.0 and target > 0.0 else float(level) / float(maxi(1, base_level))
+
+
 ## Re-levels built enemy data to the TARGET level's native band: the species keeps its share of its own level's median (cowir-battle 2026-11-11).
 static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> Dictionary:
 	var base_level := maxi(1, int(data.get("level", 1)))
@@ -762,9 +778,8 @@ static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> D
 		elif key == "max_hp":
 			grown *= SPAWN_HP_DIAL
 		data[key] = maxi(1, int(round(grown)))
-	var pay := float(level) / float(base_level)
-	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * pay))
-	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * pay))
+	for pay in PAY_KEYS:
+		data[pay] = int(round(float(data.get(pay, 0)) * spawn_pay_ratio(bands.get(pay, {}), base_level, level)))
 	data["level"] = level
 	data["spawn_level"] = level
 	return data
