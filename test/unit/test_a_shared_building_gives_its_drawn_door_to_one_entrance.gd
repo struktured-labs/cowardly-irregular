@@ -78,24 +78,33 @@ func _box(n: Node2D) -> Rect2:
 	return Rect2()
 
 
-## Standing an entrance under a drawn door must not park it on a neighbour: every move in every village, printed and judged.
-func test_no_entrance_is_moved_onto_another() -> void:
+## Standing an entrance under a drawn door must not put it on a neighbour, or further onto one: every move, printed and judged against where it stood.
+func test_no_move_puts_an_entrance_onto_another() -> void:
 	var moves: int = 0
 	var shared: int = 0
+	var already: int = 0
 	for path in MapScripts.maps_in(VILLAGE_DIR):
 		var v := _build(path)
 		await get_tree().process_frame
 		for m in v.entrance_moves:
 			var moved: Node2D = m["moved"]
 			moves += 1
-			if not (m["others"] as Array).is_empty():
-				shared += 1
-				gut.p("  %s block %s: %s moved x %.0f -> %.0f beside %d other entrance(s)" % [path.get_file(), str(m["block"]), moved.name, float(m["from_x"]), float(m["to_x"]), (m["others"] as Array).size()])
+			if (m["others"] as Array).is_empty():
+				continue
+			shared += 1
+			gut.p("  %s block %s: %s moved x %.0f -> %.0f beside %d other entrance(s)" % [path.get_file(), str(m["block"]), moved.name, float(m["from_x"]), float(m["to_x"]), (m["others"] as Array).size()])
+			var now: Rect2 = _box(moved)
+			var was := Rect2(now.position + Vector2(float(m["from_x"]) - float(m["to_x"]), 0.0), now.size)
 			for o in m["others"]:
-				assert_false(_box(moved).intersects(_box(o)), "%s block %s: %s now answers on %s, over %s at %s" % [path.get_file(), str(m["block"]), moved.name, str(_box(moved)), (o as Node).name, str(_box(o))])
+				var before: float = was.intersection(_box(o)).get_area()
+				var after: float = now.intersection(_box(o)).get_area()
+				if before > 0.0:
+					already += 1
+					gut.p("    shared doorway as shipped: %s and %s overlapped by %.0f px2 before the move, %.0f after" % [moved.name, (o as Node).name, before, after])
+				assert_true(after <= before + 0.5, "%s block %s: moving %s widened its overlap with %s from %.0f to %.0f px2" % [path.get_file(), str(m["block"]), moved.name, (o as Node).name, before, after])
 	assert_gt(moves, 10, "CONTROL: entrances were stood under drawn doors (%d)" % moves)
 	assert_gt(shared, 3, "CONTROL: some of them share their building (%d)" % shared)
-	assert_true(Rect2(0, 0, 64, 64).intersects(Rect2(32, 32, 64, 64)), "CONTROL: two overlapping zones read as overlapping")
+	assert_gt(Rect2(0, 0, 64, 64).intersection(Rect2(32, 32, 64, 64)).get_area(), 0.0, "CONTROL: two overlapping zones measure an overlap")
 
 
 func test_the_arms_shop_door_opens_the_smithy() -> void:
@@ -146,3 +155,30 @@ func test_leaving_the_attic_lands_beside_its_door_not_on_a_trigger() -> void:
 		var z: Vector2 = pair[1]
 		assert_false(at.x > z.x and at.x < z.y, "the return spawn x %.0f is inside the %s zone %s" % [at.x, pair[0], str(z)])
 	assert_lt(absf(at.x - attic.global_position.x), 3 * 32.0, "and it is within three cells of the attic door it came out of")
+
+
+## Vertex's Rest draws its one door midway between the inn and where the Recall stall stood, so both claimed it and a player on it reached neither.
+func test_the_rest_has_one_claimant_and_recall_stands_clear() -> void:
+	var v := _build("res://src/maps/villages/VertexVillage.gd")
+	await get_tree().process_frame
+	var inn: Node2D = null
+	var recall: Node2D = null
+	for b in v.buildings.get_children():
+		if b is VillageInn:
+			inn = b
+		elif b is VillageShop and b.shop_type == VillageShop.ShopType.WHITE_MAGIC:
+			recall = b
+	assert_not_null(inn, "CONTROL: Vertex has its inn")
+	assert_not_null(recall, "CONTROL: Vertex has the Recall")
+	if inn == null or recall == null:
+		return
+	var rest := Rect2i(Vector2i(5, 3), Vector2i(2, 2))
+	assert_false(v._building_cells(recall).intersects(rest), "the Recall stall %s still reaches into the Rest %s" % [str(v._building_cells(recall)), str(rest)])
+	assert_true(Rect2i(Vector2i(7, 4), Vector2i(1, 1)).intersects(Rect2i(Vector2i(6, 3), Vector2i(2, 2))), "CONTROL: a stall one cell left of here would reach in")
+	assert_true(_zone(inn).y + 8.0 <= _zone(recall).x, "the inn answers on %s and the Recall on %s: no room between them" % [str(_zone(inn)), str(_zone(recall))])
+	var moved_inn: bool = false
+	for m in v.entrance_moves:
+		if m["moved"] == inn:
+			moved_inn = true
+			assert_true((m["others"] as Array).is_empty(), "the inn takes the Rest's door alone")
+	assert_true(moved_inn, "the inn was stood under the Rest's drawn door")

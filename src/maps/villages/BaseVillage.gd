@@ -395,8 +395,6 @@ var door_cue_played: bool = false
 var blocks_left_unaligned: Array = []
 ## One row per entrance stood under a drawn door: {block, moved, from_x, to_x, others}; lets a test and a reader see every move.
 var entrance_moves: Array = []
-## A village sets this meta on the one entrance that owns a shared building's drawn door, where kind and distance cannot say.
-const TAKES_DRAWN_DOOR: StringName = &"takes_drawn_door"
 
 
 ## The block's ONE entrance (door, shop, inn or bar) stands under the drawn door: struktured 2026-11-01, "you can be right
@@ -429,12 +427,9 @@ func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
 	owner_node.position.x = to_x
 
 
-## Which of a block's several entrances the drawn door belongs to: the one the village marked, else the only one of the kind
-## the door's style names (a shop door opens a shop, any other a way in), else that kind's strictly nearest. [] or many = undecided.
+## Which of a block's several entrances the drawn door belongs to: the only one of the kind the door's style names
+## (a shop door opens a shop, any other a way in), else that kind's strictly nearest. Many = undecided.
 func _door_owner_among(found: Array, door: Dictionary, door_x: float) -> Array:
-	var marked: Array = found.filter(func(b): return bool(b.get_meta(TAKES_DRAWN_DOOR, false)))
-	if marked.size() == 1:
-		return marked
 	var wants_shop: bool = str(door.get("style", "house")) == "shop"
 	var named: Array = found.filter(func(b): return (not (b is AreaTransition)) == wants_shop)
 	if named.size() <= 1:

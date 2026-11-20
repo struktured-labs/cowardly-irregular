@@ -135,7 +135,6 @@ func _setup_buildings() -> void:
 	var inn = VillageInnScript.new()
 	inn.inn_name = "The Rest"
 	inn.position = Vector2(4.5 * TILE_SIZE, 4 * TILE_SIZE)
-	inn.set_meta(TAKES_DRAWN_DOOR, true)  ## the Rest's art draws one door, midway between the inn and Recall: it is the inn's
 	buildings.add_child(inn)
 
 	# === THE EXCHANGE (Item Shop) ===
@@ -152,7 +151,8 @@ func _setup_buildings() -> void:
 	recall.shop_name = "The Recall"
 	recall.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	recall.keeper_name = "The Archivist"
-	recall.position = Vector2(7.5 * TILE_SIZE, 4 * TILE_SIZE)
+	## One cell clear of the Rest: at 7.5 its stall reached into that building, so the Rest's one drawn door had two claimants and stood between them.
+	recall.position = Vector2(8.5 * TILE_SIZE, 4 * TILE_SIZE)
 	buildings.add_child(recall)
 
 	# === THE REMAINDER (Equipment) ===
