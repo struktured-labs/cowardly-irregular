@@ -63,6 +63,7 @@ func test_the_floor_names_what_this_file_drives() -> void:
 	var scene = SCENE.instantiate()
 	add_child_autofree(scene)
 	assert_true(scene.has_method("menu_floor_y"), "FLOOR: BattleScene.menu_floor_y")
+	assert_true(scene.has_method("menu_right_wall_x"), "FLOOR: BattleScene.menu_right_wall_x")
 	assert_true(scene.has_method("_hide_name_plates_under_menus"), "FLOOR: BattleScene._hide_name_plates_under_menus")
 	var m := Win98Menu.new()
 	autofree(m)
@@ -146,3 +147,34 @@ func test_a_name_tag_under_an_open_menu_is_not_drawn() -> void:
 	menu.global_position = Vector2(-4000, -4000)
 	b[0]._hide_name_plates_under_menus()
 	assert_eq(tag.self_modulate.a, 1.0, "and it comes back when the menu moves off it")
+
+
+## cowir-main 26747, read off a real 200% frame: the root menu's right edge and "+1 AP" chip covered the PARTY panel's
+## portraits and names. The menu now ends left of the panel at every Text Size.
+func test_a_menu_x_ends_left_of_the_wall_and_never_passes_the_left_margin() -> void:
+	assert_eq(BCM.menu_x_left_of(537.6, 512.0, 977.0), 465.0, "his frame: a 512 px menu at 537 moves left to end at 977")
+	assert_eq(BCM.menu_x_left_of(537.6, 284.0, 1067.0), 537.6, "CONTROL: a menu that already clears the panel is not moved")
+	assert_eq(BCM.menu_x_left_of(300.0, 1400.0, 977.0), 10.0, "a menu wider than the room keeps its left edge on screen")
+
+
+func test_the_live_command_menu_ends_left_of_the_party_panel_at_every_text_size() -> void:
+	var bad: Array = []
+	var judged := 0
+	for s in _presets():
+		var b: Array = await _battle_with_menu(float(s))
+		assert_not_null(b[1], "CONTROL @%s: a command menu opened" % s)
+		if b[1] != null:
+			judged += 1
+			var m := (b[1] as Control).get_global_rect()
+			## Read off the panel itself, so a wall that ignores the panel cannot agree with its own mistake.
+			var panel := b[0].get_node_or_null("UI/PartyStatusPanel") as Control
+			assert_true(panel != null and panel.is_visible_in_tree(), "CONTROL @%s: the PARTY panel shows" % s)
+			var panel_left: float = panel.get_global_rect().position.x if panel else 0.0
+			gut.p("    @%s menu x %d..%d, panel starts %d" % [s, int(m.position.x), int(m.end.x), int(panel_left)])
+			if m.end.x > panel_left + 0.5:
+				bad.append("@%s the menu ends at x %d, over the panel that starts at %d" % [s, int(m.end.x), int(panel_left)])
+		b[0].queue_free()
+		await get_tree().process_frame
+	assert_gt(judged, 0, "CONTROL: menus were judged")
+	assert_eq(bad, [], "the command menu ends left of the PARTY panel:\n%s" % "\n".join(PackedStringArray(bad)))
+

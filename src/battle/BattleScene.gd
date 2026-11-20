@@ -8528,6 +8528,14 @@ func menu_floor_y() -> float:
 	return get_viewport_rect().size.y - 10.0
 
 
+## The furthest right a battle menu may reach: just left of the PARTY panel when it shows, else the screen's right margin.
+func menu_right_wall_x() -> float:
+	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+	if panel and panel.is_visible_in_tree():
+		return panel.get_global_rect().position.x - 8.0
+	return get_viewport_rect().size.x - 10.0
+
+
 ## A name tag under an open menu reads through its translucent face as a stray word on a row (200% frame, cowir-main 26666).
 func _hide_name_plates_under_menus() -> void:
 	var menus: Array = _bubble_keep_out_rects()

@@ -195,6 +195,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.screen_floor_y = floor_y
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
+	## At 200% the 512 px root menu reached x 1049 and drew over the PARTY panel's portraits and names (cowir-main 26747).
+	var wall_x: float = _scene.menu_right_wall_x() if _scene.has_method("menu_right_wall_x") else viewport_size.x - 10.0
+	_scene.active_win98_menu.position.x = menu_x_left_of(_scene.active_win98_menu.position.x, _scene.active_win98_menu.size.x, wall_x)
 	# The front rank stands in the menu's column since the two-rank layout: never cover the one choosing (struktured 2026-11-01).
 	var actor_rect := actor_rect_for_menu(sprite, combatant_idx)
 	if actor_rect.has_area():
@@ -1100,6 +1103,11 @@ func actor_rect_for_menu(sprite: Node2D, idx: int) -> Rect2:
 
 
 ## A menu that would cover the actor goes below it, else above it, else to its left; one that does not stays put.
+## A menu's x so that it ends at or left of `wall_x`, never passing `left`; a menu wider than the room keeps its left edge.
+static func menu_x_left_of(x: float, width: float, wall_x: float, left: float = 10.0) -> float:
+	return maxf(left, minf(x, wall_x - width))
+
+
 ## A menu's y so that it ends at or above `floor_y`, never rising past `top`; a menu taller than the band keeps its top row.
 static func menu_y_above_floor(y: float, height: float, floor_y: float, top: float = 30.0) -> float:
 	return maxf(top, minf(y, floor_y - height))
