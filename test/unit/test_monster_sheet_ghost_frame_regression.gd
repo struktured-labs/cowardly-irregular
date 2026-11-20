@@ -16,8 +16,8 @@ const GHOST_MAX := 0.05
 const HEALTHY_MIN := 0.25
 
 ## id -> why. Recorded so NEW breakage reds while these do not block; shrink it, never grow it.
+## meta_knight left 2026-11-20: the S4 redraw made every frame solid; the crisp knight is its frame 0.
 const KNOWN := {
-	"meta_knight": "DEFECT frames 0(idle) 3 4 — near-erased smear; frame 1 is a crisp knight",
 	"masterite_tempo_futuristic": "DEFECT frame 4(hit) — multi-panel design sheet with UI chrome",
 	"masterite_arbiter_futuristic": "DEFECT frame 6(dead) — same panel-layout failure",
 	"masterite_curator_medieval": "borderline frames 4,5(hit) — visible figure under heavy flame FX",

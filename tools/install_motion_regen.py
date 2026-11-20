@@ -1,7 +1,7 @@
 """Install paid regen_s4_motion_frames strips into a T1 monster sheet, so the monster attacks, flinches and dies as itself.
 Spends nothing: the strips are the normalised output of calls already on the spend ledger (tmp/gpt2_trial/out/calls.jsonl).
 
-Frame 0 (the shipped idle) is kept byte for byte, soft edge included (cowir-main 26252). Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
+Frame 0 becomes the shipped idle (the manifest's idle start, which is not always 0), kept byte for byte, soft edge included (cowir-main 26252). Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
 past 7 (the Rat King's royal_spite) is kept. The ranges go back to idle 0-1 / attack 2-3 / hit 4-5 / dead 6-7.
 Refuses a sheet whose tier is not T1, and a strip that is not two 256 px frames with binary alpha.
 Prints, per monster, the EYE_REVIEWED pins test_a_monster_stays_one_creature needs, so a look is pinned to those pixels.
@@ -60,9 +60,10 @@ def drop_strays(frame: np.ndarray) -> list:
     return cleared
 
 
-def build(sheet: np.ndarray, strips: dict, log=None) -> np.ndarray:
-    """sheet: H x W x 4 with W >= 8 frames; strips: anim -> 256x512x4. Returns the new sheet."""
+def build(sheet: np.ndarray, strips: dict, log=None, idle_at: int = 0) -> np.ndarray:
+    """sheet: H x W x 4 with W >= 8 frames; strips: anim -> 256x512x4; idle_at: the shipped idle's frame. Returns the new sheet."""
     out = sheet.copy()
+    out[:, :FW] = sheet[:, idle_at * FW:(idle_at + 1) * FW]   # the shipped idle, byte for byte, moves to frame 0
     for f, (anim, k) in FILL.items():
         fr = strips[anim][:, k * FW:(k + 1) * FW].copy()
         gone = drop_strays(fr)
@@ -107,7 +108,7 @@ def install(monster: str, files: dict, strips_dir: Path, write: bool) -> dict:
             raise SystemExit(f"{monster} {anim}: {why}")
         strips[anim] = s
     log = []
-    new = build(sheet, strips, log)
+    new = build(sheet, strips, log, idle_at=int(entry["animations"]["idle"]["start"]))
     for line in log:
         print(f"  {monster} {line}")
     pins = {f"{monster}/{a}": range_hash(new, s, e) for a, (s, e) in LAYOUT.items()}
@@ -146,6 +147,9 @@ def selftest() -> int:
     o2 = build(soft, strips)
     if o2[0, 0, 3] != 7 or o2[0, 1, 3] != 128:
         fails.append("frame 0 is what ships today: its soft edge must be left alone (cowir-main 26252)")
+    o3 = build(sheet, strips, idle_at=3)
+    if o3[0, 0, 0] != 3 or o3[0, 0, 1] != 0:
+        fails.append("an idle shipped at frame 3 (ironback_beetle) must become frame 0, not the other creature at frame 0")
     if not (out[0, 8 * FW, 0] == 8 and out[0, 9 * FW, 0] == 9):
         fails.append("frames past 7 (royal_spite) must be kept")
     for f, (a, k) in FILL.items():
