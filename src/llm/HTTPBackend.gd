@@ -48,6 +48,9 @@ var _inflight: Dictionary = {}
 # "base_url|model" -> {format: true} for every JSON format that server refused; a JSON request steps down past them.
 var _json_refused: Dictionary = {}
 
+# "base_url|model" -> {param: true} for each sampling param that server 400'd by name ("max_tokens", "temperature").
+var _param_refused: Dictionary = {}
+
 # Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
 
@@ -448,6 +451,8 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 		func(result: int, response_code: int, _headers: PackedStringArray, body_bytes: PackedByteArray) -> void:
 			if carried != "" and _retry_without(carried, _id, prompt, opts, result, response_code, body_bytes):
 				return
+			if _retry_param(_id, prompt, opts, result, response_code, body_bytes):
+				return
 			_on_request_completed(_id, result, response_code, body_bytes)
 	)
 
@@ -461,6 +466,26 @@ func _retry_without(format: String, id: String, prompt: String, opts: Dictionary
 	var refused: Dictionary = _json_refused.get(_json_key(), {})
 	refused[format] = true
 	_json_refused[_json_key()] = refused
+	_cleanup(id)
+	submit(id, prompt, opts)
+	return true
+
+
+## Newer OpenAI models 400 on max_tokens (naming max_completion_tokens) or on a set temperature; remember it and retry once without.
+func _retry_param(id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
+	if api_format == "ollama" or result != HTTPRequest.RESULT_SUCCESS or code != 400:
+		return false
+	var text: String = body.get_string_from_utf8()
+	var refused: Dictionary = _param_refused.get(_json_key(), {})
+	var named: String = ""
+	if text.contains("max_completion_tokens") and not refused.has("max_tokens"):
+		named = "max_tokens"
+	elif text.contains("temperature") and not refused.has("temperature"):
+		named = "temperature"
+	if named == "":
+		return false
+	refused[named] = true
+	_param_refused[_json_key()] = refused
 	_cleanup(id)
 	submit(id, prompt, opts)
 	return true
@@ -547,12 +572,14 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"json_object":
 					payload["format"] = "json"
 		"openai", _:
+			var refused: Dictionary = _param_refused.get(_json_key(), {})
 			payload = {
 				"model": model,
 				"messages": [{"role": "user", "content": prompt}],
-				"max_tokens": max_tokens,
-				"temperature": temperature,
 			}
+			payload["max_completion_tokens" if refused.has("max_tokens") else "max_tokens"] = max_tokens
+			if not refused.has("temperature"):
+				payload["temperature"] = temperature
 			match _json_format(opts):
 				"json_schema":
 					payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "reply", "schema": opts["json_schema"]}}
