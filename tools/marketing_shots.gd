@@ -476,10 +476,35 @@ func _frame_on_houses(scene: Node) -> String:
 	print("[SHOT] player stood at world px (%d, %d), door=%s" % [int(stand.x), int(stand.y), str(used_door)])
 	## Keep the player inside the frame: the offset never pushes them past the view's edge.
 	var keep := VIEW * 0.5 - Vector2(48, 72)
-	scene.camera.offset = (target - stand).clamp(-keep, keep)
+	var offset: Vector2 = (target - stand).clamp(-keep, keep)
+	## Stay inside the map. A Camera2D's OFFSET is the one thing its limits do not stop (it is there for shake), so a
+	## cluster near the map's edge framed the void: at v3.33.813 Grimhollow's frame carried a 118 px grey band down its
+	## left side (hero at 608,352 after its door moved). A player's camera stops at the limits BaseVillage sets, so the
+	## shot does too: the view's centre is held where the limits leave room for a whole view. A map smaller than the
+	## view on an axis is centred on that axis.
+	var cam: Camera2D = scene.camera
+	var centre: Vector2 = stand + offset
+	var held: Vector2 = _centre_inside(centre, Rect2(cam.limit_left, cam.limit_top, cam.limit_right - cam.limit_left, cam.limit_bottom - cam.limit_top), VIEW)
+	if held != centre:
+		print("[SHOT] view held inside the map: centre (%d, %d) -> (%d, %d)" % [int(centre.x), int(centre.y), int(held.x), int(held.y)])
+	scene.camera.offset = held - stand
 	scene.camera.reset_smoothing()
 	scene.camera.force_update_scroll()
 	return "%d of %d buildings in view · player at %s (%s)" % [best_n, centers.size(), str(stand.round()), "a door" if used_door else "the street below them"]
+
+
+## Where a view of size `view` may be centred so it shows only `map`. Pure, so the rule can be tested without a scene.
+static func _centre_inside(centre: Vector2, map: Rect2, view: Vector2) -> Vector2:
+	var out := centre
+	if map.size.x >= view.x:
+		out.x = clampf(centre.x, map.position.x + view.x * 0.5, map.end.x - view.x * 0.5)
+	else:
+		out.x = map.position.x + map.size.x * 0.5
+	if map.size.y >= view.y:
+		out.y = clampf(centre.y, map.position.y + view.y * 0.5, map.end.y - view.y * 0.5)
+	else:
+		out.y = map.position.y + map.size.y * 0.5
+	return out
 
 
 ## The title screen (2026-10-31): the source of the store COVER, and the last shipped frame no tool reached —
