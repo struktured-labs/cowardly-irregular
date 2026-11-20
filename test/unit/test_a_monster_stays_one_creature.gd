@@ -165,6 +165,35 @@ const EYE_REVIEWED := {
 	"cog_swarm/attack": "089c8d05e7d9b76bad8752cd471857aa839eff0a223dedb321dc9308f88acf21",
 	"cog_swarm/hit": "b6ab6163491d9523ab226db99b1a07fdc861edddb9857c30f6c639464577a465",
 	"cog_swarm/dead": "3ef9b1b1742d998fab6c968fef8afe54f0aa0c1b1200b478347cb0802288f5b3",
+	## cowir-sprites 2026-11-20: 7 W4 digital sheets redrawn on grey; data_wraith and firewall_sentinel keep their shipped one-frame idle (regen frame 1 overlapped it 64-65%).
+	"corrupted_sprite/idle": "26869349d6b0968b0d81f33d07ed376f27a8ed08704a3135ab3609b39cf05c5b",
+	"corrupted_sprite/attack": "13f9ab914ca51a8871b716d4fee4b1f492f7b02e665cbe1a4a672f4abc87a727",
+	"corrupted_sprite/hit": "95ab29eee048328027d605ca30cce952f49e683ad5d04874415917893523ec16",
+	"corrupted_sprite/dead": "7e122e30f71510f12688d613a4d986d675b4131e77aa06efd3c365a03444c446",
+	"data_wraith/idle": "3dadc2b65fbd30d77037ebf404a8617083f15e480fcbb156aa6f8d17e2dbb3db",
+	"data_wraith/attack": "93ae45199a1072390f46fb1ca95172e7e691a3c62348c573c59f00546b149a40",
+	"data_wraith/hit": "4a7036e3055c524d00208d80c355cb42291d13bb52bf078755c3fbb70d44ce18",
+	"data_wraith/dead": "d56815533fcea92b05b9db5b00dd297691e8af1ad6f7b606382a9ecfd57b8f9a",
+	"firewall_sentinel/idle": "0a50e5d83ee065048f26d0e48690c65cfe05fd02190c255da9cd0606881a1bf3",
+	"firewall_sentinel/attack": "f23464407f9c0bc543867d9535ebac5b1259531207603818f84e3239939a5f62",
+	"firewall_sentinel/hit": "9f65976f9671080bed98072df38ce52bd17a9e6ce8653626c85967bd46e26f8a",
+	"firewall_sentinel/dead": "51f2e5e228371d0468c2f44ce67d572d4b7f2aa65d2c137a427ac7524c492191",
+	"glitch_entity/idle": "bd0033d874af9aa36a45709415d2ec4790ffe0b17a130bcbcfd89b1158dd95df",
+	"glitch_entity/attack": "b3ba504dd208917fc5f613af8073278fef602578b3ff2bae79cf88768649809b",
+	"glitch_entity/hit": "f67158782956faafd7358727015fa7bf8ca73bfcf07e82b0c7b28f0a731edbe4",
+	"glitch_entity/dead": "a2e53ec537c3a89ab060b2451b3aef64c8cf1b833f793d87e5bdae9ab3b47e01",
+	"memory_leak/idle": "203f9f0d6f8c4585d0e62b06655ff7c28bb1c4532337f84a6ee9a5b4d70ffd6b",
+	"memory_leak/attack": "b24d4c3da92b5b32b630f7b592c131ff6f99854fe205bac8b0cdc88e8be936b4",
+	"memory_leak/hit": "b6ec5b980f7ae06c07192a27bb1b13c559d141594f8240a2131c842b84a99dd5",
+	"memory_leak/dead": "9450eb56e0961ba80ddfb64ffb86da24b18015adde69b64c1c81fc53bee692a1",
+	"rogue_process/idle": "3d8bb05c72dc06fc5f3fd1b63c41689867993cc7a5c1d9a419af448099220a90",
+	"rogue_process/attack": "b1e02534f92a5fce284a957df286ac29a14d4578c84a993287a2520809692437",
+	"rogue_process/hit": "21e488ea0257eaf016be3ee0beb9a292b4e15b57777816e3eabecd3f7c966b00",
+	"rogue_process/dead": "2ae5aa05b9e38a8c23b02cb7cc8b5a936612e59e752c9c486cb7be86fb9c9455",
+	"script_error/idle": "268848451ff37068cf716a8e2a3396390d674576cd04d8d8cab682213585b73c",
+	"script_error/attack": "c1dc868bd02ff203ed866c0378e4b676933f97a3e59dc8ac6f7f4ae8785cbd67",
+	"script_error/hit": "d29bf6f77b7fedab1673f6b8f5442ec84b4e6994f774baba2e3aa2c01c2e88ac",
+	"script_error/dead": "01fe86c8a78b500495b04909ae495ed063c7e3a6a4c5f247dfdd5d5e7d55a41d",
 }
 ## Redrawn from their own idle by the paid S4 motion regen (tools/install_motion_regen.py, $0): off the repoint list, every range eye-pinned.
 const REDRAWN_BY_MOTION_REGEN := [
@@ -174,20 +203,19 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"brass_golem", "clockwork_sentinel", "assembly_line_automaton", "ironback_beetle", "rust_elemental", "pipe_phantom",
 	"shift_supervisor", "adaptive_slime", "ice_wolf", "spiteful_crow", "specter", "shadow_knight", "castle_warden",
 	"meta_knight", "permadeath_reaper", "mushroom", "cog_swarm",
+	"corrupted_sprite", "data_wraith", "firewall_sentinel", "glitch_entity", "memory_leak", "rogue_process", "script_error",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
 const ONE_CREATURE_BY_REPOINT := [
-	"corrupted_guardian", "corrupted_sprite", "crystal_golem", "cursed_armor", "data_wraith", "elemental", "empty_set",
-	"firewall_sentinel", "forgotten_variable", "glitch_entity",
+	"corrupted_guardian", "crystal_golem", "cursed_armor", "elemental", "empty_set", "forgotten_variable",
 	"masterite_arbiter_abstract", "masterite_arbiter_futuristic", "masterite_arbiter_industrial",
 	"masterite_arbiter_medieval", "masterite_arbiter_suburban", "masterite_curator_futuristic",
 	"masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",
 	"masterite_tempo_futuristic", "masterite_tempo_industrial", "masterite_tempo_medieval", "masterite_tempo_suburban",
 	"masterite_warden_abstract", "masterite_warden_futuristic", "masterite_warden_industrial",
-	"masterite_warden_medieval", "masterite_warden_suburban", "memory_leak", "null_entity",
-	"optimization_itself", "recursive_loop", "rogue_process",
-	"script_error", "the_absence", "the_margin",
+	"masterite_warden_medieval", "masterite_warden_suburban", "null_entity", "optimization_itself", "recursive_loop",
+	"the_absence", "the_margin",
 ]
 
 
