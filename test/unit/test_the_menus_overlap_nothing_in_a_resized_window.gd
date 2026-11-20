@@ -73,8 +73,8 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	var audit: Array = (OverlapAudit as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	for f in ["surfaces", "collisions"]:
 		assert_has(audit, f, "overlap_audit.%s must exist" % f)
-	assert_true(ControlsCensus.get_script_constant_map().has("DECLARED"), "the Controls census keeps its DECLARED table")
-	assert_true(FieldCensus.get_script_constant_map().has("DECLARED"), "the field-menu census keeps its DECLARED table")
+	assert_true((ControlsCensus as GDScript).get_script_constant_map().has("DECLARED"), "the Controls census keeps its DECLARED table")
+	assert_true((FieldCensus as GDScript).get_script_constant_map().has("DECLARED"), "the field-menu census keeps its DECLARED table")
 	var menu: Array = (load("res://src/ui/OverworldMenu.gd") as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	assert_has(menu, "setup", "OverworldMenu.setup must exist")
 
