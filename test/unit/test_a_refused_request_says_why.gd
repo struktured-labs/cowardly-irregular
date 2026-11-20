@@ -92,6 +92,41 @@ func test_someone_elses_token_is_struck_too() -> void:
 	assert_eq(_err(404, '{"error": {"message": "model qwen2.5-coder:32b not found at /v1/chat"}}'), "HTTP 404: model qwen2.5-coder:32b not found at /v1/chat", "CONTROL: an ordinary model name and path are left alone")
 
 
+## A hosted model id is often 20+ unbroken characters, which is also what a token looks like.
+func test_the_players_own_model_id_is_named_however_long() -> void:
+	var long_id := "claude-3-5-sonnet-20241022"
+	assert_eq(_err(404, '{"error": {"message": "model: %s not found"}}' % long_id), "HTTP 404: model: [key] not found", "CONTROL: a 20+ run that is not this backend's model is struck")
+	_b.model = long_id
+	assert_eq(_err(404, '{"error": {"message": "model: %s not found"}}' % long_id), "HTTP 404: model: %s not found" % long_id, "the configured model id is on the status line already, so it is named")
+	assert_eq(_err(404, '{"error": {"message": "model: gpt-4o-mini-2024-07-18-preview not found"}}'), "HTTP 404: model: [key] not found", "CONTROL: another long id is still struck")
+	var both: String = _err(400, '{"error": {"message": "%s refused key %s and token %s"}}' % [long_id, KEY, "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432"])
+	assert_eq(both, "HTTP 400: %s refused key [key] and token [key]" % long_id, "and keeping it keeps nothing else")
+	_b.model = KEY
+	assert_false(_err(400, '{"error": {"message": "no model %s"}}' % KEY).contains(KEY.left(8)), "a key typed into the model field is not kept")
+
+
+## A short id set aside INSIDE a token would split it into pieces the 20+ rule cannot see (cowir-adhoc 26570).
+func test_a_short_model_id_is_kept_only_where_it_stands_alone() -> void:
+	var token := "Zq7Xw4Rt9Lm2Bn6Vc8K" + "o1" + "j3Hg5Fd1Sa0Pp4Yu7Ti"
+	_b.model = "o1"
+	var shown: String = _err(400, '{"error": {"message": "model o1 refused session %s"}}' % token)
+	assert_eq(shown, "HTTP 400: model o1 refused session [key]", "the id is named where it stands alone, and the token holding its letters is struck whole")
+	assert_lt(_longest_token(shown), 20, "no 20+ run is left")
+	_b.model = "gpt-4.1"
+	assert_eq(_err(404, '{"error": {"message": "no gpt-4.1, did you mean gpt-4x1?"}}'), "HTTP 404: no gpt-4.1, did you mean gpt-4x1?", "CONTROL: a dot in the id is a dot, and punctuation after the id does not stop it standing alone")
+
+
+## Only a model id with no key in it and no token shape is set aside (cowir-main 26539/26569).
+func test_a_model_field_holding_a_key_is_not_kept() -> void:
+	for field in ["gpt-4 %s" % KEY, "gpt-4 %s" % KEY.left(12), "my-%s-model" % KEY.substr(10, 8), "gsk_Zx81Qq02Lm", "Bearer abcdef", "sk-test-****ghij"]:
+		_b.model = field
+		var shown: String = _err(404, '{"error": {"message": "model %s not found"}}' % field)
+		assert_false(shown.contains(field), "a model field of '%s' is not put back whole: %s" % [field, shown])
+		assert_lt(_longest_piece_of_key(shown), 6, "and no run of the key is shown: %s" % shown)
+	_b.model = "gpt-4o-mini"
+	assert_eq(_err(404, '{"error": {"message": "model gpt-4o-mini not found"}}'), "HTTP 404: model gpt-4o-mini not found", "CONTROL: an ordinary model id reads as before")
+
+
 func test_a_long_message_is_cut_to_a_line() -> void:
 	var long_err: String = _err(400, '{"error": {"message": "%s"}}' % "ab cd ".repeat(150))
 	assert_eq(long_err.length(), "HTTP 400: ".length() + HTTPBackend.MAX_REASON_CHARS, "the status plus at most MAX_REASON_CHARS of the server's text")
