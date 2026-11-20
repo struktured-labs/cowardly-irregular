@@ -92,6 +92,7 @@ func _build_ui() -> void:
 	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_body_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	UiFont.as_body(_body_label)  # a hint is sentences: the reading tier, not the pixel face's whole steps
 	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_body_label)
 
@@ -144,6 +145,16 @@ func _update_dismiss_label() -> void:
 		_dismiss_label.text = "▶ [in %ds]" % ceili(_min_dismiss_timer)
 	else:
 		_dismiss_label.text = READY_DISMISS_TEXT
+
+
+## Yields its ground (a victory overlay docking under it) without spending its one showing: it shows again next time.
+func step_aside() -> void:
+	if not _active:
+		return
+	_shown_hints.erase(_current_hint_id)
+	if GameState:
+		GameState.game_constants.erase("tutorial_" + _current_hint_id)
+	_dismiss()
 
 
 func _dismiss() -> void:
