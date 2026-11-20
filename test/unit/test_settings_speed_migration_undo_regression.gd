@@ -73,4 +73,4 @@ func test_v3_file_speed_restores_normally() -> void:
 	SaveSystem.load_settings()
 	assert_eq(GameState.default_battle_speed, 1.0)
 	var scene_script = load("res://src/battle/BattleScene.gd")
-	assert_eq(scene_script._battle_speed_index, 3)
+	assert_eq(scene_script._battle_speed_index, scene_script.BATTLE_SPEEDS.find(1.0), "same engine speed 1.0, at whatever index today's ladder holds it")

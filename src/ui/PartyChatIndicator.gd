@@ -35,6 +35,7 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(PANEL_W, PANEL_H)
 	size = custom_minimum_size
 	_build()
+	add_to_group(OverworldMinimap.HUD_GROUP)  ## a toast or the objective arrow must settle clear of the chip
 	_refresh()
 
 	if PartyChatSystem and PartyChatSystem.has_signal("chats_changed"):
@@ -166,6 +167,13 @@ func _gui_input(event: InputEvent) -> void:
 			and event.button_index == MOUSE_BUTTON_LEFT:
 		clicked.emit()
 		accept_event()
+
+
+## The chip's screen box while it shows; nothing while hidden, so an idle chip reserves no corner.
+func reserved_rect() -> Rect2:
+	if not is_inside_tree() or not is_visible_in_tree():
+		return Rect2()
+	return get_rect()
 
 
 func _reposition() -> void:
