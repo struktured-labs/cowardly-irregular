@@ -886,6 +886,24 @@ func _menu_has_icons() -> bool:
 	return false
 
 
+## Height kept free under a floored list for its description box (the tallest row tooltip at this width + the gap); 0 with no tooltips.
+var _description_room: int = 0
+
+
+func _description_room_for(menu_w: int) -> int:
+	var font: Font = get_theme_font("font", "Label")
+	if font == null:
+		return 0
+	var px: int = TextScale.scaled(13)
+	var text_w: float = float(maxi(menu_w, 160)) - 16.0
+	var tallest := 0.0
+	for item in menu_items:
+		var tip := str(item.get("tooltip", ""))
+		if tip != "":
+			tallest = maxf(tallest, font.get_multiline_string_size(tip, HORIZONTAL_ALIGNMENT_LEFT, text_w, px).y)
+	return 0 if tallest <= 0.0 else int(ceil(tallest)) + 8 + 4
+
+
 ## Lines a row's name may take: 2 where a name is wider than the list is allowed, so it wraps and is never cut to a stub.
 var _row_lines: int = 1
 
@@ -974,8 +992,9 @@ func _build_menu() -> void:
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
 	## A floored chain (battle: the hint bar) caps its rows to the band above the floor, so a long list scrolls there and never overruns it.
+	_description_room = _description_room_for(menu_width) if screen_floor_y > 0.0 else 0
 	if screen_floor_y > 0.0:
-		room_for_rows = int(screen_floor_y) - MENU_SCREEN_MARGIN * 2 - chrome_height
+		room_for_rows = int(screen_floor_y) - MENU_SCREEN_MARGIN * 2 - chrome_height - _description_room
 	if bottom_clearance > 0:
 		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
 		var bottom_limit: int = int(viewport_height) - bottom_clearance
@@ -1455,11 +1474,23 @@ func _submenu_width_cap() -> int:
 	var half := maxi(210, int(viewport_width / 2.0))
 	if not expand_left or not is_inside_tree():
 		return half
-	# Leave the enemy status panel uncovered. A target row wider than this gap ellipsizes instead of covering it or the command menu.
-	var room := int(floor(global_position.x - 6.0 - _submenu_left_bound()))
+	## As wide as its longest row needs, between the enemy panel and the party panel: past the gap before its parent it rests over the dimmed parent (cowir-main 26791).
+	var room := int(floor(_submenu_right_wall() - _submenu_left_bound()))
 	if room < 210:
 		return half
 	return mini(half, room)
+
+
+## The rightmost x a submenu may reach: clear of the party panel when one is showing, else the screen margin.
+func _submenu_right_wall() -> float:
+	var vp := get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var right := vp.x - 10.0
+	if not is_inside_tree():
+		return right
+	var panel := get_tree().root.find_child("PartyStatusPanel", true, false) as Control
+	if panel and is_instance_valid(panel) and panel.is_visible_in_tree():
+		right = minf(right, panel.get_global_rect().position.x - 8.0)
+	return right
 
 
 ## The leftmost x a submenu may rest at: clear of the enemy status panel when one is showing, else the screen margin.
@@ -1473,7 +1504,7 @@ func _submenu_left_bound() -> float:
 	return left
 
 
-func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2:
+func _submenu_rest_position(parent_index: int, submenu_size: Vector2, description_room: float = 0.0) -> Vector2:
 	var row_h := _row_height()
 	var visual := parent_index - _scroll_offset
 	var item_y := visual * row_h + TILE_SIZE + MENU_PADDING
@@ -1489,8 +1520,11 @@ func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2
 	var vp := get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
 	# A third-level list has no room left of its parent: it overlaps the (dimmed) parent rather than the enemy panel.
 	var min_x := _submenu_left_bound() if expand_left else 10.0
-	pos.x = clampf(pos.x, min_x, maxf(min_x, vp.x - submenu_size.x - 10.0))
-	pos.y = clampf(pos.y, 10.0, maxf(10.0, vp.y - submenu_size.y - 10.0))
+	var max_x := (_submenu_right_wall() if expand_left else vp.x - 10.0) - submenu_size.x
+	pos.x = clampf(pos.x, min_x, maxf(min_x, max_x))
+	## A floored chain keeps the list AND its description box above the floor.
+	var bottom := (screen_floor_y - description_room) if screen_floor_y > 0.0 else vp.y - 10.0
+	pos.y = clampf(pos.y, 10.0, maxf(10.0, bottom - submenu_size.y))
 	return _clear_of_turn_banner(pos, submenu_size, vp)
 
 
@@ -1534,7 +1568,7 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 		global_position + start_offset,
 		_get_character_class_from_style()
 	)
-	var submenu_pos := _submenu_rest_position(parent_index, submenu.size)
+	var submenu_pos := _submenu_rest_position(parent_index, submenu.size, float(submenu._description_room))
 	submenu.position = submenu_pos + start_offset
 	# A list resting ON its parent would show the parent's rows through its own; only the open battlefield reads through a fill.
 	if Rect2(submenu_pos, submenu.size).intersects(Rect2(global_position, size)):
@@ -1576,8 +1610,8 @@ func _clamp_to_screen() -> void:
 	if position.x + size.x > viewport_size.x:
 		position.x = viewport_size.x - size.x - 10
 	if screen_floor_y > 0.0:
-		if position.y + size.y > screen_floor_y:
-			position.y = screen_floor_y - size.y
+		if position.y + size.y > screen_floor_y - float(_description_room):
+			position.y = screen_floor_y - float(_description_room) - size.y
 	elif position.y + size.y > viewport_size.y:
 		position.y = viewport_size.y - size.y - 10
 	if position.x < 0:
