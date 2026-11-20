@@ -71,6 +71,8 @@ var _panel: PanelContainer = null
 ## The tail and the keep-out rects this bubble was last seated against; a menu that opens later changes them.
 var _pointer: Polygon2D = null
 var _seen_keep_out: Array = []
+## Reads the ceiling as it is now (the round banner's bottom); the banner wraps to a second line after a bubble is seated.
+var _ceiling_now: Callable = Callable()
 ## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
 var _keep_out: Callable = Callable()
 
@@ -371,11 +373,37 @@ func _keep_out_now() -> Array:
 func _process(_delta: float) -> void:
 	if _panel == null or not is_instance_valid(_panel):
 		return
+	_follow_ceiling()
 	var now := _keep_out_now()
 	if now == _seen_keep_out:
 		return
 	_seen_keep_out = now
 	reclear()
+
+
+## The caller hands over how to read the ceiling, so a banner that grows later still pushes the bubble down off it.
+func watch_ceiling(read: Callable) -> void:
+	_ceiling_now = read
+
+
+## A banner that grew over a seated bubble: the bubble drops to the new ceiling and its float is re-aimed (adhoc 26687, 200%).
+func _follow_ceiling() -> void:
+	if not _ceiling_now.is_valid():
+		return
+	var c = _ceiling_now.call()
+	if not (c is float or c is int):
+		return
+	var ceiling: float = maxf(TOP_MARGIN, float(c))
+	if ceiling <= _ceiling_y + 0.5:
+		return
+	_ceiling_y = ceiling
+	if position.y - _float_px >= ceiling:
+		return
+	position.y = ceiling
+	_float_px = 0.0
+	_start_float()
+	if _pointer != null and is_instance_valid(_pointer):
+		_build_tail(_pointer, _panel.size, Vector2(_anchor_global.x - position.x, _anchor_global.y - position.y))
 
 
 ## Seats this bubble against the keep-out rects as they are now: sideways if a side is clear, else above the menu.

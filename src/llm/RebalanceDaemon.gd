@@ -108,6 +108,9 @@ static func wire_schema() -> Dictionary:
 const SAFE_DELTA_MIN: float = 0.85
 const SAFE_DELTA_MAX: float = 1.15
 
+## Triggers that say nothing about difficulty by themselves (EVENT_MEANINGS); a nudge from one is never applied unasked.
+const NO_EVIDENCE_TRIGGERS: Array[String] = [TRIGGER_LEVEL_UP, TRIGGER_AREA_ENTERED]
+
 ## Confidence threshold for auto-apply. Below this and the proposal
 ## goes to review even if deltas are in the safe band.
 const AUTO_APPLY_CONFIDENCE: float = 0.7
@@ -432,6 +435,10 @@ func try_auto_apply(proposal_idx: int) -> String:
 		if constant_name not in ALLOWED_CONSTANTS:
 			proposal["status"] = "rejected"
 			return APPLY_REJECTED
+	## A level-up or a new area is not evidence about difficulty, so a nudge from one waits for the player.
+	if str(proposal.get("trigger", "")) in NO_EVIDENCE_TRIGGERS:
+		proposal["status"] = "needs_review"
+		return APPLY_NEEDS_REVIEW
 	# Auto-apply gates: confidence + each multiplier in safe band.
 	# Failing either sends the proposal to review, not rejection — the
 	# constants ARE valid, just outside the auto-apply comfort zone.
