@@ -113,13 +113,13 @@ func test_a_touched_roamer_fights_at_the_story_tier() -> void:
 		if plain.is_empty():
 			continue
 		var species: String = str(plain[0])
-		assert_eq(_top(map._touch_group(species, false, _gs(4, false))), _level(species), "%s: a roamer changed before the Rat King fell" % zone)
+		assert_eq(_top(map._touch_group(MonsterSpawner.group_for_touch(species, false), _gs(4, false))), _level(species), "%s: a roamer changed before the Rat King fell" % zone)
 		for k in 5:
 			var next: int = _next_boss(k)
-			var group: Array = map._touch_group(species, false, _gs(k))
+			var group: Array = map._touch_group(MonsterSpawner.group_for_touch(species, false), _gs(k))
 			assert_true(_top(group) >= next - 2 and _top(group) <= next, "%s after %d dragon(s): a touched %s fights at L%d, the next boss is L%d" % [zone, k, species, _top(group), next])
 			for e in group:
 				assert_eq(ES.spawn_base_id(str(e)), species, "%s: the fight is the roamer that was touched" % zone)
-		var elite: Array = map._touch_group(species, true, _gs(2))
+		var elite: Array = map._touch_group(MonsterSpawner.group_for_touch(species, true), _gs(2))
 		assert_eq(elite, MonsterSpawner.group_for_touch(species, true), "%s: a field elite keeps its own party-level scaling" % zone)
 	map.free()

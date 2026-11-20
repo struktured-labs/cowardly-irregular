@@ -1202,12 +1202,12 @@ func _get_terrain_for_zone(zone: String) -> String:
 
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array, is_elite: bool = false) -> void:
 	# GameLoop sets LoopState.BATTLE — no need for can_move
-	battle_triggered.emit(_touch_group(monster_id, is_elite, get_node_or_null("/root/GameState")), _get_terrain_for_zone(_current_zone))
+	battle_triggered.emit(_touch_group(MonsterSpawner.group_for_touch(monster_id, is_elite), get_node_or_null("/root/GameState")), _get_terrain_for_zone(_current_zone))
 
 
-## The fight a touched roamer starts: its group, re-levelled to the story tier of the zone the player stands in.
-func _touch_group(monster_id: String, is_elite: bool, gs: Object) -> Array:
-	return EncounterSystem.tiered_group(str(_pool_id_map().get(_current_zone, "")), MonsterSpawner.group_for_touch(monster_id, is_elite), gs)
+## The fight a touched roamer starts: the one rule's group, re-levelled to the story tier of the zone the player stands in.
+func _touch_group(group: Array, gs: Object) -> Array:
+	return EncounterSystem.tiered_group(str(_pool_id_map().get(_current_zone, "")), group, gs)
 
 
 func _on_menu_requested() -> void:
