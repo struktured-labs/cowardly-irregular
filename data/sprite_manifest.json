@@ -1231,7 +1231,7 @@
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips cog_swarm__idle__1795186705, cog_swarm__attack__1795186645, cog_swarm__hit__1795186667, cog_swarm__dead__1795186685), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1241,16 +1241,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
