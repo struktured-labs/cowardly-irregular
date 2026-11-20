@@ -22,6 +22,8 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 var _party_status_boxes: Array = []
 ## What the PARTY panel gives up, in order, while it overruns its floor: the StatMods row, AP's own row, then the title and gaps.
 const PARTY_COMPACT_TIERS := ["StatMods", "ap_inline", "tight"]
+## Letters of a member's name that always show beside an inlined AP.
+const PARTY_NAME_MIN_CHARS := 6
 ## How many PARTY_COMPACT_TIERS this battle has applied; it only climbs, so the panel never flickers between layouts.
 var party_compact_tier: int = 0
 
@@ -416,10 +418,26 @@ func _inline_party_ap(box: Node) -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_label.text = compact_party_name(name_label.text)
+		## cowir-main 26507: the row widens before the name is cut below PARTY_NAME_MIN_CHARS letters.
+		var keep: String = name_label.text.left(PARTY_NAME_MIN_CHARS)
+		var px: int = name_label.get_theme_font_size("font_size")
+		name_label.custom_minimum_size.x = ceilf(name_label.get_theme_font("font").get_string_size(keep, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x) + 2.0
 
 
-## Tier 3: the PARTY title word goes and the boxes close up; every member's own rows stay.
+## The name as it rides beside AP: the job and level in brackets go first, so "Hero" stays whole before any letter is cut.
+static func compact_party_name(full: String) -> String:
+	var at := full.find(" (")
+	if at <= 0:
+		return full
+	var close := full.find(")", at)
+	return full.substr(0, at) + (full.substr(close + 1) if close > at else "")
+
+
+## Tier 3: the PARTY title word goes and the boxes and their rows close up; every member's own rows stay.
 func _tighten_party_list(box: Node) -> void:
+	if box is VBoxContainer:
+		(box as VBoxContainer).add_theme_constant_override("separation", 2)
 	var list := box.get_parent() as VBoxContainer
 	if list == null:
 		return
@@ -498,6 +516,8 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			name_color = Color(0.4, 0.85, 1.0)
 
 		name_label.text = name_with_job(member.combatant_name, job_name, level_text) + auto_indicator
+		if party_compact_tier >= 2:
+			name_label.text = compact_party_name(name_label.text)
 		# Color the name based on autobattle state
 		if auto_indicator != "":
 			name_label.add_theme_color_override("font_color", name_color)

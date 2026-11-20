@@ -49,9 +49,12 @@ func _visible_named(root: Node, name: String, acc: Array) -> void:
 func _battle(scale: float, n: int) -> Array:
 	GameState.text_size_scale = scale
 	var scene = SCENE.instantiate()
-	scene.set_party(_party(n))
+	var party := _party(n)
+	## As a battle does: the box builder reads BattleManager's party first, and a stale one built 4 members with 5's bars.
+	BattleManager.player_party.assign(party)
+	scene.set_party(party)
 	add_child_autofree(scene)
-	for f in 12:
+	for f in 16:
 		await get_tree().process_frame
 	var hp: Array = []
 	_visible_named(scene.get_node("UI/PartyStatusPanel"), "HPLabel", hp)
@@ -100,16 +103,29 @@ func test_five_at_100_percent_drops_statmods_to_fit() -> void:
 	assert_lte(panel.get_global_rect().end.y, b[2], "and the panel then ends above its floor")
 
 
-## cowir-main 26471: AP moves onto the name row only once dropping StatMods is not enough; 100% and 125% keep AP's own row.
-func test_ap_keeps_its_own_row_up_to_125_percent() -> void:
-	for s in [1.0, 1.25]:
+## cowir-main 26507: a panel that already fits looks as shipped. 4 members at 100% and 125% drop nothing; 5 at 100% drop only StatMods.
+func test_a_panel_that_fits_looks_as_shipped() -> void:
+	for row in [[1.0, 4, 0], [1.25, 4, 0], [1.0, 5, 1]]:
+		var b: Array = await _battle(row[0], row[1])
+		assert_eq(b[0].get("_ui_manager").party_compact_tier, row[2], "@%s x%d stops at tier %d" % row)
+		var box: Node = b[0].get("_ui_manager").get("_party_status_boxes")[0]
+		assert_not_null(box.get_node_or_null("AP"), "@%s x%d: AP sits on its own row, at its shipped path" % [row[0], row[1]])
+		b[0].queue_free()
+		await get_tree().process_frame
+
+
+## The other half of 26507: no row of any member sits under the hint bar, at any Text Size.
+func test_the_panel_ends_above_its_floor_at_every_text_size() -> void:
+	var bad: Array = []
+	for s in _presets():
 		for n in [4, 5]:
-			var b: Array = await _battle(s, n)
-			assert_lte(b[0].get("_ui_manager").party_compact_tier, 1, "@%s x%d: nothing past the StatMods tier" % [s, n])
-			var box: Node = b[0].get("_ui_manager").get("_party_status_boxes")[0]
-			assert_not_null(box.get_node_or_null("AP"), "@%s x%d: AP sits on its own row, at its shipped path" % [s, n])
+			var b: Array = await _battle(float(s), n)
+			var end_y: float = (b[0].get_node("UI/PartyStatusPanel") as Control).get_global_rect().end.y
+			if end_y > b[2] + 0.5:
+				bad.append("@%s x%d panel ends %d vs floor %d at tier %d" % [s, n, int(end_y), int(b[2]), b[0].get("_ui_manager").party_compact_tier])
 			b[0].queue_free()
 			await get_tree().process_frame
+	assert_eq(bad, [], "the panel ends above its floor:\n%s" % "\n".join(PackedStringArray(bad)))
 
 
 ## Where AP rides the name row: it is still found, shown and inside the panel, and neither it nor the name shrank its face.
@@ -136,7 +152,10 @@ func test_an_inlined_ap_is_whole_and_the_face_did_not_shrink() -> void:
 					assert_eq(ap.get_theme_font_size("normal_font_size"), TextScale.scaled(15), "@%s x%d: AP's face did not shrink" % [s, n])
 					var nm := box.get_node("Header/Name") as Label
 					assert_eq(nm.get_theme_font_size("font_size"), TextScale.scaled(15), "@%s x%d: the name's face did not shrink" % [s, n])
-					assert_gt(nm.size.x, float(TextScale.scaled(15)), "@%s x%d: the name keeps room for more than one letter (%d px)" % [s, n, int(nm.size.x)])
+					assert_false(nm.text.contains("("), "@%s x%d: the job is dropped from '%s' before any letter is cut" % [s, n, nm.text])
+					var keep: String = nm.text.left(UIM.PARTY_NAME_MIN_CHARS)
+					var need: float = nm.get_theme_font("font").get_string_size(keep, HORIZONTAL_ALIGNMENT_LEFT, -1, nm.get_theme_font_size("font_size")).x
+					assert_gte(nm.size.x, need - 0.5, "@%s x%d: '%s' has room for its first %d letters (%d px of %d)" % [s, n, nm.text, UIM.PARTY_NAME_MIN_CHARS, int(nm.size.x), int(need)])
 			b[0].queue_free()
 			await get_tree().process_frame
 	assert_gt(inlined, 0, "CONTROL: some Text Size inlined AP, so the arm judged something")
