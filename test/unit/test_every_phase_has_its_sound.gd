@@ -12,6 +12,7 @@ const KEYED := {
 	"melee_cleave": ["arc", "beat_cleave_sweep"], "melee_shield_bash": ["emit", "beat_shield_bash_impact"],
 	"melee_backstab_crit": ["arc", "beat_backstab_crit"], "rogue_scan": ["emit", "beat_scan_lock"],
 	"rogue_smoke_bomb": ["puff", "beat_smoke_bomb_puff"], "raise_battle": ["flash", "beat_raise_halo"],
+	"protect_battle": ["cue", "beat_protect_lock"],
 }
 const FIRE_TIER: Array[String] = ["beat_fire_impact", "beat_fira_impact", "beat_firaga_impact"]
 
@@ -83,3 +84,15 @@ func test_a_spell_on_three_targets_sounds_its_beat_once() -> void:
 	await get_tree().process_frame
 	SoundManager.play_sequence_beat("beat_firaga_impact")
 	assert_eq(SoundManager._beat_next - before, 3, "CONTROL: the same beat on a later frame plays again (Thundaga cracks twice)")
+
+
+## The plate cue is three clacks then a seated thud: it starts BEFORE the lock so the thud, not the first clack, is on it.
+func test_the_plates_clack_in_before_they_lock() -> void:
+	var seq: Dictionary = FX.load_sequence("protect_battle")
+	var impact := float(seq.get("impact", 0.0))
+	assert_gt(impact, 0.0, "CONTROL: protect_battle names the moment its plates lock")
+	var lead := -1.0
+	for ph in seq.get("phases", []):
+		if ph is Dictionary and str(ph.get("sfx", "")) == "beat_protect_lock":
+			lead = impact - float(ph.get("at", 0.0))
+	assert_between(lead, 0.08, 0.14, "the cue leads the lock by %.2f s; its thud sits 0.11 s into the file" % lead)
