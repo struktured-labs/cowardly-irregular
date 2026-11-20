@@ -196,10 +196,19 @@ func test_trap_warp_switch_moves_the_player_without_touching_the_encounter_flag(
 	cave.current_floor = 2
 	cave._generate_map_for_floor(2)
 	var before_pos: Vector2 = cave.player.position
+	## The .809 pre-gate red once here under sweep load (cowir-main 26463). These three say which refusal it was, if it returns.
+	assert_false(bool(cave._puzzle_layer._active.get("sw1", false)), "CONTROL: sw1 has not fired yet, or the press below is a no-op")
+	assert_false(cave._transitioning, "CONTROL: no floor transition is running, which would refuse the warp")
+	assert_eq(cave.player.position, before_pos, "CONTROL: the player is unmoved before the plate fires")
 	cave._puzzle_layer.activate_switch("sw1")  # floor2's plate: trap:warp only
-	await get_tree().create_timer(0.05).timeout
+	## Wait for the warp itself under a bound, not for a wall-clock interval a loaded sweep can stretch or starve.
+	var frames: int = 0
+	while cave.player.position == before_pos and frames < 120:
+		await get_tree().process_frame
+		frames += 1
 	assert_false(EncounterSystem.forced_encounter_next_step, "a warp trap is not an encounter trap")
-	assert_ne(cave.player.position, before_pos, "trap:warp must relocate the player onto a portal")
+	assert_ne(cave.player.position, before_pos, "trap:warp must relocate the player onto a portal (waited %d frames; sw1 active=%s, transitioning=%s, floor %d)" % [
+		frames, str(cave._puzzle_layer._active.get("sw1", false)), str(cave._transitioning), int(cave.current_floor)])
 
 
 ## ---- mimic chests ----
