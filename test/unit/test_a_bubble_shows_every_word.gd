@@ -34,8 +34,25 @@ func _presets() -> Array:
 	return p
 
 
-## Every scripted party line, plus one at the LLM cap.
+## How many of the longest scripted lines are judged; all of them took 378 s (10,965 bubbles, 0 faults, 2026-11-20).
+const LONGEST := 6
+
+
+## The longest scripted party lines and the shortest, plus one at the LLM cap.
 func _lines() -> Array:
+	var all := _scripted()
+	all.sort_custom(func(x, y): return x.length() > y.length())
+	var out: Array = all.slice(0, LONGEST)
+	if all.size() > LONGEST:
+		out.append(all[-1])
+	var cap := ""
+	while cap.length() < DialoguePrompts.MAX_PARTY_LINE_CHARS - 12:
+		cap += "calibrating "
+	out.append(cap.strip_edges())
+	return out
+
+
+func _scripted() -> Array:
 	var out: Array = []
 	var d = JSON.parse_string(FileAccess.get_file_as_string("res://data/job_personas.json"))
 	if d is Dictionary and d.has("jobs"):
@@ -45,10 +62,6 @@ func _lines() -> Array:
 				for trig in tv:
 					for ln in (tv[trig] if tv[trig] is Array else [tv[trig]]):
 						out.append(str(VoiceLines.text_of(ln)))
-	var cap := ""
-	while cap.length() < DialoguePrompts.MAX_PARTY_LINE_CHARS - 12:
-		cap += "calibrating "
-	out.append(cap.strip_edges())
 	return out
 
 
@@ -95,7 +108,8 @@ func _faults(line: String, anchor: Vector2, host: Node) -> Array:
 
 func test_the_floor_names_what_this_file_drives() -> void:
 	assert_true(autofree(BubbleScript.new()).has_method("_present"), "FLOOR: BattleSpeechBubble._present")
-	assert_gt(_lines().size(), 20, "FLOOR: the scripted party lines load")
+	assert_gt(_scripted().size(), 20, "FLOOR: the scripted party lines load")
+	assert_eq(_lines().size(), LONGEST + 2, "FLOOR: the judged lines are the longest, the shortest and one at the cap")
 
 
 func test_every_word_of_every_line_shows_at_every_text_size() -> void:
