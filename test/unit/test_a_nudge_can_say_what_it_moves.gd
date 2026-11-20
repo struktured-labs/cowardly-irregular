@@ -108,7 +108,7 @@ func test_control_the_guard_schema_alone_had_no_deltas() -> void:
 
 
 func test_a_delta_names_one_of_the_allowed_constants() -> void:
-	var deltas: Dictionary = DAEMON.wire_schema()["properties"]["deltas"]
+	var deltas: Dictionary = (DAEMON.wire_schema().get("properties", {}) as Dictionary).get("deltas", {})
 	assert_eq(deltas.get("type"), "array")
 	assert_eq(int(deltas.get("maxItems", 0)), 1, "the prompt asks for at most ONE adjustment")
 	var item: Dictionary = deltas.get("items", {})
