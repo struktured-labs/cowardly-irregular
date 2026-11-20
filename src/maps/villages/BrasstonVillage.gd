@@ -221,8 +221,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("ClockworkLoftDoor", "brasston_clockwork_loft", "Enter Clockwork Loft", Vector2(9 * TILE_SIZE,12 * TILE_SIZE))
 	# === REDUNDANCY ARCHIVE DOOR ===
 	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.
-	spawn_points["archive_exit"] = Vector2(16 * TILE_SIZE,8.5 * TILE_SIZE)
-	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(16 * TILE_SIZE,7.5 * TILE_SIZE))
+	spawn_points["archive_exit"] = Vector2(14 * TILE_SIZE,8.5 * TILE_SIZE)
+	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(14 * TILE_SIZE,7.5 * TILE_SIZE))  ## beside the forge, not on its facade: one building, one way in
 
 	# === WORK DECK LIFT === brass elevator up to the Work Deck, an alternative to the row2 stair.
 	var lift = VillageElevatorScript.create(VillageElevatorScript.Style.BRASS,
