@@ -4,20 +4,29 @@
 
 | captured at | shots | section |
 |---|---|---|
-| `v3.33.750-alpha` | `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` (`battle_storm` · `grimhollow_spiral` re-shot at `.807`) | commit `1df31b2fb` |
+| `v3.33.750-alpha` | `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` (`battle_storm` · `grimhollow_spiral` re-shot at `.807`; the three dungeon frames at `.809`) | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
 | `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
-| `v3.33.770-alpha` | `tavern_interior` · `whispering_cave` (`inn_interior` re-shot at `.802`; `ironhaven_village` · `eldertree_village` · `shop_interior` at `.807`) | "re-shot at `v3.33.770-alpha`, door labels hidden" |
+| `v3.33.770-alpha` | `tavern_interior` (`whispering_cave` re-shot at `.809`; `inn_interior` re-shot at `.802`; `ironhaven_village` · `eldertree_village` · `shop_interior` at `.807`) | "re-shot at `v3.33.770-alpha`, door labels hidden" |
 | `v3.33.773-alpha` | `harmonia_village` (`frosthold_village` · `grimhollow_village` re-shot at `.807`) | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
 | `v3.33.774-alpha` | (none left: `sandrift_village` · `title_screen` re-shot at `.807`) | "re-shot at `v3.33.774-alpha`, a name said once" |
 | `v3.33.802-alpha` | `inn_interior` (`shop_interior` re-shot at `.807`) | "re-shot at `v3.33.802-alpha`, the rooms are drawn" |
 | `v3.33.788-alpha` | (none left: `battle` re-shot at `.807`) | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
 | `v3.33.807-alpha` | `battle` · `battle_storm` · `eldertree_village` · `frosthold_village` · `grimhollow_spiral` · `grimhollow_village` · `ironhaven_village` · `sandrift_village` · `shop_interior` · `title_screen` | "re-shot at `v3.33.807-alpha`, the pixel face" |
+| `v3.33.809-alpha` | `whispering_cave` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | "re-shot at `v3.33.809-alpha`, the stairs point the way" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-20: re-shot at `v3.33.809-alpha`, the stairs point the way.** The four dungeon frames held at `.807`.
+`.809` redraws the pixel face's `▲`/`▼` as a stepped triangle (rows 1, 3, 5), so the stairs markers read as arrows
+again; they are smaller than the old glyph, about a third of the tile. Each frame is run A of the `.809` publish's own
+store recheck, looked at beside the shipped frame. Moved vs the shipped frame / run A vs run B: `whispering_cave`
+0.13% / 0.00% · `infernal_grotto_f3` 0.44% / 0.00% · `warren_lever_portals` 0.47% / 0.00% · `warren_wrap_field`
+0.46% / 0.00%. What moved in each: the stairs markers and the floor banner, now in the pixel face. Still HELD: the
+three `field_elite_*` frames (no tell until `67b8ab1f5` ships).
 
 **2026-11-19: re-shot at `v3.33.807-alpha`, the pixel face.** `.807` is the first release drawn in the pixel UI
 face, and the villages have changed since their frames were taken. Ten frames replaced, each run A of the `.807`
