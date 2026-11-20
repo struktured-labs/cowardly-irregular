@@ -3559,6 +3559,11 @@
           ]
         },
         {
+          "kind": "cue",
+          "sfx": "beat_protect_lock",
+          "at": 0.39
+        },
+        {
           "kind": "flash",
           "at": 0.5,
           "dur": 0.14,

@@ -170,6 +170,15 @@ def beat_raise_halo(rng):
     return mix(chord * bloom, air, .5 * sweep(131, 131, 1.1) * env(n, .05, 3))
 
 
+# --- Protect: the plates lock on the flash, 0.65 s after ability_protect's ward settle began; this is its landing. ---
+def beat_protect_lock(rng):
+    """Protect's plates seating into the wall: three dull stone clacks closing up, then one seated thud. Dark, no ring."""
+    clack = lambda fc, d: hp(lp(rng.standard_normal(N(d)), fc), 260) * env(N(d), .0008, 9)
+    seat = mix(1.2 * sweep(150, 78, .3) * env(N(.3), .002, 7), .8 * lp(rng.standard_normal(N(.16)), 600) * env(N(.16), .001, 8),
+               .35 * bell(233, .3, dec=11, parts=((1, 1), (2.4, .5))))
+    return mix(.55 * clack(900, .05), at(.65 * clack(800, .05), .04), at(.75 * clack(700, .06), .075), at(seat, .11))
+
+
 BEATS = {
     "beat_fira_impact": (beat_fira_impact, 11, REF_DB + 1.0),
     "beat_firaga_impact": (beat_firaga_impact, 13, REF_DB + 2.0),
@@ -181,6 +190,7 @@ BEATS = {
     "beat_smoke_bomb_puff": (beat_smoke_bomb_puff, 37, -19.0),
     "beat_scan_lock": (beat_scan_lock, 41, -19.0),
     "beat_raise_halo": (beat_raise_halo, 43, REF_DB),
+    "beat_protect_lock": (beat_protect_lock, 47, -19.0),
 }
 
 
