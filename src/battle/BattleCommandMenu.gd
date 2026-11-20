@@ -1511,7 +1511,8 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
 	_clear_aura()
 	trace_menu("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
-	_scene.active_win98_menu = null
+	## Close the chain as a single confirm does: a bare null left it open under the next PC's menu, and the stray sweep reaped it as a leak.
+	close_win98_menu()
 	var current = BattleManager.current_combatant
 	if not current:
 		return

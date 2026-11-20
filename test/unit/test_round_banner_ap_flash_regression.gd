@@ -43,8 +43,9 @@ func test_ui_manager_flash_helper_exists() -> void:
 	assert_gt(i, -1, "BattleUIManager.flash_ap_labels must exist")
 	var next: int = src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (next - i) if next > -1 else 700)
-	assert_true("get_node_or_null(\"AP\")" in body,
-		"flash must target the AP label node stamped in _create_character_status_box")
+	## The label rides the name row once the panel compacts (cowir-main 26471), so the flash finds it through the one accessor.
+	assert_true("party_ap_label(box)" in body,
+		"flash must target the AP label node stamped in _create_character_status_box, wherever the panel seated it")
 	assert_true("Color.WHITE" in body,
 		"flash must tween back to white — a stuck gold modulate would misread as a status effect")
 

@@ -1138,6 +1138,38 @@ func _run_party_relayout() -> void:
 	_party_relayout_queued = false
 	if is_inside_tree():
 		_place_party(true)
+		_compact_party_panel()
+
+
+## The PARTY panel's floor: just above the hint bar when it shows, else the screen's bottom edge.
+func party_panel_floor_y() -> float:
+	var hint := get_node_or_null("UI/InputHintBar") as Control
+	if hint and hint.is_visible_in_tree():
+		return hint.get_global_rect().position.y - 4.0
+	return get_viewport().get_visible_rect().size.y - 4.0
+
+
+var _party_compacting := false
+## Frames a compaction step waits before the panel is measured: a Container resizes on the frame after its rows change.
+const PARTY_COMPACT_SETTLE_FRAMES := 2
+
+
+## Drops one compaction tier per SETTLED layout while the panel overruns its floor; measuring the frame a row changed read the old height.
+func _compact_party_panel() -> void:
+	if _party_compacting or _ui_manager == null:
+		return
+	_party_compacting = true
+	while is_inside_tree():
+		for f in PARTY_COMPACT_SETTLE_FRAMES:
+			await get_tree().process_frame
+			if not is_inside_tree():
+				break
+		var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+		if panel == null or not is_inside_tree():
+			break
+		if not _ui_manager.compact_party_panel_step(panel.get_global_rect().end.y, party_panel_floor_y()):
+			break
+	_party_compacting = false
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
