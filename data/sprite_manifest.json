@@ -1059,7 +1059,8 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "flip_h": true
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT (head and fists point left, away from the party at screen right), unlike the 256px convention; judged by eye 2026-11-19 when its S4 motion frames were installed (re-review if the art is redrawn)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -2833,7 +2834,8 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "flip_h": true
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT (face and trailing pipes lean left, away from the party at screen right), unlike the 256px convention; judged by eye 2026-11-19 when its S4 motion frames were installed (re-review if the art is redrawn)"
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
