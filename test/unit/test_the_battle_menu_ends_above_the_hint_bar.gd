@@ -32,7 +32,8 @@ func _presets() -> Array:
 
 func _party(n: int) -> Array[Combatant]:
 	var out: Array[Combatant] = []
-	for nm in ["Hero", "Mira", "Zack", "Vex", "Lyra"].slice(0, n):
+	## Names as long as the real party's: with four-letter names the panel never grew to where a 200% menu reaches it.
+	for nm in ["Fighter", "Cleric", "Rogue", "Mage", "Bard"].slice(0, n):
 		var c := Combatant.new()
 		c.initialize({"name": nm, "max_hp": 1948, "max_mp": 132, "attack": 25, "defense": 15, "magic": 12, "speed": 12})
 		autofree(c)
@@ -160,6 +161,7 @@ func test_a_menu_x_ends_left_of_the_wall_and_never_passes_the_left_margin() -> v
 func test_the_live_command_menu_ends_left_of_the_party_panel_at_every_text_size() -> void:
 	var bad: Array = []
 	var judged := 0
+	var reached := 0
 	for s in _presets():
 		var b: Array = await _battle_with_menu(float(s))
 		assert_not_null(b[1], "CONTROL @%s: a command menu opened" % s)
@@ -171,10 +173,15 @@ func test_the_live_command_menu_ends_left_of_the_party_panel_at_every_text_size(
 			assert_true(panel != null and panel.is_visible_in_tree(), "CONTROL @%s: the PARTY panel shows" % s)
 			var panel_left: float = panel.get_global_rect().position.x if panel else 0.0
 			gut.p("    @%s menu x %d..%d, panel starts %d" % [s, int(m.position.x), int(m.end.x), int(panel_left)])
+			## Where the menu WOULD end if nothing held it: its opening column plus its width. The arm judges only where that reaches the panel.
+			var unheld_end: float = 1280.0 * 0.42 + m.size.x
+			if unheld_end > panel_left + 0.5:
+				reached += 1
 			if m.end.x > panel_left + 0.5:
 				bad.append("@%s the menu ends at x %d, over the panel that starts at %d" % [s, int(m.end.x), int(panel_left)])
 		b[0].queue_free()
 		await get_tree().process_frame
 	assert_gt(judged, 0, "CONTROL: menus were judged")
+	assert_gt(reached, 0, "CONTROL: at some Text Size an unheld menu would reach the panel, so the arm can fail")
 	assert_eq(bad, [], "the command menu ends left of the PARTY panel:\n%s" % "\n".join(PackedStringArray(bad)))
 

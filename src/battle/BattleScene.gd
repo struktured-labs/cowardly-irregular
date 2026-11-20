@@ -4806,6 +4806,8 @@ func _process(delta: float) -> void:
 
 	_tick_menu_watchdog()
 
+	_hold_menu_left_of_party_panel()
+
 	_hide_name_plates_under_menus()
 
 	_tick_speed_hold()
@@ -8552,6 +8554,17 @@ func menu_right_wall_x() -> float:
 	if panel and panel.is_visible_in_tree():
 		return panel.get_global_rect().position.x - 8.0
 	return get_viewport_rect().size.x - 10.0
+
+
+## The PARTY panel widens AFTER a menu opens (names and AP settle a few frames in), so the wall is held every frame, not read once.
+func _hold_menu_left_of_party_panel() -> void:
+	var m = active_win98_menu
+	if not is_instance_valid(m) or not (m is Control) or not (m as Control).is_visible_in_tree():
+		return
+	var ctl := m as Control
+	var x: float = BattleCommandMenu.menu_x_left_of(ctl.position.x, ctl.size.x, menu_right_wall_x())
+	if absf(x - ctl.position.x) > 0.5:
+		ctl.position.x = x
 
 
 ## A name tag under an open menu reads through its translucent face as a stray word on a row (200% frame, cowir-main 26666).
