@@ -142,6 +142,8 @@ const THINKING_TICK_SEC: float = 0.25
 ## Styling
 const TILE_SIZE = 4
 const BOX_HEIGHT = 150
+## The name's box starts where the frame's top border ends: at 0 the pixel face's caps stood on the border (his real frame, 2026-11-20).
+const SPEAKER_Y := TILE_SIZE
 const PORTRAIT_SIZE = 80
 const MARGIN = 16
 
@@ -723,7 +725,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# Speaker name
 	_speaker_label = Label.new()
 	# 2026-07-16 struktured: post-font-bump (+25%) the 18pt speaker name clipped into the body text — raised 8px + taller box, body pushed down to match.
-	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2 - 8)
+	_speaker_label.position = Vector2(text_x, SPEAKER_Y)
 	_speaker_label.size = Vector2(text_width, 26)
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING

@@ -160,6 +160,11 @@ const EYE_REVIEWED := {
 	"mushroom/attack": "9d3bdf07d50a2f15e20cb6d4b5d35fa9f8c53183fb9683dccc99e6d1438485ae",
 	"mushroom/hit": "c9780b82b0e8f9e98d35a5e6e129fcea588d83de72c6c73078d5ab70b9ada5ab",
 	"mushroom/dead": "65d35c0871e0679c720b129ed3e9fce93456369061faa5e32bebd49b93ef296b",
+	## cowir-sprites 2026-11-20: cog_swarm redrawn; told the haze above it is smoke, so no strip grows a smokestack.
+	"cog_swarm/idle": "4b0382bc45f90d46728961a3a2ee8690d6b661f2d721180659c8978b2560677c",
+	"cog_swarm/attack": "089c8d05e7d9b76bad8752cd471857aa839eff0a223dedb321dc9308f88acf21",
+	"cog_swarm/hit": "b6ab6163491d9523ab226db99b1a07fdc861edddb9857c30f6c639464577a465",
+	"cog_swarm/dead": "3ef9b1b1742d998fab6c968fef8afe54f0aa0c1b1200b478347cb0802288f5b3",
 	## cowir-sprites 2026-11-20: 7 W4 digital sheets redrawn, each judged on a grey ground; 4 of them idled at frame 2 or 3.
 	"corrupted_sprite/idle": "26869349d6b0968b0d81f33d07ed376f27a8ed08704a3135ab3609b39cf05c5b",
 	"corrupted_sprite/attack": "13f9ab914ca51a8871b716d4fee4b1f492f7b02e665cbe1a4a672f4abc87a727",
@@ -197,13 +202,13 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"blood_wolf_alpha", "steam_rat", "conveyor_gremlin",
 	"brass_golem", "clockwork_sentinel", "assembly_line_automaton", "ironback_beetle", "rust_elemental", "pipe_phantom",
 	"shift_supervisor", "adaptive_slime", "ice_wolf", "spiteful_crow", "specter", "shadow_knight", "castle_warden",
-	"meta_knight", "permadeath_reaper", "mushroom",
+	"meta_knight", "permadeath_reaper", "mushroom", "cog_swarm",
 	"corrupted_sprite", "data_wraith", "firewall_sentinel", "glitch_entity", "memory_leak", "rogue_process", "script_error",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
 const ONE_CREATURE_BY_REPOINT := [
-	"cog_swarm", "corrupted_guardian", "crystal_golem", "cursed_armor", "elemental", "empty_set", "forgotten_variable",
+	"corrupted_guardian", "crystal_golem", "cursed_armor", "elemental", "empty_set", "forgotten_variable",
 	"masterite_arbiter_abstract", "masterite_arbiter_futuristic", "masterite_arbiter_industrial",
 	"masterite_arbiter_medieval", "masterite_arbiter_suburban", "masterite_curator_futuristic",
 	"masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",

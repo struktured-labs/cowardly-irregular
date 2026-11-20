@@ -391,6 +391,12 @@ var _door_busy: bool = false
 var door_cue_played: bool = false
 
 
+## Blocks whose drawn door could not be given to exactly one entrance; a player there can stand on the door and be refused.
+var blocks_left_unaligned: Array = []
+## One row per entrance stood under a drawn door: {block, moved, from_x, to_x, others}; lets a test and a reader see every move.
+var entrance_moves: Array = []
+
+
 ## The block's ONE entrance (door, shop, inn or bar) stands under the drawn door: struktured 2026-11-01, "you can be right
 ## on the door and not be allowed to enter, but LEFT of the door is fine". Two entrances in one block are left alone.
 func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
@@ -406,11 +412,32 @@ func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
 				found.append(b)
 		elif b is Area2D and b.has_method("interact") and _building_cells(b).intersects(rect):
 			found.append(b)
+	var all_found: Array = found.duplicate()
+	var door_x: float = VillageDoor.entrance_x(house, door)
+	if found.size() > 1:
+		found = _door_owner_among(found, door, door_x)
 	if found.size() != 1:
 		if found.size() > 1:
+			blocks_left_unaligned.append(rect)
 			push_warning("[VILLAGE] block %s has %d entrances; none moved under its drawn door" % [rect, found.size()])
 		return
-	(found[0] as Node2D).position.x = VillageDoor.entrance_x(house, door) - (found[0] as Node2D).get_parent().global_position.x
+	var owner_node := found[0] as Node2D
+	var to_x: float = door_x - owner_node.get_parent().global_position.x
+	entrance_moves.append({"block": rect, "moved": owner_node, "from_x": owner_node.position.x, "to_x": to_x, "others": all_found.filter(func(b): return b != owner_node)})
+	owner_node.position.x = to_x
+
+
+## Which of a block's several entrances the drawn door belongs to: the building's own establishment (shop, inn, chapel) before any
+## interior door added to its facade; among several of one kind, the strictly nearest. Many = undecided.
+func _door_owner_among(found: Array, _door: Dictionary, door_x: float) -> Array:
+	var own: Array = found.filter(func(b): return not (b is AreaTransition))
+	var named: Array = own if not own.is_empty() else found
+	if named.size() <= 1:
+		return named
+	named.sort_custom(func(a, b): return absf(a.global_position.x - door_x) < absf(b.global_position.x - door_x))
+	if absf(named[1].global_position.x - door_x) - absf(named[0].global_position.x - door_x) > 1.0:
+		return [named[0]]
+	return named
 
 
 ## manifest building_art: key -> its whole entry (path, tier, door…).
