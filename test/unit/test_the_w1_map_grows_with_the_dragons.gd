@@ -99,3 +99,27 @@ func test_a_tier_re_levels_the_pools_own_species() -> void:
 			assert_true(db.has(ES.spawn_base_id(str(e))), "%s: %s has no catalog row" % [id, e])
 	var cave: Array = pools.get("deep_cave", [])
 	assert_eq(ES.tiered_pool("deep_cave", cave, _gs(2)), cave, "a pool outside the W1 map keeps its own levels")
+
+
+## Step encounters are off on the W1 map (encounter_enabled = false): a touched roamer is the only fight a walking player gets.
+func test_a_touched_roamer_fights_at_the_story_tier() -> void:
+	var map: Node = load("res://src/exploration/OverworldScene.gd").new()
+	var zones: Dictionary = map._pool_id_map()
+	assert_eq(zones.values().size(), (_cfg()["pools"] as Array).size(), "CONTROL: every tiered pool is a zone of this map")
+	for zone in zones:
+		map._current_zone = zone
+		var plain: Array = ((_json("res://data/enemy_pools.json") as Dictionary).get(zones[zone], []) as Array).filter(func(s): return not MonsterSpawner.is_field_elite(str(s)))
+		assert_false(plain.is_empty(), "CONTROL: %s has an ordinary species to touch" % zone)
+		if plain.is_empty():
+			continue
+		var species: String = str(plain[0])
+		assert_eq(_top(map._touch_group(species, false, _gs(4, false))), _level(species), "%s: a roamer changed before the Rat King fell" % zone)
+		for k in 5:
+			var next: int = _next_boss(k)
+			var group: Array = map._touch_group(species, false, _gs(k))
+			assert_true(_top(group) >= next - 2 and _top(group) <= next, "%s after %d dragon(s): a touched %s fights at L%d, the next boss is L%d" % [zone, k, species, _top(group), next])
+			for e in group:
+				assert_eq(ES.spawn_base_id(str(e)), species, "%s: the fight is the roamer that was touched" % zone)
+		var elite: Array = map._touch_group(species, true, _gs(2))
+		assert_eq(elite, MonsterSpawner.group_for_touch(species, true), "%s: a field elite keeps its own party-level scaling" % zone)
+	map.free()

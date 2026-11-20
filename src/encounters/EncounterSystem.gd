@@ -283,6 +283,19 @@ static func tiered_pool(pool_id: String, pool: Array, gs: Object) -> Array:
 	return out
 
 
+## A roamer's touch group at the pool's story tier: the leader takes the tier's top level; elites and marked ids pass through.
+static func tiered_group(pool_id: String, group: Array, gs: Object) -> Array:
+	var levels: Array = w1_tier_for(pool_id, gs).get("levels", [])
+	var out: Array = []
+	for i in group.size():
+		var id := str(group[i])
+		if levels.is_empty() or id.ends_with(ELITE_SUFFIX) or spawn_level_of(id) > 0:
+			out.append(group[i])
+		else:
+			out.append("%s%s%d" % [id, LEVEL_MARK, int(levels[i % levels.size()])])
+	return out
+
+
 ## The tier a W1 pool stands at for this save; {} before the Rat King, for a pool outside W1, or with no save.
 static func w1_tier_for(pool_id: String, gs: Object) -> Dictionary:
 	if gs == null or not gs.has_method("is_story_flag_set"):

@@ -671,7 +671,7 @@ func _apply_zone_encounters(zone: String) -> void:
 	if pool_id == "":
 		return
 	var pool: Array = _load_zone_pool(pool_id)
-	## Random encounters carry the story tier; roamers keep catalog ids (their art and permakill match on the bare id).
+	## Step encounters are off on this map: the tiered config pool feeds the grind; roamers keep bare ids and tier at the touch.
 	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), EncounterSystem.tiered_pool(pool_id, pool, get_node_or_null("/root/GameState")))
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
@@ -1189,7 +1189,12 @@ func _get_terrain_for_zone(zone: String) -> String:
 
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array, is_elite: bool = false) -> void:
 	# GameLoop sets LoopState.BATTLE — no need for can_move
-	battle_triggered.emit(MonsterSpawner.group_for_touch(monster_id, is_elite), _get_terrain_for_zone(_current_zone))
+	battle_triggered.emit(_touch_group(monster_id, is_elite, get_node_or_null("/root/GameState")), _get_terrain_for_zone(_current_zone))
+
+
+## The fight a touched roamer starts: its group, re-levelled to the story tier of the zone the player stands in.
+func _touch_group(monster_id: String, is_elite: bool, gs: Object) -> Array:
+	return EncounterSystem.tiered_group(str(_pool_id_map().get(_current_zone, "")), MonsterSpawner.group_for_touch(monster_id, is_elite), gs)
 
 
 func _on_menu_requested() -> void:
