@@ -369,7 +369,10 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 	# JSON responses are not cached (high variance + ephemeral by design).
 	var merged_opts: Dictionary = opts.duplicate()
 	merged_opts["json_mode"] = true
-	merged_opts["json_schema"] = to_json_schema(schema)
+	## A feature whose guard leaves a key optional sends its own fuller schema: one built from the guard forbids that key on the wire.
+	var wire: Variant = merged_opts.get("wire_schema")
+	merged_opts.erase("wire_schema")
+	merged_opts["json_schema"] = wire if wire is Dictionary and not (wire as Dictionary).is_empty() else to_json_schema(schema)
 
 	var raw: Variant = await _submit_and_wait(prompt, merged_opts)
 	if raw == null:
