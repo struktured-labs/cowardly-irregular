@@ -190,7 +190,7 @@ func test_the_live_visual_path_credits_a_mourner_too() -> void:
 	var boss := _fn_body(GRIND, "func account_boss_fight_rewards")
 	assert_true(boss.contains("_earns_exp_while_dead(member)"),
 		"CONTROL: the boss-fight ledger must use the same mourner predicate as the payout")
-	assert_true(boss.contains("track_character_exp(member.combatant_name, exp_gained)"),
+	assert_true(boss.contains("track_character_exp(member.combatant_name, share)"),
 		"a boss fight's own EXP never reached the session bar, or reached it as a share of the pot")
 	var bonus := _fn_body(GRIND, "func on_meta_boss_victory")
 	assert_true(bonus.contains("track_character_exp(member.combatant_name, bonus_exp)"),
