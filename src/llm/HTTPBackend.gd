@@ -48,6 +48,9 @@ var _inflight: Dictionary = {}
 # "base_url|model" -> {format: true} for every JSON format that server refused; a JSON request steps down past them.
 var _json_refused: Dictionary = {}
 
+# "base_url|model" -> {param: true} for each sampling param that server 400'd by name ("max_tokens", "temperature").
+var _param_refused: Dictionary = {}
+
 # Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
 
@@ -88,6 +91,18 @@ const PROBE_INTERVAL_SEC: float = 30.0
 const MAX_REPLY_BYTES := 1024 * 1024
 ## The probe and the model list read the listing endpoint; a hosted catalogue runs to a few MB.
 const MAX_LISTING_BYTES := 8 * 1024 * 1024
+## A server's error message is its own text on the player's screen and in the log, so it is cut to a line.
+const MAX_REASON_CHARS := 100
+## A run of this many characters shared with the key is a piece of it.
+const KEY_PIECE_CHARS := 6
+## What a credential looks like in server text, whoever's it is: a Bearer value, a masked token, a vendor prefix, a long opaque run.
+const CREDENTIAL_SHAPES: Array[String] = [
+	"(?i)bearer\\s+\\S+",
+	"[A-Za-z0-9_\\-]*\\*{2,}[A-Za-z0-9_\\-*]*",
+	"[A-Za-z0-9_\\-]{3,}(\\.{3,}|\u2026)[A-Za-z0-9_\\-]{3,}",
+	"\\b(sk|pk|rk|gsk|xai|hf|key)[-_][A-Za-z0-9_\\-]{8,}",
+	"[A-Za-z0-9_\\-]{20,}",
+]
 var max_reply_bytes: int = MAX_REPLY_BYTES
 var max_listing_bytes: int = MAX_LISTING_BYTES
 
@@ -448,6 +463,8 @@ func submit(id: String, prompt: String, opts: Dictionary = {}) -> void:
 		func(result: int, response_code: int, _headers: PackedStringArray, body_bytes: PackedByteArray) -> void:
 			if carried != "" and _retry_without(carried, _id, prompt, opts, result, response_code, body_bytes):
 				return
+			if _retry_param(_id, prompt, opts, result, response_code, body_bytes):
+				return
 			_on_request_completed(_id, result, response_code, body_bytes)
 	)
 
@@ -461,6 +478,26 @@ func _retry_without(format: String, id: String, prompt: String, opts: Dictionary
 	var refused: Dictionary = _json_refused.get(_json_key(), {})
 	refused[format] = true
 	_json_refused[_json_key()] = refused
+	_cleanup(id)
+	submit(id, prompt, opts)
+	return true
+
+
+## Newer OpenAI models 400 on max_tokens (naming max_completion_tokens) or on a set temperature; remember it and retry once without.
+func _retry_param(id: String, prompt: String, opts: Dictionary, result: int, code: int, body: PackedByteArray) -> bool:
+	if api_format == "ollama" or result != HTTPRequest.RESULT_SUCCESS or code != 400:
+		return false
+	var text: String = body.get_string_from_utf8()
+	var refused: Dictionary = _param_refused.get(_json_key(), {})
+	var named: String = ""
+	if text.contains("max_completion_tokens") and not refused.has("max_tokens"):
+		named = "max_tokens"
+	elif text.contains("temperature") and not refused.has("temperature"):
+		named = "temperature"
+	if named == "":
+		return false
+	refused[named] = true
+	_param_refused[_json_key()] = refused
 	_cleanup(id)
 	submit(id, prompt, opts)
 	return true
@@ -547,12 +584,14 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"json_object":
 					payload["format"] = "json"
 		"openai", _:
+			var refused: Dictionary = _param_refused.get(_json_key(), {})
 			payload = {
 				"model": model,
 				"messages": [{"role": "user", "content": prompt}],
-				"max_tokens": max_tokens,
-				"temperature": temperature,
 			}
+			payload["max_completion_tokens" if refused.has("max_tokens") else "max_tokens"] = max_tokens
+			if not refused.has("temperature"):
+				payload["temperature"] = temperature
 			match _json_format(opts):
 				"json_schema":
 					payload["response_format"] = {"type": "json_schema", "json_schema": {"name": "reply", "schema": opts["json_schema"]}}
@@ -565,7 +604,7 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
 	# Returns [ok: bool, text: String, error: String]
 	if response_code < 200 or response_code >= 300:
-		return [false, "", "HTTP %d" % response_code]
+		return [false, "", "HTTP %d%s" % [response_code, _server_reason(response_code, body_bytes)]]
 
 	var raw: String = body_bytes.get_string_from_utf8()
 	if raw.is_empty():
@@ -600,6 +639,51 @@ func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
 				return [false, "", "OpenAI response missing choices[0].message.content" + _why_empty(first, msg)]
 
 	return [true, text, ""]
+
+
+## The server's own words for a refusal, after the status: bounded, the key struck out, and nothing at all for a key rejection.
+func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
+	if code == 401 or code == 403:
+		return ""
+	var said: String = server_error_text(body_bytes.get_string_from_utf8())
+	said = strike_credentials(said, api_key)
+	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
+
+
+## Server text with anything key-shaped struck: the key, a piece or masked form of it, a Bearer value, a vendor-prefixed or 20+ char token.
+static func strike_credentials(text: String, key: String) -> String:
+	var out: String = text.replace(key, "[key]") if key != "" else text
+	for pattern in CREDENTIAL_SHAPES:
+		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
+	if key.length() < KEY_PIECE_CHARS:
+		return out
+	var runs: Array[RegExMatch] = RegEx.create_from_string("[A-Za-z0-9_\\-]{%d,}" % KEY_PIECE_CHARS).search_all(out)
+	runs.reverse()
+	for run in runs:
+		var word: String = run.get_string()
+		for i in range(word.length() - KEY_PIECE_CHARS + 1):
+			if key.contains(word.substr(i, KEY_PIECE_CHARS)):
+				out = out.substr(0, run.get_start()) + "[key]" + out.substr(run.get_end())
+				break
+	return out
+
+
+## The message in a JSON error body: OpenAI's error.message, Ollama's error string, or a bare message/detail; "" for anything else.
+static func server_error_text(raw: String) -> String:
+	if not raw.strip_edges().begins_with("{"):
+		return ""
+	var json := JSON.new()
+	if json.parse(raw) != OK or not (json.data is Dictionary):
+		return ""
+	var said = json.data.get("error", json.data.get("message", json.data.get("detail")))
+	if said is Dictionary:
+		said = said.get("message")
+	if not (said is String):
+		return ""
+	var line: String = said.replace("\r", " ").replace("\n", " ").replace("\t", " ").strip_edges()
+	while line.contains("  "):
+		line = line.replace("  ", " ")
+	return line
 
 
 ## A reply's content as speech: null is nothing, an array of parts is their text joined; str() would print "<null>" or the array.
