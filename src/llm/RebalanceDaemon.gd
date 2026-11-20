@@ -83,6 +83,25 @@ const REBALANCE_SCHEMA: Dictionary = {
 }
 
 
+## What the server constrains the reply to. Built from the guard above it had no `deltas`, so a nudge could not say what it moved.
+static func wire_schema() -> Dictionary:
+	var delta := {
+		"type": "object",
+		"properties": {"constant": {"enum": ALLOWED_CONSTANTS}, "multiplier": {"type": "number"}, "reason": {"type": "string"}},
+		"required": ["constant", "multiplier", "reason"],
+	}
+	return {
+		"type": "object",
+		"properties": {
+			"verdict": {"enum": REBALANCE_SCHEMA["verdict"]},
+			"confidence": {"type": "number"},
+			"deltas": {"type": "array", "maxItems": 1, "items": delta},
+			"reason": {"type": "string"},
+		},
+		"required": ["verdict", "confidence", "deltas", "reason"],
+	}
+
+
 ## Safe multiplier band. Deltas outside [SAFE_DELTA_MIN, SAFE_DELTA_MAX]
 ## go into the review queue instead of auto-applying. Tunable so a
 ## settings panel can be more/less conservative later.
@@ -323,7 +342,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		return false
 	var fallback: Variant = null
 	var report: Dictionary = {}
-	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report})
+	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report, "wire_schema": wire_schema()})
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
 		proposal["fail_reason"] = str(report.get("reason", ""))
