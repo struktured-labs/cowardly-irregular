@@ -83,12 +83,12 @@ func test_platform_is_centred_on_its_own_floor_tiles() -> void:
 		"the old off-by-four anchor must not return")
 
 
-## The dancer performs ON the stage, so she anchors to the same centre.
-## A literal here is how the performer drifts off the platform later.
+## The dancer is Aria (struktured 2026-11-20: one dancer, on the stage). Her mark derives from the stage, never a literal.
 func test_dancer_anchors_to_the_stage_centre() -> void:
-	var src := _read()
-	assert_true(src.contains("dancer_sprite.position = Vector2(STAGE_CENTER_X * TILE_SIZE, STAGE_CENTER_Y * TILE_SIZE)"),
-		"dancer derives her position from the stage centre rather than a matching literal")
+	var t := load(TAVERN)
+	assert_eq(t.ARIA_STAGE_CELL.x, t.STAGE_CENTER_X, "Aria's mark takes the stage's centre column")
+	assert_true(t.ARIA_STAGE_CELL.y > t.STAGE_ROW_FIRST and t.ARIA_STAGE_CELL.y < t.STAGE_ROW_LAST + 1, "and a row inside the stage")
+	assert_true(_read().contains('_create_npc("Aria", "dancer", ARIA_STAGE_CELL,'), "Aria is built on that mark")
 
 
 ## struktured asked for "a light wash/spotlight on the dancer" — both

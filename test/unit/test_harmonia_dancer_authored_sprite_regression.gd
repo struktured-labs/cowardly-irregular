@@ -7,6 +7,9 @@ extends GutTest
 ## and Aria's OverworldNPC idle / stop_dancing pose (_draw_npc, artist frames
 ## only while dialogue has start_dancing() running).
 
+## 2026-11-20: the stage decoration is gone (struktured: one dancer, Aria, on the stage), and its two arms with it;
+## test_one_dancer_and_she_is_aria holds the tavern, and Aria's own frames are still judged here.
+
 const FRAME := "res://assets/sprites/npcs/dancer/frame_%d.png"
 
 
@@ -43,15 +46,6 @@ func _assert_same_image(tex: Texture2D, frame: int, who: String) -> void:
 		"%s frame %d differs from frame_%d.png at byte %d — still the procedural draw" % [who, frame, frame, mismatch])
 
 
-func test_stage_dancer_uses_the_authored_frames() -> void:
-	var tavern := TavernInterior.new()
-	tavern._setup_dancer()
-	assert_eq(tavern._dancer_frames.size(), 4, "the stage cycle is the four authored frames")
-	for i in range(4):
-		_assert_same_image(tavern._dancer_frames[i], i, "stage dancer")
-	tavern.free()
-
-
 func test_aria_stands_in_the_authored_frame_before_dialogue() -> void:
 	var npc := _aria()
 	_assert_same_image(npc.sprite.texture, 0, "Aria idle")
@@ -62,19 +56,6 @@ func test_aria_rest_pose_after_dialogue_stays_authored() -> void:
 	npc.start_dancing()
 	npc.stop_dancing()
 	_assert_same_image(npc.sprite.texture, 0, "Aria after stop_dancing")
-
-
-func test_a_missing_stage_frame_loads_nothing() -> void:
-	var tavern := TavernInterior.new()
-	var ok: bool = tavern._try_load_artist_dancer_frames([
-		"res://assets/sprites/npcs/dancer/frame_0.png",
-		"res://assets/sprites/npcs/dancer/does_not_exist.png",
-		"res://assets/sprites/npcs/dancer/frame_2.png",
-		"res://assets/sprites/npcs/dancer/frame_3.png",
-	])
-	assert_false(ok, "one missing frame must refuse the whole stage cycle")
-	assert_eq(tavern._dancer_frames.size(), 0, "a refused load must not leave a partial artist cycle")
-	tavern.free()
 
 
 func _aria() -> OverworldNPC:

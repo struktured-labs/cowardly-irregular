@@ -11,10 +11,11 @@ extends GutTest
 ## struktured's own A/B in play: its sheet is mixed-facing, and he read the flipped version as turned away.
 ## 2026-11-05: masterite_curator_futuristic added. It was parked as an unreadable world variant, but it is spawned
 ## under its own full id (NodePrimeVillage), so battle asks its own row and the flip is read.
+## 2026-11-19: brass_golem and pipe_phantom added on the S4 redraw, whose strikes lunge left from their left-facing idle.
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const DRAWN_FACING_LEFT := [
-	"assembly_line_automaton", "blood_wolf_alpha", "conveyor_gremlin", "cranky_lady", "fire_dragon",
+	"assembly_line_automaton", "blood_wolf_alpha", "brass_golem", "pipe_phantom", "conveyor_gremlin", "cranky_lady", "fire_dragon",
 	"ice_dragon", "ironback_beetle", "masterite_curator_futuristic", "meta_knight", "rust_elemental", "troll", "viper",
 ]
 ## Zoomed in the same pass and found facing the party already: declaring a flip on these would turn them away.
