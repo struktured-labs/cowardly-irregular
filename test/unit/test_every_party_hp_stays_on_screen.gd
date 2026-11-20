@@ -147,15 +147,33 @@ func test_the_panel_ends_above_its_floor_at_every_text_size() -> void:
 	assert_eq(bad, [], "the panel ends above its floor:\n%s" % "\n".join(PackedStringArray(bad)))
 
 
+## The panel's own font sizes at every Text Size, as {px: line height}.
+func _panel_line_heights(font: Font) -> Dictionary:
+	var out := {}
+	var saved = GameState.text_size_scale
+	for s in _presets():
+		GameState.text_size_scale = float(s)
+		for base in [12, 13, 15]:
+			out[TextScale.scaled(base)] = font.get_height(TextScale.scaled(base))
+	GameState.text_size_scale = saved
+	return out
+
+
 ## The same, with the fonts measured as his window measures them (the stretch moves before any panel is built).
+## On .811 no panel size measured differently at his stretch (24.00 both ways at 15 px), so this arm prints how many do.
 func test_the_panel_ends_above_its_floor_in_his_window() -> void:
 	var probe := Label.new()
 	add_child_autofree(probe)
 	var font: Font = probe.get_theme_font("font")
-	var before: float = font.get_height(TextScale.scaled(15))
+	var before := _panel_line_heights(font)
 	TextServerManager.get_primary_interface().font_set_global_oversampling(HIS_STRETCH)
 	await get_tree().process_frame
-	gut.p("    a 15 px UI line is %.2f px tall at 1.0 and %.2f at %.3f" % [before, font.get_height(TextScale.scaled(15)), HIS_STRETCH])
+	var after := _panel_line_heights(font)
+	var moved: Array = []
+	for px in before:
+		if not is_equal_approx(float(before[px]), float(after[px])):
+			moved.append("%d px: %.2f -> %.2f" % [px, before[px], after[px]])
+	gut.p("    his window moves %d of %d panel line heights: %s" % [moved.size(), before.size(), ", ".join(PackedStringArray(moved))])
 	assert_almost_eq(TextServerManager.get_primary_interface().font_get_global_oversampling(), HIS_STRETCH, 0.001, "CONTROL: the stretch moved")
 	var bad: Array = await _floor_faults()
 	assert_eq(bad, [], "the panel ends above its floor in his window:\n%s" % "\n".join(PackedStringArray(bad)))
