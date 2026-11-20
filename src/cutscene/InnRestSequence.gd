@@ -34,7 +34,7 @@ const NIGHT_OVERRUN_SEC := 1.5
 const DITTY_KEY := "inn_rest_ditty"
 const FALLBACK_CUE := "inn_rest"
 const LOCK_ID := "inn_rest"
-## beat -> its cue (cowir-sfx): one voice, so each replaces the last and "stopped" cuts whichever is sounding.
+## beat -> its cue (cowir-sfx): each ends before the next beat by its own length, and "stopped" cuts whatever is sounding.
 const BEAT_CUES := {"night_falls": "inn_night_falls", "night": "inn_night_air", "dawn": "inn_dawn"}
 ## Early in "dawn" (GameState bands it 0.0-0.10), so a rest always wakes to first light.
 const MORNING_PHASE := 0.02
