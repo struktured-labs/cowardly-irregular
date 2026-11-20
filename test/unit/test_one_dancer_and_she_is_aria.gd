@@ -107,3 +107,40 @@ func test_the_floor_in_front_can_talk_to_her() -> void:
 		assert_gt(stand.distance_to(old_centre), reach, "CONTROL: from the stage's centre the same floor cell is out of reach, which is why she takes the front row")
 		judged += 1
 	assert_eq(judged, 2, "CONTROL: both floor cells in front of her were judged")
+
+
+## The real press, not geometry: the tavern's own player stands on the floor in front, faces the stage and confirms.
+func test_a_player_on_the_floor_in_front_talks_to_her_and_she_keeps_dancing() -> void:
+	var vp := SubViewport.new()
+	vp.size = Vector2i(64, 64)
+	vp.world_2d = World2D.new()
+	add_child_autofree(vp)
+	var tav := TavernInterior.new()
+	vp.add_child(tav)
+	var aria: OverworldNPC = null
+	for n in tav.npcs.get_children():
+		if n is OverworldNPC and n.npc_name == "Aria":
+			aria = n
+	assert_not_null(aria, "CONTROL: the tavern has Aria")
+	assert_not_null(tav.player, "CONTROL: the tavern has its player")
+	if aria == null or tav.player == null:
+		return
+	var t: float = TavernInterior.TILE_SIZE
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_false(aria._player_nearby, "CONTROL: from the door the player is not in her talk circle")
+	tav.player.global_position = Vector2((int(TavernInterior.STAGE_CENTER_X) + 0.5) * t, (TavernInterior.STAGE_ROW_LAST + 1.5) * t)
+	tav.player.current_direction = OverworldPlayer.Direction.UP
+	for _i in 4:
+		await get_tree().physics_frame
+	assert_true(aria._player_nearby, "a player on the floor cell in front of the stage is inside her talk circle")
+	assert_true(InteractGeometry.facing_allows(tav.player, aria), "and facing the stage faces her")
+	var press := InputEventAction.new()
+	press.action = "ui_accept"
+	press.pressed = true
+	aria._input(press)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_true(aria._is_talking, "confirm opens her dialogue")
+	aria._end_dialogue()
+	assert_true(aria._is_dancing, "and when the talk ends she is still dancing")
