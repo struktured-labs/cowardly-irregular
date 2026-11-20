@@ -27,6 +27,7 @@ var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance pres
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
 var _cutscene_player: AudioStreamPlayer  # dedicated voice: _advance_dialogue plays menu_select on _ui_player every press, so a cutscene's own cue died on the next line turn (2026-10-14)
+var _cutscene_tail_player: AudioStreamPlayer  # the cue BEFORE the newest keeps sounding here, so a card's stinger outlives the sword draw three steps later
 var _victory_player: AudioStreamPlayer  # dedicated voice: victory_slam replaced the 0.99s victory_stinger on _battle_player in the SAME frame — 100% of it lost in W1/W2, whose beds have no agreed downbeat (2026-10-14)
 ## Per-cue tracing. FULL tracing is off by default: it was 27-41% of struktured's play logs (4,175-5,998
 ## lines a session, measured 2026-10-05), burying the errors those logs exist to surface.
@@ -655,6 +656,11 @@ func _setup_audio_players() -> void:
 	_cutscene_player.volume_db = SFX_UI_BASE_DB
 	_cutscene_player.bus = SFX_BUS
 	add_child(_cutscene_player)
+	_cutscene_tail_player = AudioStreamPlayer.new()
+	_cutscene_tail_player.name = "CutsceneTailPlayer"
+	_cutscene_tail_player.volume_db = SFX_UI_BASE_DB
+	_cutscene_tail_player.bus = SFX_BUS
+	add_child(_cutscene_tail_player)
 
 	_footstep_player = AudioStreamPlayer.new()
 	_footstep_player.name = "FootstepPlayer"
@@ -2256,13 +2262,29 @@ func get_kill_duck_db() -> float:
 ## 2026-09-11: _step_play_sfx is a single call site, so this needs no list of long cues.
 func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
+	## Two voices, newest always on _cutscene_player: a cue still sounding moves to the tail role instead of being cut.
+	var handed_over: bool = _cutscene_player != null and _cutscene_tail_player != null and _cutscene_player.playing
+	if handed_over:
+		_swap_cutscene_voices()
 	play_ui(sound_key, _cutscene_player)
+	## A play the cooldown swallowed started nothing: hand the role back so _cutscene_player still names the cue that sounds.
+	if handed_over and not _cutscene_player.playing:
+		_swap_cutscene_voices()
+	if _cutscene_player:
+		_cutscene_player.pitch_scale = 1.0  # a scene's cue is played once and may be music: no repeat-fatigue jitter (his log: stinger at 1.04, fanfares 0.95-1.04)
 
 
-## A skipped scene takes its sound with it: one voice, so one stop cuts whichever cue is sounding.
+func _swap_cutscene_voices() -> void:
+	var newest: AudioStreamPlayer = _cutscene_player
+	_cutscene_player = _cutscene_tail_player
+	_cutscene_tail_player = newest
+
+
+## A skipped scene takes its sound with it: both voices, so one stop cuts the newest cue and the tail under it.
 func stop_cutscene_sfx() -> void:
-	if _cutscene_player and _cutscene_player.playing:
-		_cutscene_player.stop()
+	for voice in [_cutscene_player, _cutscene_tail_player]:
+		if voice and voice.playing:
+			voice.stop()
 
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
@@ -2997,7 +3019,8 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		_pending_resume_position = blend
 	_play_parked_position()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
+	## at= is where the bed really started: without it every line read as a restart from 0, so a log could not tell a resume from one.
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s at=%.2f resume=%s" % [track_id, path, should_loop, is_stinger, _last_start_position, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
 	# captured STATE, not a track id: area beds live in _current_area and leave
 	# _current_music empty, so a track-only resume silently did nothing there.
@@ -3136,12 +3159,15 @@ func _play_parked_position() -> void:
 	_pending_resume_position = 0.0
 	## A latched headless mix never returns the driver mutex play() takes (issue #224); the parked position is still consumed.
 	if wav_commit_refused():
+		_last_start_position = -1.0
 		return
 	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
 	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
 		_music_player.play(resume_at)
+		_last_start_position = resume_at
 	else:
 		_music_player.play()
+		_last_start_position = 0.0
 
 
 func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
@@ -3596,6 +3622,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 ## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head,
 ## except one that declares loop_blend_seconds, which enters after that mix.
 var _pending_resume_position: float = 0.0
+## Where the bed last ACTUALLY started (s), read by the [MUSIC] log line; -1.0 when the mix refused the play.
+var _last_start_position: float = 0.0
 
 ## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
 ## other arrival has a bed to inherit, and the inherit path is already correct.

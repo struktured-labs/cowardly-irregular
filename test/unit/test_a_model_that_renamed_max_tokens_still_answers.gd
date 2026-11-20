@@ -148,7 +148,7 @@ func test_control_a_400_that_offers_no_new_name_is_not_retried() -> void:
 	var b: HTTPBackend = await _backend()
 	var got: Dictionary = await _ask(b, "r1")
 	assert_false(bool(got.get("ok", true)), "CONTROL: a cap the model cannot meet still fails")
-	assert_eq(str(got.get("err", "")), "HTTP 400")
+	assert_eq(str(got.get("err", "")), "HTTP 400: max_tokens is too large: 64. This model supports at most 32.")
 	assert_eq(_bodies.size(), 1, "CONTROL: and is sent once, since renaming the param would not fix it")
 
 
