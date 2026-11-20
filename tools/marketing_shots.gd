@@ -482,12 +482,17 @@ func _frame_on_houses(scene: Node) -> String:
 	## left side (hero at 608,352 after its door moved). A player's camera stops at the limits BaseVillage sets, so the
 	## shot does too: the view's centre is held where the limits leave room for a whole view. A map smaller than the
 	## view on an axis is centred on that axis.
+	## The engine holds the camera's own POSITION inside the limits first and adds the offset after, so the view's
+	## centre is (the stand point held inside the map) + offset, not stand + offset. Measured: my first version judged
+	## stand + offset, found Grimhollow's centre already inside, and changed nothing; the band was still 118 px.
 	var cam: Camera2D = scene.camera
-	var centre: Vector2 = stand + offset
-	var held: Vector2 = _centre_inside(centre, Rect2(cam.limit_left, cam.limit_top, cam.limit_right - cam.limit_left, cam.limit_bottom - cam.limit_top), VIEW)
+	var map := Rect2(cam.limit_left, cam.limit_top, cam.limit_right - cam.limit_left, cam.limit_bottom - cam.limit_top)
+	var base: Vector2 = _centre_inside(stand, map, VIEW)
+	var centre: Vector2 = base + offset
+	var held: Vector2 = _centre_inside(centre, map, VIEW)
 	if held != centre:
 		print("[SHOT] view held inside the map: centre (%d, %d) -> (%d, %d)" % [int(centre.x), int(centre.y), int(held.x), int(held.y)])
-	scene.camera.offset = held - stand
+	scene.camera.offset = held - base
 	scene.camera.reset_smoothing()
 	scene.camera.force_update_scroll()
 	return "%d of %d buildings in view · player at %s (%s)" % [best_n, centers.size(), str(stand.round()), "a door" if used_door else "the street below them"]
