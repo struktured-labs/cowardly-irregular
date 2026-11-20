@@ -181,6 +181,7 @@ func _try_spawn_elite() -> void:
 	monster.elite = true
 	monster.global_position = candidate
 	monster.set_player_ref(_player)
+	monster.ground_check = can_roam
 	monster.touched.connect(_on_monster_touched.bind(monster))
 	_spawn_parent.add_child(monster)
 	_monsters.append(monster)
@@ -239,6 +240,7 @@ func _try_spawn_monster() -> void:
 	monster.monster_types = [mid]
 	monster.global_position = candidate
 	monster.set_player_ref(_player)
+	monster.ground_check = can_roam
 	monster.touched.connect(_on_monster_touched.bind(monster))
 	_spawn_parent.add_child(monster)
 	_monsters.append(monster)
@@ -265,11 +267,37 @@ func _find_spawn_position() -> Vector2:
 			continue
 		if _too_close_to_others(candidate):
 			continue
-		if _is_impassable_tile(candidate):
+		if _is_impassable_tile(candidate) or not _host_ground(candidate):
 			continue
 		return candidate
 
 	return Vector2.ZERO
+
+
+const WATER_CROSSERS_PATH: String = "res://data/overworld_water_crossers.json"
+static var _water_crossers: Array = []
+static var _water_crossers_read: bool = false
+
+
+## Species that fly or float may cross water and other ground a walker cannot stand on; the list is data.
+static func crosses_water(species: String) -> bool:
+	if not _water_crossers_read:
+		_water_crossers_read = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(WATER_CROSSERS_PATH)) if FileAccess.file_exists(WATER_CROSSERS_PATH) else null
+		if parsed is Dictionary:
+			_water_crossers = parsed.get("species", [])
+	return _water_crossers.has(species)
+
+
+## A roamer's next step: allowed on ground the map says a walker can stand on, or anywhere for a species that crosses water.
+func can_roam(pos: Vector2, species: String) -> bool:
+	return _host_ground(pos) or crosses_water(species)
+
+
+## The owning map's own answer; a map with no such rule allows every step, as before.
+func _host_ground(pos: Vector2) -> bool:
+	var host: Node = get_parent()
+	return host == null or not host.has_method("walker_can_stand") or bool(host.walker_can_stand(pos))
 
 
 func _in_safe_zone(pos: Vector2) -> bool:
