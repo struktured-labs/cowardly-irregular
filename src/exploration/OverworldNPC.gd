@@ -182,6 +182,8 @@ var _walk_col: int = 0
 var _walk_anim_t: float = 0.0
 var _frame_cache: Dictionary = {}
 
+## A stage act: a dancer who performs dances from the moment she is built and keeps dancing through and after a talk.
+var performs: bool = false
 var _is_dancing: bool = false
 var _dance_frame: int = 0
 var _dance_timer: float = 0.0
@@ -227,6 +229,8 @@ func _ready() -> void:
 	if npc_type == "dancer":
 		_generate_dance_frames()
 		_apply_dance_rest_pose()
+		if performs:
+			start_dancing()
 
 	# Add to interactables group for reliable interaction detection
 	if interactable:
@@ -1302,7 +1306,7 @@ func _start_dialogue() -> void:
 		, CONNECT_ONE_SHOT)
 
 	# Dancer starts dancing when talked to
-	if npc_type == "dancer":
+	if npc_type == "dancer" and not _is_dancing:
 		start_dancing()
 
 	# ── Quest path — quest business outranks dynamic chat + scripted lines
@@ -1561,7 +1565,7 @@ func _end_dialogue() -> void:
 		SoundManager.play_ui("menu_close")
 
 	# Dancer stops dancing when dialogue ends
-	if npc_type == "dancer" and _is_dancing:
+	if npc_type == "dancer" and _is_dancing and not performs:
 		stop_dancing()
 
 
