@@ -84,7 +84,9 @@ func test_a_level_mark_relevels_the_species_into_the_target_levels_band() -> voi
 		var dial: float = _es.SPAWN_HP_DIAL if stat == "max_hp" else (_es.SPAWN_OFFENSE_DIAL if stat == "attack" else 1.0)
 		assert_eq(int(up[stat]), int(round(float(base[stat]) * target / own * dial)), "%s keeps the goblin's share of its level's median, at L14's median" % stat)
 	assert_eq(int(up["speed"]), int(base["speed"]), "speed is left alone")
-	assert_eq(int(up["exp_reward"]), int(round(float(base["exp_reward"]) * 14.0 / 4.0)), "EXP scales with the level, as a level's cost does")
+	var pay: float = _es.spawn_pay_ratio(bands["exp_reward"], 4, 14)
+	assert_gt(pay, 1.0, "CONTROL: an L14 pays more than an L4")
+	assert_eq(int(up["exp_reward"]), int(round(float(base["exp_reward"]) * pay)), "EXP keeps the goblin's share of its level's median reward, at L14's median")
 	assert_eq(_es.spawn_level_of("goblin"), 0, "CONTROL: an unmarked id carries no level")
 	assert_eq(_es.spawn_base_id("goblin@L14"), "goblin", "and a marked one names its species")
 
