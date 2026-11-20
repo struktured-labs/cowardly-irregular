@@ -128,9 +128,37 @@ func test_every_tier_names_its_own_speed() -> void:
 		"CONTROL: a ladder with fewer than two rungs makes the comparison above vacuous")
 
 
+## struktured's .808 log, twice: "speed index 8 has no readout arm". The 2.5x rung shifted every index from 4x up, so each
+## rung wore the next-slower rung's colours and 64x fell to the bare label. Each real rung has its OWN look.
+func test_every_rung_wears_its_own_look() -> void:
+	await _battle()
+	var label := _readout()
+	assert_not_null(label, "PRECONDITION: the readout exists")
+	if label == null:
+		return
+	var looks: Array = []
+	var arrows: Array = []
+	for i in BS.BATTLE_SPEEDS.size():
+		BS._battle_speed_index = i
+		_scene._update_speed_indicator()
+		var raw: String = str(label.text).replace(" [color=#ff4444]TURBO[/color]", "")
+		var name: String = str(BS.BATTLE_SPEED_LABELS[i])
+		assert_ne(raw, "[color=#ffffff]%s[/color]" % name, "%s fell to the bare fallback: the rung has no arm of its own" % name)
+		assert_false(looks.has(raw.replace(name, "@")), "%s wears another rung's colours and arrows" % name)
+		looks.append(raw.replace(name, "@"))
+		arrows.append(raw.count("▸"))
+	for i in range(1, arrows.size()):
+		assert_gte(int(arrows[i]), int(arrows[i - 1]), "%s shows fewer arrows than the slower rung below it" % str(BS.BATTLE_SPEED_LABELS[i]))
+		assert_eq(int(arrows[i]), BS._speed_arrows(i, "▸").length(), "%s draws a different arrow count than the width reserved for it" % str(BS.BATTLE_SPEED_LABELS[i]))
+	assert_eq(int(arrows[0]), BS._speed_arrows(0, "▸").length(), "the slowest rung's drawn arrows match its reserved width")
+	## CONTROL: there were rungs to compare, and the newest one (2.5x) is among them.
+	assert_gt(looks.size(), 1, "CONTROL: a one-rung ladder makes every comparison above vacuous")
+	assert_true(Array(BS.BATTLE_SPEED_LABELS).has("2.5x"), "CONTROL: the rung whose insertion shifted the arms is still on the ladder")
+
+
 ## POSITIVE CONTROL FOR THE DEFAULT ARM, and the reason it is testable at all: GDScript indexes
-## arrays from the END on a negative subscript, so -1 is a VALID label lookup ("64x") that matches
-## NO arm in the `match`. Before the default arm this rendered the empty string. Index 7 cannot
+## arrays from the END on a negative subscript, so -1 is a VALID label lookup ("64x"). The arms were
+## keyed by INDEX then, so -1 matched none; since .811 they are keyed by label and -1 reads the 64x arm. Before the default arm this rendered the empty string. Index 7 cannot
 ## stand in for it -- that one is out of bounds and would abort rather than fall through.
 func test_an_index_with_no_arm_still_names_the_speed() -> void:
 	await _battle()
