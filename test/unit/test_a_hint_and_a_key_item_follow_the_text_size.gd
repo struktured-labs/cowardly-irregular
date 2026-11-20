@@ -105,6 +105,27 @@ func test_every_font_grows_at_every_preset() -> void:
 		last_hint = hint
 
 
+## A hint is sentences, so it reads in the BODY tier: the pixel face's whole steps would stand still while the setting grew.
+func test_the_hint_body_reads_in_the_reading_face_and_grows_on_screen() -> void:
+	assert_ne(UiFont.body(), UiFont.display(), "CONTROL: at the default read tier the body is not the pixel face")
+	var last_h := 0.0
+	var pixel_stood_still := false
+	var last_pixel := 0.0
+	for p in _presets():
+		var h := _hint(float(p))
+		var px: int = _px(h._body_label)
+		assert_eq(UiFont.of(h._body_label), UiFont.body(), "the hint body draws in the reading face at Text Size %s" % p)
+		var drawn: float = float(UiFont.of(h._body_label).get_height(px))
+		var pixel: float = float(UiFont.display().get_height(px))
+		if last_h > 0.0:
+			assert_gt(drawn, last_h, "the hint body's drawn line grows past %.1f at Text Size %s" % [last_h, p])
+			if pixel <= last_pixel:
+				pixel_stood_still = true
+		last_h = drawn
+		last_pixel = pixel
+	assert_true(pixel_stood_still, "CONTROL: in the pixel face the same sizes stand still somewhere, so this arm can fail")
+
+
 ## Arm 2: the grown text fits the BUILT card, at every preset, by the relations the 1.0x tests already hold.
 func test_the_grown_text_fits_the_built_card() -> void:
 	for p in _presets():
