@@ -600,7 +600,8 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 				"json_object":
 					payload["response_format"] = {"type": "json_object"}
 
-	return JSON.stringify(payload)
+	## Keys go out in the order they were authored. Sorted, a schema's verdict came after its reason and the model argued itself into one.
+	return JSON.stringify(payload, "", false)
 
 
 func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
