@@ -1499,6 +1499,7 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	submenu.expand_up = expand_up
 	submenu.z_index = z_index + 1
 	submenu._width_cap = _submenu_width_cap()
+	submenu.screen_floor_y = screen_floor_y
 
 	# Start with offset and transparent for animation
 	submenu.modulate.a = 0.0
@@ -1541,12 +1542,20 @@ func _get_character_class_from_style() -> String:
 	return "fighter"
 
 
+## The lowest y this menu chain may reach; 0 = the screen's own bottom edge. A battle sets it to the hint bar's top (struktured's
+## 200% frame: the command menu's last row was drawn on the hint bar). Submenus inherit it.
+var screen_floor_y: float = 0.0
+
+
 func _clamp_to_screen() -> void:
 	"""Keep menu on screen"""
 	var viewport_size = get_viewport_rect().size
 	if position.x + size.x > viewport_size.x:
 		position.x = viewport_size.x - size.x - 10
-	if position.y + size.y > viewport_size.y:
+	if screen_floor_y > 0.0:
+		if position.y + size.y > screen_floor_y:
+			position.y = screen_floor_y - size.y
+	elif position.y + size.y > viewport_size.y:
 		position.y = viewport_size.y - size.y - 10
 	if position.x < 0:
 		position.x = 10

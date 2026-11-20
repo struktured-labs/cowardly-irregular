@@ -4774,6 +4774,8 @@ func _process(delta: float) -> void:
 
 	_tick_menu_watchdog()
 
+	_hide_name_plates_under_menus()
+
 	_tick_speed_hold()
 
 	_process_weather_layer(delta)
@@ -8486,6 +8488,34 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 
 
 ## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).
+## The lowest y a battle menu may reach: just above the hint bar when it shows, else the screen's bottom margin.
+func menu_floor_y() -> float:
+	var hint := get_node_or_null("UI/InputHintBar") as Control
+	if hint and hint.is_visible_in_tree():
+		return hint.get_global_rect().position.y - 4.0
+	return get_viewport_rect().size.y - 10.0
+
+
+## A name tag under an open menu reads through its translucent face as a stray word on a row (200% frame, cowir-main 26666).
+func _hide_name_plates_under_menus() -> void:
+	var menus: Array = _bubble_keep_out_rects()
+	for group in [enemy_sprite_nodes, party_sprite_nodes]:
+		for sprite in group:
+			if not is_instance_valid(sprite):
+				continue
+			for tag_name in ["NameLabel", "NamePlate"]:
+				var tag := sprite.get_node_or_null(tag_name) as Control
+				if tag == null:
+					continue
+				var rect: Rect2 = tag.get_global_transform() * Rect2(Vector2.ZERO, tag.size)
+				var covered := false
+				for m in menus:
+					if m is Rect2 and (m as Rect2).intersects(rect):
+						covered = true
+						break
+				tag.self_modulate.a = 0.0 if covered else 1.0
+
+
 func _bubble_keep_out_rects() -> Array:
 	var out: Array = []
 	var m = active_win98_menu
