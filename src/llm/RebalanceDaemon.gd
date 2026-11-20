@@ -83,6 +83,25 @@ const REBALANCE_SCHEMA: Dictionary = {
 }
 
 
+## What the server constrains the reply to. Built from the guard above it had no `deltas`, so a nudge could not say what it moved.
+static func wire_schema() -> Dictionary:
+	var delta := {
+		"type": "object",
+		"properties": {"constant": {"enum": ALLOWED_CONSTANTS}, "multiplier": {"type": "number"}, "reason": {"type": "string"}},
+		"required": ["constant", "multiplier", "reason"],
+	}
+	return {
+		"type": "object",
+		"properties": {
+			"verdict": {"enum": REBALANCE_SCHEMA["verdict"]},
+			"confidence": {"type": "number"},
+			"deltas": {"type": "array", "maxItems": 1, "items": delta},
+			"reason": {"type": "string"},
+		},
+		"required": ["verdict", "confidence", "deltas", "reason"],
+	}
+
+
 ## Safe multiplier band. Deltas outside [SAFE_DELTA_MIN, SAFE_DELTA_MAX]
 ## go into the review queue instead of auto-applying. Tunable so a
 ## settings panel can be more/less conservative later.
@@ -283,7 +302,7 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 static func fallback_cause(reason: String) -> String:
 	match reason:
 		"request failed or cancelled":
-			return "the request was cancelled or failed before the model answered (a scene change cancels it)"
+			return "the request was cancelled, failed or timed out before the model answered"
 		"no ready backend", "backend cannot produce JSON":
 			return "no backend could answer (%s)" % reason
 		"deltas not a list":
@@ -323,7 +342,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		return false
 	var fallback: Variant = null
 	var report: Dictionary = {}
-	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report})
+	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report, "wire_schema": wire_schema(), "outlives_scene_change": true})
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
 		proposal["fail_reason"] = str(report.get("reason", ""))

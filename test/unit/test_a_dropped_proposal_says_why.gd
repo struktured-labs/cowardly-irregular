@@ -50,7 +50,8 @@ func after_each() -> void:
 	_llm.llm_enabled = _orig_enabled
 
 
-func test_a_scene_change_is_named_as_the_cause() -> void:
+## A scene change no longer cancels the daemon's request (test_a_rebalance_request_outlives_a_scene_change); another cancel still does.
+func test_a_cancellation_is_named_as_the_cause() -> void:
 	var d = DAEMON.new()
 	d.pending.append({"trigger": "area_entered", "ts": 0, "context_summary": "map_id=shop_interior_item", "status": "pending"})
 	var done := {"ok": null}
@@ -58,7 +59,7 @@ func test_a_scene_change_is_named_as_the_cause() -> void:
 	run.call()
 	for i in 3:
 		await get_tree().process_frame
-	_llm.cancel_all("scene_change")
+	_llm.cancel_all("llm_switched_off")
 	for i in 3:
 		await get_tree().process_frame
 	assert_eq(done["ok"], false, "FIXTURE: the cancelled request produced no proposal")

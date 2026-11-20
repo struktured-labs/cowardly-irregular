@@ -31,6 +31,7 @@ DESC = {
     "unassuming_dog": "a friendly-looking orange shiba-like dog with a white chest and collar, standing on four legs",
     "troll": "a hulking green troll with a small axe, tusks, and a brown loincloth",
     "cave_rat_king": "a grey rat king standing upright in a black cape and gold crown, holding a gold sceptre",
+    "cog_swarm": "a round clockwork drum of dark iron with orange gears set in its face and two small orange cogs at its upper right; the faint grey haze above it in the reference is thin smoke, NOT part of the body: draw NO chimney, NO smokestack, NO dome, nothing on top of the drum",
 }
 PROMPT = """This is a 2-frame sprite strip for a 16-bit JRPG enemy: {desc}. The reference image shows the SAME creature's idle pose twice, once in each half.
 Redraw it as a 2-frame animation of the creature {verb}. {poses}

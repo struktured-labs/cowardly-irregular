@@ -178,7 +178,7 @@ func _generate_map() -> void:
 	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
 	spawn_points["library_exit"] = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
-	spawn_points["cartographer_exit"] = Vector2(33 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["cartographer_exit"] = Vector2(31 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -321,7 +321,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(8 * TILE_SIZE, 7.5 * TILE_SIZE))
 	# === CARTOGRAPHER DOOR ===
 	# Top-right PPP cluster (cols 22-24, rows 2-4), mirroring the library corner.
-	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(32 * TILE_SIZE, 7.5 * TILE_SIZE))
+	## The Arms' drawn shop door is the smithy's (his log 2026-11-20: neither entrance stood under it); the attic's own way in is the facade's left corner, clear of it.
+	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(30 * TILE_SIZE, 7.5 * TILE_SIZE))
 
 
 ## tick 37: _add_interior_door moved up to BaseVillage so every village
