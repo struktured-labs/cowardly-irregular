@@ -190,13 +190,17 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.modulate.a = MENU_ALPHA_OVER_ACTOR
 	# Starts hidden under an active boss dialogue; _on_dialogue_finished re-shows it.
 	_scene.active_win98_menu.set_chain_visible(not _dialogue_owns_screen)
+	## The chain ends above the hint bar at every Text Size; at 200% the root alone reached 710 of 720 (cowir-main 26666).
+	var floor_y: float = _scene.menu_floor_y() if _scene.has_method("menu_floor_y") else viewport_size.y - 10.0
+	_scene.active_win98_menu.screen_floor_y = floor_y
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 	# The front rank stands in the menu's column since the two-rank layout: never cover the one choosing (struktured 2026-11-01).
 	var actor_rect := actor_rect_for_menu(sprite, combatant_idx)
 	if actor_rect.has_area():
 		_scene.active_win98_menu.position = menu_clear_of(actor_rect,
-			Rect2(_scene.active_win98_menu.position, _scene.active_win98_menu.size), viewport_size)
+			Rect2(_scene.active_win98_menu.position, _scene.active_win98_menu.size), viewport_size, 8.0, 30.0, viewport_size.y - floor_y)
+	_scene.active_win98_menu.position.y = menu_y_above_floor(_scene.active_win98_menu.position.y, _scene.active_win98_menu.size.y, floor_y)
 	_animate_menu_open(_scene.active_win98_menu)
 
 	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
@@ -1096,6 +1100,11 @@ func actor_rect_for_menu(sprite: Node2D, idx: int) -> Rect2:
 
 
 ## A menu that would cover the actor goes below it, else above it, else to its left; one that does not stays put.
+## A menu's y so that it ends at or above `floor_y`, never rising past `top`; a menu taller than the band keeps its top row.
+static func menu_y_above_floor(y: float, height: float, floor_y: float, top: float = 30.0) -> float:
+	return maxf(top, minf(y, floor_y - height))
+
+
 static func menu_clear_of(actor: Rect2, menu: Rect2, vp: Vector2, margin: float = 8.0, top: float = 30.0, bottom: float = 40.0) -> Vector2:
 	if not menu.intersects(actor.grow(margin - 1.0)):
 		return menu.position
@@ -1502,7 +1511,8 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
 	_clear_aura()
 	trace_menu("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
-	_scene.active_win98_menu = null
+	## Close the chain as a single confirm does: a bare null left it open under the next PC's menu, and the stray sweep reaped it as a leak.
+	close_win98_menu()
 	var current = BattleManager.current_combatant
 	if not current:
 		return
