@@ -135,6 +135,7 @@ func _setup_buildings() -> void:
 	var inn = VillageInnScript.new()
 	inn.inn_name = "The Rest"
 	inn.position = Vector2(4.5 * TILE_SIZE, 4 * TILE_SIZE)
+	inn.set_meta(TAKES_DRAWN_DOOR, true)  ## the Rest's art draws one door, midway between the inn and Recall: it is the inn's
 	buildings.add_child(inn)
 
 	# === THE EXCHANGE (Item Shop) ===

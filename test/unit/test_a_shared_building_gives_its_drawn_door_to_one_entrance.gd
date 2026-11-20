@@ -69,6 +69,35 @@ func test_no_village_leaves_a_drawn_door_without_its_entrance() -> void:
 	assert_gt(built, 8, "CONTROL: villages were built (%d)" % built)
 
 
+## The whole answer-zone of an entrance, from its own collision box.
+func _box(n: Node2D) -> Rect2:
+	for c in n.get_children():
+		if c is CollisionShape2D and c.shape is RectangleShape2D:
+			var size: Vector2 = (c.shape as RectangleShape2D).size
+			return Rect2(n.global_position + c.position - size / 2.0, size)
+	return Rect2()
+
+
+## Standing an entrance under a drawn door must not park it on a neighbour: every move in every village, printed and judged.
+func test_no_entrance_is_moved_onto_another() -> void:
+	var moves: int = 0
+	var shared: int = 0
+	for path in MapScripts.maps_in(VILLAGE_DIR):
+		var v := _build(path)
+		await get_tree().process_frame
+		for m in v.entrance_moves:
+			var moved: Node2D = m["moved"]
+			moves += 1
+			if not (m["others"] as Array).is_empty():
+				shared += 1
+				gut.p("  %s block %s: %s moved x %.0f -> %.0f beside %d other entrance(s)" % [path.get_file(), str(m["block"]), moved.name, float(m["from_x"]), float(m["to_x"]), (m["others"] as Array).size()])
+			for o in m["others"]:
+				assert_false(_box(moved).intersects(_box(o)), "%s block %s: %s now answers on %s, over %s at %s" % [path.get_file(), str(m["block"]), moved.name, str(_box(moved)), (o as Node).name, str(_box(o))])
+	assert_gt(moves, 10, "CONTROL: entrances were stood under drawn doors (%d)" % moves)
+	assert_gt(shared, 3, "CONTROL: some of them share their building (%d)" % shared)
+	assert_true(Rect2(0, 0, 64, 64).intersects(Rect2(32, 32, 64, 64)), "CONTROL: two overlapping zones read as overlapping")
+
+
 func test_the_arms_shop_door_opens_the_smithy() -> void:
 	var v := _build(HARMONIA)
 	await get_tree().process_frame
