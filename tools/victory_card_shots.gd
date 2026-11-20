@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Before/after frames of the post-battle results (VictoryOverlay) over a REAL battle, with fixed
 ## results so two runs are comparable: five members, two level-ups (one learns an ability), one KO,
-## gold + items + a bonus. Run through tools/victory_card_shots.sh (sandboxed). Args: an output label [, a Text Size].
+## gold + items + a bonus. Run through tools/victory_card_shots.sh (sandboxed). Args: an output label [, a Text Size [, oneshot]].
 ## Writes tmp/victory_card/<label>_entering.png (mid-entrance) and <label>_settled.png.
 
 const OUT := "res://tmp/victory_card"
@@ -85,6 +85,11 @@ func _init() -> void:
 	var results := {"char_results": cr, "total_gold": 75,
 		"item_drops": [{"item": "potion", "name": "Potion", "qty": 2}],
 		"bonuses": [{"type": "one_shot", "multiplier": 3.0}], "injuries": []}
+	## Optional 3rd arg "oneshot": the ONE-SHOT banner fires first, as in battle, before the overlay (grokbot 26157).
+	if args.size() > 2 and args[2] == "oneshot":
+		scene._on_one_shot_achieved("S", 0)
+		await create_timer(0.4).timeout
+		results["one_shot_rank"] = "S"
 	var overlay = load("res://src/battle/VictoryOverlay.gd").new()
 	overlay.name = "VictoryResults"
 	scene.add_child(overlay)
