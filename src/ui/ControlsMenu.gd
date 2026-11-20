@@ -46,6 +46,11 @@ var _testing: bool = false
 
 ## Node references
 var _panel: Control
+var _rows_clip: Control
+var _rows_content: Control
+var _row_top: Dictionary = {}  # row index -> top in RowsContent
+var _scroll_px: float = 0.0
+var _more_rows: Label
 var _profile_label: Label
 var _action_labels: Dictionary = {}  # action -> Label showing current button
 var _highlight_refs: Array = []
@@ -228,45 +233,15 @@ func _panel_w_frac() -> float:
 	return clampf(needed / size.x, 0.6, 0.96)
 
 
-## ⛔ THE ROW FONT IS CAPPED BY THE SPACE, and at 2.0x it really does bind. Measured: 14 rows do
-## not scroll (no ScrollContainer, no clip_contents anywhere in this file), the row font at 2.0x is
-## 28 whose line height ~37 already exceeds the authored 32 row, and 14 of those plus the title
-## band, the column-header band and a derived footer band need ~782px of a 720px viewport. So this
-## screen cannot reach a true 2.0x for its rows, and the honest behaviour is to grow the text as far
-## as it fits and no further -- which is EXACTLY what `_fit_column_label` already does horizontally
-## for a binding label. Same algorithm, vertical axis, so the screen has one policy rather than two.
-## A row the player cannot reach would be worse than text that stops short of the setting.
+## Text grows with the setting and the row step follows its drawn line; the list scrolls when it outgrows the panel (main 26309).
 func _row_font() -> int:
-	var want: int = TextScale.scaled(ROW_FONT_DEFAULT)
-	var fnt: Font = get_theme_font("font", "Label")
-	if fnt == null:
-		return want
-	var rows: int = ROW_ACTION_FIRST + InputProfileManager.REMAPPABLE_ACTIONS.size() + 3
-	var avail: float = 0.0
-	if _panel and is_instance_valid(_panel):
-		avail = _rows_avail()
-	if avail <= 0.0 or rows <= 0:
-		return want
-	var cap: float = avail / float(rows)
-	var fs: int = want
-	## Floor at the 100% size: a snapping face (UiFont, 1x below 14) otherwise walks 2x down to 1x, so 200% drew smaller than 100%.
-	var floor_fs: int = mini(want, ROW_FONT_DEFAULT)
-	while fs > floor_fs and fnt.get_height(fs) + 8.0 > cap:
-		fs -= 1
-	return fs
+	return TextScale.scaled(ROW_FONT_DEFAULT)
 
 
 func _row_h() -> int:
-	## +3, not +1: Reset to Default, Test Buttons and Map This Pad all follow the action rows.
 	var fnt: Font = get_theme_font("font", "Label")
-	var line: float = fnt.get_height(_row_font()) if fnt else float(ROW_HEIGHT)
-	var rows: int = ROW_ACTION_FIRST + InputProfileManager.REMAPPABLE_ACTIONS.size() + 3
-	var avail: float = _rows_avail()
-	var cap: float = (avail / float(rows)) if rows > 0 and avail > 0.0 else float(ROW_HEIGHT)
-	## The authored 32 is preferred, but REACHABILITY outranks it: this screen does not scroll, so a
-	## band that keeps its height at the cost of pushing row 14 under the footer hides a row. The
-	## floor is the text's own line box, never less.
-	return int(clampf(maxf(float(ROW_HEIGHT), line + 8.0), line + 2.0, maxf(line + 2.0, cap)))
+	var line: float = fnt.get_height(_row_font()) if fnt else float(ROW_HEIGHT) - 8.0
+	return int(maxf(float(ROW_HEIGHT), line + 8.0))
 
 
 ## ⛔ DERIVED FROM THE FOOTER, not scaled from 44. Scaling the literal reserved 88px at 2.0x for a
@@ -395,6 +370,7 @@ func _build_ui() -> void:
 
 	# Main panel
 	_panel = Control.new()
+	_panel.name = "Panel"
 	_panel.position = Vector2((size.x - size.x * _panel_w_frac()) * 0.5, size.y * 0.1)
 	## 0.80 until 2026-10-12: the field-menu row made eight remappable rows and the last one
 	## ended 24px BELOW the conflict line. The footer lines are placed from the panel's bottom, so
@@ -411,51 +387,78 @@ func _build_ui() -> void:
 
 	# Title
 	var title = Label.new()
+	title.name = "Title"
 	title.text = "CONTROLS"
 	title.position = Vector2(16, 8)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
+	## Right end of the title line: which way more rows lie, shown only while the list is scrolled or cut off.
+	_more_rows = Label.new()
+	_more_rows.name = "MoreRows"
+	_more_rows.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_more_rows.position = Vector2(_panel.size.x - 16.0 - 60.0 * _tf(), 8)
+	_more_rows.size = Vector2(60.0 * _tf(), 0)
+	_more_rows.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	_more_rows.add_theme_color_override("font_color", TEXT_COLOR)
+	_more_rows.visible = false
+	_panel.add_child(_more_rows)
+
 	# Subtitle carries LIVE DEVICE TRUTH rather than boilerplate. Nothing on screen used to say
 	# whether SDL had a mapping for the attached pad, and unmapped every index below is a lie —
 	# that absence is what made the 2026-07-25 controller hunt expensive.
 	_device_label = Label.new()
+	_device_label.name = "DeviceLabel"
 	_device_label.position = Vector2(16, _device_y())
 	_device_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_panel.add_child(_device_label)
 	refresh_device_label()
 
+	## The rows scroll inside a clipped window between the subtitle and the bottom band, so every row stays reachable at any Text Size.
+	_rows_clip = Control.new()
+	_rows_clip.name = "RowsClip"
+	_rows_clip.clip_contents = true
+	_rows_clip.position = Vector2(0, _rows_top())
+	_rows_clip.size = Vector2(_panel.size.x, maxf(float(ROW_HEIGHT), _flash_y(_panel.size.y) - _rows_top() - 2.0))
+	_rows_clip.mouse_filter = Control.MOUSE_FILTER_PASS
+	_panel.add_child(_rows_clip)
+	_rows_content = Control.new()
+	_rows_content.name = "RowsContent"
+	_rows_content.mouse_filter = Control.MOUSE_FILTER_PASS
+	_rows_clip.add_child(_rows_content)
+	_row_top.clear()
+
 	# Column header — only shown for the action rows so user knows what
 	# the right-hand columns mean. Drawn just above the first action row.
 	var col_header_pad = Label.new()
 	col_header_pad.text = "Action"
-	col_header_pad.position = Vector2(_col_x()[0], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_pad.position = Vector2(_col_x()[0], float(ROW_ACTION_FIRST * _row_h()) + 1.0)
 	col_header_pad.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_pad.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
-	_panel.add_child(col_header_pad)
+	_rows_content.add_child(col_header_pad)
 	var col_header_pad_btn = Label.new()
 	col_header_pad_btn.text = "Gamepad"
-	col_header_pad_btn.position = Vector2(_col_x()[1], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_pad_btn.position = Vector2(_col_x()[1], float(ROW_ACTION_FIRST * _row_h()) + 1.0)
 	col_header_pad_btn.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_pad_btn.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
-	_panel.add_child(col_header_pad_btn)
+	_rows_content.add_child(col_header_pad_btn)
 	var col_header_kb = Label.new()
 	col_header_kb.text = "Keyboard"
-	col_header_kb.position = Vector2(_col_x()[2], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_kb.position = Vector2(_col_x()[2], float(ROW_ACTION_FIRST * _row_h()) + 1.0)
 	col_header_kb.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_kb.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
-	_panel.add_child(col_header_kb)
+	_rows_content.add_child(col_header_kb)
 	var col_header_mouse = Label.new()
 	col_header_mouse.text = "Mouse"
-	col_header_mouse.position = Vector2(_col_x()[3], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_mouse.position = Vector2(_col_x()[3], float(ROW_ACTION_FIRST * _row_h()) + 1.0)
 	col_header_mouse.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_mouse.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
-	_panel.add_child(col_header_mouse)
+	_rows_content.add_child(col_header_mouse)
 
 	# Build rows
 	_compute_row_indices()
-	var y = _rows_top()
+	var y: float = 0.0
 
 	_add_row(ROW_PROFILE, y, "Profile", _get_profile_display(), true)
 	y += _row_h()
@@ -534,7 +537,8 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 	highlight.size = Vector2(_panel.size.x - 16, _row_h())
 	highlight.color = Color.TRANSPARENT
 	highlight.name = "Row_%d" % index
-	_panel.add_child(highlight)
+	_rows_content.add_child(highlight)
+	_row_top[index] = y
 	_highlight_refs.append(highlight)
 
 	var label = Label.new()
@@ -566,7 +570,9 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 
 		var arrows_right = Label.new()
 		arrows_right.text = ">"
-		arrows_right.position = Vector2(420.0 * _tf(), 4)
+		## After the value's drawn end, never on it: Nintendo Mode's value ran past the authored 420 at 100% (census 116c3b8a8).
+		var value_end: float = 220.0 * _tf() + value.get_theme_font("font").get_string_size(value_text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x + 8.0 * _tf()
+		arrows_right.position = Vector2(maxf(420.0 * _tf(), value_end), 4)
 		arrows_right.add_theme_font_size_override("font_size", TextScale.scaled(14))
 		arrows_right.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_right)
@@ -835,6 +841,43 @@ func _get_profile_display() -> String:
 func _update_selection() -> void:
 	for i in range(_highlight_refs.size()):
 		_highlight_refs[i].color = SELECTED_COLOR if i == selected_index else Color.TRANSPARENT
+	_scroll_to_selection()
+
+
+## Moves the window only when the selection would leave it (MenuScroll's rule, in pixels: the header band makes rows uneven).
+func _scroll_to_selection() -> void:
+	if not (_rows_clip and is_instance_valid(_rows_clip) and _row_top.has(selected_index)):
+		return
+	var top: float = float(_row_top[selected_index])
+	if selected_index == ROW_ACTION_FIRST:
+		top -= float(HEADER_BAND) * _tf()  # the column header comes into view with its first row
+	var bottom: float = float(_row_top[selected_index]) + float(_row_h())
+	var view: float = _rows_clip.size.y
+	if top < _scroll_px:
+		_scroll_px = top
+	elif bottom > _scroll_px + view:
+		_scroll_px = bottom - view
+	_scroll_px = clampf(_scroll_px, 0.0, maxf(0.0, rows_content_height() - view))
+	_rows_content.position.y = -_scroll_px
+	_refresh_more_rows()
+
+
+## ▲ when rows are hidden above the window, ▼ when below; hidden when every row is in view.
+func _refresh_more_rows() -> void:
+	if not (_more_rows and is_instance_valid(_more_rows)):
+		return
+	var above: bool = _scroll_px > 0.5
+	var below: bool = _scroll_px + _rows_clip.size.y < rows_content_height() - 0.5
+	_more_rows.text = ("▲" if above else "") + ("▼" if below else "")
+	_more_rows.visible = above or below
+
+
+## Height of the whole row list, from the last row's top.
+func rows_content_height() -> float:
+	var h: float = 0.0
+	for k in _row_top:
+		h = maxf(h, float(_row_top[k]) + float(_row_h()))
+	return h
 
 
 func _update_all_labels() -> void:
