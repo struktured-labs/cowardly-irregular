@@ -15,11 +15,13 @@
 #      the encounter rate to its maximum so battles come fast. The LLM is off in the audition.
 #   4. Launches the game from this checkout, which holds the substitutes.
 #
+# This checkout is the branch audition/his-ear: lane/sfx-less-arcade (A-D) merged with lane/protect-plates-lock (F).
 # WHAT TO LISTEN FOR, by group (tell cowir-sfx keep or revert per group)
 #   A  Mage Fire / Blizzard / Thunder (and the -ra tiers), Cleric Pray, Mage Channel, Raise, an item cure
 #   B  the Bard's songs and Riff
 #   C  Advance presses 2 to 5, a refused press on a full queue, the full bank locking and unleashing
 #   D  staff hits, a lightning or dark weapon strike, the piano scythe crit, a party member falling
+#   F  NEW, not a substitute: the Cleric's Protect. The plates lock into the wall with three clacks and a thud
 #   Menus are untouched.
 set -euo pipefail
 
