@@ -43,6 +43,19 @@ func test_controls_entry_is_not_buried_below_settings() -> void:
 		"Controls must appear before Settings — burying it is the bug being fixed")
 
 
+## struktured 2026-11-19, playing .808: "controls should not be first item in the menu list". It sits directly above Settings.
+func test_controls_is_directly_above_settings_and_never_first() -> void:
+	var opts: Array = (load(OverworldMenuPath) as GDScript).get_script_constant_map().get("BASE_MENU_OPTIONS", [])
+	assert_gt(opts.size(), 3, "FLOOR: BASE_MENU_OPTIONS was read (%d rows)" % opts.size())
+	var ids: Array = opts.map(func(o): return str((o as Dictionary).get("id", "")))
+	var at: int = ids.find("controls")
+	assert_gt(at, -1, "CONTROL: the Controls row exists (%s)" % [ids])
+	assert_ne(str(ids[0]), "controls", "the menu must not open on Controls")
+	assert_eq(str(ids[0]), "quest_log", "the menu opens on Quest Log, nothing else reordered")
+	assert_eq(at, ids.find("settings") - 1, "Controls sits directly above Settings (%s)" % [ids])
+	assert_eq(at, ids.find("load") + 1, "Controls sits directly after Load (%s)" % [ids])
+
+
 func test_controls_screen_opens_the_full_reference() -> void:
 	var src := _read(ControlsMenuPath)
 	assert_true(src.contains("ROW_HELP"), "Controls needs a How to Play row")

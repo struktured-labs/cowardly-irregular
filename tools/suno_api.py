@@ -867,9 +867,11 @@ class SunoBrowser:
         #   textarea[0] placeholder='' visible   <- Lyrics
         #   textarea[1] placeholder='female vocals only, …'   <- Styles
         # Styles is filled AFTER this check, so in a clean run every visible box is empty here.
+        # 2026-11-19 Suno reworded it to "Leave this empty for an instrumental", and the exact
+        # phrase matched nothing, so every submit refused before Create. Match the shape, not the copy.
         v6_probe = """() => {
-          if (!document.body.innerText.toLowerCase()
-                .includes('leave this empty for instrumental')) return null;
+          if (!/leave\\s+(this|it)\\s+empty\\s+for\\s+(an\\s+)?instrumental/i
+                .test(document.body.innerText)) return null;
           const filled = [];
           for (const ta of document.querySelectorAll('textarea')) {
             if (ta.offsetParent === null) continue;
@@ -912,7 +914,7 @@ class SunoBrowser:
                       % (i, ph[:70], len(val), ta.is_visible()))
             txt = page.evaluate("() => document.body.innerText")
             low = txt.lower()
-            for needle in ("leave this empty for instrumental", "instrument",
+            for needle in ("leave this empty for an instrumental", "leave this empty for instrumental", "instrument",
                            "lyrics", "will be instrumental"):
                 print("    innerText contains %-36r %s" % (needle, needle in low))
             hits = [l.strip()[:90] for l in txt.split("\n")

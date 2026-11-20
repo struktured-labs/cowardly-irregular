@@ -543,7 +543,20 @@ func _move(delta: float) -> void:
 		_update_row_from_dir()
 		return
 
+	if not _ground_ok(next_pos) and _ground_ok(global_position):
+		if _state != 2:
+			_dir = -_dir
+			_update_row_from_dir()
+		return
 	global_position = next_pos
+
+
+## Asked before every step; the spawner answers for the map it stands on. Unset = every step is allowed.
+var ground_check: Callable = Callable()
+
+
+func _ground_ok(pos: Vector2) -> bool:
+	return not ground_check.is_valid() or bool(ground_check.call(pos, monster_id))
 
 
 func _update_row_from_move_dir(move_dir: Vector2) -> void:
