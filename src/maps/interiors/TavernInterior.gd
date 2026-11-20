@@ -2233,6 +2233,8 @@ func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue
 		npc.npc_type = npc_type
 		npc.dialogue_lines = dialogue
 		npc.performs = npc_type == "dancer"
+		if npc.performs:
+			npc.set_meta(InteriorPlacementSweep.KEEPS_MARK, true)  ## the stage is furniture to the sweep; she is on it on purpose
 		if archetype != "":
 			npc.sprite_archetype = archetype  ## pinned: the name-hash pair can draw the other sex
 		npc.position = grid_pos * TILE_SIZE

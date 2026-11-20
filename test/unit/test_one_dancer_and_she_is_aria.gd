@@ -66,6 +66,8 @@ func test_aria_stands_on_the_stage() -> void:
 	assert_eq(_layout_char(cell), "S", "Aria stands on %s, which is '%s' and not a stage cell" % [str(cell), _layout_char(cell)])
 	assert_almost_eq(aria.position.x, TavernInterior.STAGE_CENTER_X * TavernInterior.TILE_SIZE, 0.5, "she takes the stage's centre column")
 	assert_eq(_layout_char(Vector2i(21, 5)), ".", "CONTROL: her old mark (21, 5) is floor, not stage")
+	var furniture: Array = InteriorPlacementSweep._collect_furniture_rects(_tav, _tav.decorations)
+	assert_false(InteriorPlacementSweep._is_position_clear(aria.position, TavernInterior.TAVERN_LAYOUT, furniture), "CONTROL: the stage is furniture to the placement sweep, so only her mark keeps her on it")
 
 
 func test_aria_dances_without_being_asked() -> void:
