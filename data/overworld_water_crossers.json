@@ -1,0 +1,4 @@
+{
+  "_doc": "Roaming species that may cross water (and other ground a walker cannot stand on) on an overworld: fliers and floaters only. Every other roamer turns back at the bank. struktured 2026-11-20: monsters that cannot swim must not walk in water.",
+  "species": ["bat", "ghost", "specter"]
+}
