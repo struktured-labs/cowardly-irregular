@@ -11,6 +11,8 @@ var _d: Node
 
 func before_each() -> void:
 	SoundManager.stop_cutscene_sfx()
+	for k in [DirectorScript.BOSS_CARD_CUE, "sword_draw_heavy"]:  # the per-key cooldown would swallow a cue the arm before just played
+		SoundManager._sfx_cooldowns.erase(k)
 	_d = DirectorScript.new()
 	add_child_autofree(_d)
 	_d._skipping = false
