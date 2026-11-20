@@ -39,7 +39,7 @@ func _menu_at(scale: float) -> Control:
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m: Array = (load(CM) as GDScript).get_script_method_list().map(func(x): return str(x["name"]))
-	for f in ["_update_selection", "_scroll_to_selection", "rows_content_height", "_row_h"]:
+	for f in ["_update_selection", "_scroll_to_selection", "rows_content_height", "_row_h", "_refresh_more_rows"]:
 		assert_has(m, f, "ControlsMenu.%s must exist" % f)
 
 
@@ -85,3 +85,28 @@ func test_the_default_size_never_scrolls() -> void:
 		m.selected_index = i
 		m._update_selection()
 		assert_eq((m._rows_content as Control).position.y, 0.0, "row %d scrolled the list at 100%%" % i)
+
+
+## The marker says which way the hidden rows lie: ▼ at the top of an overflowing list, ▲ at its end, nothing when all rows show.
+func test_the_more_rows_marker_points_at_the_hidden_rows() -> void:
+	var judged := 0
+	for s in _presets():
+		var m := await _menu_at(float(s))
+		var mark: Label = m._more_rows
+		assert_not_null(mark, "CONTROL @%s: the marker was built" % s)
+		var overflows: bool = m.rows_content_height() > (m._rows_clip as Control).size.y
+		m.selected_index = 0
+		m._update_selection()
+		if overflows:
+			judged += 1
+			assert_true(mark.visible, "@%s at the first row the marker shows" % s)
+			assert_eq(mark.text, "▼", "@%s at the first row only rows below are hidden" % s)
+			m.selected_index = m._item_count - 1
+			m._update_selection()
+			assert_gt(m._scroll_px, 0.5, "CONTROL @%s: the last row scrolled the list" % s)
+			assert_eq(mark.text, "▲", "@%s at the last row only rows above are hidden" % s)
+		else:
+			assert_false(mark.visible, "@%s every row fits, so no marker" % s)
+		m.get_parent().get_parent().queue_free()
+		await get_tree().process_frame
+	assert_gt(judged, 0, "CONTROL: at least one preset overflows, so the marker was judged showing")

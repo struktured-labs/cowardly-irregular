@@ -50,6 +50,7 @@ var _rows_clip: Control
 var _rows_content: Control
 var _row_top: Dictionary = {}  # row index -> top in RowsContent
 var _scroll_px: float = 0.0
+var _more_rows: Label
 var _profile_label: Label
 var _action_labels: Dictionary = {}  # action -> Label showing current button
 var _highlight_refs: Array = []
@@ -392,6 +393,17 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
+
+	## Right end of the title line: which way more rows lie, shown only while the list is scrolled or cut off.
+	_more_rows = Label.new()
+	_more_rows.name = "MoreRows"
+	_more_rows.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_more_rows.position = Vector2(_panel.size.x - 16.0 - 60.0 * _tf(), 8)
+	_more_rows.size = Vector2(60.0 * _tf(), 0)
+	_more_rows.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	_more_rows.add_theme_color_override("font_color", TEXT_COLOR)
+	_more_rows.visible = false
+	_panel.add_child(_more_rows)
 
 	# Subtitle carries LIVE DEVICE TRUTH rather than boilerplate. Nothing on screen used to say
 	# whether SDL had a mapping for the attached pad, and unmapped every index below is a lie —
@@ -847,6 +859,17 @@ func _scroll_to_selection() -> void:
 		_scroll_px = bottom - view
 	_scroll_px = clampf(_scroll_px, 0.0, maxf(0.0, rows_content_height() - view))
 	_rows_content.position.y = -_scroll_px
+	_refresh_more_rows()
+
+
+## ▲ when rows are hidden above the window, ▼ when below; hidden when every row is in view.
+func _refresh_more_rows() -> void:
+	if not (_more_rows and is_instance_valid(_more_rows)):
+		return
+	var above: bool = _scroll_px > 0.5
+	var below: bool = _scroll_px + _rows_clip.size.y < rows_content_height() - 0.5
+	_more_rows.text = ("▲" if above else "") + ("▼" if below else "")
+	_more_rows.visible = above or below
 
 
 ## Height of the whole row list, from the last row's top.
