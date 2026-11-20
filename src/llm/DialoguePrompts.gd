@@ -394,6 +394,22 @@ const FALLBACK_RULE_COMPOSITION: Dictionary = {
 }
 
 
+## What the server constrains a composition to. Built from the guard, rules_json was "any value", and llama3 wrote one object 12 of 12.
+static func rule_composition_wire_schema() -> Dictionary:
+	## A condition or action names its type and may carry anything else; without additionalProperties a constraining server drops op, value, id and target.
+	var step := {"type": "object", "properties": {"type": {"type": "string"}}, "required": ["type"], "additionalProperties": true}
+	var rule := {
+		"type": "object",
+		"properties": {"conditions": {"type": "array", "items": step}, "actions": {"type": "array", "minItems": 1, "items": step}, "enabled": {"type": "boolean"}},
+		"required": ["conditions", "actions", "enabled"],
+	}
+	return {
+		"type": "object",
+		"properties": {"name": {"type": "string"}, "description": {"type": "string"}, "rules_json": {"type": "array", "minItems": 1, "items": rule}},
+		"required": ["name", "description", "rules_json"],
+	}
+
+
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
 
 ## The ONE place the shared context blocks are assembled, in ONE order.

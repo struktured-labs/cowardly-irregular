@@ -97,7 +97,8 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
 		domain, prompt_text, current_rules, kit_context)
 	var svc = get_node_or_null("/root/LLMService")
-	var raw: Variant = await svc.complete_json(prompt, DialoguePromptsScript.SCHEMA_RULE_COMPOSITION, DialoguePromptsScript.FALLBACK_RULE_COMPOSITION)
+	var raw: Variant = await svc.complete_json(prompt, DialoguePromptsScript.SCHEMA_RULE_COMPOSITION, DialoguePromptsScript.FALLBACK_RULE_COMPOSITION,
+		{"wire_schema": DialoguePromptsScript.rule_composition_wire_schema()})
 
 	var reply: Dictionary = raw if typeof(raw) == TYPE_DICTIONARY else DialoguePromptsScript.FALLBACK_RULE_COMPOSITION.duplicate(true)
 
