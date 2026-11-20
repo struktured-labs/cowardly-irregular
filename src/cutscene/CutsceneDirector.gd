@@ -858,13 +858,18 @@ func _shake_layer(duration: float, intensity: float) -> void:
 	offset = Vector2.ZERO
 
 
+## The player's Reduce Flashes setting, read the way battle's EffectSystem reads it.
+static func flashes_reduced() -> bool:
+	return GameState != null and ("reduce_flashes" in GameState) and bool(GameState.reduce_flashes)
+
+
 func _step_screen_flash(step: Dictionary) -> void:
 	var duration = step.get("duration", 0.15)
 	var color = Color.WHITE
 	if step.has("color"):
 		color = Color(step["color"])
-	if _skipping:
-		return
+	if _skipping or flashes_reduced():
+		return  # Reduce Flashes: a full-screen colour flash is exactly what the setting promises to remove
 
 	_effects_rect.visible = true
 	_effects_rect.color = color
@@ -2691,9 +2696,10 @@ func _play_spotlight_retry_sting() -> void:
 		await get_tree().create_timer(0.7).timeout
 		return
 	_effects_rect.visible = true
-	_effects_rect.color = Color(0.75, 0.05, 0.05, 0.0)
+	var peak := Color(0.0, 0.0, 0.0, 0.0) if flashes_reduced() else Color(0.75, 0.05, 0.05, 0.0)  # Reduce Flashes: no red peak, same fade to black
+	_effects_rect.color = peak
 	var tw := create_tween()
-	tw.tween_property(_effects_rect, "color:a", 0.55, 0.15)
+	tw.tween_property(_effects_rect, "color:a", 0.0 if flashes_reduced() else 0.55, 0.15)
 	tw.tween_interval(0.25)
 	tw.tween_property(_effects_rect, "color", Color(0.0, 0.0, 0.0, 1.0), 0.30)
 	await tw.finished
