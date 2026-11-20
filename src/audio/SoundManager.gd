@@ -2257,6 +2257,8 @@ func get_kill_duck_db() -> float:
 func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
 	play_ui(sound_key, _cutscene_player)
+	if _cutscene_player:
+		_cutscene_player.pitch_scale = 1.0  # a scene's cue is played once and may be music: no repeat-fatigue jitter (his log: stinger at 1.04, fanfares 0.95-1.04)
 
 
 ## A skipped scene takes its sound with it: one voice, so one stop cuts whichever cue is sounding.
