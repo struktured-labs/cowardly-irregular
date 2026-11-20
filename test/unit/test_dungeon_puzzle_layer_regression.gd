@@ -14,6 +14,13 @@ var _saved_forced_encounter: bool = false
 func before_each() -> void:
 	_saved_constants = GameState.game_constants.duplicate(true) if GameState else {}
 	_saved_forced_encounter = EncounterSystem.forced_encounter_next_step if EncounterSystem else false
+	## .809: an earlier file left backwards_warren_switches {sw1: true}, so this cave's warp plate was already spent.
+	if GameState:
+		for k in GameState.game_constants.keys():
+			if str(k).begins_with("backwards_warren_"):
+				GameState.game_constants.erase(k)
+	if EncounterSystem:
+		EncounterSystem.forced_encounter_next_step = false
 
 
 func after_each() -> void:
