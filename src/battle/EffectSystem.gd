@@ -121,12 +121,16 @@ static func hit_spark_shape(weapon_type: String) -> String:
 ## (-1 left, +1 right). `brief` = the shortest read, for fast battle speeds.
 ## The weapon's hit cue alone, for a hit whose picture is drawn by something else (an ability's melee overlay,
 ## a monster's family sequence): the hit must never lose its sound because it changed its spark.
-func play_hit_cue(weapon_type: String) -> void:
+func play_hit_cue(weapon_type: String, is_crit: bool = false) -> void:
+	## A crit reaches the weapon's own crit cue; _play_effect_sound is the plain hit and stays that.
+	if is_crit and SoundManager:
+		SoundManager.play_attack_hit(weapon_type, true)
+		return
 	_play_effect_sound(EffectType.PHYSICAL, 1.0, weapon_type)
 
 
-func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
-	play_hit_cue(weapon_type)
+func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false, is_crit: bool = false) -> Node2D:
+	play_hit_cue(weapon_type, is_crit)
 	var spark := Node2D.new()
 	spark.name = "HitSpark_" + hit_spark_shape(weapon_type)
 	spark.position = position
