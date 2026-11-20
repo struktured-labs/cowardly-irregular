@@ -583,22 +583,52 @@ func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
 		"ollama":
 			# { "response": "..." }
 			if parsed.has("response"):
-				text = str(parsed["response"])
+				text = content_text(parsed["response"])
 			else:
 				return [false, "", "Ollama response missing 'response' key"]
 		"openai", _:
 			# { "choices": [{ "message": { "content": "..." } }] }
 			var choices = parsed.get("choices", [])
-			if choices is Array and choices.size() > 0:
-				var first = choices[0]
-				if first is Dictionary:
-					var msg = first.get("message", {})
-					if msg is Dictionary:
-						text = str(msg.get("content", ""))
+			var first = {}
+			var msg = {}
+			if choices is Array and choices.size() > 0 and choices[0] is Dictionary:
+				first = choices[0]
+				if first.get("message", {}) is Dictionary:
+					msg = first.get("message", {})
+					text = content_text(msg.get("content", ""))
 			if text.is_empty():
-				return [false, "", "OpenAI response missing choices[0].message.content"]
+				return [false, "", "OpenAI response missing choices[0].message.content" + _why_empty(first, msg)]
 
 	return [true, text, ""]
+
+
+## A reply's content as speech: null is nothing, an array of parts is their text joined; str() would print "<null>" or the array.
+static func content_text(v) -> String:
+	if v == null:
+		return ""
+	if v is String:
+		return v
+	if v is Array:
+		var parts: PackedStringArray = []
+		for part in v:
+			if part is String:
+				parts.append(part)
+			elif part is Dictionary and part.get("text") is String:
+				parts.append(part["text"])
+		return "".join(parts)
+	return ""
+
+
+## Why a reply carried no speech, for the error a player or Test Connection sees.
+static func _why_empty(first: Dictionary, msg: Dictionary) -> String:
+	if msg.get("refusal") is String and not str(msg["refusal"]).is_empty():
+		return " (the model refused: %s)" % str(msg["refusal"]).left(120)
+	var thought: bool = content_text(msg.get("reasoning_content")) != "" or content_text(msg.get("reasoning")) != ""
+	if str(first.get("finish_reason", "")) == "length":
+		return " (it ran out of tokens%s)" % (" while still reasoning" if thought else "")
+	if thought:
+		return " (it only reasoned)"
+	return ""
 
 
 func _on_request_completed(id: String, result: int, response_code: int, body_bytes: PackedByteArray) -> void:

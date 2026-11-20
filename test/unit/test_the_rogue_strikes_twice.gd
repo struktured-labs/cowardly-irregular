@@ -9,8 +9,12 @@ const SCENE := preload("res://src/battle/BattleScene.gd")
 const ANIMATOR := preload("res://src/battle/BattleAnimator.gd")
 const MANIFEST := "res://data/sprite_manifest.json"
 const TRIALS := 300
+## Two numbers closer than this read as one hit at turbo pace; pinned here, not derived from STRIKE_STAGGER.
+const TURBO_BEAT_FLOOR := 0.1
 
 var _saved_scale := 1.0
+var _last_holds: Array = []
+var _last_asked: Array = []
 
 
 ## A target that counts the strikes that reach it, in either engine.
@@ -26,11 +30,23 @@ class CountingTarget extends Combatant:
 ## Records when each held number actually lands, in game seconds.
 class TimedScene extends "res://src/battle/BattleScene.gd":
 	var landed: Array = []
+	var holds: Array = []
+	var asked_at: Array = []
+	var longest_frame := 0.0
+	var clock := 0.0
+	func _process(delta: float) -> void:
+		longest_frame = maxf(longest_frame, delta)
+		clock += delta
+		super(delta)
+	func _hold_melee_damage(lands_in: float, safety: float = 0.25) -> int:
+		holds.append(lands_in + safety)
+		asked_at.append(clock)
+		return super(lands_in, safety)
 	func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 		if _full_render_dmg_buffer != null:
 			super(target, amount, is_crit, element, elemental_mod)
 			return
-		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames()])
+		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames(), maxf(longest_frame, get_process_delta_time()), clock, get_process_delta_time()])
 
 
 func before_each() -> void:
@@ -39,6 +55,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
+	randomize()
 
 
 func _job(job_id: String) -> Dictionary:
@@ -136,6 +153,20 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 ## (autogrind 25200: two strikes each meeting the full defence came to 0.97x on W1 armour). Defence meets the attack once.
 ## A kill ends the attack; the dummy's HP outlasts every trial so no total here is cut short by one.
 const DEF_PER_ATK := [0.0, 0.5, 1.0, 2.0]
+## The defects these bands guard sit at 0.97x (defence per strike) and 2.0x (unscaled strikes), 0.3+ from every target;
+## 0.15 holds the closed form's crit/variance bias (~0.04 under a^2/(a+d)) plus 300-trial noise (sd ~0.03) and still splits them.
+const RATIO_TOL := 0.15
+## Each row reseeds the global RNG so a red reproduces; after_each hands randomness back.
+const RATIO_SEED := 805
+
+
+## What a Rogue attack deals over a swing under take_damage's a^2/(a+d), defence met once: s^2 (1+d)/(s+d), s the summed strike scales.
+## So 1.2 raw is 1.2 at no defence and climbs toward s^2 = 1.44 as defence grows (the grind's "1.33-1.37, cause unmeasured").
+func _expected_ratio(rogue: Combatant, def_per_atk: float) -> float:
+	var s := 0.0
+	for st in rogue.basic_attack_strikes():
+		s += float(st["scale"])
+	return s * s * (1.0 + def_per_atk) / (s + def_per_atk)
 
 
 func _live_mean_per_attack(bm, attacker: Combatant, target: Combatant) -> float:
@@ -158,9 +189,11 @@ func test_live_deals_six_tenths_per_strike_at_every_defence() -> void:
 	var rogue := _make("Rogue", "rogue", false, 0, 100)
 	var plain := _make("Plain", "", false, 0, 100)
 	for d in DEF_PER_ATK:
+		seed(RATIO_SEED + int(d * 10))
 		var target := _make("Dummy", "", false, int(60 * d))
 		var ratio: float = _live_mean_per_attack(bm, rogue, target) / maxf(1.0, _live_mean_per_attack(bm, plain, target))
-		assert_between(ratio, 1.05, 1.35, "live: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
+		var want: float = _expected_ratio(rogue, d)
+		assert_almost_eq(ratio, want, RATIO_TOL, "live: the Rogue's attack deals %.2fx a swing at DEF/ATK %.1f (1.2 raw under a^2/(a+d)); measured %.2f" % [want, d, ratio])
 
 
 func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
@@ -168,6 +201,7 @@ func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
 	var rogue := _make("Rogue", "rogue", false, 0, 100)
 	var plain := _make("Plain", "", false, 0, 100)
 	for d in DEF_PER_ATK:
+		seed(RATIO_SEED + int(d * 10))
 		var target := _make("Dummy", "", true, int(60 * d)) as CountingTarget
 		var rogue_total := 0
 		for i in TRIALS:
@@ -179,8 +213,8 @@ func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
 			plain_total += res._resolve_attack(plain, target)
 		assert_gt(float(rogue_hits) / maxf(1.0, target.hits), 1.7, "the grind's Rogue must land ~2 strikes per attack at DEF/ATK %.1f (%d vs %d)" % [d, rogue_hits, target.hits])
 		var ratio: float = float(rogue_total) / maxf(1.0, plain_total)
-		assert_between(ratio, 1.05, 1.35, "grind: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
-	res.free()
+		var want: float = _expected_ratio(rogue, d)
+		assert_almost_eq(ratio, want, RATIO_TOL, "grind: the Rogue's attack deals %.2fx a swing at DEF/ATK %.1f (1.2 raw under a^2/(a+d)); measured %.2f" % [want, d, ratio])
 
 
 func _rogue_animator(parent: Node) -> ANIMATOR:
@@ -215,6 +249,8 @@ func _swing(turbo: bool) -> Array:
 	scene._on_strike_starting(null, 1, 2, "bolt")
 	scene._on_damage_dealt(victim, 22, false)
 	await wait_seconds(2.5)
+	_last_holds = scene.holds.duplicate()
+	_last_asked = scene.asked_at.duplicate()
 	return scene.landed
 
 
@@ -244,6 +280,17 @@ func test_turbo_still_lands_two_separate_numbers() -> void:
 	assert_eq([landed[0][0], landed[1][0]], [11, 22], "the blade's number first, the bolt's second")
 	var frames: int = int(landed[1][2]) - int(landed[0][2])
 	assert_gt(frames, 1, "turbo must land the bolt's number on a later frame than the blade's, not the same one (%d frames apart)" % frames)
+	## The wait is read as REQUESTED game time: a timer made mid-frame is charged that frame's whole delta, so wall gaps run short.
+	assert_eq(_last_holds.size(), 1, "turbo holds only the bolt, once: %s" % str(_last_holds))
+	var wait: float = float(_last_holds.back()) if not _last_holds.is_empty() else 0.0
+	assert_gte(wait, TURBO_BEAT_FLOOR, "turbo's bolt must wait a visible beat after the blade (%.3f s, floor %.2f)" % [wait, TURBO_BEAT_FLOOR])
+	assert_lte(wait, SCENE.STRIKE_STAGGER + 0.05, "turbo's bolt waits STRIKE_STAGGER, not a safety timer (%.3f s vs %.2f)" % [wait, SCENE.STRIKE_STAGGER])
+	var gap: float = landed[1][1] - landed[0][1]
+	assert_lt(gap, SCENE.STRIKE_STAGGER + 0.2, "and on the clock it lands well before any safety timer (%.3f s apart)" % gap)
+	## Read on the frame clock the timer itself counts: after a slow frame the engine's jitter fix runs game time ahead of the wall.
+	var early: float = float(landed[1][5]) + 0.001
+	var waited: float = float(landed[1][4]) - float(_last_asked.back()) if not _last_asked.is_empty() else 0.0
+	assert_gte(waited, wait - early, "on the frame clock the bolt is at most its landing frame early of what it asked for (%.3f s after asking, asked %.3f, landing frame %.3f)" % [waited, wait, early - 0.001])
 
 
 func _mean(a: Array) -> float:
@@ -321,4 +368,3 @@ func test_the_grind_a_stored_charge_carries_both_strikes() -> void:
 		res._resolve_attack(rogue, target)
 		return target.amounts.duplicate()
 	_assert_whole_attack_charge("grind", attack, rogue)
-	res.free()

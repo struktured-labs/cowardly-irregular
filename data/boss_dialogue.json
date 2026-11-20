@@ -1287,6 +1287,10 @@
       {
         "id": "null_strike",
         "name": "Null Strike",
+        "bias": {
+          "dark_matter": 1.5,
+          "void_breath": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 1.0
@@ -1300,6 +1304,10 @@
       {
         "id": "null_field",
         "name": "Null Field",
+        "bias": {
+          "null_field": 1.5,
+          "shadow_bind": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 0.9
