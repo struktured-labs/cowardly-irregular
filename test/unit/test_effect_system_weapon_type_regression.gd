@@ -225,18 +225,19 @@ func test_every_forwarder_is_fed_a_real_weapon_type() -> void:
 	assert_eq(starved, [],
 		"a weapon-type forwarder is handed a literal instead of a real weapon type — the hole is one indirection wide: %s" % str(starved))
 
-## ── (6) _delayed_play_hit_fx uses the cycle-12 cache for weapon_type ──
+## ── (6) _delayed_play_hit_fx reads the LANDING's attacker; the cycle-12 cache is only its fallback ──
 
-func test_delayed_play_hit_fx_uses_last_acting_combatant() -> void:
-	# _delayed_play_hit_fx is called from a timer callback inside
-	# _animate_melee_attack — no participant scope. The cycle-12 cache
-	# _last_acting_combatant IS the attacker in solo melee, so reading
-	# it there is correct + threads exactly the same attribution the
-	# rest of the execution-phase handlers use.
+func test_delayed_play_hit_fx_reads_the_landings_attacker() -> void:
+	# Measured in a real battle (.812): action_executed clears _last_acting_combatant in the action's own frame and the
+	# lunge lands 60-100 frames later, so the cache was null at every contact. The landing names who swung.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	var idx: int = src.find("func _delayed_play_hit_fx(target_anim, target_sprite) -> void:")
 	assert_gt(idx, -1)
 	var next: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, (next - idx) if next > -1 else 500)
-	assert_string_contains(body, "_weapon_type_for(_last_acting_combatant)",
-		"_delayed_play_hit_fx must derive weapon_type from the cycle-12 cache — no attacker in local scope, cache is authoritative during execution")
+	assert_string_contains(body, "hit_attacker(hit, _last_acting_combatant)",
+		"the contact must take its attacker from the landing, with the cache as the fallback a monster counter still sets")
+	assert_string_contains(body, "_weapon_type_for(by)",
+		"the contact's weapon type must come from that attacker")
+	assert_false(body.contains("_weapon_type_for(_last_acting_combatant)"),
+		"the contact reads the cache directly again: it is null by the time a lunge lands")

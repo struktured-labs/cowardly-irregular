@@ -5819,6 +5819,8 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		var hit: Dictionary = target_sprite.get_meta("hit_landing", {"w": 0.0, "kill": false})
 		target_sprite.remove_meta("hit_landing")
 		var w: float = float(hit["w"])
+		var by: Combatant = hit_attacker(hit, _last_acting_combatant)
+		var crit: bool = bool(hit.get("crit", false))
 		target_anim.play_hit()
 		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
@@ -5826,23 +5828,23 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		## The OFF tier (16x+, turbo, the console) keeps .790's effect; below it the hit draws its WEAPON's spark,
 		## sized by the weight, and the weight (not the effect) owns the shake.
 		if jt == BattleJuice.Tier.OFF:
-			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
+			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(by))
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
 			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
 			## Drawn on the FIGURE (cutscenes' _figure_anchor): a hero stands ~95 px off its frame's centre.
 			var struck: Vector2 = _figure_anchor(target_sprite)
-			var spark: String = hit_spark_for(_last_acting_combatant)
+			var spark: String = hit_spark_for(by)
 			match hit_mark(str(_current_ability_id), spark):
 				"overlay":
 					## The ability's own melee overlay owns the CUT (sprites 24010); the weight still lands below.
 					## The weapon's hit cue still sounds: an overlay's own cue is authored to sit on top of it (sfx 23790).
-					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+					EffectSystem.play_hit_cue(_weapon_type_for(by), crit)
 				"family":
-					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+					EffectSystem.play_hit_cue(_weapon_type_for(by), crit)
 					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
 				_:
-					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(by), jt == BattleJuice.Tier.MINIMAL, crit)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -6192,7 +6194,7 @@ func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: S
 	var kill: bool = not target.is_alive or target.current_hp <= 0
 	var w: float = hit_weight(amount, target.max_hp, is_crit, elemental_mod, kill)
 	var waiting: Dictionary = _peek_hit_weight(sprite, by, _action_serial)
-	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
+	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "crit": is_crit or bool(waiting.get("crit", false)), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
 	sprite.set_meta("hit_weight", hit)
 	## A heavy stop pauses the lunge, so the stage is held that much longer for a held single attack: the next
 	## actor must not start while this one is frozen at its target. Only where a hold was set (spotlight pace).
@@ -6213,10 +6215,19 @@ func _peek_hit_weight(sprite: Node2D, attacker: Combatant, action: int) -> Dicti
 	return {"w": 0.0, "kill": false}
 
 
+## Who a landing hit belongs to: the attacker its lunge named, else the fallback (a counter sets the cache itself).
+static func hit_attacker(hit: Dictionary, fallback: Combatant) -> Combatant:
+	var named: Object = instance_from_id(int(hit.get("by", 0))) if int(hit.get("by", 0)) != 0 else null
+	return named as Combatant if named != null and is_instance_valid(named) and named is Combatant else fallback
+
+
 ## The contact: spend the weight this attacker's action left on the target, and leave it where
 ## _delayed_play_hit_fx reads it. No weight (a miss, another attacker's note) = a chip hit, .790's recipe.
 func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
-	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action)
+	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action).duplicate()
+	## The lunge knows who swung; the acting-combatant cache is cleared before contact (action_executed fires at the action's start).
+	if attacker != null and is_instance_valid(attacker):
+		hit["by"] = attacker.get_instance_id()
 	if target_sprite != null and is_instance_valid(target_sprite):
 		if float(hit["w"]) > 0.0:
 			target_sprite.remove_meta("hit_weight")
