@@ -30,6 +30,7 @@ const ControllerScript := preload("res://src/autogrind/AutogrindController.gd")
 var _ctrl: Node
 var _saved_permakilled: Array = []
 var _saved_region: String = ""
+var _saved_standing: Array = []
 
 
 func before_each() -> void:
@@ -37,12 +38,18 @@ func before_each() -> void:
 	add_child_autofree(_ctrl)
 	AutogrindSystem._test_disable_persistence = true
 	_saved_region = AutogrindSystem.current_region_id
+	## These arms judge the REGION path; a fresh grind reads the zone it stands in first, and the autoload starts on ["slime", "bat"].
+	_saved_standing = EncounterSystem.current_enemy_pool.duplicate()
+	EncounterSystem.current_enemy_pool.clear()
 	if GameState and "permakilled_monster_types" in GameState:
 		_saved_permakilled = GameState.permakilled_monster_types.duplicate()
 
 
 func after_each() -> void:
 	AutogrindSystem.current_region_id = _saved_region
+	EncounterSystem.current_enemy_pool.clear()
+	for id in _saved_standing:
+		EncounterSystem.current_enemy_pool.append(str(id))
 	if GameState and "permakilled_monster_types" in GameState:
 		GameState.permakilled_monster_types.clear()
 		for m in _saved_permakilled:
@@ -65,6 +72,15 @@ func _roster_ids() -> Array:
 
 
 # ── Pool resolution ──────────────────────────────────────────────────────────
+
+func test_a_fresh_grind_draws_where_it_stands_before_its_region() -> void:
+	AutogrindSystem.current_region_id = "overworld"
+	var region: Array = _ctrl._region_pool_ids()
+	assert_gt(region.size(), 2, "CONTROL: standing nowhere, the W1 region resolves its union")
+	EncounterSystem.current_enemy_pool.append("slime")
+	EncounterSystem.current_enemy_pool.append("bat")
+	assert_eq(_ctrl._region_pool_ids(), ["slime", "bat"], "a standing pool outranks the region; run alone this file used to judge the region arms on it")
+
 
 func test_exact_region_pool_is_used() -> void:
 	# W2-W6 region ids match a pool id exactly (suburban_overworld etc).
