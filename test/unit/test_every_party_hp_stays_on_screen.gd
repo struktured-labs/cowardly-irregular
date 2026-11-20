@@ -103,9 +103,10 @@ func test_five_at_100_percent_drops_statmods_to_fit() -> void:
 	assert_lte(panel.get_global_rect().end.y, b[2], "and the panel then ends above its floor")
 
 
-## cowir-main 26507: a panel that already fits looks as shipped. 4 members at 100% and 125% drop nothing; 5 at 100% drop only StatMods.
+## cowir-main 26507: a panel that already fits looks as shipped. 4 members at 100% drop nothing; 4 at 125% and 5 at 100%
+## overran the hint bar as shipped (730 and 704 vs 678/682, measured 2026-11-20), so they drop StatMods and nothing more.
 func test_a_panel_that_fits_looks_as_shipped() -> void:
-	for row in [[1.0, 4, 0], [1.25, 4, 0], [1.0, 5, 1]]:
+	for row in [[1.0, 4, 0], [1.25, 4, 1], [1.0, 5, 1]]:
 		var b: Array = await _battle(row[0], row[1])
 		assert_eq(b[0].get("_ui_manager").party_compact_tier, row[2], "@%s x%d stops at tier %d" % row)
 		var box: Node = b[0].get("_ui_manager").get("_party_status_boxes")[0]
