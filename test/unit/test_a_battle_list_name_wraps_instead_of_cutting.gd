@@ -97,8 +97,8 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 ## THE DEFECT: his frame's list. In 318 px at 200% the Fighter's names do not fit one line; they wrap, and the rows grow to hold them.
 func test_a_name_too_wide_for_its_list_wraps() -> void:
 	GameState.text_size_scale = 2.0
-	var m := await _list(_kit_rows("fighter"), SQUEEZE)
-	var labels := _name_labels(m)
+	var m: Win98Menu = await _list(_kit_rows("fighter"), SQUEEZE)
+	var labels: Array = _name_labels(m)
 	assert_eq(labels.size(), _kit_rows("fighter").size(), "CONTROL: one name label per row (%d)" % labels.size())
 	var too_wide := 0
 	for l in labels:
@@ -111,7 +111,7 @@ func test_a_name_too_wide_for_its_list_wraps() -> void:
 	assert_gt(m._row_height(), m._line_row_height(), "and are taller for it (%d vs %d)" % [m._row_height(), m._line_row_height()])
 	var cut: Array = []
 	for l in labels:
-		var why := _cut(m, l as Label)
+		var why: String = _cut(m, l as Label)
 		if why != "":
 			cut.append(why)
 	assert_eq(cut, [], "no name is cut:\n%s" % "\n".join(PackedStringArray(cut)))
@@ -120,7 +120,7 @@ func test_a_name_too_wide_for_its_list_wraps() -> void:
 ## A list with room for its names is the shipped list: one line a row.
 func test_a_list_with_room_keeps_one_line_rows() -> void:
 	GameState.text_size_scale = 1.0
-	var m := await _list(_kit_rows("fighter"), 0)
+	var m: Win98Menu = await _list(_kit_rows("fighter"), 0)
 	assert_eq(m._row_lines, 1, "no row takes a second line")
 	assert_eq(m._row_height(), m._line_row_height(), "the row is its one-line height")
 	for l in _name_labels(m):
@@ -135,12 +135,12 @@ func test_no_starter_ability_name_is_cut_at_any_text_size() -> void:
 	for s in _presets():
 		GameState.text_size_scale = float(s)
 		for job in STARTERS:
-			var m := await _list(_kit_rows(job), SQUEEZE)
+			var m: Win98Menu = await _list(_kit_rows(job), SQUEEZE)
 			if m._row_lines > 1:
 				wrapped += 1
 			for l in _name_labels(m):
 				judged += 1
-				var why := _cut(m, l as Label)
+				var why: String = _cut(m, l as Label)
 				if why != "":
 					cut.append("%s%% %s: %s" % [int(roundf(float(s) * 100.0)), job, why])
 			m.queue_free()
