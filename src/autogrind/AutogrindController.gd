@@ -352,15 +352,17 @@ func _region_pool_ids() -> Array:
 	var region: String = str(AutogrindSystem.current_region_id).to_lower().replace(" ", "_")
 	if region.is_empty() or pools.is_empty():
 		return []
+	var gs: Node = get_node_or_null("/root/GameState")
 	if pools.has(region):
-		return (pools[region] as Array).duplicate()
+		return EncounterSystem.tiered_pool(region, pools[region] as Array, gs)
 	# Subdivided region (W1 "overworld" → overworld_central/forest/ice/…): union the zone pools so grinding a region spans its whole bestiary.
 	var union: Array = []
 	var prefix: String = region + "_"
 	for key in pools:
 		if not str(key).begins_with(prefix):
 			continue
-		for id in pools[key]:
+		## The field's story tier rides the union too, through the same gate live encounters use.
+		for id in EncounterSystem.tiered_pool(str(key), pools[key] as Array, gs):
 			if not (str(id) in union):
 				union.append(str(id))
 	return union
@@ -452,7 +454,10 @@ func _within_party_reach(candidates: Array) -> Array:
 	var lowest: int = 1 << 30
 	var weakest: Array = []
 	for c in candidates:
-		var lv: int = int((es.monster_database.get(str(c.get("id", "")), {}) as Dictionary).get("level", 1))
+		## A level-marked spawn ("imp@L15") fights at its mark, not its catalog row.
+		var lv: int = int(c.get("spawn_level", 0))
+		if lv <= 0:
+			lv = int((es.monster_database.get(str(c.get("id", "")), {}) as Dictionary).get("level", 1))
 		if lv <= cap:
 			kept.append(c)
 		if lv < lowest:

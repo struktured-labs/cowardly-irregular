@@ -141,7 +141,7 @@ func test_control_an_unrelated_400_is_not_retried() -> void:
 	var b: HTTPBackend = await _backend()
 	var got: Dictionary = await _ask(b, ["j1"])
 	assert_false(bool(got.get("j1", {}).get("ok", true)), "CONTROL: a 400 for another reason still fails")
-	assert_eq(str(got.get("j1", {}).get("err", "")), "HTTP 400")
+	assert_eq(str(got.get("j1", {}).get("err", "")), "HTTP 400: model not loaded")
 	assert_eq(_posts, 1, "CONTROL: and is sent once")
 
 

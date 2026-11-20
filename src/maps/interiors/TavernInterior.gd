@@ -24,11 +24,6 @@ var decorations: Node2D
 var controller: Node
 
 ## Dancing girl animation
-var dancer_sprite: Sprite2D
-var _dancer_frames: Array[ImageTexture] = []
-var _anim_frame: int = 0
-var _anim_timer: float = 0.0
-const ANIM_SPEED: float = 0.15
 
 ## Fireplace flicker animation
 var _fire_sprite: Sprite2D
@@ -135,7 +130,6 @@ func _ready() -> void:
 	_init_tile_seeds()
 	_setup_tilemap()
 	_setup_decorations()
-	_setup_dancer()
 	_setup_npcs()
 	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior + ShopInterior).
 	InteriorPlacementSweep.sweep(self, npcs, decorations, TAVERN_LAYOUT, "tavern_interior")
@@ -152,7 +146,6 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_animate_dancer(delta)
 	_animate_fire(delta)
 	_animate_dog(delta)
 	_animate_cook(delta)
@@ -630,6 +623,8 @@ const STAGE_ROW_FIRST := 2
 const STAGE_ROW_LAST := 4
 const STAGE_CENTER_X := (STAGE_COL_FIRST + STAGE_COL_LAST + 1) / 2.0  # 20.0
 const STAGE_CENTER_Y := (STAGE_ROW_FIRST + STAGE_ROW_LAST + 1) / 2.0  # 3.5
+## Aria's mark: the stage's centre column, in the middle of its front row.
+const ARIA_STAGE_CELL := Vector2(STAGE_CENTER_X, STAGE_ROW_LAST + 0.5)
 
 
 ## Warm footlight strip along the stage lip — reads as a raised platform
@@ -2089,138 +2084,6 @@ func _create_light_texture(size: int = 256) -> ImageTexture:
 
 
 # ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# Dancer
-# ---------------------------------------------------------------------------
-
-func _setup_dancer() -> void:
-	dancer_sprite = Sprite2D.new()
-	dancer_sprite.name = "DancingGirl"
-	# Anchored to the stage's derived centre rather than a matching literal —
-	# a hardcoded 20 would silently stop tracking if the stage ever moves.
-	dancer_sprite.position = Vector2(STAGE_CENTER_X * TILE_SIZE, STAGE_CENTER_Y * TILE_SIZE)
-	dancer_sprite.z_index = 10
-	add_child(dancer_sprite)
-	_generate_dancer_sprites()
-
-
-func _generate_dancer_sprites() -> void:
-	_dancer_frames.clear()
-	# Same four PNGs VillageBar and Aria already share. All-or-nothing, then the 32x48 draw.
-	if _try_load_artist_dancer_frames():
-		if _dancer_frames.size() > 0 and dancer_sprite != null:
-			dancer_sprite.texture = _dancer_frames[0]
-		return
-	for frame in range(4):
-		var image = Image.create(32, 48, false, Image.FORMAT_RGBA8)
-		_draw_dancer(image, frame)
-		_dancer_frames.append(ImageTexture.create_from_image(image))
-	if _dancer_frames.size() > 0 and dancer_sprite != null:
-		dancer_sprite.texture = _dancer_frames[0]
-
-
-## `paths` empty means OverworldNPC.DANCER_FRAME_PATHS. A short or missing set loads nothing.
-func _try_load_artist_dancer_frames(paths: Array = []) -> bool:
-	if paths.is_empty():
-		paths = OverworldNPC.DANCER_FRAME_PATHS
-	if paths.size() != 4:
-		return false
-	var loaded: Array[ImageTexture] = []
-	for path in paths:
-		if not ResourceLoader.exists(str(path)):
-			return false
-		var tex: Texture2D = load(str(path))
-		if tex == null:
-			return false
-		var img: Image = tex.get_image()
-		if img == null:
-			return false
-		loaded.append(ImageTexture.create_from_image(img))
-	for tex in loaded:
-		_dancer_frames.append(tex)
-	return true
-
-
-func _draw_dancer(image: Image, frame: int) -> void:
-	image.fill(Color.TRANSPARENT)
-
-	var skin         = Color(0.95, 0.80, 0.70)
-	var hair         = Color(0.85, 0.65, 0.25)
-	var dress        = Color(0.85, 0.25, 0.35)
-	var dress_light  = Color(0.95, 0.45, 0.55)
-	var dress_sparkle= Color(1.0, 0.9, 0.5)
-
-	var arm_angle   = sin(frame * PI / 2) * 6
-	var leg_angle   = cos(frame * PI / 2) * 4
-	var body_sway   = sin(frame * PI / 2) * 3
-	var hair_flow   = sin(frame * PI / 2 + 0.5) * 4
-
-	var cx = 16 + int(body_sway)
-
-	# Head
-	for y in range(4, 14):
-		for x in range(cx - 5, cx + 5):
-			if x >= 0 and x < 32:
-				image.set_pixel(x, y, skin)
-
-	# Hair
-	for y in range(0, 12):
-		for x in range(cx - 6, cx + 6):
-			if x >= 0 and x < 32 and y < 10:
-				image.set_pixel(x, y, hair)
-
-	# Side hair waves
-	for y in range(6, 22):
-		var hx = cx + 6 + int(hair_flow)
-		if hx >= 0 and hx < 32:
-			image.set_pixel(hx, y, hair)
-		hx = cx - 7 - int(hair_flow)
-		if hx >= 0 and hx < 32:
-			image.set_pixel(hx, y, hair)
-
-	# Dress body
-	for y in range(14, 40):
-		var dress_width = 6 if y < 24 else 8 + (y - 24) / 3
-		for x in range(cx - dress_width, cx + dress_width):
-			if x >= 0 and x < 32:
-				var c = dress if (x + y) % 3 != 0 else dress_light
-				if (x + y + frame * 5) % 11 == 0:
-					c = dress_sparkle
-				image.set_pixel(x, y, c)
-
-	# Arms
-	var left_arm_x = cx - 8 + int(arm_angle)
-	var right_arm_x = cx + 7 - int(arm_angle)
-	for y in range(16, 26):
-		if left_arm_x >= 0 and left_arm_x < 32:
-			image.set_pixel(left_arm_x, y, skin)
-			if left_arm_x + 1 < 32:
-				image.set_pixel(left_arm_x + 1, y, skin)
-		if right_arm_x >= 0 and right_arm_x < 32:
-			image.set_pixel(right_arm_x, y, skin)
-			if right_arm_x - 1 >= 0:
-				image.set_pixel(right_arm_x - 1, y, skin)
-
-	# Legs
-	var left_leg_x = cx - 4 + int(leg_angle)
-	var right_leg_x = cx + 3 - int(leg_angle)
-	for y in range(40, 48):
-		if left_leg_x >= 0 and left_leg_x < 32:
-			image.set_pixel(left_leg_x, y, skin)
-		if right_leg_x >= 0 and right_leg_x < 32:
-			image.set_pixel(right_leg_x, y, skin)
-
-
-func _animate_dancer(delta: float) -> void:
-	_anim_timer += delta
-	if _anim_timer >= ANIM_SPEED:
-		_anim_timer -= ANIM_SPEED
-		_anim_frame = (_anim_frame + 1) % _dancer_frames.size()
-		if dancer_sprite and _dancer_frames.size() > 0:
-			dancer_sprite.texture = _dancer_frames[_anim_frame]
-
-
-# ---------------------------------------------------------------------------
 # NPCs
 # ---------------------------------------------------------------------------
 
@@ -2266,7 +2129,8 @@ func _setup_npcs() -> void:
 	])
 
 	# --- Stage ---
-	_create_npc("Aria", "dancer", Vector2(21, 5), [
+	## The one dancer (struktured 2026-11-20): Aria performs on the stage's front row, where the floor in front can still talk to her.
+	_create_npc("Aria", "dancer", ARIA_STAGE_CELL, [
 		"Aria: *graceful curtsy* Welcome, hero~",
 		"Aria: I dance to lift spirits... and to forget.",
 		"Aria: My brother went into the cave. He was a 'Scriptweaver.'",
@@ -2368,6 +2232,9 @@ func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue
 		npc.npc_name = npc_name
 		npc.npc_type = npc_type
 		npc.dialogue_lines = dialogue
+		npc.performs = npc_type == "dancer"
+		if npc.performs:
+			npc.set_meta(InteriorPlacementSweep.KEEPS_MARK, true)  ## the stage is furniture to the sweep; she is on it on purpose
 		if archetype != "":
 			npc.sprite_archetype = archetype  ## pinned: the name-hash pair can draw the other sex
 		npc.position = grid_pos * TILE_SIZE
