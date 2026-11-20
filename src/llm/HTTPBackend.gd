@@ -95,6 +95,8 @@ const MAX_LISTING_BYTES := 8 * 1024 * 1024
 const MAX_REASON_CHARS := 100
 ## A run of this many characters shared with the key is a piece of it.
 const KEY_PIECE_CHARS := 6
+## Stands in for the kept model id while the shapes are struck; a control character no pattern matches.
+const KEPT_MARK := "\u0001"
 ## What a credential looks like in server text, whoever's it is: a Bearer value, a masked token, a vendor prefix, a long opaque run.
 const CREDENTIAL_SHAPES: Array[String] = [
 	"(?i)bearer\\s+\\S+",
@@ -646,14 +648,28 @@ func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
 	if code == 401 or code == 403:
 		return ""
 	var said: String = server_error_text(body_bytes.get_string_from_utf8())
-	said = strike_credentials(said, api_key)
+	said = strike_credentials(said, api_key, model)
 	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
 
 
-## Server text with anything key-shaped struck: the key, a piece or masked form of it, a Bearer value, a vendor-prefixed or 20+ char token.
-static func strike_credentials(text: String, key: String) -> String:
+## Server text with anything key-shaped struck; the player's own model id is set aside first unless it is key-shaped itself.
+static func strike_credentials(text: String, key: String, keep: String = "") -> String:
+	## Judged without the 20+ run rule: a long id is fine, one holding a piece of the key or a vendor token is not kept.
+	if keep == "" or _struck(keep, key, CREDENTIAL_SHAPES.slice(0, -1)) != keep:
+		return _struck(text, key, CREDENTIAL_SHAPES)
+	var exact: String = text.replace(key, "[key]") if key != "" else text
+	## Only where the id stands alone: inside a longer run it would split a token into pieces too short to be struck.
+	var escaped: String = ""
+	for ch in keep:
+		escaped += ch if RegEx.create_from_string("^[A-Za-z0-9]$").search(ch) != null else "\\" + ch
+	var alone: RegEx = RegEx.create_from_string("(?<![A-Za-z0-9_\\-])%s(?![A-Za-z0-9_\\-])" % escaped)
+	return _struck(alone.sub(exact, KEPT_MARK, true), key, CREDENTIAL_SHAPES).replace(KEPT_MARK, keep)
+
+
+## The key, each given shape, then any run sharing KEY_PIECE_CHARS with the key, each replaced by [key].
+static func _struck(text: String, key: String, shapes: Array) -> String:
 	var out: String = text.replace(key, "[key]") if key != "" else text
-	for pattern in CREDENTIAL_SHAPES:
+	for pattern in shapes:
 		out = RegEx.create_from_string(pattern).sub(out, "[key]", true)
 	if key.length() < KEY_PIECE_CHARS:
 		return out

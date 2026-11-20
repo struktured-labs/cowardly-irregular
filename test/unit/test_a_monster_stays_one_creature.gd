@@ -155,6 +155,11 @@ const EYE_REVIEWED := {
 	"permadeath_reaper/attack": "b0383a67ea78e22e3a4c2f9e82d0f425c8af0c6201269559642f8dbb4cab0728",
 	"permadeath_reaper/hit": "b6f3c6fd08fe7e442385508d4a680ba24ef9ef0332e97d370148857689fc70c8",
 	"permadeath_reaper/dead": "d25c26ca951f3358716500db196026e87dd5c04be145df880f8a9925c7bdb5c0",
+	## cowir-sprites 2026-11-20: mushroom redrawn; its body is tan with purple outlines, which is what the strips draw.
+	"mushroom/idle": "f8a05cc883e9c5c073b35124df9eb96b3aeca2ea1cfcaa6999f6e226544d51f6",
+	"mushroom/attack": "9d3bdf07d50a2f15e20cb6d4b5d35fa9f8c53183fb9683dccc99e6d1438485ae",
+	"mushroom/hit": "c9780b82b0e8f9e98d35a5e6e129fcea588d83de72c6c73078d5ab70b9ada5ab",
+	"mushroom/dead": "65d35c0871e0679c720b129ed3e9fce93456369061faa5e32bebd49b93ef296b",
 }
 ## Redrawn from their own idle by the paid S4 motion regen (tools/install_motion_regen.py, $0): off the repoint list, every range eye-pinned.
 const REDRAWN_BY_MOTION_REGEN := [
@@ -163,7 +168,7 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"blood_wolf_alpha", "steam_rat", "conveyor_gremlin",
 	"brass_golem", "clockwork_sentinel", "assembly_line_automaton", "ironback_beetle", "rust_elemental", "pipe_phantom",
 	"shift_supervisor", "adaptive_slime", "ice_wolf", "spiteful_crow", "specter", "shadow_knight", "castle_warden",
-	"meta_knight", "permadeath_reaper",
+	"meta_knight", "permadeath_reaper", "mushroom",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
@@ -175,7 +180,7 @@ const ONE_CREATURE_BY_REPOINT := [ "cog_swarm",
 	"masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",
 	"masterite_tempo_futuristic", "masterite_tempo_industrial", "masterite_tempo_medieval", "masterite_tempo_suburban",
 	"masterite_warden_abstract", "masterite_warden_futuristic", "masterite_warden_industrial",
-	"masterite_warden_medieval", "masterite_warden_suburban", "memory_leak", "mushroom", "null_entity",
+	"masterite_warden_medieval", "masterite_warden_suburban", "memory_leak", "null_entity",
 	"optimization_itself", "recursive_loop", "rogue_process",
 	"script_error", "the_absence", "the_margin",
 ]
