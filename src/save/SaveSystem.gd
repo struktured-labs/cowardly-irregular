@@ -1237,6 +1237,14 @@ static func migrate_v3_speed_index(v3_index: int) -> int:
 	return BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.find(legacy[v3_index])
 
 
+## A v4 battle_speed_index on today's ladder: every rung keeps the exact speed the player picked. -1 for an index the v4 ladder lacked.
+static func migrate_v4_speed_index(v4_index: int) -> int:
+	var legacy: Array[float] = BATTLE_SCENE_SCRIPT.LEGACY_V4_BATTLE_SPEEDS
+	if v4_index < 0 or v4_index >= legacy.size():
+		return -1
+	return BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.find(legacy[v4_index])
+
+
 func save_settings() -> void:
 	"""Save global game settings (battle speed, audio, display options)."""
 	var settings = {
@@ -1244,6 +1252,7 @@ func save_settings() -> void:
 		"speed_scale_v2": true,
 		"speed_scale_v3": true,
 		"speed_scale_v4": true,
+		"speed_scale_v5": true,
 		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"battle_fx_flags": GameState.battle_fx_flags if GameState else {},
@@ -1393,6 +1402,8 @@ func load_settings() -> void:
 		var idx = int(settings["battle_speed_index"])
 		if not settings.get("speed_scale_v4", false):
 			idx = migrate_v3_speed_index(idx)
+		elif not settings.get("speed_scale_v5", false):
+			idx = migrate_v4_speed_index(idx)
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
 			BATTLE_SCENE_SCRIPT._battle_speed_index = idx
 			applied_speed_index = idx
