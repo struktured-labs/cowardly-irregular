@@ -91,6 +91,8 @@ const PROBE_INTERVAL_SEC: float = 30.0
 const MAX_REPLY_BYTES := 1024 * 1024
 ## The probe and the model list read the listing endpoint; a hosted catalogue runs to a few MB.
 const MAX_LISTING_BYTES := 8 * 1024 * 1024
+## A server's error message is its own text on the player's screen and in the log, so it is cut to a line.
+const MAX_REASON_CHARS := 100
 var max_reply_bytes: int = MAX_REPLY_BYTES
 var max_listing_bytes: int = MAX_LISTING_BYTES
 
@@ -592,7 +594,7 @@ func _build_body(prompt: String, opts: Dictionary) -> String:
 func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
 	# Returns [ok: bool, text: String, error: String]
 	if response_code < 200 or response_code >= 300:
-		return [false, "", "HTTP %d" % response_code]
+		return [false, "", "HTTP %d%s" % [response_code, _server_reason(response_code, body_bytes)]]
 
 	var raw: String = body_bytes.get_string_from_utf8()
 	if raw.is_empty():
@@ -627,6 +629,34 @@ func _extract_text(response_code: int, body_bytes: PackedByteArray) -> Array:
 				return [false, "", "OpenAI response missing choices[0].message.content" + _why_empty(first, msg)]
 
 	return [true, text, ""]
+
+
+## The server's own words for a refusal, after the status: bounded, the key struck out, and nothing at all for a key rejection.
+func _server_reason(code: int, body_bytes: PackedByteArray) -> String:
+	if code == 401 or code == 403:
+		return ""
+	var said: String = server_error_text(body_bytes.get_string_from_utf8())
+	if api_key != "":
+		said = said.replace(api_key, "[key]")
+	return "" if said.is_empty() else ": " + said.left(MAX_REASON_CHARS)
+
+
+## The message in a JSON error body: OpenAI's error.message, Ollama's error string, or a bare message/detail; "" for anything else.
+static func server_error_text(raw: String) -> String:
+	if not raw.strip_edges().begins_with("{"):
+		return ""
+	var json := JSON.new()
+	if json.parse(raw) != OK or not (json.data is Dictionary):
+		return ""
+	var said = json.data.get("error", json.data.get("message", json.data.get("detail")))
+	if said is Dictionary:
+		said = said.get("message")
+	if not (said is String):
+		return ""
+	var line: String = said.replace("\r", " ").replace("\n", " ").replace("\t", " ").strip_edges()
+	while line.contains("  "):
+		line = line.replace("  ", " ")
+	return line
 
 
 ## A reply's content as speech: null is nothing, an array of parts is their text joined; str() would print "<null>" or the array.
