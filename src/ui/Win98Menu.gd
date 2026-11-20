@@ -886,7 +886,16 @@ func _menu_has_icons() -> bool:
 	return false
 
 
+## Lines a row's name may take: 2 where a name is wider than the list is allowed, so it wraps and is never cut to a stub.
+var _row_lines: int = 1
+
+
 func _row_height() -> int:
+	return _line_row_height() + (_row_lines - 1) * _drawn_line_height(_row_label_font_size())
+
+
+## A one-line row: the height every row had before names could wrap. Icons are sized from it.
+func _line_row_height() -> int:
 	var text_h := maxi(ITEM_HEIGHT, _drawn_line_height(_row_label_font_size()))
 	if _menu_has_icons():
 		return maxi(text_h, ICON_PX)
@@ -895,7 +904,7 @@ func _row_height() -> int:
 
 ## 2x when the row can hold it. The slot is reserved in the width measure so the name does not lose pixels.
 func _icon_side() -> int:
-	var room := _row_height()
+	var room := _line_row_height()
 	if room >= ICON_PX:
 		return ICON_PX
 	return mini(room, maxi(_drawn_line_height(_row_label_font_size()), 16))
@@ -922,6 +931,7 @@ func _build_menu() -> void:
 
 	if menu_items.size() == 0:
 		return
+	_row_lines = 1
 
 	# Measured at the drawn size. The old 11px measure ellipsized "~N dmg [KILL]" on a target row.
 	var content_padding = MENU_PADDING * 2 + TILE_SIZE * 2 + 20  # borders + cursor + gap
@@ -952,6 +962,9 @@ func _build_menu() -> void:
 	if is_inside_tree():
 		viewport_width = int(get_viewport_rect().size.x)
 	var menu_width = clampi(max(210, max_label_width + content_padding), 210, _effective_width_cap(viewport_width))
+	## The list is as wide as it may be and a name still does not fit: every row takes a second line (struktured's 200% frame: "Power ...").
+	if max_label_width + content_padding > menu_width:
+		_row_lines = 2
 
 	var row_h := _row_height()
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
@@ -1206,6 +1219,13 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		text_label.text = label + " >"
 	else:
 		text_label.text = label
+	if _row_lines > 1:
+		text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text_label.max_lines_visible = _row_lines
+		## A name that fits one line sits mid-row as before; one that wraps starts a line higher, so the pair is centred.
+		var fits: bool = _text_px(text_label.text, _row_label_font_size()) <= label_w
+		var block_h: float = float(row_h) if fits else float(row_h - (_row_lines - 1) * _drawn_line_height(_row_label_font_size()))
+		text_label.position.y = FontFallbacks.row_label_y(_menu_font(), _row_label_font_size(), block_h)
 	# A Label will not shrink below font.get_height(), which includes leading the glyph does not use. The clip is the visible row.
 	var label_clip := Control.new()
 	label_clip.name = "LabelClip"
