@@ -283,6 +283,14 @@ const EYE_REVIEWED := {
 	"masterite_tempo_suburban/attack": "ce4ad5fb165931b9ea4df71d6d907fcfbcd2616243b47bb716a68bf0716283e5",
 	"masterite_tempo_suburban/hit": "88f58de0231379cd304663a842f48ed64e3dc2a8e7484e8ec970bca2474bf305",
 	"masterite_tempo_suburban/dead": "766eb43fd7bf5aa5d26e79a8f1e67be8d6c34954e74bac3d7aec0a212af9ce62",
+	"masterite_warden_industrial/idle": "82cb5bfff0698d70d414191a82f1ac2145b1b2f822bfca660781de0257d86810",
+	"masterite_warden_industrial/attack": "26e355f8f3ea3a75102e6418cd4bdd979a872899470282f614bdbf815eea774c",
+	"masterite_warden_industrial/hit": "92ccc8115294f47cd11f8c77483d8745e6e75002148524f13a778d21e047398d",
+	"masterite_warden_industrial/dead": "fed4bc7fe4cc4eeebb9ddf0c7891d9f8efb5bc182936a0c7cbb53e7e726dfd57",
+	"masterite_warden_medieval/idle": "d32681d8a0586dccd6216beb632f480a0d2a6839aa9e5baa840975f82523b109",
+	"masterite_warden_medieval/attack": "4669b25a4754467126aa45a037833781da13b38ba72986d6d4d14881d82d6f34",
+	"masterite_warden_medieval/hit": "1d1f450499c0f068d1096c7d208d4092d225f79e70d7123a18634c51867ea67b",
+	"masterite_warden_medieval/dead": "217ca60a98d59d2d77f0204cf705014e61cff75077954b8b315532c410571b1b",
 }
 ## Redrawn from their own idle by the paid S4 motion regen (tools/install_motion_regen.py, $0): off the repoint list, every range eye-pinned.
 const REDRAWN_BY_MOTION_REGEN := [
@@ -298,12 +306,12 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"masterite_arbiter_abstract", "masterite_arbiter_industrial", "masterite_arbiter_medieval", "masterite_arbiter_suburban",
 	"masterite_curator_futuristic", "masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",
 	"masterite_tempo_industrial", "masterite_tempo_medieval", "masterite_tempo_suburban",
+	"masterite_warden_industrial", "masterite_warden_medieval",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
 const ONE_CREATURE_BY_REPOINT := [
-	"cursed_armor", "elemental", "masterite_warden_industrial", "masterite_warden_medieval",
-	"masterite_warden_suburban", "recursive_loop", "the_margin",
+	"cursed_armor", "elemental", "masterite_warden_suburban", "recursive_loop", "the_margin",
 ]
 
 
