@@ -239,6 +239,22 @@ const EYE_REVIEWED := {
 	"masterite_warden_futuristic/attack": "b07fdc91f7d9791b393dccc06dfa04b490a694a7099f058fa7320b4b8e2d5d07",
 	"masterite_warden_futuristic/hit": "f223b8f5fc453a64dd7587745d8b7067a41e4d5ac44a2ba7165c927f8533dacd",
 	"masterite_warden_futuristic/dead": "409aa47a12c02bf570ed14f3e404162ca3cf565f0bb8c124db246ecdffe621b8",
+	"masterite_arbiter_abstract/idle": "ad85238ced2f7f7eb2a99411d1b031a979e16b56c12bb3d9f1f235f1e72c98cd",
+	"masterite_arbiter_abstract/attack": "89bc4bbdc94f67334d36c662ca78a0bd63c0722cc3b5b4baf8135f2044c6f3b3",
+	"masterite_arbiter_abstract/hit": "53b40ed237be67aa2722dd8bcc33194e2f56968b62c8a6fa816c7adc27505636",
+	"masterite_arbiter_abstract/dead": "8f14d212dc507c717ea8de317ea010267c53c8c01891a219101f0ba74fad2fc1",
+	"masterite_arbiter_industrial/idle": "45c4275f1ee4afb0ecc2424f05e2299513791c0c3c755d07ef207497c6390af6",
+	"masterite_arbiter_industrial/attack": "61fb2588c1f800661e20c51195719abf3b8cbc881cd4365e89b87a78498cf2ac",
+	"masterite_arbiter_industrial/hit": "904aa288b9b8bcdbdbe5d3e5c6dc11a3f05006031fe1ade2073a61dbf97e8614",
+	"masterite_arbiter_industrial/dead": "1af8001f902e344d2cac3850ec33cf722df44628feaef63942066c78fe6ae949",
+	"masterite_arbiter_medieval/idle": "6bf7052081f480b85ffd0e31c33e10ed176a402eb18f9156ae254195144d1389",
+	"masterite_arbiter_medieval/attack": "488ca5371624a88332661aeebb727d60f3832be65ee9e4f168c77b6d7bcb0944",
+	"masterite_arbiter_medieval/hit": "94e21dd4fa41ff7809be018cef6a05040a68125a4ee912d2d50bf170627df5c3",
+	"masterite_arbiter_medieval/dead": "adb1e244dbda913012bb22ca26ede80946c66f831b0c3803499a3e9ce7cd6491",
+	"masterite_arbiter_suburban/idle": "438bb5e2eda529747871938e242e73dbb21dabb758bb9b79b3dedd1ce1d947a7",
+	"masterite_arbiter_suburban/attack": "f6923208322e91ac892a62902ba37675c1c2704b00e68e626277a9f67f7802b3",
+	"masterite_arbiter_suburban/hit": "d1fc9d205da2b85eb1a149fde2830bb9fa8f9753130e207fee989e564209f41d",
+	"masterite_arbiter_suburban/dead": "8f58fcdbc17d19e400792ec3c77b03d0cc57236323b7e024c3d86f0b1cad8ee9",
 }
 ## Redrawn from their own idle by the paid S4 motion regen (tools/install_motion_regen.py, $0): off the repoint list, every range eye-pinned.
 const REDRAWN_BY_MOTION_REGEN := [
@@ -251,16 +267,15 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"corrupted_sprite", "data_wraith", "firewall_sentinel", "glitch_entity", "memory_leak", "rogue_process", "script_error",
 	"corrupted_guardian", "crystal_golem", "empty_set", "forgotten_variable", "null_entity", "optimization_itself", "the_absence",
 	"masterite_arbiter_futuristic", "masterite_tempo_futuristic", "masterite_warden_abstract", "masterite_warden_futuristic",
+	"masterite_arbiter_abstract", "masterite_arbiter_industrial", "masterite_arbiter_medieval", "masterite_arbiter_suburban",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
 const ONE_CREATURE_BY_REPOINT := [
-	"cursed_armor", "elemental", "masterite_arbiter_abstract", "masterite_arbiter_industrial",
-	"masterite_arbiter_medieval", "masterite_arbiter_suburban", "masterite_curator_futuristic",
-	"masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",
-	"masterite_tempo_industrial", "masterite_tempo_medieval", "masterite_tempo_suburban",
-	"masterite_warden_industrial", "masterite_warden_medieval", "masterite_warden_suburban", "recursive_loop",
-	"the_margin",
+	"cursed_armor", "elemental", "masterite_curator_futuristic", "masterite_curator_industrial",
+	"masterite_curator_medieval", "masterite_curator_suburban", "masterite_tempo_industrial",
+	"masterite_tempo_medieval", "masterite_tempo_suburban", "masterite_warden_industrial",
+	"masterite_warden_medieval", "masterite_warden_suburban", "recursive_loop", "the_margin",
 ]
 
 
