@@ -18,8 +18,8 @@ const HEALTHY_MIN := 0.25
 ## id -> why. Recorded so NEW breakage reds while these do not block; shrink it, never grow it.
 ## meta_knight left 2026-11-20: the S4 redraw made every frame solid; the crisp knight is its frame 0.
 ## masterite_tempo_futuristic and masterite_arbiter_futuristic left 2026-11-21: the S4 redraw replaced their panel frames.
+## masterite_curator_medieval left 2026-11-21: the S4 redraw made its flame-wrapped hit frames solid.
 const KNOWN := {
-	"masterite_curator_medieval": "borderline frames 4,5(hit) — visible figure under heavy flame FX",
 	"ghost": "INTENTIONAL frame 6(dead) — a ghost dissolving to a wisp is the design",
 }
 
