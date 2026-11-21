@@ -4,6 +4,8 @@ Generated: 2026-03-08T03:37:14.159677
 
 This document summarizes prior design discussions for use by automated story-writing or code agents.
 
+> **Historical snapshot (2026-03-08).** Brainstorm-era ideas below (e.g. Fighter -> Knight/Champion, Mage -> Wizard/Dark Mage evolutions) are NOT the shipped design. Current truth: job list in `data/jobs.json` / `CLAUDE.md` "Job System", per-world job names in `docs/job_evolutions_by_world.md` + `data/job_world_names.json`.
+
 ---
 
 ## Core Project Concept
