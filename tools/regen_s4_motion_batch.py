@@ -4,7 +4,7 @@ Rates are passed in, never assumed: read them off OpenAI's pricing page for the 
 cross the cap (budgeting each call at the dearest one seen so far, or --first-call-budget for the first).
 The spend ledger is tmp/gpt2_trial/out/calls.jsonl and is cumulative across runs, so --cap is the TOTAL, not this run's share.
 A ledger row with no usage is priced at the dearest-call budget, never $0. `--selftest` runs the pricing in memory.
-Refuses, before any call, every id that is unregistered or whose tier tools/artist_guard.tier_refusal does not allow."""
+Refuses, before any call, every id that is unregistered, whose tier tools/artist_guard.tier_refusal does not allow, or that reuses another id's PNG."""
 import glob, json, os, subprocess, sys
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -32,6 +32,21 @@ def spent(rin, rout, unknown):
     return sum(cost(json.loads(l), rin, rout, unknown) for l in open(LEDGER)) if os.path.exists(LEDGER) else 0.0
 
 
+def sheet_borrowers(sheets, m):
+    """Other ids drawing m's PNG: when m owns it (its file is named for it), they must take m's new ranges too."""
+    return sorted(k for k, v in sheets.items() if k != m and v.get("path") == sheets[m].get("path"))
+
+
+def shared_sheet_refusal(sheets, m):
+    """Empty unless m reuses a PNG it does not own; a redraw for a borrower overwrites its owner's sheet (the_margin, 2026-11-22)."""
+    others = sheet_borrowers(sheets, m)
+    stem = Path(sheets[m].get("path", "")).stem
+    if not others or stem == m:
+        return ""
+    owner = stem if stem in others else "its owner (no id is named for it)"
+    return f"{m} reuses {Path(sheets[m]['path']).name}, also shown by {', '.join(others)}: redraw {owner} and give {m} the same ranges"
+
+
 def selftest():
     """In memory only: no ledger, no subprocess, no network."""
     fails = []
@@ -41,6 +56,16 @@ def selftest():
     for rec in ({"usage": None}, {}, {"usage": {}}):
         if cost(rec, 8.0, 30.0, 0.5) != 0.5:
             fails.append(f"a paid row with no usage {rec} cost ${cost(rec, 8.0, 30.0, 0.5)}, expected the $0.50 budget, not $0")
+    sheets = {"owner": {"path": "res://m/owner.png"}, "borrower": {"path": "res://m/owner.png"}, "alone": {"path": "res://m/alone.png"},
+              "a": {"path": "res://m/nobody.png"}, "b": {"path": "res://m/nobody.png"}}
+    if shared_sheet_refusal(sheets, "alone") != "" or shared_sheet_refusal(sheets, "owner") != "":
+        fails.append("CONTROL: a sheet's own id may be redrawn")
+    if "owner.png" not in shared_sheet_refusal(sheets, "borrower"):
+        fails.append("an id reusing another monster's PNG must be refused, naming the PNG (the_margin 2026-11-22)")
+    if shared_sheet_refusal(sheets, "a") == "" or shared_sheet_refusal(sheets, "b") == "":
+        fails.append("a shared PNG no id owns must refuse every sharer")
+    if sheet_borrowers(sheets, "owner") != ["borrower"] or sheet_borrowers(sheets, "alone") != []:
+        fails.append("the owner must be told which ids reuse its PNG")
     for f in fails:
         print("SELFTEST FAIL:", f)
     print("selftest:", "FAIL" if fails else "ok (usage priced; a row without usage costs the budget, not $0)")
@@ -68,7 +93,7 @@ if __name__ == "__main__":
     flags = {"--cap", "--rate-in", "--rate-out", "--first-call-budget", "--model", "--quality"}
     monsters = [a for i, a in enumerate(sys.argv[1:], 1) if not a.startswith("--") and sys.argv[i - 1] not in flags]
     sheets = json.load(open("data/sprite_manifest.json"))["monster_sheets"]
-    refused = {m: ("not a registered monster_sheet" if m not in sheets else tier_refusal(sheets[m].get("tier"), m)) for m in monsters}
+    refused = {m: ("not a registered monster_sheet" if m not in sheets else tier_refusal(sheets[m].get("tier"), m) or shared_sheet_refusal(sheets, m)) for m in monsters}
     refused = {m: why for m, why in refused.items() if why}
     if refused:   # artist sheets and unknown provenance are never regen targets, even into tmp/
         for m, why in refused.items(): print(f"REFUSED {m}: {why}")

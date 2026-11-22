@@ -3,7 +3,7 @@ Spends nothing: the strips are the normalised output of calls already on the spe
 
 Frame 0 becomes the shipped idle (the manifest's idle start, which is not always 0), kept byte for byte, soft edge included (cowir-main 26252). Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
 past 7 (the Rat King's royal_spite) is kept. The ranges go back to idle 0-1 / attack 2-3 / hit 4-5 / dead 6-7.
-Refuses a sheet whose tier is not T1, and a strip that is not two 256 px frames with binary alpha.
+Refuses a sheet whose tier is not T1, an id that reuses another id's PNG, and a strip that is not two 256 px frames with binary alpha.
 Prints, per monster, the EYE_REVIEWED pins test_a_monster_stays_one_creature needs, so a look is pinned to those pixels.
 
 Usage: uv run python tools/install_motion_regen.py <strips_dir> <monster|tag-map.json> [--write]
@@ -17,6 +17,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from tools.artist_guard import tier_refusal
+from tools.regen_s4_motion_batch import shared_sheet_refusal, sheet_borrowers
 
 MANIFEST = "data/sprite_manifest.json"
 FW = 256
@@ -105,9 +106,11 @@ def install(monster: str, files: dict, strips_dir: Path, write: bool) -> dict:
     entry = man["monster_sheets"].get(monster)
     if entry is None:
         raise SystemExit(f"{monster}: not a registered monster_sheet")
-    why = tier_refusal(entry.get("tier"), monster)
+    why = tier_refusal(entry.get("tier"), monster) or shared_sheet_refusal(man["monster_sheets"], monster)
     if why:
         raise SystemExit(why)
+    for b in sheet_borrowers(man["monster_sheets"], monster):
+        print(f"  NOTE {b} also shows this PNG: give it {monster}'s new ranges and pins")
     path = entry["path"].replace("res://", "")
     sheet = np.array(Image.open(path).convert("RGBA"))
     if sheet.shape[1] < 8 * FW or sheet.shape[0] != FW:
