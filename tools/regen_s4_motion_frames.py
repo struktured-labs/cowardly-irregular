@@ -28,6 +28,7 @@ POSES = {
     "dead": ("DEFEATED", "LEFT panel: collapsing, knees buckling, halfway down. RIGHT panel: lying defeated on the ground, still, eyes closed."),
 }
 DESC = {
+    "recursive_loop": "a dark teal spined serpent curled in a C shape around a solid flat slate-grey disc rimmed in white, with a white crescent arc above; the disc is a plain featureless solid surface: NO face, NO eyes, NO holes, NO patches, keep it one flat grey",
     "unassuming_dog": "a friendly-looking orange shiba-like dog with a white chest and collar, standing on four legs",
     "troll": "a hulking green troll with a small axe, tusks, and a brown loincloth",
     "cave_rat_king": "a grey rat king standing upright in a black cape and gold crown, holding a gold sceptre",

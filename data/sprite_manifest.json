@@ -1507,7 +1507,7 @@
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips elemental__idle__1795305278, elemental__attack__1795305217, elemental__hit__1795305237, elemental__dead__1795305260), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1517,16 +1517,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -2865,7 +2865,7 @@
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "idle 0 shipped; idle 1, attack 2-3, hit 4-5, dead 6-7 from the paid S4 motion regen (gpt-image-2.6-sunburst, strips recursive_loop__idle__1795305478, recursive_loop__attack__1795305294, recursive_loop__hit__1795305529, recursive_loop__dead__1795305333), installed by tools/install_motion_regen.py at $0. Replaces the 2026-11-11 idle repoint (ruling 23683): the legacy frames held other creatures; these were drawn from this sheet's own idle and are the same creature. EARLIER (kept for its history; its ranges no longer apply): attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2875,16 +2875,16 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
@@ -4056,20 +4056,20 @@
           "end": 1
         },
         "attack": {
-          "start": 0,
-          "end": 0
+          "start": 2,
+          "end": 3
         },
         "hit": {
-          "start": 0,
-          "end": 0
+          "start": 4,
+          "end": 5
         },
         "dead": {
-          "start": 0,
-          "end": 0
+          "start": 6,
+          "end": 7
         }
       },
       "tier": "T1",
-      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan. dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
+      "source": "2026-11-22 cowir-sprites: its ranges now match masterite_arbiter_abstract's, the sheet it reuses, whose attack/hit/dead were redrawn from its own idle by the paid S4 motion regen (a7f3d1b46); no PNG written. EARLIER (kept for its history; its ranges no longer apply): DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan. dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
     }
   },
   "npc_sheets": {

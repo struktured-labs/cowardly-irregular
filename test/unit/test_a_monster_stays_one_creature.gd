@@ -291,6 +291,19 @@ const EYE_REVIEWED := {
 	"masterite_warden_medieval/attack": "4669b25a4754467126aa45a037833781da13b38ba72986d6d4d14881d82d6f34",
 	"masterite_warden_medieval/hit": "1d1f450499c0f068d1096c7d208d4092d225f79e70d7123a18634c51867ea67b",
 	"masterite_warden_medieval/dead": "217ca60a98d59d2d77f0204cf705014e61cff75077954b8b315532c410571b1b",
+	## cowir-sprites 2026-11-22: elemental and recursive_loop redrawn, every range looked at on grey; the_margin reuses masterite_arbiter_abstract's sheet, so its pins are the Arbiter's.
+	"elemental/idle": "3bc83a28c6a656485f2cdf0404f81ff7ea51b12c72334e15f311c82057f6e9ea",
+	"elemental/attack": "f25bab8e23c4c5e93c644754cd8a70435c779412eb30267d61ccf5ba9cdc4e5b",
+	"elemental/hit": "40aaefe32b786147ea4ed8c385503dd2785f41c5a43f45c941a0ee59aa4777f6",
+	"elemental/dead": "87f1dbb602155f9929e9f0700e328756efb531f13567088a6c2f67157951d12b",
+	"recursive_loop/idle": "1eef2f81fc0e00d638426a390e3ffa84634f0b6056dbbbfa29c07a0d73ca237a",
+	"recursive_loop/attack": "5e646f4d0439b4aded0c11232185c87290cbd79bad0359a8bb0a065e67e5cdcd",
+	"recursive_loop/hit": "4ad05270f541558fd4eca51ffcc9f32019fe89a1948cc675f6c4aca0babb3fa9",
+	"recursive_loop/dead": "4e5c1174ef124183281a83b5b3149085faf89a2654624163e1cf99ba88ac142c",
+	"the_margin/idle": "ad85238ced2f7f7eb2a99411d1b031a979e16b56c12bb3d9f1f235f1e72c98cd",
+	"the_margin/attack": "89bc4bbdc94f67334d36c662ca78a0bd63c0722cc3b5b4baf8135f2044c6f3b3",
+	"the_margin/hit": "53b40ed237be67aa2722dd8bcc33194e2f56968b62c8a6fa816c7adc27505636",
+	"the_margin/dead": "8f14d212dc507c717ea8de317ea010267c53c8c01891a219101f0ba74fad2fc1",
 }
 ## Redrawn from their own idle by the paid S4 motion regen (tools/install_motion_regen.py, $0): off the repoint list, every range eye-pinned.
 const REDRAWN_BY_MOTION_REGEN := [
@@ -307,11 +320,12 @@ const REDRAWN_BY_MOTION_REGEN := [
 	"masterite_curator_futuristic", "masterite_curator_industrial", "masterite_curator_medieval", "masterite_curator_suburban",
 	"masterite_tempo_industrial", "masterite_tempo_medieval", "masterite_tempo_suburban",
 	"masterite_warden_industrial", "masterite_warden_medieval",
+	"elemental", "recursive_loop", "the_margin",
 ]
 ## A redrawn frame's colours against its idle: measured min 0.697 (the thin snake's lunge); another species scores lower.
 const REDRAWN_COLOUR_FLOOR := 0.65
 const ONE_CREATURE_BY_REPOINT := [
-	"cursed_armor", "elemental", "masterite_warden_suburban", "recursive_loop", "the_margin",
+	"cursed_armor", "masterite_warden_suburban",
 ]
 
 
