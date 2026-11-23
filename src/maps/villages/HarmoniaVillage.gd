@@ -55,6 +55,15 @@ func _get_save_point_position() -> Vector2:
 	return Vector2(16 * TILE_SIZE, 15 * TILE_SIZE)
 
 
+## Harmonia's well: Phil the Lost (28, 21) and his notebook (27, 21) are at its south-east kerb.
+const WELL_CELL := Vector2i(25, 20)
+
+
+## The "Stone Well" text is read from the road cell in front of the drawn well (the village sweep keeps a readable off solid cells).
+func _examine_anchor_cell(examine_id: String) -> Vector2i:
+	return WELL_CELL + Vector2i(0, 1) if examine_id == "harmonia_well" else Vector2i(-1, -1)
+
+
 func _get_player_spawn_fallback() -> Vector2:
 	return Vector2(752, 768)
 
@@ -169,7 +178,7 @@ func _generate_map() -> void:
 	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
 	spawn_points["library_exit"] = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
-	spawn_points["cartographer_exit"] = Vector2(33 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["cartographer_exit"] = Vector2(31 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -312,7 +321,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(8 * TILE_SIZE, 7.5 * TILE_SIZE))
 	# === CARTOGRAPHER DOOR ===
 	# Top-right PPP cluster (cols 22-24, rows 2-4), mirroring the library corner.
-	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(32 * TILE_SIZE, 7.5 * TILE_SIZE))
+	## The Arms' drawn shop door is the smithy's (his log 2026-11-20: neither entrance stood under it); the attic's own way in is the facade's left corner, clear of it.
+	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(30 * TILE_SIZE, 7.5 * TILE_SIZE))
 
 
 ## tick 37: _add_interior_door moved up to BaseVillage so every village
@@ -343,6 +353,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(38, 10))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(39, 10))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(12, 16))
+	# The well six shipped lines talk about and Phil sits at (main 24238): north of the road, at his kerb.
+	_add_prop(VillagePropScript.Kind.WELL, WELL_CELL)
 	# Market + gate (tier 0): stalls either side of the entrance, a cart, crates, lamps on the road
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(17, 25))
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(26, 25))
@@ -872,6 +884,36 @@ func _setup_npcs() -> void:
 		"granny_kaya"
 	)
 	npcs.add_child(kaya)
+
+	# Bill — the artist's fifth overworld villager (2026-10-25 drop), pacing the open grass along the south wall, sword on his back.
+	var bill_loop: Array[Vector2] = [
+		Vector2(32 * TILE_SIZE, 31 * TILE_SIZE),
+		Vector2(37 * TILE_SIZE, 31 * TILE_SIZE),
+	]
+	var bill = _create_wandering_npc(
+		"Bill",
+		"bill",
+		"I walk the south wall. Nobody asked me to. Nobody's asked me to stop, either.",
+		bill_loop,
+		"villager",
+		"bill"
+	)
+	npcs.add_child(bill)
+
+	# The Village Knight — the artist's sixth overworld villager (2026-11-03 drop), on watch along the south wall's west end.
+	var knight_loop: Array[Vector2] = [
+		Vector2(6 * TILE_SIZE, 31 * TILE_SIZE),
+		Vector2(11 * TILE_SIZE, 31 * TILE_SIZE),
+	]
+	var knight = _create_wandering_npc(
+		"Village Knight",
+		"village_knight",
+		"I stand watch over the south wall. The wall has not moved in eleven years. I consider this a success.",
+		knight_loop,
+		"villager",
+		"village_knight"
+	)
+	npcs.add_child(knight)
 
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.

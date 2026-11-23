@@ -391,6 +391,12 @@ var _door_busy: bool = false
 var door_cue_played: bool = false
 
 
+## Blocks whose drawn door could not be given to exactly one entrance; a player there can stand on the door and be refused.
+var blocks_left_unaligned: Array = []
+## One row per entrance stood under a drawn door: {block, moved, from_x, to_x, others}; lets a test and a reader see every move.
+var entrance_moves: Array = []
+
+
 ## The block's ONE entrance (door, shop, inn or bar) stands under the drawn door: struktured 2026-11-01, "you can be right
 ## on the door and not be allowed to enter, but LEFT of the door is fine". Two entrances in one block are left alone.
 func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
@@ -406,11 +412,32 @@ func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
 				found.append(b)
 		elif b is Area2D and b.has_method("interact") and _building_cells(b).intersects(rect):
 			found.append(b)
+	var all_found: Array = found.duplicate()
+	var door_x: float = VillageDoor.entrance_x(house, door)
+	if found.size() > 1:
+		found = _door_owner_among(found, door, door_x)
 	if found.size() != 1:
 		if found.size() > 1:
+			blocks_left_unaligned.append(rect)
 			push_warning("[VILLAGE] block %s has %d entrances; none moved under its drawn door" % [rect, found.size()])
 		return
-	(found[0] as Node2D).position.x = VillageDoor.entrance_x(house, door) - (found[0] as Node2D).get_parent().global_position.x
+	var owner_node := found[0] as Node2D
+	var to_x: float = door_x - owner_node.get_parent().global_position.x
+	entrance_moves.append({"block": rect, "moved": owner_node, "from_x": owner_node.position.x, "to_x": to_x, "others": all_found.filter(func(b): return b != owner_node)})
+	owner_node.position.x = to_x
+
+
+## Which of a block's several entrances the drawn door belongs to: the building's own establishment (shop, inn, chapel) before any
+## interior door added to its facade; among several of one kind, the strictly nearest. Many = undecided.
+func _door_owner_among(found: Array, _door: Dictionary, door_x: float) -> Array:
+	var own: Array = found.filter(func(b): return not (b is AreaTransition))
+	var named: Array = own if not own.is_empty() else found
+	if named.size() <= 1:
+		return named
+	named.sort_custom(func(a, b): return absf(a.global_position.x - door_x) < absf(b.global_position.x - door_x))
+	if absf(named[1].global_position.x - door_x) - absf(named[0].global_position.x - door_x) > 1.0:
+		return [named[0]]
+	return named
 
 
 ## manifest building_art: key -> its whole entry (path, tier, door…).
@@ -909,7 +936,7 @@ var ambient_walker_lines: Dictionary = {}
 func _add_ambient_walkers(roster: Array) -> int:
 	if roster.is_empty() or npcs == null:
 		return 0
-	var runs := _walker_runs(roster.size())
+	var runs := _stable_walker_runs(roster.size())
 	var added: int = 0
 	for spec in roster:
 		if added >= runs.size():
@@ -930,12 +957,93 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
 
 
+## Each walker keeps the free stretch of its own ANCHOR line (dealt as if no prop stood), so a prop or an examine moves only the walker it touches.
+func _stable_walker_runs(want: int) -> Array:
+	var anchors := _walker_runs(want, true)
+	var pool: Array = _walker_candidates(false)
+	pool = pool[0] + pool[1]
+	var dealt := {}
+	for i in mini(want, anchors.size()):
+		var kept: Array = _free_stretch_of(anchors[i], pool)
+		if not kept.is_empty():
+			dealt[i] = kept
+	for i in want:
+		if dealt.has(i):
+			continue
+		for strict in [2, 1, 0]:
+			var best: Array = []
+			var best_d: float = INF
+			for c in pool:
+				var cr := _run_rect(c)
+				if strict > 0 and dealt.values().any(func(t): return _run_rect(t).grow(2).intersects(cr)):
+					continue
+				if strict > 1 and range(anchors.size()).any(func(k): return k != i and _run_rect(anchors[k]).grow(2).intersects(cr)):
+					continue
+				var d: float = 1.0e6 - float(cr.get_area())
+				if i < anchors.size():
+					d = Vector2(_run_rect(anchors[i]).get_center()).distance_to(Vector2(cr.get_center()))
+				if d < best_d:
+					best_d = d
+					best = c
+			if not best.is_empty():
+				dealt[i] = best
+				break
+	var out: Array = []
+	for i in want:
+		if not dealt.has(i):
+			break
+		out.append(dealt[i])
+	return out
+
+
+## The longest free piece of `anchor`'s own line, clipped to its span; [] when none is long enough to walk.
+func _free_stretch_of(anchor: Array, pool: Array) -> Array:
+	var ar := _run_rect(anchor)
+	var row: bool = ar.size.y == 1 and (ar.size.x > 1 or anchor[0].y == anchor[1].y)
+	var best: Array = []
+	var best_n: int = 0
+	for c in pool:
+		var cr := _run_rect(c)
+		var cut := ar.intersection(cr)
+		if not cut.has_area() or (row and cr.size.y != 1) or (not row and cr.size.x != 1):
+			continue
+		var n: int = cut.size.x if row else cut.size.y
+		if n >= WALKER_MIN_RUN and n > best_n:
+			best_n = n
+			best = [cut.position, cut.end - Vector2i.ONE]
+	return best
+
+
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
 ## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
-func _walker_runs(want: int = 0) -> Array:
+## `structural` deals as if no prop or examine stood: the anchors a prop cannot move.
+func _walker_runs(want: int = 0, structural: bool = false) -> Array:
+	var cands: Array = _walker_candidates(structural)
+	if cands[0].is_empty() and cands[1].is_empty():
+		return []
+	var runs: Array = cands[0]
+	var chosen: Array = []
+	for r in runs:
+		var clash := false
+		for c in chosen:
+			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
+				clash = true
+				break
+		if not clash:
+			chosen.append(r)
+	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
+	if chosen.size() < want:
+		for r in cands[1]:
+			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
+				chosen.append(r)
+	return chosen
+
+
+## [rows longest first, columns longest first]; `structural` ignores props and examine footprints only.
+func _walker_candidates(structural: bool) -> Array:
 	var size := _walker_grid_size()
 	if size == Vector2i.ZERO:
-		return []
+		return [[], []]
 	var avoid := {}
 	for container in [npcs, buildings, treasures, transitions]:
 		if container == null:
@@ -946,6 +1054,9 @@ func _walker_runs(want: int = 0) -> Array:
 				continue
 			for r in _keep_clear_rects(n as Node2D, container == transitions):
 				_mark_cells(avoid, r)
+	var blocked := _prop_blocked
+	if structural:
+		_prop_blocked = {}
 	var margin: int = 3
 	var runs: Array = []
 	for y in range(margin, size.y - margin):
@@ -967,21 +1078,9 @@ func _walker_runs(want: int = 0) -> Array:
 		var lp: int = p[1].x - p[0].x
 		var lq: int = q[1].x - q[0].x
 		return lp > lq if lp != lq else (p[0].y < q[0].y if p[0].y != q[0].y else p[0].x < q[0].x))
-	var chosen: Array = []
-	for r in runs:
-		var clash := false
-		for c in chosen:
-			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
-				clash = true
-				break
-		if not clash:
-			chosen.append(r)
-	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
-	if chosen.size() < want:
-		for r in _walker_column_runs(size, avoid, margin):
-			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
-				chosen.append(r)
-	return chosen
+	var cols := _walker_column_runs(size, avoid, margin)
+	_prop_blocked = blocked
+	return [runs, cols]
 
 
 func _walker_column_runs(size: Vector2i, avoid: Dictionary, margin: int) -> Array:
@@ -1074,13 +1173,36 @@ func _setup_camera() -> void:
 	camera.zoom = Vector2(2.0, 2.0)
 
 	var map_pixel_size = _get_map_pixel_size()
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_size.x
-	camera.limit_bottom = map_pixel_size.y
+	## A map smaller than the screen cannot be clamped into view: the limits widen evenly and the spill is painted with the map's own edge.
+	var spill: Vector2i = camera_spill(Vector2(map_pixel_size), camera.zoom)
+	_paint_past_the_map(spill)
+	camera.limit_left = -spill.x
+	camera.limit_top = -spill.y
+	camera.limit_right = map_pixel_size.x + spill.x
+	camera.limit_bottom = map_pixel_size.y + spill.y
 
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
+
+
+## Pixels per side by which the screen (the project's base view at this zoom) is wider or taller than the map; zero for every map that fills it.
+static func camera_spill(map: Vector2, zoom: Vector2) -> Vector2i:
+	var view := Vector2(float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)), float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))) / zoom
+	return Vector2i(maxi(0, ceili((view.x - map.x) / 2.0)), maxi(0, ceili((view.y - map.y) / 2.0)))
+
+
+## Repeats the map's edge cells outward over the spill, so what the camera shows past the map is its own border and not the void.
+func _paint_past_the_map(spill: Vector2i) -> void:
+	if tile_map == null or spill == Vector2i.ZERO:
+		return
+	var size: Vector2i = _get_map_pixel_size() / TILE_SIZE
+	var pad := Vector2i(ceili(float(spill.x) / TILE_SIZE), ceili(float(spill.y) / TILE_SIZE))
+	for y in range(-pad.y, size.y + pad.y):
+		for x in range(-pad.x, size.x + pad.x):
+			if x >= 0 and x < size.x and y >= 0 and y < size.y:
+				continue
+			var edge := Vector2i(clampi(x, 0, size.x - 1), clampi(y, 0, size.y - 1))
+			tile_map.set_cell(Vector2i(x, y), tile_map.get_cell_source_id(edge), tile_map.get_cell_atlas_coords(edge), tile_map.get_cell_alternative_tile(edge))
 
 
 func _setup_controller() -> void:
@@ -1268,7 +1390,6 @@ const _EXAMINE_OFFSETS := {
 	"grimhollow_lantern_ledger": Vector2i(-3, -1),
 	## cowir-story 2026-10-13 — second looks for the remaining six. Each is an institutional
 	## document, like that village's first entry, and each offset clears the first one's cell.
-	"brasston_redundancy_index": Vector2i(3, -1),
 	"ironhaven_strike_ledger": Vector2i(-1, 3),
 	"maple_heights_appendix_form": Vector2i(1, 3),
 	"rivet_row_incident_numbers": Vector2i(-3, 2),
@@ -1283,6 +1404,98 @@ const _EXAMINE_SEARCH_RADIUS: int = 4
 ## Subclasses may name a different offset for one entry without touching the table.
 func _examine_offset_for(examine_id: String) -> Vector2i:
 	return _EXAMINE_OFFSETS.get(examine_id, Vector2i.ZERO)
+
+
+## Virtual: the walkable cell beside the drawn thing this examine describes (a well, a statue), where it is read from; (-1, -1) for none.
+func _examine_anchor_cell(_examine_id: String) -> Vector2i:
+	return Vector2i(-1, -1)
+
+
+## The prop kind an examine's text describes; it is read beside the nearest such prop its village draws (census tmp/examine_census.md, group B).
+const _EXAMINE_DESCRIBES := {
+	"eldertree_grafted_branch": VillagePropScript.Kind.TREE,
+	"frosthold_meltwater_mark": VillagePropScript.Kind.FENCE,
+	"grimhollow_lantern_ledger": VillagePropScript.Kind.LAMP_POST,
+	"eldertree_gravestone": VillagePropScript.Kind.GRAVESTONE,
+	"grimhollow_warning": VillagePropScript.Kind.SIGNPOST,
+	"sandrift_caravan_post": VillagePropScript.Kind.SIGNPOST,
+}
+## Where a readable may stand beside a footprint cell: in front first, then either side; never behind, where the art grows up over it.
+const _BESIDE_STEPS: Array = [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0)]
+
+
+## The free walkable cell in front of (else beside) the drawn prop this examine describes, nearest props first; (-1, -1) if the village draws none.
+func _described_prop_cell(examine_id: String, want: Vector2i, taken: Array) -> Vector2i:
+	if not _EXAMINE_DESCRIBES.has(examine_id) or props == null:
+		return Vector2i(-1, -1)
+	var bases: Array = []
+	for p in props.get_children():
+		if p is VillageProp and p.kind == _EXAMINE_DESCRIBES[examine_id]:
+			bases.append([p, Vector2i(floori(p.position.x / TILE_SIZE), roundi(p.position.y / TILE_SIZE) - 1)])
+	bases.sort_custom(func(a, b): return Vector2(a[1] - want).length() < Vector2(b[1] - want).length())
+	for entry in bases:
+		var foot: Array = entry[0].footprint_cells(entry[1])
+		for step in _BESIDE_STEPS:
+			for f in foot:
+				var c: Vector2i = f + step
+				if not foot.has(c) and not taken.has(c) and _is_cell_walkable(c):
+					return c
+	return Vector2i(-1, -1)
+
+
+## The door an examine's text describes (its board or sign is on that building); it is read just beside the door's approach (census group B).
+const _EXAMINE_BESIDE_DOOR := {
+	"rivet_row_incident_numbers": "IncidentBoardDoor",
+	"vertex_threshold_tally": "ThresholdDoor",
+	"sandrift_rain_tally": "RainLedgerDoor",
+	"ironhaven_strike_ledger": "StrikeRegistryDoor",
+	"rivet_row_union_board": "UnionHallDoor",
+	"maple_heights_hoa_board": "CommunityCenterDoor",
+	"maple_heights_appendix_form": "CommunityCenterDoor",
+}
+
+
+## The cells a door's trigger box covers.
+func _door_box_cells(door: Node) -> Array:
+	var out: Array = []
+	var col := door.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if col == null:
+		for c in door.get_children():
+			if c is CollisionShape2D:
+				col = c
+	if col == null or not (col.shape is RectangleShape2D):
+		return out
+	var size: Vector2 = (col.shape as RectangleShape2D).size
+	var r := Rect2(door.position + col.position - size * 0.5, size)
+	for y in range(floori(r.position.y / TILE_SIZE), ceili(r.end.y / TILE_SIZE)):
+		for x in range(floori(r.position.x / TILE_SIZE), ceili(r.end.x / TILE_SIZE)):
+			out.append(Vector2i(x, y))
+	return out
+
+
+## The free walkable cell just left or right of the door's approach (its box's front row, then the row below); (-1, -1) if none.
+func _door_side_cell(examine_id: String, taken: Array) -> Vector2i:
+	if not _EXAMINE_BESIDE_DOOR.has(examine_id) or buildings == null:
+		return Vector2i(-1, -1)
+	var door := buildings.get_node_or_null(str(_EXAMINE_BESIDE_DOOR[examine_id]))
+	if door == null:
+		return Vector2i(-1, -1)
+	var box: Array = _door_box_cells(door)
+	if box.is_empty():
+		return Vector2i(-1, -1)
+	var x0: int = box[0].x
+	var x1: int = box[0].x
+	var y1: int = box[0].y
+	for c in box:
+		x0 = mini(x0, c.x)
+		x1 = maxi(x1, c.x)
+		y1 = maxi(y1, c.y)
+	for y in [y1, y1 + 1]:
+		for x in [x0 - 1, x1 + 1]:
+			var c := Vector2i(x, y)
+			if not box.has(c) and not taken.has(c) and _is_cell_walkable(c):
+				return c
+	return Vector2i(-1, -1)
 
 
 ## Only this village's entries, so a pack-wide key change cannot pull another scene's text in.
@@ -1352,10 +1565,16 @@ func _place_authored_examines() -> void:
 		if text == "":
 			push_warning("[%s] examine '%s' is authored with no text" % [_get_area_id(), examine_id])
 			continue
-		if not _EXAMINE_OFFSETS.has(examine_id):
+		# An examine anchored to something the village DRAWS stands on the authored cell beside it, not by offset from the spawn.
+		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
+		if anchor.x < 0:
+			anchor = _described_prop_cell(str(examine_id), spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		if anchor.x < 0:
+			anchor = _door_side_cell(str(examine_id), taken)
+		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
 			continue
-		var cell := _resolve_examine_cell(spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		var cell: Vector2i = anchor if anchor.x >= 0 else _resolve_examine_cell(spawn_cell + _examine_offset_for(str(examine_id)), taken)
 		if cell.x < 0:
 			push_warning("[%s] examine '%s' found no walkable free cell near %s" % [
 				_get_area_id(), examine_id, str(spawn_cell + _examine_offset_for(str(examine_id)))])

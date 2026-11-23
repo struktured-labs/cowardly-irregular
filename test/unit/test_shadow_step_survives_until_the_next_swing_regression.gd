@@ -8,6 +8,18 @@ extends GutTest
 const COMBATANT_PATH := "res://src/battle/Combatant.gd"
 const RESOLVER := preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
+var _inherit_was: bool = true
+
+
+## The crits counted here must come from the step alone; an inherited swing crit (.794) would red "not again" at random.
+func before_each() -> void:
+	_inherit_was = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+
+
+func after_each() -> void:
+	DamageRules.abilities_inherit_swing_crit = _inherit_was
+
 
 func _make(name_str: String, attack: int = 40) -> Combatant:
 	var c_script: GDScript = load(COMBATANT_PATH)

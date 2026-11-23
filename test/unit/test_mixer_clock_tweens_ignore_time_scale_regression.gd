@@ -37,6 +37,9 @@ const CLASSIFIED: Dictionary = {
 	# 2026-11-02 lane/music-quest-accept-jingle: drives the MusicDuck bus Amplify (slot 2) volume_db under the
 	# quest-accept ditty; bus level runs on the mixer clock, so it opts out of Engine.time_scale.
 	"_duck_music_for_jingle": true,
+	# .795 lane/a-boss-charge-dips-the-music: the boss CHARGE duck tapers the MusicDuck Amplify (slot 3) mid-battle,
+	# where a time-scaled taper would stretch at slow rungs; it opts out like the kill duck.
+	"duck_for_charge": true,
 }
 
 const NOMINAL_MS: float = 500.0

@@ -19,6 +19,7 @@ var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
 var _line_ducked: bool = false
+var _alert_player: AudioStreamPlayer  # dedicated voice: the autogrind stop sting replaced the stop-REASON cue on _ui_player in the same frame, so an automatic stop never said why (2026-11-13)
 var _jingle_player: AudioStreamPlayer  # dedicated voice: the quest-accept ditty died on the next line's menu_select on _ui_player and sat at -16 dB under the bed (2026-11-02, struktured: "didn't hear an accept quest ditty")
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
@@ -26,6 +27,7 @@ var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance pres
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
 var _cutscene_player: AudioStreamPlayer  # dedicated voice: _advance_dialogue plays menu_select on _ui_player every press, so a cutscene's own cue died on the next line turn (2026-10-14)
+var _cutscene_tail_player: AudioStreamPlayer  # the cue BEFORE the newest keeps sounding here, so a card's stinger outlives the sword draw three steps later
 var _victory_player: AudioStreamPlayer  # dedicated voice: victory_slam replaced the 0.99s victory_stinger on _battle_player in the SAME frame — 100% of it lost in W1/W2, whose beds have no agreed downbeat (2026-10-14)
 ## Per-cue tracing. FULL tracing is off by default: it was 27-41% of struktured's play logs (4,175-5,998
 ## lines a session, measured 2026-10-05), burying the errors those logs exist to surface.
@@ -57,6 +59,7 @@ var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
 var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
+var _second_hit_player: AudioStreamPlayer  # dedicated voice: the Rogue's bolt lands within 0.22 s of the dagger outside spotlight pace and replaced it on _battle_player, so two hits sounded as one (2026-11-13)
 var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
 var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
@@ -127,6 +130,11 @@ const JINGLE_DUCK_EFFECT_SLOT: int = 2
 const JINGLE_DUCK_TARGET_DB: float = -8.0
 const JINGLE_DUCK_ATTACK_TIME: float = 0.08
 const JINGLE_DUCK_RELEASE_TIME: float = 0.6
+## Charge duck (main 23917), slot 3 beside dialogue 0 / kill 1 / jingle 2: ONE depth constant, his ear decides it.
+const CHARGE_DUCK_EFFECT_SLOT: int = 3
+const CHARGE_DUCK_TARGET_DB: float = -4.0
+const CHARGE_DUCK_ATTACK_TIME: float = 0.6
+const CHARGE_DUCK_RELEASE_TIME: float = 0.35
 const JINGLE_PLAYER_BASE_DB: float = -8.0
 ## Crit sub-layer: sits UNDER the existing crit cue (which already carries pitch/echo identity in its OGG) so crits land in the chest without doubling the transient.
 const CRIT_THUD_FREQ: float = 62.0
@@ -648,6 +656,11 @@ func _setup_audio_players() -> void:
 	_cutscene_player.volume_db = SFX_UI_BASE_DB
 	_cutscene_player.bus = SFX_BUS
 	add_child(_cutscene_player)
+	_cutscene_tail_player = AudioStreamPlayer.new()
+	_cutscene_tail_player.name = "CutsceneTailPlayer"
+	_cutscene_tail_player.volume_db = SFX_UI_BASE_DB
+	_cutscene_tail_player.bus = SFX_BUS
+	add_child(_cutscene_tail_player)
 
 	_footstep_player = AudioStreamPlayer.new()
 	_footstep_player.name = "FootstepPlayer"
@@ -688,6 +701,12 @@ func _setup_audio_players() -> void:
 	_jingle_player.bus = SFX_BUS
 	add_child(_jingle_player)
 
+	_alert_player = AudioStreamPlayer.new()
+	_alert_player.name = "AlertPlayer"
+	_alert_player.volume_db = SFX_UI_BASE_DB
+	_alert_player.bus = SFX_BUS
+	add_child(_alert_player)
+
 	_pickup_player = AudioStreamPlayer.new()
 	_pickup_player.name = "PickupPlayer"
 	_pickup_player.volume_db = PICKUP_PLAYER_BASE_DB
@@ -723,6 +742,12 @@ func _setup_audio_players() -> void:
 	_strike_player.volume_db = SFX_BATTLE_BASE_DB
 	_strike_player.bus = SFX_BUS
 	add_child(_strike_player)
+
+	_second_hit_player = AudioStreamPlayer.new()
+	_second_hit_player.name = "SecondHitPlayer"
+	_second_hit_player.volume_db = SFX_BATTLE_BASE_DB
+	_second_hit_player.bus = SFX_BUS
+	add_child(_second_hit_player)
 
 	_flash_player = AudioStreamPlayer.new()
 	_flash_player.name = "FlashPlayer"
@@ -790,6 +815,8 @@ func _setup_default_ability_sounds() -> void:
 	## riff is type=physical so derivation cannot reach it, and ability_physical is a sword
 	## unsheathing — its own description says "a sour, clashing chord struck like a weapon".
 	_ability_sounds["riff"] = "ability_riff"
+	## The Rat King's counter (struktured 25439/25451): his own bite, not the shared counter's thump.
+	_ability_sounds["royal_spite"] = "ability_royal_spite"
 	_ability_sounds["fire"] = "ability_fire"
 	_ability_sounds["fira"] = "ability_fire"
 	_ability_sounds["firaga"] = "ability_fire"
@@ -1637,6 +1664,13 @@ var _victory_letter_transpose_read: bool = false
 ## per-key cooldown sounds the first and suppresses the rest, which is correct — identical
 ## same-frame samples comb-filter. Counting the silent ones drove the bias straight to its cap
 ## with nothing audible causing it: measured 5 calls -> 1 play, _combo_step 5, bias 1.12 = CAP.
+## The second hit of ONE action (the Rogue's bolt after the dagger, struktured 2026-11-13): its own voice, so it layers over
+## the first hit's cue instead of replacing it, and it counts on the same hit chain so the pair ramps like a combo.
+func play_second_hit(sound_key: String) -> void:
+	if _try_play_sfx_from_manifest(_second_hit_player, sound_key, _battle_level(sound_key), _combo_pitch_bias()):
+		_advance_hit_chain()
+
+
 func _advance_hit_chain() -> void:
 	if not _sfx_suppressed_by_cooldown:
 		_combo_step += 1
@@ -2086,6 +2120,12 @@ func duck_music_for_kill() -> void:
 var _jingle_duck_tween: Tween = null
 
 
+## A UI-channel cue that must LAYER over whatever play_ui just started, not replace it: the autogrind stop sting
+## lands in the same frame as the stop-reason cue. Same trim, variant lookup and cooldown as play_ui, on its own voice.
+func play_alert(sound_key: String) -> void:
+	play_ui(sound_key, _alert_player)
+
+
 ## A short musical ditty over the bed (quest accepted): its own player so no menu blip cuts it, and a
 ## brief duck of the music bus on slot 2 — attack, hold for the cue's length, smooth release. The bed is
 ## never stopped or swapped, so nothing fights over the track and the area music carries on underneath.
@@ -2123,6 +2163,72 @@ func _duck_music_for_jingle(length: float) -> void:
 	_jingle_duck_tween.tween_property(amp, "volume_db", 0.0, JINGLE_DUCK_RELEASE_TIME)
 
 
+var _charge_duck_tween: Tween = null
+## Every boss currently charging. A set, like _duck_holders: one boss's release must not lift another's charge.
+var _charge_holders: Array = []
+
+
+func _ensure_charge_duck_effect() -> int:
+	var idx: int = _ensure_kill_duck_effect()
+	if idx == -1:
+		return -1
+	while AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		var a := AudioEffectAmplify.new()
+		a.volume_db = 0.0
+		AudioServer.add_bus_effect(idx, a)
+		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	return idx
+
+
+## The bed dips while ANY boss charges; the caller tier-gates the dip only, so a release always lands.
+func duck_for_charge(charging: bool, boss: Object = null) -> void:
+	var idx: int = _ensure_charge_duck_effect()
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		return
+	var amp = AudioServer.get_bus_effect(idx, CHARGE_DUCK_EFFECT_SLOT)
+	if amp == null:
+		return
+	var live: Array = []
+	for h in _charge_holders:
+		if h != null and is_instance_valid(h):
+			live.append(h)
+	_charge_holders = live
+	if charging:
+		if not _charge_holders.has(boss):
+			_charge_holders.append(boss)
+	else:
+		_charge_holders.erase(boss)
+	var target: float = CHARGE_DUCK_TARGET_DB if not _charge_holders.is_empty() else 0.0
+	if _charge_duck_tween and _charge_duck_tween.is_valid():
+		_charge_duck_tween.kill()
+	if is_equal_approx(amp.volume_db, target):
+		return
+	_charge_duck_tween = create_tween()
+	_charge_duck_tween.set_ignore_time_scale(true)  # the bed runs on the mixer clock; see duck_music_for_kill
+	var t: float = CHARGE_DUCK_ATTACK_TIME if target < 0.0 else CHARGE_DUCK_RELEASE_TIME
+	_charge_duck_tween.tween_property(amp, "volume_db", target, t).set_trans(Tween.TRANS_SINE)
+
+
+## Battle over or left: no boss is charging any more, whoever forgot to say so.
+func clear_charge_duck() -> void:
+	_charge_holders.clear()
+	duck_for_charge(false)
+
+
+## True while any boss holds the charge duck. Test seam.
+func is_music_ducked_for_charge() -> bool:
+	return not _charge_holders.is_empty()
+
+
+## Public: current charge-duck attenuation in dB (0.0 at rest). Test seam.
+func get_charge_duck_db() -> float:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		return 0.0
+	var amp = AudioServer.get_bus_effect(idx, CHARGE_DUCK_EFFECT_SLOT)
+	return amp.volume_db if amp else 0.0
+
+
 ## Public: current jingle-duck attenuation in dB (0.0 at rest). Test seam.
 func get_jingle_duck_db() -> float:
 	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
@@ -2156,7 +2262,29 @@ func get_kill_duck_db() -> float:
 ## 2026-09-11: _step_play_sfx is a single call site, so this needs no list of long cues.
 func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
+	## Two voices, newest always on _cutscene_player: a cue still sounding moves to the tail role instead of being cut.
+	var handed_over: bool = _cutscene_player != null and _cutscene_tail_player != null and _cutscene_player.playing
+	if handed_over:
+		_swap_cutscene_voices()
 	play_ui(sound_key, _cutscene_player)
+	## A play the cooldown swallowed started nothing: hand the role back so _cutscene_player still names the cue that sounds.
+	if handed_over and not _cutscene_player.playing:
+		_swap_cutscene_voices()
+	if _cutscene_player:
+		_cutscene_player.pitch_scale = 1.0  # a scene's cue is played once and may be music: no repeat-fatigue jitter (his log: stinger at 1.04, fanfares 0.95-1.04)
+
+
+func _swap_cutscene_voices() -> void:
+	var newest: AudioStreamPlayer = _cutscene_player
+	_cutscene_player = _cutscene_tail_player
+	_cutscene_tail_player = newest
+
+
+## A skipped scene takes its sound with it: both voices, so one stop cuts the newest cue and the tail under it.
+func stop_cutscene_sfx() -> void:
+	for voice in [_cutscene_player, _cutscene_tail_player]:
+		if voice and voice.playing:
+			voice.stop()
 
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
@@ -2891,7 +3019,8 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		_pending_resume_position = blend
 	_play_parked_position()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
+	## at= is where the bed really started: without it every line read as a restart from 0, so a log could not tell a resume from one.
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s at=%.2f resume=%s" % [track_id, path, should_loop, is_stinger, _last_start_position, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
 	# captured STATE, not a track id: area beds live in _current_area and leave
 	# _current_music empty, so a track-only resume silently did nothing there.
@@ -3030,12 +3159,15 @@ func _play_parked_position() -> void:
 	_pending_resume_position = 0.0
 	## A latched headless mix never returns the driver mutex play() takes (issue #224); the parked position is still consumed.
 	if wav_commit_refused():
+		_last_start_position = -1.0
 		return
 	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
 	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
 		_music_player.play(resume_at)
+		_last_start_position = resume_at
 	else:
 		_music_player.play()
+		_last_start_position = 0.0
 
 
 func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
@@ -3276,6 +3408,15 @@ func capture_music_state() -> Dictionary:
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
 
 
+## Seconds into `track` as it is HEARD, or -1.0 while it is not the stream sounding (not started, missing, replaced, ended): the clock for a scene timed to its own cue.
+func music_position_of(track: String) -> float:
+	if track == "" or str(_current_music) != track:
+		return -1.0
+	if _music_player == null or _music_player.stream == null or not _music_player.playing:
+		return -1.0
+	return _music_player.get_playback_position()
+
+
 ## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.
 func armed_area_state() -> Dictionary:
 	if not _area_start_armed or _pending_music_area == "":
@@ -3481,6 +3622,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 ## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head,
 ## except one that declares loop_blend_seconds, which enters after that mix.
 var _pending_resume_position: float = 0.0
+## Where the bed last ACTUALLY started (s), read by the [MUSIC] log line; -1.0 when the mix refused the play.
+var _last_start_position: float = 0.0
 
 ## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
 ## other arrival has a bed to inherit, and the inherit path is already correct.

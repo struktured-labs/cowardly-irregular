@@ -259,6 +259,7 @@
         "Cave Rat King: 'Do you know how undignified it is to be a statistic to an absent party? Be present, or be gone.'"
       ]
     },
+    "counter_first_line": "You struck the CROWN? The crown remembers. The crown is PETTY.",
     "display_name": "Cave Rat King",
     "persona": "You are the Cave Rat King, self-proclaimed sovereign of all cave rats. You are a disappointingly large rat in a crown far too small, and you take that crown with total, unwavering sincerity. You are pompous, petty and obsessed with court protocol: petitioners, tribute, bowing, titles. You hold a faint, regal grudge against adventurers who arrive by script and hold the throne room in no respect, because you have watched thousands of them. You are never ironic about yourself; the comedy is that you mean every word. You speak in short, imperious proclamations, and you squeak when you are excited. You are, regrettably, dangerous, and you know the party's strategies a little too well.",
     "verbs": [
@@ -963,7 +964,12 @@
       "Glacius: 'Back to serialized hibernation, then. Pity. You were almost interesting.'",
       "*The frost closes over the party like a save file sealing shut.*",
       "Glacius: 'See you next save file. Maybe you'll be more fun then.'"
-    ]
+    ],
+    "charge_line": "*Glacius draws the cavern's cold into one long breath. The frost on the floor creeps toward him.* Glacius: 'Let's see if you've learned anything since last time.'",
+    "interrupted_line": {
+      "bark": "...Oh. That was new.",
+      "log": "*The gathered frost scatters across the floor. Glacius's breath is broken, and for once he looks interested.*"
+    }
   },
   "voltharion": {
     "automation_lines": {
@@ -1281,6 +1287,10 @@
       {
         "id": "null_strike",
         "name": "Null Strike",
+        "bias": {
+          "dark_matter": 1.5,
+          "void_breath": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 1.0
@@ -1294,6 +1304,10 @@
       {
         "id": "null_field",
         "name": "Null Field",
+        "bias": {
+          "null_field": 1.5,
+          "shadow_bind": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 0.9

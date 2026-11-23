@@ -263,6 +263,64 @@ func _generate_enemy_party() -> Array:
 	return enemy_party
 
 
+const W1_TIERS_PATH: String = "res://data/w1_pool_tiers.json"
+
+
+## A W1 overworld pool plus its story tier: after the Rat King, its own species re-levelled by dragons defeated (main 26347).
+static func tiered_pool(pool_id: String, pool: Array, gs: Object) -> Array:
+	var out: Array = pool.duplicate()
+	var tier := w1_tier_for(pool_id, gs)
+	var levels: Array = tier.get("levels", [])
+	if levels.is_empty():
+		return out
+	var species: Array = []
+	for e in pool:
+		var base := spawn_base_id(str(e))
+		if not species.has(base):
+			species.append(base)
+	for i in species.size():
+		out.append("%s%s%d" % [species[i], LEVEL_MARK, int(levels[i % levels.size()])])
+	return out
+
+
+## A roamer's touch group at the pool's story tier: the leader takes the tier's top level; elites and marked ids pass through.
+static func tiered_group(pool_id: String, group: Array, gs: Object) -> Array:
+	var levels: Array = w1_tier_for(pool_id, gs).get("levels", [])
+	var out: Array = []
+	for i in group.size():
+		var id := str(group[i])
+		if levels.is_empty() or id.ends_with(ELITE_SUFFIX) or spawn_level_of(id) > 0:
+			out.append(group[i])
+		else:
+			out.append("%s%s%d" % [id, LEVEL_MARK, int(levels[i % levels.size()])])
+	return out
+
+
+## The tier a W1 pool stands at for this save; {} before the Rat King, for a pool outside W1, or with no save.
+static func w1_tier_for(pool_id: String, gs: Object) -> Dictionary:
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return {}
+	var cfg: Variant = _read_json(W1_TIERS_PATH)
+	if not (cfg is Dictionary) or not (cfg.get("pools", []) as Array).has(pool_id):
+		return {}
+	if not gs.is_story_flag_set(str(cfg.get("opens_with", ""))):
+		return {}
+	var beaten: int = 0
+	for flag in cfg.get("dragon_flags", []):
+		if gs.is_story_flag_set(str(flag)):
+			beaten += 1
+	for t in cfg.get("tiers", []):
+		if t is Dictionary and int(t.get("dragons_defeated", -1)) == beaten:
+			return t
+	return {}
+
+
+static func _read_json(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	return JSON.parse_string(FileAccess.get_file_as_string(path))
+
+
 ## Strips permakilled species from a draw pool (permakill's second promise).
 func _filter_permakilled(pool: Array) -> Array:
 	if GameState == null or not ("permakilled_monster_types" in GameState) \
@@ -688,6 +746,8 @@ static func spawn_base_id(enemy_id: String) -> String:
 const BAND_STATS: Array = ["max_hp", "attack", "defense", "magic", "magic_defense"]
 ## Levels above this have no ordinary W1 rows to read (bosses and other worlds' dials), so the band holds its last value.
 const BAND_TOP_LEVEL: int = 15
+## Rewards band as RAW medians per authored level: an L1 slime pays 15 a level where the rest of the catalog pays about 8.5.
+const PAY_KEYS: Array = ["exp_reward", "gold_reward"]
 ## How much of the native band's HP a re-levelled spawn carries; the floor fights are tuned with this one number.
 const SPAWN_HP_DIAL: float = 1.0
 
@@ -710,6 +770,13 @@ static func native_bands(db: Dictionary) -> Dictionary:
 				if not samples[stat].has(lv):
 					samples[stat][lv] = []
 				samples[stat][lv].append(float(stats[stat]) / Combatant.level_multiplier(lv))
+		for pay in PAY_KEYS:
+			if float(row.get(pay, 0)) > 0.0:
+				if not samples.has(pay):
+					samples[pay] = {}
+				if not samples[pay].has(lv):
+					samples[pay][lv] = []
+				samples[pay][lv].append(float(row[pay]))
 	var bands: Dictionary = {}
 	for stat in samples:
 		bands[stat] = {}
@@ -744,6 +811,13 @@ static func band_at(band: Dictionary, level: int, extend: bool = false) -> float
 	return float(band[levels[-1]])
 
 
+## What a re-levelled spawn's reward is multiplied by: the target level's median reward over its own level's; linear in level with no band.
+static func spawn_pay_ratio(band: Dictionary, base_level: int, level: int) -> float:
+	var own := band_at(band, base_level, true)
+	var target := band_at(band, level, true)
+	return target / own if own > 0.0 and target > 0.0 else float(level) / float(maxi(1, base_level))
+
+
 ## Re-levels built enemy data to the TARGET level's native band: the species keeps its share of its own level's median (cowir-battle 2026-11-11).
 static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> Dictionary:
 	var base_level := maxi(1, int(data.get("level", 1)))
@@ -762,9 +836,8 @@ static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> D
 		elif key == "max_hp":
 			grown *= SPAWN_HP_DIAL
 		data[key] = maxi(1, int(round(grown)))
-	var pay := float(level) / float(base_level)
-	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * pay))
-	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * pay))
+	for pay in PAY_KEYS:
+		data[pay] = int(round(float(data.get(pay, 0)) * spawn_pay_ratio(bands.get(pay, {}), base_level, level)))
 	data["level"] = level
 	data["spawn_level"] = level
 	return data

@@ -195,12 +195,11 @@ func test_every_ring_entry_can_be_true_after_resolution() -> void:
 			if e != "":
 				landed[str(applier.get(e, e))] = true
 	assert_gt(landed.size(), 30, "CONTROL: the landed set must be real")
-	var code: String = FileAccess.get_file_as_string(UI_PATH)
-	var at: int = code.find("const MEMBER_STATUS_RING")
-	assert_gt(at, 0, "CONTROL: the ring must be locatable")
+	var ring: Array = load(UI_PATH).member_status_ring()
+	assert_gt(ring.size(), 5, "CONTROL: the ring must be readable")
 	var dead: Array[String] = []
-	for m in RegEx.create_from_string('"([a-z_]+)"').search_all(code.substr(at, code.find("]", at) - at)):
-		var entry: String = m.get_string(1)
+	for raw in ring:
+		var entry: String = str(raw)
 		if not landed.has(Combatant.resolve_status_alias(entry)):
 			dead.append(entry)
 	gut.p("    ring dead-after-resolution: %s" % str(dead))

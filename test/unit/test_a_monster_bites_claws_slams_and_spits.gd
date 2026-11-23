@@ -300,3 +300,57 @@ func test_a_thrown_move_does_not_walk_up_to_its_target() -> void:
 	## CONTROL: a tackle is a melee move and does lunge, and nothing holds its hit here.
 	_scene._on_action_executing(_foe, {"type": "ability", "ability_id": "tackle", "targets": [_hero]})
 	assert_true(foe_sprite.has_meta("attack_tween"), "CONTROL: a tackle lunges")
+
+
+## struktured's clips, 2026-11-12: the skeleton's bone had landed before its throwing pose reached the throw. A ranged
+## move's sequence now starts later by the pose's own impact frame, and the hit is held for the same time.
+func test_a_thrown_thing_leaves_on_the_poses_release_frame() -> void:
+	assert_eq(BattleSceneScript.sequence_start_after("family_spit", 0.0), -1.0, "CONTROL: a pose with no wind-up plays the sequence as authored")
+	var authored: float = float(FractalFX.load_sequence("family_spit").get("start", 0.0))
+	assert_almost_eq(BattleSceneScript.sequence_start_after("family_spit", 0.375), authored + 0.375, 0.001, "a 0.375 s wind-up starts the sequence that much later")
+	var foe_sprite: AnimatedSprite2D = _scene.enemy_sprite_nodes[0]
+	var fa: BattleAnimator = _scene.enemy_animators[0]
+	_scene._on_action_executing(_foe, {"type": "ability", "ability_id": "bone_throw", "targets": [_hero]})
+	var plain_hold: float = BattleManager.impact_hold
+	assert_gt(plain_hold, 0.1, "CONTROL: with a one-frame pose the hit waits only for the bone's flight (%.2f s)" % plain_hold)
+	BattleManager.impact_hold = 0.0
+	await get_tree().create_timer(0.8).timeout
+	## Now a throwing pose of four frames whose throw is its fourth.
+	var sf: SpriteFrames = foe_sprite.sprite_frames
+	for i in 3:
+		sf.add_frame("attack", _solid(64))
+	sf.set_animation_speed("attack", 8.0)
+	sf.set_meta("impact_frames", {"attack": 3})
+	assert_eq(fa.shown_animation_for("special"), "attack", "a monster's 'special' move is drawn with its attack frames (no special, no cast on the sheet)")
+	var wind_up: float = fa.impact_time("attack")
+	assert_gt(wind_up, 0.05, "CONTROL: the pose now has a wind-up before its impact frame (%.3f s)" % wind_up)
+	_scene._on_action_executing(_foe, {"type": "ability", "ability_id": "bone_throw", "targets": [_hero]})
+	assert_almost_eq(BattleManager.impact_hold, plain_hold + wind_up, 0.02,
+		"the bone lands a wind-up later than it did (%.2f s after %.2f + %.3f)" % [BattleManager.impact_hold, plain_hold, wind_up])
+
+
+## The gap I stated with the .793 tip: each hero's splat of a line-wide spray was steel grey whatever was sprayed.
+func test_a_sprays_splat_on_each_hero_takes_the_moves_colour() -> void:
+	var painted := 0
+	for phase in FractalFX.load_sequence("family_spray_hit").get("phases", []):
+		if phase is Dictionary and phase.has("palette"):
+			painted += 1
+			assert_eq(str(phase["palette"]), "spark", "the per-hero splat's %s is drawn in a fixed colour, so no tint can reach it" % str(phase.get("kind", "")))
+	assert_gt(painted, 1, "CONTROL: the splat has painted phases to tint")
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	if abilities.has("abilities"):
+		abilities = abilities["abilities"]
+	var sprays := 0
+	var plain: Array = []
+	for id in abilities:
+		var a: Dictionary = abilities[id]
+		var vfx = a.get("vfx", {})
+		if vfx is Dictionary and bool(vfx.get("ranged", false)) and str(a.get("target_type", "")) == "all_enemies":
+			sprays += 1
+			if BattleSceneScript.family_tint(a) == "":
+				plain.append(id)
+	assert_gt(sprays, 2, "CONTROL: line-wide ranged moves exist (%d)" % sprays)
+	assert_eq(plain, [], "a line-wide ranged move names no colour (vfx.palette, an element or an effect with a tint), so its splats are the bare spark")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_true(src.contains('family_tint(ability) if seq_override != "" else "")'), "the cast path hands a family delivery its move's tint")
+

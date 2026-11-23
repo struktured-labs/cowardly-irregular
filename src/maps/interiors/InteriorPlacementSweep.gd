@@ -21,6 +21,8 @@ const TILE_SIZE: int = 32
 ## Sprites below this size in either axis stay decorative. 24 px = 3/4 of
 ## a tile; bells, quills, and other tiny decor don't block NPCs.
 const MIN_FURNITURE_SIZE_PX: int = 24
+## An NPC carrying this meta stands where it was authored even on furniture: a performer on a stage is on it on purpose.
+const KEEPS_MARK: StringName = &"keeps_mark"
 
 ## Every relocation and every sweep since the last reset; a test reads these to prove authored spots needed no moving.
 static var relocations: int = 0
@@ -51,7 +53,7 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		if not (n is Node2D):
 			continue
 		var origin: Vector2 = (n as Node2D).position
-		if _is_position_clear(origin, layout, furniture, blocked):
+		if _is_position_clear(origin, layout, furniture, blocked) or bool(n.get_meta(KEEPS_MARK, false)):
 			taken[_cell_of(origin)] = true
 		else:
 			movers.append(n)
@@ -65,6 +67,19 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 			(n as Node2D).position = fixed
 		# Reserved either way — a failed relocation leaves the NPC standing at its origin.
 		taken[_cell_of((n as Node2D).position)] = true
+
+
+## Every cell an NPC could stand at the centre of: floor, off every furniture footprint. The stroll plans over this.
+static func walkable_cells(scene_root: Node, decorations: Node, layout: Array, blocked_glyphs: String = "") -> Dictionary:
+	var furniture := _collect_furniture_rects(scene_root, decorations)
+	var blocked := blocked_cells(layout, blocked_glyphs)
+	var out := {}
+	for y in layout.size():
+		for x in str(layout[y]).length():
+			var probe := Vector2((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
+			if _is_position_clear(probe, layout, furniture, blocked):
+				out[Vector2i(x, y)] = true
+	return out
 
 
 static func _collect_furniture_rects(scene_root: Node, decorations: Node) -> Array:

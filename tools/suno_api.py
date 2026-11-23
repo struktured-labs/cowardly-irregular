@@ -867,9 +867,11 @@ class SunoBrowser:
         #   textarea[0] placeholder='' visible   <- Lyrics
         #   textarea[1] placeholder='female vocals only, …'   <- Styles
         # Styles is filled AFTER this check, so in a clean run every visible box is empty here.
+        # 2026-11-19 Suno reworded it to "Leave this empty for an instrumental", and the exact
+        # phrase matched nothing, so every submit refused before Create. Match the shape, not the copy.
         v6_probe = """() => {
-          if (!document.body.innerText.toLowerCase()
-                .includes('leave this empty for instrumental')) return null;
+          if (!/leave\\s+(this|it)\\s+empty\\s+for\\s+(an\\s+)?instrumental/i
+                .test(document.body.innerText)) return null;
           const filled = [];
           for (const ta of document.querySelectorAll('textarea')) {
             if (ta.offsetParent === null) continue;
@@ -912,7 +914,7 @@ class SunoBrowser:
                       % (i, ph[:70], len(val), ta.is_visible()))
             txt = page.evaluate("() => document.body.innerText")
             low = txt.lower()
-            for needle in ("leave this empty for instrumental", "instrument",
+            for needle in ("leave this empty for an instrumental", "leave this empty for instrumental", "instrument",
                            "lyrics", "will be instrumental"):
                 print("    innerText contains %-36r %s" % (needle, needle in low))
             hits = [l.strip()[:90] for l in txt.split("\n")
@@ -1160,6 +1162,24 @@ class SunoBrowser:
                 return
         die("No Create button found")
 
+    def _turnstile_state(self) -> str:
+        """'absent' | 'held' | 'solved' for the Cloudflare gate Suno puts in front of Create.
+
+        Measured 2026-11-20 on /create: none of these exist before Create; after it the page
+        holds input[name=cf-turnstile-response], #generation-turnstile-container and a
+        challenges.cloudflare.com frame. An EMPTY response input means the gate is still up
+        and the generate request was never sent (credits unchanged, no clip to poll for).
+        """
+        try:
+            val = self._page.evaluate(
+                "() => { const i = document.querySelector('input[name=\"cf-turnstile-response\"]');"
+                " return i === null ? null : (i.value || ''); }")
+        except Exception:
+            return "absent"
+        if val is None:
+            return "absent"
+        return "solved" if val.strip() else "held"
+
     def generate_track(self, track_id: str, title: str, style: str,
                        prompt: str, instrumental: bool = True) -> dict | None:
         """Generate one track via web UI. Returns clip info or None on failure."""
@@ -1215,6 +1235,21 @@ class SunoBrowser:
                 clip_ids = clip_ids[:2]
                 print(f"  New clips (interceptor): {clip_ids}")
                 break
+
+        if not clip_ids and self._turnstile_state() == "held":
+            # The gate never let the submit out, so there is nothing for the feed-poll to find:
+            # say so now instead of polling 180 s and blaming the interceptor.
+            shot = PROJECT_ROOT / "tmp" / f"suno_turnstile_{track_id}.png"
+            try:
+                page.screenshot(path=str(shot))
+            except Exception:
+                pass
+            print("  TURNSTILE HELD: Cloudflare 'Verify you are human' is up and unsolved; "
+                  "no generate request was sent, no credits spent. A human must tick it once in a "
+                  f"HEADED generation run (`uv run tools/suno_api.py --headed --track-id {track_id}` "
+                  "waits 180 s for the tick; --login stops before Create and never shows it). "
+                  f"Screenshot: {shot}")
+            return None
 
         if not clip_ids:
             # Interceptor blind — try feed-poll fallback before giving up.

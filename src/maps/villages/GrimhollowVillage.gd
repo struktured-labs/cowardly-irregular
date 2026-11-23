@@ -195,8 +195,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(6 * TILE_SIZE,11 * TILE_SIZE))
 	# === LANTERN DEBT OFFICE DOOR ===
 	# South face of the CCC building (cols 13-15, rows 6-8) — where the swamp's light is loaned.
-	spawn_points["lantern_exit"] = Vector2(16 * TILE_SIZE,11.5 * TILE_SIZE)
-	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(16 * TILE_SIZE,10.5 * TILE_SIZE))
+	spawn_points["lantern_exit"] = Vector2(19 * TILE_SIZE,9.5 * TILE_SIZE)
+	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(19 * TILE_SIZE,8.5 * TILE_SIZE))  ## beside Cursed Curios, not on its facade; this side clears Swamp Witch Murk and every walker's line
 
 
 	# The dark one: lamps are the character here, and the pit head is where the gear sits.
@@ -211,6 +211,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(9, 11))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 16))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(5, 16))
+	# The waterside notice stands at the swamp's edge, read from the path below it.
+	_add_prop(VillagePropScript.Kind.SIGNPOST, Vector2i(10, 10))
 	## LAST, so it defers to every building above. Rotten slate.
 	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["R", "C", "D"], [Color(0.30, 0.24, 0.36), Color(0.26, 0.30, 0.26)], "timber")

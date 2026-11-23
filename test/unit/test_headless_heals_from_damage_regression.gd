@@ -8,10 +8,19 @@ extends GutTest
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
 var _res
+var _inherit_was: bool = true
 
 
+## Fed and Plain take one power_strike each; an inherited swing crit (.794) on Fed's blow alone nets
+## 0.7 x 1.5 = 1.05x Plain's loss and reds "Fed ends higher" at random (~13%: 0.15 x 0.85).
 func before_each() -> void:
 	_res = ResolverScript.new()
+	_inherit_was = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+
+
+func after_each() -> void:
+	DamageRules.abilities_inherit_swing_crit = _inherit_was
 
 
 func _fighter(name: String) -> Combatant:

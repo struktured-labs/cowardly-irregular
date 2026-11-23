@@ -709,7 +709,7 @@
     "stats": {
       "max_hp": 2321,
       "max_mp": 80,
-      "attack": 186,
+      "attack": 149,
       "defense": 100,
       "magic": 79,
       "magic_defense": 50,
@@ -780,8 +780,9 @@
     "learns_from": [
       "all"
     ],
+    "counter_decay": 0.5,
     "counter_abilities": [
-      "counter"
+      "royal_spite"
     ],
     "spectrum_ratio": 0.357059
   },
@@ -2042,6 +2043,11 @@
     "counter_abilities": [
       "counter"
     ],
+    "cadence": {
+      "signature": "absolute_zero",
+      "every": 1,
+      "charge_turns": 1
+    },
     "spectrum_ratio": 0.779744
   },
   "lightning_dragon": {

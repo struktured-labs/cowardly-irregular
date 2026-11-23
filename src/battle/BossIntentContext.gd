@@ -75,6 +75,11 @@ var time_of_day: String = ""
 ## to hold autobattle in contempt and had no way to learn it was happening.
 var party_automation: String = ""
 
+## The boss's signature clock (BossCadence): ability id, its own turns to release (-1 = no clock), and whether it is charging now.
+var signature_id: String = ""
+var signature_in: int = -1
+var charging: bool = false
+
 
 ## Hard cap on recent_actions size. Older entries get dropped.
 const RECENT_LIMIT: int = 8
@@ -107,4 +112,7 @@ func to_dict() -> Dictionary:
 		"learned_patterns_sample": learned_patterns_sample.duplicate(),
 		"time_of_day": time_of_day,
 		"party_automation": party_automation,
+		"signature_id": signature_id,
+		"signature_in": signature_in,
+		"charging": charging,
 	}

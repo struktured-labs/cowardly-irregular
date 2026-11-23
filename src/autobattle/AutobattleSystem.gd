@@ -97,6 +97,9 @@ const CONDITION_TYPES = {
 	"enemy_has_status": "Enemy Has Status",
 	"not_enemy_has_status": "No Enemy Has Status",
 	"enemy_weak_to": "Enemy Weak To",
+	"enemy_resists": "Enemy Resists",
+	"enemy_charging": "Enemy Charging",
+	"enemy_signature_in": "Enemy Signature In",
 	"ally_mp_percent": "Ally MP %",
 	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
@@ -113,7 +116,7 @@ const CONDITION_TYPES = {
 ## ⚠️ setup_complete is nullary BY BEHAVIOUR (:392 reads active_buffs and current_ap, never
 ## op or value) but the prompt grammar lists only the other three. Derived from the arms,
 ## not from the grammar, because the arms are what decides at runtime.
-const NULLARY_CONDITIONS: Array[String] = ["ally_dead", "is_night", "always", "setup_complete"]
+const NULLARY_CONDITIONS: Array[String] = ["ally_dead", "is_night", "always", "setup_complete", "enemy_charging"]
 
 ## String-based operators
 const OPERATORS = {
@@ -409,6 +412,34 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return true
 			return false
 
+		## The other half of the weakness read: don't open with fire when anything on the field shrugs it off.
+		"enemy_resists":
+			var resisted: String = str(condition.get("element", ""))
+			if resisted == "":
+				return false
+			for enemy in _get_enemies_for(combatant):
+				if resisted in enemy.elemental_resistances:
+					return true
+			return false
+
+		## A boss on a cadence clock is gathering its signature right now (BossCadence; the charge turn telegraphs it).
+		"enemy_charging":
+			for enemy in _get_enemies_for(combatant):
+				if BossCadence.is_charging(enemy.get_meta("_cadence", {})):
+					return true
+			return false
+
+		## Boss turns until the soonest signature release among living enemies; false when no enemy keeps a clock.
+		"enemy_signature_in":
+			var bm = get_node_or_null("/root/BattleManager")
+			var soonest := -1
+			for enemy in _get_enemies_for(combatant):
+				var cfg: Dictionary = bm._cadence_config(enemy) if bm != null and bm.has_method("_cadence_config") else {}
+				var t: int = BossCadence.turns_to_release(enemy.get_meta("_cadence", {}), cfg)
+				if t >= 0 and (soonest < 0 or t < soonest):
+					soonest = t
+			return soonest >= 0 and _compare_str(soonest, op, value)
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -521,6 +552,7 @@ const CONDITION_REQUIRED_FIELD := {
 	"enemy_has_status": "status",
 	"not_enemy_has_status": "status",
 	"enemy_weak_to": "element",
+	"enemy_resists": "element",
 	"item_count": "item_id",
 	"has_buff": "stat",
 	"not_has_buff": "stat",
@@ -532,7 +564,7 @@ const CONDITION_REQUIRED_FIELD := {
 const CONDITION_NO_PAYLOAD := [
 	"hp_percent", "mp_percent", "ap", "enemy_hp_percent", "ally_hp_percent", "ally_mp_percent",
 	"turn", "enemy_count", "ally_count", "setup_complete", "is_night", "ally_dead", "always",
-	"volatility_band",
+	"volatility_band", "enemy_charging", "enemy_signature_in",
 ]
 
 

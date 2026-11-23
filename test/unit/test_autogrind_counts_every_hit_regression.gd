@@ -30,8 +30,18 @@ const MULTI := "thread_slash"
 var _res
 
 
+var _inherit_was: bool = true
+
+
+## This file counts hits, so an ability's inherited swing crit (.794) would make one blow ~1.6x and red it at random.
 func before_each() -> void:
 	_res = ResolverScript.new()
+	_inherit_was = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+
+
+func after_each() -> void:
+	DamageRules.abilities_inherit_swing_crit = _inherit_was
 
 
 func _authored(ability_id: String) -> Dictionary:

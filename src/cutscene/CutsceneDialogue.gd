@@ -142,6 +142,8 @@ const THINKING_TICK_SEC: float = 0.25
 ## Styling
 const TILE_SIZE = 4
 const BOX_HEIGHT = 150
+## The name's box starts where the frame's top border ends: at 0 the pixel face's caps stood on the border (his real frame, 2026-11-20).
+const SPEAKER_Y := TILE_SIZE
 const PORTRAIT_SIZE = 80
 const MARGIN = 16
 
@@ -631,16 +633,18 @@ func _box_metrics() -> Dictionary:
 	var speaker_px := _scaled_font_size(18)
 	var body_px := _scaled_font_size(16)
 	var hint_px := _scaled_font_size(12)
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()  # the speaker and hint are Labels
+	var body_font: Font = UiFont.body()  # the body is a RichTextLabel, which draws the reading face
 	var speaker_h := 26.0
 	var line_h := 23.0
 	var line_base := 23.0
 	var hint_h := 16.0
 	if font:
 		speaker_h = float(font.get_height(speaker_px))
-		line_h = maxf(1.0, float(font.get_height(body_px)))
-		line_base = maxf(1.0, float(font.get_height(16)))
 		hint_h = float(font.get_height(hint_px))
+	if body_font:
+		line_h = maxf(1.0, float(body_font.get_height(body_px)))
+		line_base = maxf(1.0, float(body_font.get_height(16)))
 	var text_y := float(TILE_SIZE * 2 + 22)
 	var text_h := float(BOX_HEIGHT - TILE_SIZE * 4 - 30)
 	var box_h := float(BOX_HEIGHT)
@@ -721,7 +725,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# Speaker name
 	_speaker_label = Label.new()
 	# 2026-07-16 struktured: post-font-bump (+25%) the 18pt speaker name clipped into the body text — raised 8px + taller box, body pushed down to match.
-	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2 - 8)
+	_speaker_label.position = Vector2(text_x, SPEAKER_Y)
 	_speaker_label.size = Vector2(text_width, 26)
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -843,7 +847,7 @@ func open_backlog() -> void:
 	## line you missed, and a player on 200% text is the one most likely to have missed it. Same
 	## defect family as the dialogue panel itself (`_box_metrics`), one surface over.
 	var title_h: float = 28.0
-	var title_font: Font = ThemeDB.fallback_font
+	var title_font: Font = UiFont.display()
 	if title_font != null:
 		title_h = maxf(28.0, float(title_font.get_height(_scaled_font_size(18))))
 	title.text = "Already said"
@@ -1517,6 +1521,8 @@ const PORTRAIT_SPRITES = {
 	"roy": "res://assets/sprites/portraits/npcs/roy.png",
 	"kid_acrees": "res://assets/sprites/portraits/npcs/kid_acrees.png",
 	"granny_kaya": "res://assets/sprites/portraits/npcs/granny_kaya.png",
+	"bill": "res://assets/sprites/portraits/npcs/bill.png",
+	"village_knight": "res://assets/sprites/portraits/npcs/village_knight.png",
 	"mysterious": "res://assets/sprites/portraits/npcs/mysterious.png",
 	# Name-hash pair targets — OverworldNPC picks these for villager/elder npc_types.
 	"young_man": "res://assets/sprites/portraits/npcs/young_man.png",

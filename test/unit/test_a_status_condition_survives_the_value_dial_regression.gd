@@ -20,7 +20,9 @@ const EDITOR_SRC := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 ## 🔑 TWO HALVES, AND ONLY ONE IS A BUG. That the status CANNOT BE CHANGED is a missing picker —
 ## @cowir-ai measured the same shape in the autobattle twin (8 conditions stuck on their seed) and
 ## routed it to struktured as a scope call, because adding one is a feature. That every press raises
-## a TYPE ERROR is not a scope call at all. This fixes the second and leaves the first declared.
+## a TYPE ERROR is not a scope call at all. The type error was fixed first; the picker followed
+## (2026-11-13): the dial walks AutobattleGridEditor.payload_vocabulary("status"), the list the autobattle
+## grid and the console's OPTIONS cycler also use (cowir-main 24613), so a grind rule can watch for any status.
 ##
 ## ⚠️ THE SYMPTOM THIS CANNOT ASSERT ON: GUT exposes no `assert_no_script_errors` to GDScript
 ## (`test_quest_examine_point_bounds_regression` documents the same limit; `tools/gate.sh` counts
@@ -151,3 +153,116 @@ func test_the_dial_derives_its_nullary_set_from_the_grammar() -> void:
 		"NULLARY_CONDITIONS already owns that set, and a hand-list beside it covered 3 of 5")
 	assert_gte(AutogrindSystem.NULLARY_CONDITIONS.size(), 5,
 		"CONTROL: the grammar must still declare the nullary set this guard defers to")
+
+
+const UI := "res://src/ui/autogrind/AutogrindUI.gd"
+
+
+func _dial(value, delta: int) -> String:
+	var ed := _editor()
+	ed.rules = [{"conditions": [{"type": "member_status", "member": "cleric", "value": value}], "actions": [{"type": "stop_grinding"}]}]
+	ed.cursor_row = 0
+	ed.cursor_col = 0
+	ed._adjust_condition_value(delta)
+	return str(ed.rules[0]["conditions"][0]["value"])
+
+
+## ⛔ THE PICKER. The grid could write only the seeded poison; one press must move to the ring's next status.
+func test_the_dial_picks_the_next_status_on_the_ring() -> void:
+	var ring: Array = load(UI).member_status_ring()
+	assert_gte(ring.size(), 2, "CONTROL: the console's status ring must offer a choice")
+	var got := _dial(ring[0], 1)
+	gut.p("    %s +1 -> %s" % [ring[0], got])
+	assert_eq(got, str(ring[1]),
+		"the value dial left a Member Has Status condition on '%s' — the grid editor cannot choose which status a rule watches for" % ring[0])
+
+
+## Both directions wrap, and every press lands on a ring entry the evaluator can match.
+func test_the_dial_wraps_both_ways_on_the_ring() -> void:
+	var ring: Array = load(UI).member_status_ring()
+	assert_eq(_dial(ring[0], -1), str(ring[ring.size() - 1]), "dialling down from the first status must wrap to the last")
+	assert_eq(_dial(ring[ring.size() - 1], 1), str(ring[0]), "dialling up from the last status must wrap to the first")
+
+
+## A value the ring does not hold (an old save's retired `slow`) is replaced by the ring's first entry, never kept or numbered.
+func test_an_off_ring_status_is_brought_back_onto_the_ring() -> void:
+	var ring: Array = load(UI).member_status_ring()
+	assert_false(ring.has("slow"), "CONTROL: slow must still be off the ring for this arm to mean anything")
+	assert_eq(_dial("slow", 1), str(ring[0]), "an off-ring status must land on the ring, not stay a rule that can never fire")
+
+
+## End to end: the status the dial chose is the one the real evaluator matches.
+func test_a_dialled_status_rule_fires_on_that_status() -> void:
+	var ring: Array = load(UI).member_status_ring()
+	var chosen := _dial(ring[0], 1)
+	assert_ne(chosen, str(ring[0]), "precondition: the dial moved off the seed")
+	var cleric := Combatant.new()
+	cleric.initialize({"name": "Dial Cleric", "max_hp": 1000, "max_mp": 100, "attack": 20, "defense": 20, "magic": 20, "speed": 20})
+	cleric.job = JobSystem.get_job("cleric")
+	add_child_autofree(cleric)
+	var cond := {"type": "member_status", "member": "cleric", "value": chosen}
+	cleric.add_status(str(ring[0]), 3)
+	assert_false(AutogrindSystem._evaluate_party_condition([cleric], cond),
+		"control: the seed status must not satisfy a rule that now names %s" % chosen)
+	cleric.add_status(chosen, 3)
+	assert_true(cleric.has_status(chosen), "precondition: %s landed on the member" % chosen)
+	assert_true(AutogrindSystem._evaluate_party_condition([cleric], cond),
+		"a grid-dialled rule naming %s must fire once the member has it" % chosen)
+
+
+## ⛔ ONE LIST (cowir-main 24613): the grind grid's dial, the console's OPTIONS cycler and the autobattle grid's
+## has_status dial must offer the same statuses in the same order, each walked through its own real control.
+func test_the_grind_and_autobattle_dials_offer_one_list() -> void:
+	var vocab: Array = AutobattleGridEditor.payload_vocabulary("status")
+	assert_gt(vocab.size(), 5, "CONTROL: the derived status list is real (%s)" % [vocab])
+	var grind: Array = [str(vocab[0])]
+	var ed := _editor()
+	ed.rules = [{"conditions": [{"type": "member_status", "member": "cleric", "value": vocab[0]}], "actions": [{"type": "stop_grinding"}]}]
+	ed.cursor_row = 0
+	ed.cursor_col = 0
+	var console = load(UI).new()
+	add_child_autofree(console)
+	console.rules = [{"conditions": [{"type": "member_status", "member": "cleric", "value": vocab[0]}], "actions": [{"type": "stop_grinding"}], "enabled": true}]
+	console.cursor_row = 0
+	var cycler: Array = [str(vocab[0])]
+	var abe: Node = load("res://src/ui/autobattle/AutobattleGridEditor.gd").new()
+	add_child_autofree(abe)
+	await get_tree().process_frame
+	var ab_rules: Array = abe.get("rules") as Array
+	ab_rules.clear()
+	ab_rules.append({"conditions": [{"type": "hp_percent", "op": "<", "value": 50}], "actions": [{"type": "attack"}], "enabled": true})
+	abe.set("cursor_row", 0)
+	abe.set("cursor_col", 0)
+	abe.call("_apply_condition_type", "has_status")
+	var ab_cond: Dictionary = ab_rules[0]["conditions"][0]
+	var battle: Array = [str(ab_cond.get("status", ""))]
+	for i in vocab.size() - 1:
+		ed._adjust_condition_value(1)
+		grind.append(str(ed.rules[0]["conditions"][0]["value"]))
+		console._cycle_status_on_cursor_cell()
+		cycler.append(str(console.rules[0]["conditions"][0]["value"]))
+		abe.call("_adjust_condition_value", 1)
+		battle.append(str((ab_rules[0]["conditions"][0] as Dictionary).get("status", "")))
+	gut.p("    grind  %s\n    console %s\n    battle %s" % [grind, cycler, battle])
+	assert_eq(battle, vocab.map(func(n): return str(n)), "CONTROL: the autobattle dial walks its own derived list")
+	assert_eq(grind, battle, "the grind grid's status dial offers a different list from the autobattle grid's")
+	assert_eq(cycler, battle, "the console's OPTIONS cycler offers a different list from the autobattle grid's")
+
+
+## The list now carries snake_case ids (damage_absorb, shadow_step); every grind surface names them the way the battle grid does.
+func test_a_dialled_status_reads_as_words_on_every_grind_surface() -> void:
+	var vocab: Array = AutobattleGridEditor.payload_vocabulary("status")
+	var snake: Array = vocab.filter(func(v): return str(v).contains("_"))
+	assert_gt(snake.size(), 0, "CONTROL: the list holds a snake_case id, or this arm proves nothing (%s)" % [vocab])
+	var id: String = str(snake[0])
+	var cond := {"type": "member_status", "member": "cleric", "value": id}
+	var ed := _editor()
+	var console = load(UI).new()
+	add_child_autofree(console)
+	console.rules = [{"conditions": [cond.duplicate()], "actions": [{"type": "stop_grinding"}], "enabled": true}]
+	console.cursor_row = 0
+	var texts := {"grid": ed._format_condition(cond), "console": console._format_condition(cond), "options": console._cursor_status_label()}
+	gut.p("    %s -> %s" % [id, texts])
+	for k in texts:
+		assert_false(str(texts[k]).contains(id), "the %s shows the raw id '%s': %s" % [k, id, texts[k]])
+		assert_true(str(texts[k]).contains(StatusNames.display(id)), "the %s must name it as the battle grid does (%s): %s" % [k, StatusNames.display(id), texts[k]])

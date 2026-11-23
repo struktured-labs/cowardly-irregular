@@ -124,7 +124,7 @@ func test_nothing_bites_without_the_armor_or_without_a_victim() -> void:
 func test_the_attack_path_calls_it_after_the_hit_lands() -> void:
 	## The arms above prove the retaliation; this proves the melee path uses it, and where.
 	var code: String = GdSourceHelper.code_of("res://src/battle/BattleManager.gd")
-	var at: int = code.find("var actual_damage = actual_target.take_damage(damage, false)")
+	var at: int = code.find("var actual_damage = actual_target.take_damage(damage, false, defence_share)")
 	assert_gt(at, -1, "CONTROL: the basic attack's damage application survives stripping")
 	var after: String = code.substr(at, 300)
 	assert_true(after.contains("_retaliate_armor_thorns(attacker, actual_target, actual_damage)"),

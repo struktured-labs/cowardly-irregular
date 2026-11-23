@@ -161,6 +161,7 @@ func test_the_mirror_metric_discriminates_before_it_is_believed() -> void:
 ## The ratchet: where the pixels CAN answer, the declaration must match them.
 func test_every_decisive_sheet_declares_the_rows_its_pixels_mirror() -> void:
 	var wrong: Array = []
+	var two_axes: Array = []
 	var checked := 0
 	for s in _declaring_sheets():
 		var e: Dictionary = s["entry"]
@@ -180,15 +181,38 @@ func test_every_decisive_sheet_declares_the_rows_its_pixels_mirror() -> void:
 		var l: int = int((anims["walk_left"] as Dictionary).get("row", -1))
 		var rr: int = int((anims["walk_right"] as Dictionary).get("row", -1))
 		var declared := Vector2i(mini(l, rr), maxi(l, rr))
+		if declared != r["pair"] and _two_mirror_axes(declared, r["pair"]) and _facing_reviewed_as_it_is(s):
+			two_axes.append("%s/%s" % [s["section"], s["id"]])
+			continue
 		if declared != r["pair"]:
 			wrong.append("%s/%s: declares left=%d right=%d, but rows %s are the mirrored pair (margin %.3f)"
 				% [s["section"], s["id"], l, rr, r["pair"], r["margin"]])
 	assert_gt(checked, 35, "ANTI-VACUITY: only %d sheets cleared the margin floor" % checked)
+	gut.p("two mirror axes, facing settled by its eye review: %s" % [two_axes])
+	assert_lt(two_axes.size(), 4, "a few hand-drawn sheets have two axes; this many means the metric, not the art, changed: %s" % [two_axes])
 	wrong.sort()
 	assert_eq(wrong, [],
 		("a sheet declares its facing rows somewhere other than where its own pixels put them. The "
 		+ "sheet still slices correctly and every geometry check stays green — the character simply "
 		+ "walks facing the wrong way: %s") % [wrong])
+
+
+## Declared pair DISJOINT from the best (Village Knight: front/back 0.818 > profile 0.671): two mirror axes; facing then rests on the pinned eye review.
+static func _two_mirror_axes(declared: Vector2i, best: Vector2i) -> bool:
+	return declared.x != best.x and declared.x != best.y and declared.y != best.x and declared.y != best.y
+
+
+func _facing_reviewed_as_it_is(s: Dictionary) -> bool:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/overworld_facing_review.json"))
+	var row = (parsed.get("sheets", {}) as Dictionary).get("%s/%s" % [s["section"], s["id"]], null) if parsed is Dictionary else null
+	return row is Dictionary and str(row.get("reviewed", "")).strip_edges() != "" \
+		and str(row.get("sheet_sha256", "")) == FileAccess.get_sha256(str(s["path"]))
+
+
+func test_two_mirror_axes_is_disjoint_only() -> void:
+	assert_true(_two_mirror_axes(Vector2i(1, 2), Vector2i(0, 3)), "front/back vs the profile pair: two axes")
+	assert_false(_two_mirror_axes(Vector2i(1, 2), Vector2i(1, 3)), "CONTROL: walk_right on the up row shares row 1, still a wrong declaration")
+	assert_false(_two_mirror_axes(Vector2i(0, 1), Vector2i(1, 2)), "CONTROL: any shared row is a mismatch, not a second axis")
 
 
 ## ⛔ THE HALF THE PIXELS CANNOT ANSWER. A lone swapped sheet is caught here and nowhere else.

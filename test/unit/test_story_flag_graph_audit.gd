@@ -369,9 +369,22 @@ func test_a_literal_mention_is_not_counted_as_a_write() -> void:
 		if int(total[flag]) > 0 and int(reads.get(flag, 0)) == int(total[flag]):
 			read_only.append(str(flag))
 	gut.p("read-only flag literals in src: %d of %d distinct" % [read_only.size(), total.size()])
-	assert_gte(read_only.size(), 3,
+	## Re-derived 2026-11-12: 1 (cutscene_flag_fool_card_marks). It was >= 3 until GameLoop.BRIEFING_SKIPPED_CONCEDES named the
+	## unlock flags in a const (a real write list), which took them out of "only ever read". The floor is what is true now;
+	## the planted pair below is what proves the two patterns still tell a read from a mention, whatever the population.
+	gut.p("read-only: %s" % ", ".join(PackedStringArray(read_only)))
+	assert_gte(read_only.size(), 1,
 		"no flag in src is read as a literal and never written in one — so this arm judges nobody. "
 		+ "Re-derive the population from occurrence shape before trusting its green")
+	var planted := 'x.get("cutscene_flag_zz_only_read", false)\nvar l := ["cutscene_flag_zz_listed"]\nif x.has("cutscene_flag_zz_listed"): pass'.c_unescape()
+	var p_all := {}
+	var p_read := {}
+	for m in rx_all.search_all(planted):
+		p_all[m.get_string(1)] = int(p_all.get(m.get_string(1), 0)) + 1
+	for m in rx_read.search_all(planted):
+		p_read[m.get_string(1)] = int(p_read.get(m.get_string(1), 0)) + 1
+	assert_eq(int(p_read.get("cutscene_flag_zz_only_read", 0)), int(p_all.get("cutscene_flag_zz_only_read", -1)), "CONTROL: a flag met only inside .get() counts as read-only")
+	assert_lt(int(p_read.get("cutscene_flag_zz_listed", 0)), int(p_all.get("cutscene_flag_zz_listed", 0)), "CONTROL: a flag also named in a list does not")
 	for flag in read_only:
 		assert_false(w.has(flag),
 			"'%s' appears in src ONLY inside a .get()/.has() READ and is in the writer set — a " % flag

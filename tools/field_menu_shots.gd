@@ -2,14 +2,17 @@ extends SceneTree
 
 ## Stills of the FIELD menu (the overworld menu) at Text Size 1.0 / 1.5 / 2.0, cursor on the first row and on the last
 ## (Teleport), so the rows can be seen against the panel's border. xvfb + opengl3, not --headless: run through
-## tools/field_menu_shots.sh (sandboxed). Optional arg --out=res://tmp/<dir>. Writes field_menu_<scale>_<top|last>.png.
+## tools/field_menu_shots.sh (sandboxed). Optional args --out=res://tmp/<dir>, --members=N, --names=A,B (descenders show a name against its job line). Writes field_menu_<scale>_<top|last>.png.
 
 func _init() -> void:
 	var out_dir := "res://tmp/field_menu_shots"
 	var members := 1
+	var names: PackedStringArray = []
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out_dir = a.get_slice("=", 1)
+		elif a.begins_with("--names="):
+			names = a.get_slice("=", 1).split(",")
 		elif a.begins_with("--members="):
 			members = clampi(int(a.get_slice("=", 1)), 1, 5)
 	DirAccess.make_dir_recursive_absolute(out_dir)
@@ -21,7 +24,7 @@ func _init() -> void:
 	var cast := [["Bram", "fighter"], ["Sister Ilse", "cleric"], ["Quill", "mage"], ["Nettle", "rogue"], ["Fen", "bard"]]
 	for i in members:
 		var pc = load("res://src/battle/Combatant.gd").new()
-		pc.combatant_name = cast[i][0]
+		pc.combatant_name = names[i] if i < names.size() else cast[i][0]
 		root.add_child(pc)
 		if js != null and js.has_method("assign_job"):
 			js.call("assign_job", pc, cast[i][1])

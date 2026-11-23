@@ -233,10 +233,11 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, not_has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to,
+  ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to, enemy_resists,
   ally_mp_percent,
   ally_dead, is_night, weather,
-  always, has_buff, not_has_buff, volatility_band
+  always, has_buff, not_has_buff, volatility_band,
+  enemy_charging, enemy_signature_in
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
 ap is the Advance Point bank and runs -4 to +4: 4 is a full bank, negative is debt.
 A value outside that range validates and then never fires.
@@ -279,10 +280,22 @@ circuit_breaker spends a level for AP. So
 enemy_weak_to takes an 'element' field and no op/value. True when ANY living
 enemy is weak to that element — the oldest decision in the genre, and until now
 unsayable in a rule. Elements that actually appear as a weakness in the
-bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
-water, physical, dark. Pair it with an ability of the SAME element, e.g.
+bestiary: fire, holy, lightning and ice (the four most monsters carry), then
+physical, dark, water. Pair it with an ability of the SAME element, e.g.
 {\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
+enemy_resists takes the same 'element' field and no op/value. True when ANY
+living enemy resists that element — the guard on the other side: put it on a
+rule ABOVE your fire rule to switch spells before you waste a turn, e.g.
+{\"type\":\"enemy_resists\",\"element\":\"fire\"} + 'blizzard'.
+enemy_charging is NULLARY: true while any living enemy is gathering power for
+its signature move. A stun, silence or sleep that lands mid-charge breaks it, so
+{\"type\":\"enemy_charging\"} + 'shield_bash' (stun) or 'lullaby' (sleep)
+is the interrupt; against a lone boss the hit lands on the one charging.
+enemy_signature_in takes op and value: the boss turns until the soonest
+signature release, 1 meaning its very next turn. It never fires in a fight
+with no such boss. {\"type\":\"enemy_signature_in\",\"op\":\"<=\",\"value\":1}
++ a defer braces for the blow, or + 'protect' raises a shield first.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.
@@ -347,7 +360,10 @@ Conditions (AND-chained). type is one of:
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
 member_hp / member_mp / member_status / member_dead accept an OPTIONAL "member" (a job id
 such as "cleric", or a character name). With it the condition asks about that character;
-without it, about ANY party member. member_status takes the status NAME in "value";
+without it, about ANY party member. member_hp and member_mp read only LIVING members:
+a fallen member is member_dead, never low HP, so put revive_fallen on a member_dead row.
+member_status reads only LIVING members too: a fallen member matches no status.
+member_status takes the status NAME in "value";
 the only ids that exist are listed below.
 
 Actions. type is one of:
@@ -485,21 +501,6 @@ static func build_npc_opening(
 		+ "- Do NOT include the NPC name or speaker label in the line.\n"
 		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
 	)
-
-
-## Build a prompt asking the LLM for a contextual NPC opening, with an explicit
-## topic hint to guide flavour (e.g. "a recent boss defeat" or "the party's low HP").
-##
-## Convenience overload of build_npc_opening; the topic is appended to persona.
-static func build_npc_opening_topical(
-	npc_name: String,
-	npc_persona: String,
-	location: String,
-	topic: String,
-	recent_events: Array,
-) -> String:
-	var extended_persona: String = "%s — today's topic: %s" % [npc_persona, topic]
-	return build_npc_opening(npc_name, extended_persona, location, recent_events)
 
 
 # ── Prompt builder: NPC sign-off ─────────────────────────────────────────────
@@ -815,6 +816,7 @@ static func build_boss_intent(
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
 		+ _format_party_automation(str(ctx.get("party_automation", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
+		+ _format_signature(str(ctx.get("signature_id", "")), int(ctx.get("signature_in", -1)), bool(ctx.get("charging", false)))
 		# "Party state" alone read as the boss's OWN side. Measured against llama3,
 		# 5 samples: 3 reasons had Mordaine protecting and healing the player's
 		# characters ("Protect Rilla and buy time for Bram to recover"), and all 5
@@ -925,9 +927,11 @@ static func build_party_line(
 	for foe in enemies:
 		if not (foe is Dictionary):
 			continue
-		enemy_lines.append("  - %s: HP %d%%" % [
+		enemy_lines.append("  - %s: HP %d%%%s" % [
 			str(foe.get("name", "?")),
 			int(foe.get("hp_pct", 100)),
+			", GATHERING POWER: its signature move is coming" if bool(foe.get("charging", false)) \
+				else (", CHARGE BROKEN: the party just knocked its signature move out of it" if bool(foe.get("charge_broken", false)) else ""),
 		])
 
 	var recent_lines: PackedStringArray = PackedStringArray()
@@ -1516,14 +1520,59 @@ static func flatten_line(line: String) -> String:
 ## quotes its whole reply despite every prompt saying not to, so the box printed the marks and the log doubled them.
 ## Only a MATCHED outer pair goes, and only when that mark appears nowhere inside, so quoted speech in a line stays.
 static func clean_model_text(text: String) -> String:
-	var t: String = text.strip_edges()
+	var t: String = drop_reasoning(text).strip_edges()
 	for pair in [["\"", "\""], ["“", "”"], ["'", "'"], ["‘", "’"]]:
 		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
 			var inner: String = t.substr(1, t.length() - 2)
 			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
 				t = inner.strip_edges()
 				break
-	return unrun_hyphens(t)
+	return unrun_hyphens(display_drawable(t)).strip_edges()
+
+
+## What a model may write that the display fonts do not draw becomes a stand-in when there is one, else nothing.
+const DISPLAY_STAND_INS := {"—": " - ", "–": "-", "…": "...", "‘": "'", "’": "'", "“": "\"", "”": "\""}
+
+
+## A model line reaches display Labels (bubbles) and the reading face (NPC replies), where an undrawn character is tofu.
+## Dropped only when NEITHER live chain draws it, so no surface loses a character its face draws; a no-op with the face off.
+static func display_drawable(text: String) -> String:
+	if not UiFont.is_installed():
+		return text
+	var chain: Array = UiFont.display().fallbacks.duplicate()
+	var reading: Font = UiFont.body()
+	if reading != null:
+		chain.append(reading)
+		chain.append_array(reading.fallbacks)
+	var out: String = ""
+	for i in text.length():
+		var ch: String = text[i]
+		if ch.unicode_at(0) < 128 or UiFont.draws(ch) or _a_fallback_draws(ch, chain):
+			out += ch
+		else:
+			out += str(DISPLAY_STAND_INS.get(ch, ""))
+	return out
+
+
+static func _a_fallback_draws(ch: String, chain: Array) -> bool:
+	for f in chain:
+		if f is Font and (f as Font).has_char(ch.unicode_at(0)):
+			return true
+	return false
+
+
+## A reasoning model (qwen3, deepseek-r1 on a BYOK endpoint) writes its thoughts in <think> tags ahead of the reply.
+## Every closed block goes; an unclosed one (cut off by the token cap) takes the rest, so the caller falls back.
+static func drop_reasoning(text: String) -> String:
+	var t: String = REASONING_BLOCK.sub(text, "", true)
+	var open: RegExMatch = REASONING_OPEN.search(t)
+	if open != null:
+		t = t.substr(0, open.get_start())
+	return t
+
+
+static var REASONING_BLOCK: RegEx = RegEx.create_from_string("(?is)<(think|thinking|reasoning)>.*?</\\1>")
+static var REASONING_OPEN: RegEx = RegEx.create_from_string("(?i)<(think|thinking|reasoning)>")
 
 
 ## Longest run of hyphen-joined words a model line keeps; longer runs read as one unbroken word (struktured, Voltharion).
@@ -1811,8 +1860,11 @@ static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dic
 	# Accept both shapes: the encoded string the prompt asks for, and the nested
 	# array models actually produce. Anything else stays a parse failure.
 	var raw_rules: Variant = reply.get("rules_json", "")
-	var parsed: Variant = raw_rules if typeof(raw_rules) == TYPE_ARRAY \
+	var parsed: Variant = raw_rules if typeof(raw_rules) in [TYPE_ARRAY, TYPE_DICTIONARY] \
 		else JSON.parse_string(str(raw_rules))
+	## One rule written as a bare object is a rule set of one; an object that is not a rule stays a parse failure.
+	if typeof(parsed) == TYPE_DICTIONARY and (parsed as Dictionary).get("actions") is Array:
+		parsed = [parsed]
 	var rules: Array = []
 	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
 	if parse_ok:
@@ -1879,6 +1931,22 @@ static func _event_summary(entry: Dictionary) -> String:
 		return str(entry.get("summary", ""))
 	var title: String = cutscene_title(cid)
 	return ("Witnessed \"%s\"" % title) if title != "" else ""
+
+
+## A persona plus each `{when_flag, fact}` whose story flag is set; `flag_set` replaces GameState's check in tests.
+static func persona_with_flag_facts(persona: String, facts: Array, flag_set: Callable = Callable()) -> String:
+	var out: String = persona
+	for f in facts:
+		if not (f is Dictionary):
+			continue
+		var flag: String = str((f as Dictionary).get("when_flag", ""))
+		var fact: String = str((f as Dictionary).get("fact", "")).strip_edges()
+		if flag == "" or fact == "":
+			continue
+		var is_set: bool = bool(flag_set.call(flag)) if flag_set.is_valid() else GameState.is_story_flag_set(flag)
+		if is_set:
+			out += " " + fact
+	return out
 
 
 ## A story cutscene's authored title from data/cutscenes/<id>.json; "" when it cannot be read.
@@ -1987,6 +2055,17 @@ static func _format_time_of_day(time_of_day: String) -> String:
 	if time_of_day == "":
 		return ""
 	return "Time of day: %s\n" % time_of_day
+
+
+## The boss's own signature clock, so its posture can plan around the big blow; "" when it keeps no clock.
+static func _format_signature(signature_id: String, turns: int, charging: bool) -> String:
+	if signature_id == "" or turns < 1:
+		return ""
+	var move: String = _ability_named(signature_id)
+	var when: String = "on your next turn" if turns == 1 else "in %d of your turns" % turns
+	if charging:
+		return "You are gathering power for %s. It releases %s, unless a stun, silence or sleep breaks your focus first.\n" % [move, when]
+	return "Your signature move, %s, comes %s: you will spend a turn gathering power first, and the party will see it coming.\n" % [move, when]
 
 
 ## Tell the boss the player isn't deciding. Spelled out rather than passed as a

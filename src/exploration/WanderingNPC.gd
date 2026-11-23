@@ -44,6 +44,7 @@ var _in_conversation: bool = false
 
 # Patrol state
 var _patrol_points: Array[Vector2] = []
+var _walk: PatrolWalk = _new_walk()
 var _current_target: int = 0
 var _paused: bool = false
 var _pause_timer: float = 0.0
@@ -74,6 +75,10 @@ var _archetype_frame := Vector2i(32, 32)
 ## get viewport-clipped (struktured msg 2826: traveler + monk sheets
 ## both fail this at row 3 (up-facing)).
 var _archetype_row_top_density: Dictionary = {}
+## OverworldPlayer.Direction -> Sprite.offset.x, so TURNING does not move the walker (sheet_registration).
+var _registration: Dictionary = {}
+const _DIR_TO_PLAYER_DIR := [OverworldPlayer.Direction.DOWN, OverworldPlayer.Direction.LEFT, OverworldPlayer.Direction.RIGHT, OverworldPlayer.Direction.UP]
+const _NAME_TO_PLAYER_DIR := {"walk_down": OverworldPlayer.Direction.DOWN, "walk_up": OverworldPlayer.Direction.UP, "walk_left": OverworldPlayer.Direction.LEFT, "walk_right": OverworldPlayer.Direction.RIGHT}
 const HEAVY_TOP_DENSITY: int = 18  # opaque pixels; typical archetypes are 8-14
 const HEAVY_TOP_SPRITE_Y_OFFSET: float = 4.0
 
@@ -85,6 +90,14 @@ func _ready() -> void:
 	_setup_label()
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+
+static func _new_walk() -> PatrolWalk:
+	var w := PatrolWalk.new()
+	w.speed = WANDER_SPEED
+	w.pause_min = PAUSE_MIN
+	w.pause_max = PAUSE_MAX
+	return w
 
 
 func set_patrol(points: Array[Vector2]) -> void:
@@ -131,25 +144,18 @@ func _process(delta: float) -> void:
 	if ilm and ilm.is_locked():
 		return
 
-	if _paused:
-		_pause_timer -= delta
-		if _pause_timer <= 0:
-			_paused = false
-			_current_target = (_current_target + 1) % _patrol_points.size()
+	# The walk itself is PatrolWalk's (shared with an interior NPC's stroll); these fields stay the patrol's own state.
+	_walk.points = _patrol_points
+	_walk.target = _current_target
+	_walk.paused = _paused
+	_walk.pause_left = _pause_timer
+	global_position = _walk.step(global_position, delta)
+	_current_target = _walk.target
+	_paused = _walk.paused
+	_pause_timer = _walk.pause_left
+	if not _walk.moving:
 		return
-
-	var target = _patrol_points[_current_target]
-	var dir = (target - global_position)
-	var dist = dir.length()
-
-	if dist < 4.0:
-		# Reached target — pause
-		_paused = true
-		_pause_timer = randf_range(PAUSE_MIN, PAUSE_MAX)
-		return
-
-	dir = dir.normalized()
-	global_position += dir * WANDER_SPEED * delta
+	var dir: Vector2 = _walk.heading
 	_facing_right = dir.x > 0
 
 	# Pick the dominant axis to set sheet row (0=down, 1=left, 2=right, 3=up).
@@ -288,7 +294,27 @@ func _try_load_archetype() -> bool:
 			var region = Rect2i(col * fw, row * fh, fw, fh)
 			var frame_img = img.get_region(region)
 			_archetype_frames["%d_%d" % [row, col]] = ImageTexture.create_from_image(frame_img)
+	_registration = sheet_registration(img, _archetype_frame, {"walk_down": _dir_to_row[0], "walk_left": _dir_to_row[1], "walk_right": _dir_to_row[2], "walk_up": _dir_to_row[3]})
 	return true
+
+
+## OverworldPlayer.Direction -> Sprite.offset.x for a walk sheet: OverworldPlayer's own rule (mean bbox centre per row, anchored on walk_down), shared with OverworldNPC.
+static func sheet_registration(img: Image, frame: Vector2i, rows: Dictionary) -> Dictionary:
+	var row_centre: Dictionary = {}
+	for name in rows:
+		if not _NAME_TO_PLAYER_DIR.has(name):
+			continue
+		var row := int(rows[name])
+		var sum := 0.0
+		var n := 0
+		for col in 4:
+			var c := OverworldPlayer._bbox_centre_x(img.get_region(Rect2i(col * frame.x, row * frame.y, frame.x, frame.y)))
+			if c >= 0.0:
+				sum += c
+				n += 1
+		if n > 0:
+			row_centre[_NAME_TO_PLAYER_DIR[name]] = sum / float(n)
+	return OverworldPlayer._registration_offsets(row_centre)
 
 
 ## Pick the right (direction, frame) from the archetype cache and apply.
@@ -310,6 +336,7 @@ func _update_archetype_frame() -> void:
 		var top: int = int(_archetype_row_top_density.get(row, 0))
 		# A cell taller than 32px is lifted so the feet stand where a 32px walker's do
 		_sprite.offset.y = (HEAVY_TOP_SPRITE_Y_OFFSET if top > HEAVY_TOP_DENSITY else 0.0) - (_archetype_frame.y - 32) / 2.0
+		_sprite.offset.x = float(_registration.get(_DIR_TO_PLAYER_DIR[_current_dir], 0.0)) if _current_dir < 4 else 0.0
 
 
 ## Read the sheet's declared walk rows into the direction map. `_current_dir` is this file's own

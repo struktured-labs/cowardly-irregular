@@ -73,8 +73,69 @@ const SCENES := [
 	# rendered nothing, and it exits 0 either way.
 ]
 
+## The village a shared interior is photographed AS. A room asks GameLoop which village it was entered from and draws
+## that village's art; this tool builds the room alone, so with no answer every shared room fell back to its PAINTED
+## look, and the store's inn was a room no player in Harmonia has seen (found 2026-11-12 on overworld's contact sheet:
+## the stored frame has the painted slab table and no drawn back wall or hearth). Harmonia is the first village a
+## player enters. A room with no entry here is shot as before.
+const ORIGINS := {
+	"inn_interior": "harmonia_village",
+	"shop_interior": "harmonia_village",
+	"tavern_interior": "harmonia_village",
+}
+## Rooms whose village HAS drawn art today: an origin that yields none is a silent fallback, and reds the shot.
+const MUST_BE_DRAWN := ["inn_interior"]
+
 var _ok := 0
 var _fail := 0
+
+
+## Things that MOVE in a room, held still for the capture: the recheck compares these frames pixel by pixel every
+## release, so an NPC strolling or a lamp wavering reads as "the room changed" and hides a real change behind it.
+## Each is a static switch its owner built for this tool (cowir-overworld 24225, 24357). A tree without the switch
+## (before those tips fold) has nothing to hold and says so. SHOTS_NO_HOLD=1 leaves them moving: the control.
+const HELD_STILL := [
+	["res://src/exploration/OverworldNPC.gd", "strolling_enabled"],
+	["res://src/maps/InteriorLighting.gd", "flicker_enabled"],
+]
+
+
+func _hold_still() -> void:
+	if OS.get_environment("SHOTS_NO_HOLD") != "":
+		print("[SHOT] held still: nothing (SHOTS_NO_HOLD)")
+		return
+	var held: Array = []
+	var absent: Array = []
+	for pair in HELD_STILL:
+		var script = load(pair[0]) if ResourceLoader.exists(pair[0]) else null
+		if script == null or script.get(pair[1]) == null:
+			absent.append(pair[1])
+			continue
+		script.set(pair[1], false)
+		if script.get(pair[1]) != false:
+			print("[SHOT] FAIL: %s did not take false: the switch is not a static this tool can set" % pair[1])
+			_fail += 1
+			continue
+		held.append(pair[1])
+	print("[SHOT] held still: %s · not in this tree: %s" % [", ".join(held) if not held.is_empty() else "nothing", ", ".join(absent) if not absent.is_empty() else "nothing"])
+
+
+## Stands in for GameLoop for the questions a shot's room asks it. A room guards get_village_origin_id with has_method.
+## OverworldPlayer._can_move does NOT guard: every frame it reads current_state against LoopState.EXPLORATION on
+## whatever sits at /root/GameLoop. Without these two the .794 slot logged 51-56 SCRIPT ERRORs per run (cowir-deploy 24657).
+## LoopState copies GameLoop's first three names; the state is TITLE, so _can_move answers false ON PURPOSE: a store
+## shot wants the hero standing where the room put him.
+const STAND_IN_SRC := "extends Node\nenum LoopState { TITLE, BATTLE, EXPLORATION }\nvar current_state: int = LoopState.TITLE\nvar origin := \"\"\nfunc get_village_origin_id() -> String:\n\treturn origin\n"
+
+func _stand_in_origin(origin: String) -> Node:
+	var src := GDScript.new()
+	src.source_code = STAND_IN_SRC
+	if src.reload() != OK:
+		return null
+	var n: Node = src.new()
+	n.name = "GameLoop"
+	n.set("origin", origin)
+	return n
 
 
 func _init() -> void:
@@ -83,13 +144,21 @@ func _init() -> void:
 	await process_frame
 
 	_suppress_furniture()
+	_hold_still()
 
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
+	## SHOTS_ONLY=a,b shoots just those scenes and skips the title and the battle: for a tool's own controls (shoot three
+	## rooms six ways), never for the store set. The summary line says so, so a partial run cannot pass for a full one.
+	var only: PackedStringArray = OS.get_environment("SHOTS_ONLY").split(",", false)
 	for entry in SCENES:
-		await _shoot(entry[0], entry[1])
+		if only.is_empty() or entry[0] in only:
+			await _shoot(entry[0], entry[1])
 
-	await _shoot_title()
-	await _shoot_battle()
+	if only.is_empty():
+		await _shoot_title()
+		await _shoot_battle()
+	else:
+		print("[SHOT] PARTIAL run (SHOTS_ONLY=%s): not a store set" % ",".join(only))
 
 	print("[SHOT] done: %d captured, %d failed" % [_ok, _fail])
 	quit(0 if _fail == 0 else 1)
@@ -242,11 +311,32 @@ func _shoot(name: String, paths: Array) -> void:
 		_fail += 1
 		return
 
+	var origin := str(ORIGINS.get(name, ""))
+	var stand_in: Node = null
+	if origin != "" and OS.get_environment("SHOTS_NO_ORIGIN") == "":
+		if root.get_node_or_null("GameLoop") != null:
+			print("[SHOT] FAIL: %s — a GameLoop is already in the tree, so the origin cannot be stood in" % name)
+			_fail += 1
+			scene.free()
+			return
+		stand_in = _stand_in_origin(origin)
+		if stand_in == null:
+			print("[SHOT] FAIL: %s — the origin stand-in did not compile" % name)
+			_fail += 1
+			scene.free()
+			return
+		root.add_child(stand_in)
 	root.add_child(scene)
 	# 12 frames: villages stream tiles and spawn NPCs over several frames; 8 was enough for
 	# the older single-village tool but caught half-populated markets here.
 	for i in range(12):
 		await process_frame
+	if origin != "":
+		var drawn := scene.find_children("Art_*", "Sprite2D", true, false).size()
+		print("[SHOT] %s origin: %s · drawn pieces: %d" % [name, origin if stand_in != null else "(none: SHOTS_NO_ORIGIN)", drawn])
+		if stand_in != null and name in MUST_BE_DRAWN and drawn == 0:
+			print("[SHOT] FAIL: %s — shot as %s and no drawn piece stands in it: the painted fallback" % [name, origin])
+			_fail += 1
 
 	var framing := _frame_on_houses(scene)
 	if framing != "":
@@ -270,6 +360,8 @@ func _shoot(name: String, paths: Array) -> void:
 	_ok += 1
 
 	scene.queue_free()
+	if stand_in != null:
+		stand_in.queue_free()
 	await process_frame
 
 
@@ -384,10 +476,40 @@ func _frame_on_houses(scene: Node) -> String:
 	print("[SHOT] player stood at world px (%d, %d), door=%s" % [int(stand.x), int(stand.y), str(used_door)])
 	## Keep the player inside the frame: the offset never pushes them past the view's edge.
 	var keep := VIEW * 0.5 - Vector2(48, 72)
-	scene.camera.offset = (target - stand).clamp(-keep, keep)
+	var offset: Vector2 = (target - stand).clamp(-keep, keep)
+	## Stay inside the map. A Camera2D's OFFSET is the one thing its limits do not stop (it is there for shake), so a
+	## cluster near the map's edge framed the void: at v3.33.813 Grimhollow's frame carried a 118 px grey band down its
+	## left side (hero at 608,352 after its door moved). A player's camera stops at the limits BaseVillage sets, so the
+	## shot does too: the view's centre is held where the limits leave room for a whole view. A map smaller than the
+	## view on an axis is centred on that axis.
+	## The engine holds the camera's own POSITION inside the limits first and adds the offset after, so the view's
+	## centre is (the stand point held inside the map) + offset, not stand + offset. Measured: my first version judged
+	## stand + offset, found Grimhollow's centre already inside, and changed nothing; the band was still 118 px.
+	var cam: Camera2D = scene.camera
+	var map := Rect2(cam.limit_left, cam.limit_top, cam.limit_right - cam.limit_left, cam.limit_bottom - cam.limit_top)
+	var base: Vector2 = _centre_inside(stand, map, VIEW)
+	var centre: Vector2 = base + offset
+	var held: Vector2 = _centre_inside(centre, map, VIEW)
+	if held != centre:
+		print("[SHOT] view held inside the map: centre (%d, %d) -> (%d, %d)" % [int(centre.x), int(centre.y), int(held.x), int(held.y)])
+	scene.camera.offset = held - base
 	scene.camera.reset_smoothing()
 	scene.camera.force_update_scroll()
 	return "%d of %d buildings in view · player at %s (%s)" % [best_n, centers.size(), str(stand.round()), "a door" if used_door else "the street below them"]
+
+
+## Where a view of size `view` may be centred so it shows only `map`. Pure, so the rule can be tested without a scene.
+static func _centre_inside(centre: Vector2, map: Rect2, view: Vector2) -> Vector2:
+	var out := centre
+	if map.size.x >= view.x:
+		out.x = clampf(centre.x, map.position.x + view.x * 0.5, map.end.x - view.x * 0.5)
+	else:
+		out.x = map.position.x + map.size.x * 0.5
+	if map.size.y >= view.y:
+		out.y = clampf(centre.y, map.position.y + view.y * 0.5, map.end.y - view.y * 0.5)
+	else:
+		out.y = map.position.y + map.size.y * 0.5
+	return out
 
 
 ## The title screen (2026-10-31): the source of the store COVER, and the last shipped frame no tool reached —

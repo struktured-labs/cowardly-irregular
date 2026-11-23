@@ -1,0 +1,293 @@
+{
+  "id": "world1_theron_sparring_offer",
+  "title": "The Trials Where He Left Them",
+  "world": 1,
+  "trigger": "talk_elder_theron_after_briefing_skipped",
+  "background": "harmonia_square",
+  "description": "Optional sparring (main 24221) for a save that beat the Rat King before the briefing (world1_briefing_skipped). Offered from Elder Theron's ordinary talk while any skipped spotlight trial is unwon; a won trial leaves the menu (unless_flag). Each trial is the duel's own battle step, copied from its spotlight scene, so the rewards are the normal path's. A skip answers 'Not today.' (skip_answer), so skipping can never mark a trial won.",
+  "steps": [
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Elder Theron",
+          "text": "Changed your mind? The trials are where I left them. Pick one. I will pretend this was the plan.",
+          "theme": "elder",
+          "portrait": "theron"
+        }
+      ]
+    },
+    {
+      "type": "choice",
+      "prompt": "",
+      "options": [
+        {
+          "text": "The Cleric's trial",
+          "flag": "theron_spar_pick_cleric",
+          "unless_flag": [
+            "theron_trial_won_cleric",
+            "theron_trial_unrunnable_cleric"
+          ]
+        },
+        {
+          "text": "The Rogue's trial",
+          "flag": "theron_spar_pick_rogue",
+          "unless_flag": [
+            "theron_trial_won_rogue",
+            "theron_trial_unrunnable_rogue"
+          ]
+        },
+        {
+          "text": "The Mage's trial",
+          "flag": "theron_spar_pick_mage",
+          "unless_flag": [
+            "theron_trial_won_mage",
+            "theron_trial_unrunnable_mage"
+          ]
+        },
+        {
+          "text": "The Fighter's trial",
+          "flag": "theron_spar_pick_fighter",
+          "unless_flag": [
+            "theron_trial_won_fighter",
+            "theron_trial_unrunnable_fighter"
+          ]
+        },
+        {
+          "text": "The Bard's trial",
+          "flag": "theron_spar_pick_bard",
+          "unless_flag": [
+            "theron_trial_won_bard",
+            "theron_trial_unrunnable_bard"
+          ]
+        },
+        {
+          "text": "Not today.",
+          "flag": "theron_spar_declined",
+          "skip_answer": true
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_pick_cleric",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_pick_cleric",
+          "value": false
+        },
+        {
+          "type": "battle",
+          "combatants": [
+            "cleric"
+          ],
+          "enemies": [
+            "cleric_survive_target"
+          ],
+          "on_defeat": "retry",
+          "music": "boss_medieval",
+          "background": "prologue_village",
+          "win_condition": {
+            "type": "survive_turns",
+            "value": 8
+          }
+        },
+        {
+          "type": "set_flag",
+          "flag": "theron_trial_won_cleric"
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "There. Now you know what you skipped. It was a good lesson. I stand by it.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_pick_rogue",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_pick_rogue",
+          "value": false
+        },
+        {
+          "type": "battle",
+          "combatants": [
+            "rogue"
+          ],
+          "enemies": [
+            "rogue_lockward"
+          ],
+          "on_defeat": "retry",
+          "music": "boss_medieval",
+          "background": "cave_entrance"
+        },
+        {
+          "type": "set_flag",
+          "flag": "theron_trial_won_rogue"
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "There. Now you know what you skipped. It was a good lesson. I stand by it.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_pick_mage",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_pick_mage",
+          "value": false
+        },
+        {
+          "type": "battle",
+          "combatants": [
+            "mage"
+          ],
+          "enemies": [
+            "mage_prismatic_construct"
+          ],
+          "on_defeat": "retry",
+          "music": "boss_medieval",
+          "background": "cave_entrance"
+        },
+        {
+          "type": "set_flag",
+          "flag": "theron_trial_won_mage"
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "There. Now you know what you skipped. It was a good lesson. I stand by it.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_pick_fighter",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_pick_fighter",
+          "value": false
+        },
+        {
+          "type": "battle",
+          "combatants": [
+            "fighter"
+          ],
+          "enemies": [
+            "fighter_skeleton_knight"
+          ],
+          "on_defeat": "retry",
+          "music": "boss_medieval",
+          "background": "cave_entrance"
+        },
+        {
+          "type": "set_flag",
+          "flag": "theron_trial_won_fighter"
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "There. Now you know what you skipped. It was a good lesson. I stand by it.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_pick_bard",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_pick_bard",
+          "value": false
+        },
+        {
+          "type": "battle",
+          "combatants": [
+            "bard"
+          ],
+          "enemies": [
+            "bard_hostile_courtier"
+          ],
+          "on_defeat": "retry",
+          "music": "boss_medieval",
+          "background": "prologue_village",
+          "win_condition": {
+            "type": "status_threshold",
+            "status": "swayed",
+            "value": 3
+          }
+        },
+        {
+          "type": "set_flag",
+          "flag": "theron_trial_won_bard"
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "There. Now you know what you skipped. It was a good lesson. I stand by it.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "branch",
+      "flag": "theron_spar_declined",
+      "if_true": [
+        {
+          "type": "set_flag",
+          "flag": "theron_spar_declined",
+          "value": false
+        },
+        {
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Elder Theron",
+              "text": "Of course not. You have a schedule. I had one too.",
+              "theme": "elder",
+              "portrait": "theron"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

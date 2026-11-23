@@ -186,6 +186,9 @@ STYLE_PROP = ("A single small 16-bit SNES-era JRPG pixel-art OBJECT -- not a bui
               "text or letters, no ground, no grass, no shadow on the ground, nothing else in the picture. The background "
               "is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The object fills the frame and is centred.")
 PROPS = {
+    "gravestone_medieval": (1, "A single old weathered grey stone headstone with a rounded top, standing upright, seen "
+                               "straight on: cracked and lichen-stained, a little moss and a tuft of grass at its foot, "
+                               "completely blank (NO letters, NO carving, NO date). Short and squat, about as tall as it is wide."),
     "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
                              "growing from the centre of the upper tier. Seen straight-on from the front and a little "
@@ -208,6 +211,10 @@ PROPS = {
     "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
                           "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
                           "slightly above, wider than it is tall."),
+    "cart_ironhaven": (2, "A single small iron mine cart for a volcanic forge town: a riveted dark-iron tub with a "
+                          "rust-orange rim, on four small flanged wheels sitting on a short piece of rail track, heaped "
+                          "with chunks of black coal and glowing orange ore. Seen from the side and slightly above, "
+                          "wider than it is tall."),
     "stall_medieval": (2, "A single small village market stall: a wooden counter under a striped red-and-cream cloth awning on "
                           "two posts, with baskets of apples, bread and pottery on the counter."),
     "stall_steampunk": (2, "A single small Victorian steampunk market stall: a brass-trimmed wooden counter under a riveted "
@@ -231,14 +238,22 @@ PROPS = {
                             "holographic label light (no letters)."),
     "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
                             "stripe and stencil-style marks (no readable letters)."),
+    "signpost_medieval": (1, "A single weathered wooden village signpost, exactly TWICE as tall as it is wide: one straight "
+                             "upright wooden post, near its top three short painted wooden arrow boards pointing left, right "
+                             "and left (blank, no letters), and below them a small square wooden notice board nailed to the "
+                             "post with a pinned blank paper. The post meets the bottom edge in the centre. Narrow: the arrows "
+                             "stick out only a little either side of the post."),
     "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
-KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban", "cart_ironhaven"}
 ## Props whose art must stand a fixed height: the lamp's light anchor sits 50px above its base (VillageProp), and the
 ## TREE prop's footprint is 1x3, so 96px.
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
-               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96}
+               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96, "signpost_medieval": 64}
+
+## Frosthold's pine stands the TREE footprint's 96px like tree_medieval.
+PROP_HEIGHT["tree_frosthold"] = 96
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "

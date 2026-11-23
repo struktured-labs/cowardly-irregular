@@ -181,3 +181,20 @@ func test_arm4_reserved_rect_covers_the_text_without_over_reserving() -> void:
 			bad.append("%.0f%%: reserved %s is larger than plate-union-text %s — the arrow and hint are shoved for nothing" % [
 				scale * 100.0, rr, union])
 	assert_eq(bad, [], "reserved_rect is wrong in one direction or the other: %s" % [bad])
+
+
+## .801 field census: past 125% the main line (13 + 26 px at 150%) ran into a side line pinned at y 37.
+func test_arm4_the_side_line_starts_below_the_main_line_at_every_preset() -> void:
+	var bad: Array = []
+	for scale in PRESETS:
+		var t = await _tracker(scale, true)
+		var main: Label = t._label
+		var side: Label = t._side_label
+		if not side.visible:
+			bad.append("%.0f%%: the side line did not show, so nothing was measured" % [scale * 100.0])
+			continue
+		var main_bottom: float = main.position.y + main.get_combined_minimum_size().y
+		gut.p("  %5.0f%%  main bottom %5.1f  side top %5.1f" % [scale * 100.0, main_bottom, side.position.y])
+		if side.position.y < main_bottom - 0.5:
+			bad.append("%.0f%%: side line at %.0f, main line ends %.0f" % [scale * 100.0, side.position.y, main_bottom])
+	assert_eq(bad, [], "the tracker's two lines overlap: %s" % [bad])

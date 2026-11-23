@@ -162,11 +162,13 @@ func test_the_inn_heals_first_then_plays_the_night() -> void:
 	add_child_autofree(inn)
 	var gold_before: int = GameState.party_gold
 	GameState.party_gold = 500
+	var older: Array = get_tree().root.get_children().filter(func(n): return n is InnRestSequence)
 	inn._do_rest()
 	assert_eq(member.current_hp, member.max_hp, "the paid rest heals at once, before any fade")
+	## The night THIS rest started: a night another file left running in root is not it (.795 pre-gate, overworld's inn file).
 	var seq: InnRestSequence = null
 	for n in get_tree().root.get_children():
-		if n is InnRestSequence:
+		if n is InnRestSequence and not older.has(n):
 			seq = n
 	assert_not_null(seq, "and the inn starts the night")
 	if seq != null:

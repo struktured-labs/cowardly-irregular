@@ -112,9 +112,15 @@ func test_one_x_is_the_authored_layout() -> void:
 	var g := _gallery(1.0)
 	var vp: Vector2 = g.get_viewport_rect().size
 	assert_eq(g._k, 1.0, "at 100% the layout factor is 1")
+	## A tab is 140 wide unless its words need more, and starts 10 past the last; a face change moves the 140 case, not the rule.
+	var x := 24.0
 	for i in g._world_tabs.size():
-		assert_almost_eq((g._world_tabs[i] as Label).position, Vector2(24 + 150 * i, 56), Vector2.ONE, "tab %d at its authored spot" % i)
-		assert_almost_eq((g._world_tabs[i] as Label).size, Vector2(140, 28), Vector2.ONE, "tab %d at its authored size" % i)
+		var t := g._world_tabs[i] as Label
+		var want_w: float = maxf(140.0, CutsceneGallery._text_w(t.text, TextScale.scaled(14)) + 10.0)
+		assert_almost_eq(t.position, Vector2(x, 56), Vector2.ONE, "tab %d at its authored spot" % i)
+		assert_almost_eq(t.size, Vector2(want_w, 28), Vector2.ONE, "tab %d is 140 wide or as wide as its words" % i)
+		x += want_w + 10.0
+	assert_true(g._world_tabs.any(func(t): return is_equal_approx((t as Label).size.x, 140.0)), "CONTROL: at 100% some tab still sits at the authored 140")
 	assert_almost_eq(g._item_scroll.position, Vector2(24, 92), Vector2.ONE, "the list at its authored spot")
 	assert_almost_eq(g._item_scroll.size, Vector2(vp.x - 48, vp.y - 132), Vector2.ONE, "and its authored size")
 	assert_almost_eq(g._footer.position, Vector2(24, vp.y - 32), Vector2.ONE, "the footer at its authored spot")

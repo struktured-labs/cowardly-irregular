@@ -132,6 +132,7 @@ func _counter_rate(mid: String, intent_id: String, party: Array = []) -> float:
 	# forever — a false ALARM, the direction that gets published.
 	var counters: Array = [0]
 	var seen_any: int = 0
+	var ladder_turns: int = 0
 	_bm.battle_log_message.connect(
 		func(msg: String) -> void:
 			if msg.find("anticipates your strategy") != -1:
@@ -145,6 +146,10 @@ func _counter_rate(mid: String, intent_id: String, party: Array = []) -> float:
 		var action: Dictionary = _bm._make_ai_decision(boss, [boss], foes)
 		if not action.is_empty():
 			seen_any += 1
+		## A cadence boss's charge and release turns never reach the counter branch; the rate is over its ladder turns.
+		var cad: Dictionary = boss.get_meta("_cadence", {})
+		if cad.is_empty() or (not BossCadence.is_charging(cad) and int(cad.get("count", 0)) >= 1):
+			ladder_turns += 1
 	assert_gt(seen_any, 0, "CONTROL: %s must produce actions at all, or nothing was driven" % mid)
 	# The rate above is only ABOUT intent_id if intent_id survived the rolls. Without
 	# this the file reported a confident number for an intent it was no longer
@@ -154,7 +159,7 @@ func _counter_rate(mid: String, intent_id: String, party: Array = []) -> float:
 			("the boss's intent changed mid-measurement (%s -> %s), so this rate is not about %s. " +
 			"A phase transition re-picks it; see the boss_dialogue_phase pin above.")
 			% [intent_id, str(boss.get_meta("llm_intent", "")), intent_id])
-	return float(counters[0]) / float(ROLLS)
+	return float(counters[0]) / float(maxi(ladder_turns, 1))
 
 
 func test_rotate_aggro_proves_the_counter_branch_is_live() -> void:

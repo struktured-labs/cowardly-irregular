@@ -27,6 +27,8 @@ signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
+## A basic attack's strike `index` (0-based) of `count` is about to resolve; the scene times each strike's number to its own beat.
+signal strike_starting(attacker: Combatant, index: int, count: int, weapon: String)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
 ## A cast that could not pay (MP short, or past the AP floor). Its own channel: hit_negated also plays attack_miss.
@@ -64,6 +66,15 @@ signal party_combat_line(combatant: Combatant, line: String, voice_trigger: Stri
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
 ## and pops a small bubble above the enemy sprite (non-blocking).
 signal boss_taunt(boss: Combatant, line: String)
+## A cadence boss's authored charge/break bark, sent just before its boss_taunt so the scene can voice it ahead of the bubble.
+signal boss_cadence_bark(boss: Combatant, line: String)
+## A cadence boss started or stopped charging its signature (edges only: a two-turn charge emits true once).
+signal boss_charge_changed(boss: Combatant, charging: bool)
+## A monster counter is about to resolve (started) and has resolved (finished): BattleScene lifts its numbers out of the attacker's swing and lands them on a beat of their own.
+signal monster_counter_started(monster: Combatant, target: Combatant, ability_id: String)
+signal monster_counter_finished(monster: Combatant, target: Combatant, ability_id: String)
+## A stun/silence/sleep landing mid-charge broke the breath.
+signal boss_charge_broken(boss: Combatant, status: String)
 ## boss_jailbreak_landed: emitted after a player directive trips a
 ## vulnerability and the consequence has been applied to the boss. The UI
 ## shows the diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner.
@@ -317,6 +328,7 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
 var _doom_callbacks: Dictionary = {}
+var _cadence_callbacks: Dictionary = {}
 var _hp_callbacks: Dictionary = {}
 ## Lowest HP% any PC REACHED this battle. Final-frame state cannot see a dip that was healed back.
 var _battle_low_water_pct: float = 100.0
@@ -395,9 +407,10 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 const PER_BATTLE_METAS: Array[String] = [
 	"_summon_followup", "_damage_absorb_budget", "_regen_per_turn", "_next_attack_multiplier",
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
-	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
+	"_signature_fired", "_cadence", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
 	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
+	"counter_round", "counters_this_round",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -748,6 +761,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			var dcb = _on_doom_ticked.bind(combatant)
 			_doom_callbacks[combatant] = dcb
 			combatant.doom_ticked.connect(dcb)
+		if not _cadence_config(combatant).is_empty():
+			var ccb = _on_cadence_status.bind(combatant)
+			_cadence_callbacks[combatant] = ccb
+			combatant.status_added.connect(ccb)
 
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
@@ -989,6 +1006,7 @@ func apply_post_battle_restore(party: Array) -> Dictionary:
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
+	_settle_cadence_edges()
 	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
 	var defer_payout: bool = victory and _defer_victory_payout()
 	defer_victory_payout = false
@@ -1432,9 +1450,16 @@ func _disconnect_combatant_signals() -> void:
 		var hcb = _hp_callbacks[combatant]
 		if hcb and combatant.has_signal("hp_changed") and combatant.hp_changed.is_connected(hcb):
 			combatant.hp_changed.disconnect(hcb)
+	for combatant in _cadence_callbacks.keys():
+		if not is_instance_valid(combatant):
+			continue
+		var ccb = _cadence_callbacks[combatant]
+		if ccb and combatant.status_added.is_connected(ccb):
+			combatant.status_added.disconnect(ccb)
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
 	_hp_callbacks.clear()
+	_cadence_callbacks.clear()
 
 
 func _cleanup_battle() -> void:
@@ -2756,7 +2781,8 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	## Enemies only. A player character routed here (trusted / spotlight-locked) used to take
 	## this branch too, and it hardcodes basic attacks — a Cleric spent 3 AP on ~41-damage
 	## swings instead of casting. PCs fall through to the ability-aware decision below.
-	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0
+	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0 \
+			and not BossCadence.is_charging(combatant.get_meta("_cadence", {}))
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
@@ -2782,7 +2808,7 @@ func _process_ai_selection(combatant: Combatant) -> void:
 
 	# Check if monster wants to summon reinforcements
 	var can_summon = _can_monster_summon(combatant)
-	if can_summon and randf() < 0.12:  # 12% chance to summon
+	if can_summon and randf() < 0.12 and not BossCadence.is_charging(combatant.get_meta("_cadence", {})):  # 12% chance to summon
 		var summon_action = {
 			"type": "summon",
 			"combatant": combatant,
@@ -2798,6 +2824,92 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	var action = _make_ai_decision(combatant, alive_allies, alive_enemies)
 	_queue_action(action)
 	_end_selection_turn()
+
+
+## The `cadence` row of this combatant's monster, normalised; {} for anyone without one.
+func _cadence_config(combatant: Combatant) -> Dictionary:
+	if combatant == null or not combatant.has_meta("monster_type") or not EncounterSystem:
+		return {}
+	var row: Variant = EncounterSystem.monster_database.get(str(combatant.get_meta("monster_type", "")), null)
+	return BossCadence.config(row) if row is Dictionary else {}
+
+
+## Steps the boss's clock: a charge beat telegraphs, a release casts the signature at its full reach. {} plays the ladder.
+func _cadence_action(boss: Combatant, alive_enemies: Array, quiet: bool) -> Dictionary:
+	var cfg := _cadence_config(boss)
+	if cfg.is_empty() or alive_enemies.is_empty():
+		return {}
+	var before: Dictionary = boss.get_meta("_cadence", {})
+	var step: Dictionary = BossCadence.next(before, cfg)
+	var after: Dictionary = step["state"]
+	boss.set_meta("_cadence", after)
+	var now_charging := BossCadence.is_charging(after)
+	if not quiet and BossCadence.is_charging(before) != now_charging:
+		boss_charge_changed.emit(boss, now_charging)
+	var sig := str(cfg["signature"])
+	match str(step["beat"]):
+		BossCadence.BEAT_CHARGE:
+			return {"type": "charge", "combatant": boss, "ability_id": sig, "speed": _compute_action_speed(boss, "attack")}
+		BossCadence.BEAT_RELEASE:
+			var ability: Dictionary = JobSystem.get_ability(sig)
+			if ability.is_empty():
+				return {}
+			## The breath was drawn on the charge turn, so the release never fizzles for MP.
+			boss.current_mp = maxi(boss.current_mp, JobSystem.get_ability_mp_cost(boss, sig))
+			var targets: Array = alive_enemies.duplicate() if str(ability.get("target_type", "")) == "all_enemies" \
+				else [_choose_target(boss, alive_enemies, ability)]
+			return {"type": "ability", "combatant": boss, "ability_id": sig, "targets": targets,
+				"speed": _compute_action_speed(boss, "ability", ability)}
+	return {}
+
+
+## The boss's authored charge words from boss_dialogue.json; every key present, empty when unauthored.
+func _charge_lines(boss: Combatant) -> Dictionary:
+	var dlg = get_node_or_null("/root/BossDialogue")
+	if dlg == null or not dlg.has_method("get_charge_lines"):
+		return {}
+	return dlg.get_charge_lines(_boss_persona_id(boss))
+
+
+## The charge turn: the boss spends it gathering, and says so in its own words when story authored them.
+func _execute_boss_charge(boss: Combatant, ability_id: String) -> void:
+	var lines := _charge_lines(boss)
+	var authored := str(lines.get("charge_line", ""))
+	battle_log_message.emit("[color=cyan]%s[/color]" % authored if authored != "" \
+		else "[color=cyan]%s is gathering power for %s![/color]" % [boss.combatant_name, _ability_display_name(ability_id)])
+	var barks: Array = lines.get("charge_barks", [])
+	if not barks.is_empty():
+		_speak_boss_bark(boss, str(barks.pick_random()))
+
+
+## A status landed on a cadence boss; an interrupting one mid-charge breaks the breath.
+func _on_cadence_status(status: String, boss: Combatant) -> void:
+	var after := BossCadence.on_status(boss.get_meta("_cadence", {}), _cadence_config(boss), status)
+	boss.set_meta("_cadence", after)
+	if bool(after.get("interrupted", false)):
+		var broken_log := str(_charge_lines(boss).get("interrupted_log", ""))
+		battle_log_message.emit("[color=yellow]%s[/color]" % broken_log if broken_log != "" \
+			else "[color=yellow]%s's charge is broken![/color]" % boss.combatant_name)
+		boss_charge_broken.emit(boss, status)
+		_speak_boss_bark(boss, str(_charge_lines(boss).get("interrupted_bark", "")))
+		boss_charge_changed.emit(boss, false)
+
+
+## A boss's authored cadence bark: logged in its voice and shown as its taunt bubble. Unauthored ("") says nothing.
+func _speak_boss_bark(boss: Combatant, line: String) -> void:
+	if line.strip_edges() == "":
+		return
+	_log_boss_line(boss, line)
+	boss_cadence_bark.emit(boss, line)
+	boss_taunt.emit(boss, line)
+
+
+## Battle over: every boss still charging stops, once, so a listener never holds its charge state into the next fight.
+func _settle_cadence_edges() -> void:
+	for c in enemy_party:
+		if is_instance_valid(c) and c.has_meta("_cadence") and BossCadence.is_charging(c.get_meta("_cadence", {})):
+			c.set_meta("_cadence", BossCadence.fresh_state())
+			boss_charge_changed.emit(c, false)
 
 
 ## The action the live ladder picks for an enemy, with none of the theatre: HeadlessBattleResolver asks this, so a grind
@@ -2831,6 +2943,14 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# ladders via combatant.get_meta("llm_intent"); those ladders read
 	# the meta to bias their weighted choices (no abilities invented).
 	_update_boss_dialogue_phase(combatant, quiet)
+
+	var cadence_action := _cadence_action(combatant, alive_enemies, quiet)
+	if not cadence_action.is_empty():
+		return cadence_action
+	## A clocked signature is the clock's alone: the ladder casting it unannounced would make the charge and enemy_signature_in lie.
+	var clocked_sig := str(_cadence_config(combatant).get("signature", ""))
+	if clocked_sig != "":
+		available_abilities = available_abilities.filter(func(a): return str(a.get("id", "")) != clocked_sig)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
@@ -3017,14 +3137,19 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 
 	# Wave E — BossDialogue intent bias. Scales the 75% spell-cast roll
 	# by the intent's "attack_weight" multiplier (default 1.0 = no change).
-	# 'aggress' tilts toward more spells, 'turtle' tilts away. The roll
+	# 'aggress' tilts toward more spells, 'turtle' away unless the intent names a spell. The roll
 	# remains randomized — the LLM never names the spell.
 	var intent_id: String = combatant.get_meta("llm_intent", "")
 	var bias: Dictionary = _bias_by_intent(intent_id)
+	## The intent's authored ability bias reaches the caster's picks too, as it does the tank's and assassin's; {} for no intent.
+	var ability_bias: Dictionary = _intent_ability_bias(combatant)
+	var favoured: Dictionary = _favoured_in_pool(magic_abilities, ability_bias)
 	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
+	## A posture that names a spell does not cut casting: turtle's 0.6 made "Null Field" mean fewer Null Fields.
+	if not favoured.is_empty():
+		cast_chance = maxf(cast_chance, 0.75)
 	cast_chance = clampf(cast_chance, 0.1, 0.99)
-
-	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2, ability_bias)
 	if not caster_utility.is_empty():
 		return caster_utility
 
@@ -3034,10 +3159,14 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
 		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
 		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
-		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		## stops it being the only entry that can win. Weakness leads the sort unless an intent names a spell.
 		var scored: Array = magic_abilities.duplicate()
 		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
-		var best_spell = _pick_biased_by_power(scored)
+		## The announced spell takes the top slot; the bias then weighs it as before, so the cap still bounds it.
+		if not favoured.is_empty():
+			scored.erase(favoured)
+			scored.push_front(favoured)
+		var best_spell = _pick_biased_by_power(scored, ability_bias)
 		if best_spell.is_empty():
 			best_spell = magic_abilities[0]
 
@@ -3171,6 +3300,18 @@ func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: A
 		"targets": targets,
 		"speed": _compute_action_speed(combatant, "ability", pick)
 	}
+
+
+## The pool's most-favoured ability by the intent's bias (first in pool order on a tie), or {} when the bias favours none of it.
+func _favoured_in_pool(pool: Array, bias: Dictionary) -> Dictionary:
+	var best: Dictionary = {}
+	var best_w: float = 1.0
+	for a in pool:
+		var w: float = float(bias.get(str(a.get("id", "")), 1.0))
+		if w > best_w:
+			best = a
+			best_w = w
+	return best
 
 
 ## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's
@@ -4421,6 +4562,8 @@ func _execute_next_action() -> void:
 			_execute_escape_ability(combatant, JobSystem.get_ability("flee"))
 		"summon":
 			_execute_summon(combatant, action.get("monster_type", "slime"))
+		"charge":
+			_execute_boss_charge(combatant, str(action.get("ability_id", "")))
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
@@ -5479,6 +5622,44 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
+	## Each strike rolls its own miss and crit; the defence then meets the attack ONCE (cowir-main 25203, struktured's
+	## "0.6 of an Attack per hit"): a strike's share of the summed raw is the share of the defence it meets, so two
+	## strikes deal the formula's total for their sum at any DEF. A kill ends the attack; the rest are not dealt.
+	var strikes: Array = attacker.basic_attack_strikes()
+	var rolls: Array = []
+	var barrier_left: bool = actual_target.has_status("barrier")
+	var reflecting: bool = actual_target.has_status("reflect") or actual_target.has_status("physical_reflect")
+	## A stored "next attack xN" (burrow, storm_gathering) is one charge for the WHOLE attack: every strike that connects carries it.
+	var charge: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
+	for st in strikes:
+		var roll: Dictionary = _roll_attack_strike(attacker, actual_target, float(st["scale"]), charge)
+		roll["weapon"] = str(st["weapon"])
+		if roll["fate"] == "hit" and barrier_left:
+			roll["fate"] = "barrier"
+			barrier_left = false
+		elif roll["fate"] == "hit" and reflecting:
+			roll["fate"] = "reflect"
+		rolls.append(roll)
+	## Spent once, and only if a strike connected: a full miss keeps it for the next attack.
+	if charge > 0.0 and rolls.any(func(r): return r["fate"] != "miss"):
+		attacker.set_meta("_next_attack_multiplier", 0.0)
+		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, charge])
+	var raw_total: int = 0
+	for roll in rolls:
+		if roll["fate"] == "hit":
+			roll["damage"] = _strike_hit_bonuses(attacker, actual_target, int(roll["damage"]))
+			raw_total += int(roll["damage"])
+	for i in rolls.size():
+		if i > 0 and not actual_target.is_alive:
+			break
+		strike_starting.emit(attacker, i, rolls.size(), str(rolls[i]["weapon"]))
+		var share: float = float(rolls[i]["damage"]) / raw_total if raw_total > 0 and rolls[i]["fate"] == "hit" else 1.0
+		_land_attack_strike(attacker, actual_target, rolls[i], share)
+
+
+## One strike's rolls, before it meets the target: miss, then the raw number (variance x scale, crit, the attacker's
+## one-shot multipliers). `scale` is the strike's share of a full swing. Fate is "miss" or "hit".
+func _roll_attack_strike(attacker: Combatant, actual_target: Combatant, scale: float, charge: float = 0.0) -> Dictionary:
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
 	var base_miss_rate = 0.10
 	if attacker.has_status("blind"):
@@ -5487,18 +5668,14 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var speed_diff = float(attacker.speed - actual_target.speed) / max(actual_target.speed, 1)
 	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
-		attack_missed.emit(actual_target)
-		var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
-		battle_log_message.emit(log_msg)
-		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
-		return
+		return {"fate": "miss", "damage": 0, "is_crit": false}
 
 	var base_damage = attacker.get_buffed_stat("attack", attacker.attack)
 	if attacker.has_status("fear"):
 		base_damage = int(base_damage * 0.5)
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
 	var variance = randf_range(vrange.x, vrange.y)
-	var damage = int(base_damage * variance)
+	var damage = int(base_damage * variance * scale)
 
 	# Critical hit calculation (physical attacks can crit)
 	var is_crit = false
@@ -5514,16 +5691,9 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	damage = _apply_market_sense(attacker, damage)
 	damage = _apply_lens_execute_bonus(attacker, actual_target, damage)
 
-	## Tick 435: consume the next_attack_multiplier set by burrow (or
-	## any future stored-multiplier support ability). One-shot — clear
-	## the meta after applying so subsequent attacks don't keep the
-	## bonus. Distinct emerge log line lets the player see the bonus
-	## land.
-	var stored_nam: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
-	if stored_nam > 0.0:
-		damage = int(damage * stored_nam)
-		attacker.set_meta("_next_attack_multiplier", 0.0)
-		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, stored_nam])
+	## Tick 435: the attack's stored charge (burrow), read and spent once by _execute_attack, multiplies every strike.
+	if charge > 0.0:
+		damage = int(damage * charge)
 
 	# Tail event check
 	if volatility and volatility.check_tail_event():
@@ -5541,25 +5711,12 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		# Bypass defense: add target's defense directly to damage (nullifying reduction)
 		damage += actual_target.defense
 		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
+	return {"fate": "hit", "damage": damage, "is_crit": is_crit}
 
-	# Barrier nullifies the next incoming hit, then expires.
-	if actual_target.has_status("barrier"):
-		actual_target.remove_status("barrier")
-		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
-		_announce_negated_hit(actual_target, "BLOCK")
-		# Counter-on-hit hook fires even on nullified hits — boss reads it
-		# as a tactical pressure event (the boss WAS attacked).
-		_trigger_monster_counter(actual_target, attacker)
-		return
 
-	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
-	if actual_target.has_status("reflect") or actual_target.has_status("physical_reflect"):
-		var reflected = attacker.take_damage(damage, false)
-		damage_dealt.emit(attacker, reflected, false, "", 1.0)
-		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
-		_trigger_monster_counter(actual_target, attacker)
-		return
-
+## The hit's target-side bonuses on the raw, for a strike that will reach take_damage (not one a barrier eats or a
+## reflect bounces). Cover's mitigation is consumed here, by the first such strike.
+func _strike_hit_bonuses(attacker: Combatant, actual_target: Combatant, damage: int) -> int:
 	## Tick 453: pattern_recognition passive's meta_effects.boss_
 	## pattern_memory. The passive's stat_mods.attack_multiplier =
 	## 1.2 is already a flat baseline boost on the attacker's
@@ -5570,9 +5727,39 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## monster_type lives in GameState.previously_fought_bosses.
 	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
 	damage = _apply_familiar_weight_bonus(attacker, actual_target, damage)
+	return _consume_cover_mitigation(damage)
 
-	damage = _consume_cover_mitigation(damage)
-	var actual_damage = actual_target.take_damage(damage, false)
+
+## Land one rolled strike. `defence_share` is the share of the target's defence it meets (its share of the attack's raw).
+func _land_attack_strike(attacker: Combatant, actual_target: Combatant, roll: Dictionary, defence_share: float) -> void:
+	if roll["fate"] == "miss":
+		attack_missed.emit(actual_target)
+		var miss_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
+		battle_log_message.emit(miss_msg)
+		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
+		return
+	var damage: int = int(roll["damage"])
+	var is_crit: bool = bool(roll["is_crit"])
+
+	# Barrier nullifies the next incoming hit, then expires.
+	if roll["fate"] == "barrier":
+		actual_target.remove_status("barrier")
+		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		_announce_negated_hit(actual_target, "BLOCK")
+		# Counter-on-hit hook fires even on nullified hits — boss reads it
+		# as a tactical pressure event (the boss WAS attacked).
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
+	if roll["fate"] == "reflect":
+		var reflected = attacker.take_damage(damage, false)
+		damage_dealt.emit(attacker, reflected, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	var actual_damage = actual_target.take_damage(damage, false, defence_share)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 	## Retaliation, not negation: the hit lands in full and then the armour bites back.
 	_retaliate_armor_thorns(attacker, actual_target, actual_damage)
@@ -5767,6 +5954,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array, for
 			var new_target = _retarget_ally(caster, target, is_revival)
 			if new_target:
 				retargeted.append(new_target)
+
+	## An all-enemies move lands on the whole opposing side, whoever queued it: the enemy ladder names one target.
+	if is_offensive and not retargeted.is_empty():
+		var first: Combatant = retargeted[0]
+		retargeted = DamageRules.landing_targets(ability, retargeted, player_party if first in player_party else enemy_party)
 
 	## Cover Ally fired on BASIC ATTACKS ONLY, so a protector was bypassed by any
 	## monster leading with an ability — 66 of 99 carry a single-target physical,
@@ -5976,8 +6168,8 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 	## defense tank dealt poverty damage instead of leveraging the
 	## tank's signature stat.
 	## One owner for the pre-crit amount, so estimate_ability_breakdown quotes the stat this strike uses.
-	var pre_crit: int = _physical_ability_amount(caster, ability)
-	var crit_chance = ability.get("crit_chance", 0.0)
+	var pre_crit: int = int(_physical_ability_amount(caster, ability) * DamageRules.spread_factor(targets.size(), caster in enemy_party))
+	var crit_chance = DamageRules.ability_crit_chance(ability, _calculate_crit_chance(caster))
 	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
 	if caster != null and caster.has_status("shadow_step"):
 		crit_chance = 1.0
@@ -6327,9 +6519,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	## ability is element-less (matches "no fire scroll, no fire
 	## bonus" intent).
 	if element != "":
-		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
-		if elem_bonus > 0.0:
-			multiplier *= elem_bonus
+		multiplier *= _element_damage_bonus(caster, element)
 		## Buff-side twin of the gear bonus — element_boost, from a support ability.
 		var elem_buff: float = _element_buff_bonus(caster, element)
 		if elem_buff > 0.0:
@@ -6372,7 +6562,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			_trigger_monster_counter(target, caster)
 			continue
 
-		var damage = int(base_damage * multiplier)
+		var damage = int(base_damage * multiplier * DamageRules.spread_factor(targets.size(), caster in enemy_party))
 		var mag_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(mag_vrange.x, mag_vrange.y))
 		## Tick 437: damage_variance amplifies the magic-damage roll
@@ -6601,6 +6791,19 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	## The number is take_damage's own; the formula above is its defense step, the suffix the rest.
 	var landed: int = target.damage_preview(incoming, false)
 	formula += _target_side_clause(target, dmg, landed)
+	## A multi-strike attack (the Rogue) previews the sum of its strikes, each meeting its share of the defence as it lands.
+	var strikes: Array = attacker.basic_attack_strikes()
+	if strikes.size() > 1:
+		var total: int = 0
+		var parts: PackedStringArray = []
+		var scale_sum: float = 0.0
+		for st in strikes:
+			scale_sum += float(st["scale"])
+		for st in strikes:
+			var each: int = target.damage_preview(int(incoming * float(st["scale"])), false, float(st["scale"]) / scale_sum)
+			total += each
+			parts.append(str(each))
+		return {"damage": total, "formula": formula + "; %d strikes ×%s = %s = %d, then ×variance ×crit each" % [strikes.size(), str(strikes[0]["scale"]), " + ".join(parts), total]}
 	return {"damage": landed, "formula": formula + ", then ×variance ×crit"}
 
 
@@ -6652,9 +6855,7 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	if is_magical:
 		var gear_element := str(ability.get("element", ""))
 		if gear_element != "":
-			var gear_bonus := _sum_equipment_special_effect(attacker, gear_element + "_damage_bonus")
-			if gear_bonus > 0.0:
-				gear_mult = gear_bonus
+			gear_mult = _element_damage_bonus(attacker, gear_element)
 			var elem_buff := _element_buff_bonus(attacker, gear_element)
 			if elem_buff > 0.0:
 				buff_mult = elem_buff
@@ -6720,8 +6921,8 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	# Base crit chance is 5%
 	var base_crit = 0.05
 
-	# Speed adds to crit chance (each 10 speed = +1% crit)
-	var speed_bonus = attacker.speed * 0.01
+	# Speed adds to crit chance: each point of speed is +1% in the shipped mode (DamageRules.crit_mode), on a 5% base, capped at 50%.
+	var speed_bonus = DamageRules.speed_crit_bonus(float(attacker.speed), _archetype_level(attacker))
 
 	## Tick 375: read PassiveSystem's accumulated crit_chance mod
 	## instead of hardcoding a check for the "critical_strike" passive.
@@ -6764,7 +6965,7 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 				crit_buff += (float(b.get("modifier", 1.0)) - 1.0)
 
 	# Cap at 50% crit chance
-	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, 0.50)
+	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, DamageRules.crit_cap())
 
 
 ## Tick 457: walk the attacker's three equipment slots, look up
@@ -6775,6 +6976,19 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 ## (evasion_bonus, poison_chance, sleep_chance, status_resistance,
 ## steal_bonus, <elem>_damage_bonus, <elem>_resistance) can reuse
 ## the same helper as they get wired in follow-up ticks.
+## One element's damage scale for a caster: gear's <element>_damage_bonus times a passive's (undead_affinity's dark), each only when authored.
+func _element_damage_bonus(caster: Combatant, element: String) -> float:
+	var out := 1.0
+	var gear := _sum_equipment_special_effect(caster, element + "_damage_bonus")
+	if gear > 0.0:
+		out *= gear
+	if caster != null and is_instance_valid(caster) and caster.has_method("_get_passive_meta_effect_sum"):
+		var passive: float = caster._get_passive_meta_effect_sum(element + "_damage_bonus")
+		if passive > 0.0:
+			out *= passive
+	return out
+
+
 func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 	if combatant == null or not is_instance_valid(combatant):
 		return 0.0
@@ -8824,6 +9038,9 @@ func _roll_permanent_injury(combatant: Combatant) -> Dictionary:
 
 
 func _on_combatant_died(combatant: Combatant) -> void:
+	if combatant.has_meta("_cadence") and BossCadence.is_charging(combatant.get_meta("_cadence", {})):
+		combatant.set_meta("_cadence", BossCadence.fresh_state())
+		boss_charge_changed.emit(combatant, false)
 	# deferred: died fires inside take_damage, before the killing blow's damage line prints
 	call_deferred("_print_defeat_line", combatant.combatant_name)
 	# Track party member KOs for permanent injury system
@@ -9769,6 +9986,12 @@ func _build_boss_intent_context(
 	if gs_clock != null and gs_clock.has_method("get_time_of_day_name"):
 		ctx.time_of_day = str(gs_clock.get_time_of_day_name())
 	ctx.party_automation = _resolve_party_automation_tier()
+	var cadence_cfg := _cadence_config(combatant)
+	if not cadence_cfg.is_empty():
+		var clock: Dictionary = combatant.get_meta("_cadence", {})
+		ctx.signature_id = str(cadence_cfg["signature"])
+		ctx.signature_in = BossCadence.turns_to_release(clock, cadence_cfg)
+		ctx.charging = BossCadence.is_charging(clock)
 
 	for member in player_party:
 		if member == null:
@@ -10307,8 +10530,10 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 		if persona_text != "":
 			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % DialoguePrompts.unrun_hyphens(persona_text)
 	var sample_block: String = ""
-	if voice_sample.strip_edges() != "":
-		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(voice_sample.strip_edges())
+	## Authored lines are "Name: 'text'"; the rules below forbid a speaker label, so the sample must not model one.
+	var sample_said: String = DialoguePrompts.spoken_line(voice_sample).strip_edges()
+	if sample_said != "":
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(sample_said)
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -10738,6 +10963,8 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 		ctx.enemies.append({
 			"name":   str(e.combatant_name),
 			"hp_pct": e.get_hp_percentage(),
+			"charging": BossCadence.is_charging(e.get_meta("_cadence", {})),
+			"charge_broken": bool((e.get_meta("_cadence", {}) as Dictionary).get("interrupted", false)),
 		})
 
 	for entry_dict in _battle_action_log:
@@ -11233,9 +11460,10 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	var ability_id: String = str(counters[randi() % counters.size()])
 	if ability_id == "":
 		return
-	# Probabilistic to avoid every hit triggering a full counter chain.
-	if randf() > 0.4:
+	# Probabilistic, and each counter this round halves the next one's odds where counter_decay says so (the Rat King, struktured 2026-11-15).
+	if randf() > HeadlessBattleResolver.counter_chance(float(entry.get("counter_decay", 1.0)), monster, current_round):
 		return
+	HeadlessBattleResolver.note_counter(monster, current_round)
 	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
 	if ability.is_empty():
 		return
@@ -11243,10 +11471,20 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	## a Scriptweaver-custom ability without a "name" field would
 	## surface as "monster counters with raw_snake_id!" in the
 	## log. Standard prettifier as fallback.
-	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
+	## A boss's first counter of the battle speaks BEFORE it lands; the combatant is new each battle, so the meta is per battle.
+	var bark_key := "counter_spoken_" + ability_id
+	if not monster.has_meta(bark_key):
+		monster.set_meta(bark_key, true)
+		var boss_dlg = get_node_or_null("/root/BossDialogue")
+		var line: String = boss_dlg.get_counter_first_line(_boss_persona_id(monster)) if boss_dlg != null and boss_dlg.has_method("get_counter_first_line") else ""
+		if line != "":
+			_log_boss_line(monster, line)
+			boss_taunt.emit(monster, line)
+	battle_log_message.emit("[color=%s]%s %s %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, str(ability.get("counter_verb", "counters with")), ability.get("name", ability_id.replace("_", " ").capitalize())])
 	## Skipping AP and MP — counters are free. Support (Adapt) must not fall through to a physical strike: the log already named the ability, and that path never applies its effect.
 	var targets: Array = _counter_targets(monster, attacker, ability)
 	var atype: String = str(ability.get("type", "physical"))
+	monster_counter_started.emit(monster, attacker, ability_id)
 	match atype:
 		"magic":
 			_execute_magic_ability(monster, ability, targets)
@@ -11256,6 +11494,7 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 			_execute_support_ability(monster, ability, targets)
 		_:
 			_execute_physical_ability(monster, ability, targets)
+	monster_counter_finished.emit(monster, attacker, ability_id)
 
 
 ## Who a counter actually lands on. Adapt and the duel stances are self/ally buffs; a strike still hits the attacker.

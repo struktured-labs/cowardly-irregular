@@ -20,6 +20,12 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 
 ## Dynamic party status UI elements
 var _party_status_boxes: Array = []
+## What the PARTY panel gives up, in order, while it overruns its floor: the StatMods row, AP's own row, then the title and gaps.
+const PARTY_COMPACT_TIERS := ["StatMods", "ap_inline", "tight"]
+## Letters of a member's name that always show beside an inlined AP.
+const PARTY_NAME_MIN_CHARS := 6
+## How many PARTY_COMPACT_TIERS this battle has applied; it only climbs, so the panel never flickers between layouts.
+var party_compact_tier: int = 0
 
 ## Dynamic enemy status UI elements
 var _enemy_status_boxes: Array = []
@@ -280,6 +286,8 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	## actually fits the slot instead of relying on overflow.
 	var hp_bar_h: int = 22 if party_size <= 4 else 16
 	var mp_bar_h: int = 18 if party_size <= 4 else 12
+	hp_bar_h = bar_height_for_text(hp_bar_h, 15)
+	mp_bar_h = bar_height_for_text(mp_bar_h, 13)
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
@@ -378,8 +386,89 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	stat_label.text = ""
 	box.add_child(stat_label)
 	_update_stat_mods_label(stat_label, member)
+	_apply_party_compaction(box)
 
 	return box
+
+
+func _apply_party_compaction(box: Node) -> void:
+	var tier: int = mini(party_compact_tier, PARTY_COMPACT_TIERS.size())
+	if tier >= 1:
+		var mods := box.get_node_or_null("StatMods") as CanvasItem
+		if mods:
+			mods.visible = false
+	if tier >= 2:
+		_inline_party_ap(box)
+	if tier >= 3:
+		_tighten_party_list(box)
+
+
+## Tier 2 (cowir-main 26471): AP rides on the name row, and the name gives way with an ellipsis; the face never shrinks.
+func _inline_party_ap(box: Node) -> void:
+	var header := box.get_node_or_null("Header") as HBoxContainer
+	var ap := box.get_node_or_null("AP") as RichTextLabel
+	if header == null or ap == null:
+		return
+	ap.reparent(header, false)
+	ap.autowrap_mode = TextServer.AUTOWRAP_OFF
+	ap.size_flags_horizontal = Control.SIZE_SHRINK_END
+	ap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var name_label := header.get_node_or_null("Name") as Label
+	if name_label:
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		name_label.text = compact_party_name(name_label.text)
+		## cowir-main 26507: the row widens before the name is cut below PARTY_NAME_MIN_CHARS letters.
+		var keep: String = name_label.text.left(PARTY_NAME_MIN_CHARS)
+		var px: int = name_label.get_theme_font_size("font_size")
+		name_label.custom_minimum_size.x = ceilf(name_label.get_theme_font("font").get_string_size(keep, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x) + 2.0
+
+
+## The name as it rides beside AP: the job and level in brackets go first, so "Hero" stays whole before any letter is cut.
+static func compact_party_name(full: String) -> String:
+	var at := full.find(" (")
+	if at <= 0:
+		return full
+	var close := full.find(")", at)
+	return full.substr(0, at) + (full.substr(close + 1) if close > at else "")
+
+
+## Tier 3: the PARTY title word goes and the boxes and their rows close up; every member's own rows stay.
+func _tighten_party_list(box: Node) -> void:
+	if box is VBoxContainer:
+		(box as VBoxContainer).add_theme_constant_override("separation", 2)
+	var list := box.get_parent() as VBoxContainer
+	if list == null:
+		return
+	list.add_theme_constant_override("separation", 0)
+	var title := list.get_node_or_null("HeaderRow/Label") as CanvasItem
+	if title:
+		title.visible = false
+
+
+## A member's AP label wherever the compaction tier has seated it: its own row, or the name row.
+static func party_ap_label(box: Node) -> Node:
+	if box == null:
+		return null
+	var ap := box.get_node_or_null("AP")
+	return ap if ap else box.get_node_or_null("Header/AP")
+
+
+## One compaction step when the panel's bottom passes `limit_y`; true when a row was dropped (the caller re-measures next frame).
+func compact_party_panel_step(panel_bottom: float, limit_y: float) -> bool:
+	if panel_bottom <= limit_y or party_compact_tier >= PARTY_COMPACT_TIERS.size():
+		return false
+	party_compact_tier += 1
+	for box in _party_status_boxes:
+		if is_instance_valid(box):
+			_apply_party_compaction(box)
+	return true
+
+
+## A party bar's ruled height grown with its number's Text Size, never below the ruled height (controller 26234: 200% cut the digits).
+static func bar_height_for_text(ruled: int, base_px: int) -> int:
+	return int(ceil(float(ruled) * maxf(1.0, float(TextScale.scaled(base_px)) / float(base_px))))
 
 
 ## BBCode color for an AP readout. +4 (full bank) is gold so a maxed bar is not more lime.
@@ -427,6 +516,8 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			name_color = Color(0.4, 0.85, 1.0)
 
 		name_label.text = name_with_job(member.combatant_name, job_name, level_text) + auto_indicator
+		if party_compact_tier >= 2:
+			name_label.text = compact_party_name(name_label.text)
 		# Color the name based on autobattle state
 		if auto_indicator != "":
 			name_label.add_theme_color_override("font_color", name_color)
@@ -495,7 +586,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			mp_bar.modulate = Color(1, 1, 1, 0.35) if not member.is_alive else Color(1, 1, 1, 1)
 
 	# Update AP and status - try both RichTextLabel and regular Label
-	var ap_label = box.get_node_or_null("AP")
+	var ap_label = party_ap_label(box)
 	if ap_label:
 		var ap_color = _ap_bbcode(member.current_ap)
 
@@ -915,16 +1006,10 @@ func update_action_buttons() -> void:
 		_scene.btn_bide.disabled = true
 
 
-## Scale to the player's setting, then shrink only if THIS line still does not fit — the same
-## shrink-to-fit shape _place_victory_banner uses, so a short line ("Round 1") keeps the chosen size
-## and only a long one gives any back.
-##
-## Reads the CAPTURED base from meta, never the current override: get_theme_font_size() returns the
-## override once set, so starting from it would shrink cumulatively and never recover when the line
-## gets shorter again. Measured on the shared helper: re-reading takes 16px to 512 in five calls.
-##
-## A font query is correct here rather than a node read: the Label is single-line, so the default
-## break flags are the ones it draws with, and its rect is the thing being fitted TO.
+## Scale to the player's setting and never give it back: a line wider than the strip WIDENS the strip into the room
+## the side panels leave, and only a line wider than that room wraps. The pixel face draws whole steps, so a shrink
+## to fit fell back to the 100% step at 200% and the setting did nothing (adhoc r6: 100%=22 200%=22); main 25819.
+## Reads the CAPTURED base, never the current override (re-reading compounds: 16px reached 512 in five calls).
 func _fit_turn_info() -> void:
 	if _scene == null or not is_instance_valid(_scene):
 		return
@@ -934,31 +1019,42 @@ func _fit_turn_info() -> void:
 	var font := label.get_theme_font(&"font")
 	if font == null:
 		return
-	## ⛔ A PRE-LAYOUT RECT IS NOT A MEASUREMENT. TurnInfoPanel is a PanelContainer that sizes its
-	## child during its own sort step, so on the FIRST call — at scene build, before any layout pass
-	## — label.size.x is the Label's own TEXT minimum (~85px for "Round 1"), not the strip's 400. The
-	## fit shrank against that and hit the `px > 8` floor, and nothing re-fits until the next turn, so
-	## every battle opened with an 8px strip at EVERY Text Size. The panel's width comes from its
-	## anchors at _ready, so it is credible immediately; the inset is derived from its own stylebox
-	## rather than assumed to be zero.
-	var avail: float = label.size.x
-	var strip := label.get_parent() as Control
-	if strip != null:
-		var sb := strip.get_theme_stylebox(&"panel")
-		var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
-		avail = maxf(avail, strip.size.x - inset)
-	if avail <= 0.0:
-		return  ## genuinely sizeless; the next turn update fits it, and turn info updates every turn
-	## ⛔ THE KEY MUST BE THE ONE THE CAPTURE WRITES. This read `text_scale_base_font_size`, which
-	## nothing writes — _scale_themed_font captures `base_font_px` — so the default fired and the
-	## "base" WAS the shrunken override: one long name shrank the strip and no later turn recovered it.
-	## Exactly what the note above forbids, in the line below it.
-	var base: int = int(label.get_meta(&"base_font_px",
-		label.get_theme_font_size(&"font_size")))
+	var base: int = int(label.get_meta(&"base_font_px", label.get_theme_font_size(&"font_size")))
 	var px: int = TextScale.scaled(base)
-	while px > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x > avail:
-		px -= 1
 	label.add_theme_font_size_override(&"font_size", px)
+	var strip := label.get_parent() as Control
+	if strip == null:
+		return
+	if not strip.has_meta(&"base_strip"):
+		strip.set_meta(&"base_strip", Vector2(strip.offset_right - strip.offset_left, strip.offset_bottom - strip.offset_top))
+	var base_strip: Vector2 = strip.get_meta(&"base_strip")
+	var sb := strip.get_theme_stylebox(&"panel")
+	var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
+	var room: float = turn_strip_room()
+	var need: float = font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x + inset
+	var cap: float = room if room > 0.0 else base_strip.x
+	var w: float = clampf(need, minf(base_strip.x, cap), cap)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF if need <= w + 0.5 else TextServer.AUTOWRAP_WORD_SMART
+	label.update_minimum_size()
+	strip.offset_left = -w * 0.5
+	strip.offset_right = w * 0.5
+	strip.offset_bottom = strip.offset_top + base_strip.y
+	strip.notification(Container.NOTIFICATION_SORT_CHILDREN)  ## the line breaks at the new width now, not on the next frame
+	strip.offset_bottom = strip.offset_top + base_strip.y
+
+
+## The widest centred strip that stays clear of the enemy column and the party panel (8 px each side).
+func turn_strip_room() -> float:
+	var vp_w: float = _scene.get_viewport_rect().size.x
+	var half: float = vp_w * 0.5
+	var left := _scene.get_node_or_null("UI/EnemyStatusPanel") as Control
+	var right := _scene.get_node_or_null("UI/PartyStatusPanel") as Control
+	var room_half: float = half
+	if left != null:
+		room_half = minf(room_half, half - left.get_global_rect().end.x - 8.0)
+	if right != null:
+		room_half = minf(room_half, right.get_global_rect().position.x - half - 8.0)
+	return maxf(0.0, room_half * 2.0)
 
 
 func update_turn_info() -> void:
@@ -986,9 +1082,7 @@ func update_turn_info() -> void:
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
 
-	## The strip is a single-line Label with no autowrap in a 400px panel, so a long line overflows
-	## SIDEWAYS rather than wrapping. "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)" is
-	## 57 chars and does not fit at the larger presets.
+	## A 57-char line ("Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)") outgrows the 400px strip; the fit widens it, then wraps.
 	_fit_turn_info()
 
 	# Update turn order strip
@@ -1303,7 +1397,7 @@ func flash_ap_labels() -> void:
 	for box in _party_status_boxes:
 		if not is_instance_valid(box):
 			continue
-		var ap_label = box.get_node_or_null("AP")
+		var ap_label = party_ap_label(box)
 		if ap_label == null:
 			continue
 		ap_label.pivot_offset = ap_label.size / 2.0

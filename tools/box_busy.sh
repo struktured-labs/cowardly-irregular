@@ -126,7 +126,7 @@ is_player() { argv_is_player "/proc/$1/cmdline" "$(readlink "/proc/$1/cwd" 2>/de
 PREVIEW_GLOB="${BOX_PREVIEW_GLOB:-$(dirname "$FOLD_TREE")/$(basename "$FOLD_TREE" | sed 's/-[^-]*$//')-preview*}"
 in_preview_tree() { case "$1/" in $PREVIEW_GLOB/*) return 0 ;; esac; return 1; }  # <cwd>; the glob is meant to expand as a pattern
 
-busy_reason() {
+marker_reason() {  # the two markers alone: fast, no /proc walk
   if [ -f "$BOX_MARKER" ]; then
     local pid; pid="$(sed -n 's/^pid=//p' "$BOX_MARKER" | head -1)"
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
@@ -142,6 +142,11 @@ busy_reason() {
       echo "box_busy: stale slot marker (pid ${spid:-?} not alive), ignoring: $BOX_SLOT_MARKER" >&2
     fi
   fi
+  return 1
+}
+
+busy_reason() {
+  marker_reason && return 0
   ## A godot running in the fold tree IS the chain or gate, marker or not — so a missing marker
   ## cannot turn a running gate into FREE (cowir-autogrind: it said FREE beside the .692 chain).
   ## EXCEPT struktured's own game: launch.sh starts it as bare `godot &` from this very tree, so
@@ -163,6 +168,11 @@ busy_reason() {
     echo "fold-tree godot running: pid $pid cwd=$c"; return 0
   done
   publish_reason && return 0
+  ## ⛔ RE-READ THE MARKERS AFTER THE SCAN. They were read first, then /proc was walked (~4 s on this box), and a hold or
+  ## gate that took its marker DURING the walk was missed: this answered FREE about a box that was already held. A test
+  ## hook (selftest only) plants a marker at exactly this point.
+  [ -n "${BOX_BUSY_TEST_AFTER_SCAN:-}" ] && sh -c "$BOX_BUSY_TEST_AFTER_SCAN"
+  marker_reason && return 0
   return 1
 }
 
@@ -193,7 +203,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=20
+  EXPECT_ARMS=21
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -412,6 +422,15 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   case "$out" in "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm20d: a bare engine outside any preview tree was waved through as his: $out"; fails=1 ;; esac
   kill "$pp" 2>/dev/null; wait "$pp" 2>/dev/null; exec 9>&-
 
+  A  # arm 21  a slot marker taken DURING the /proc walk still reads BUSY (the hook plants it right after the scan)
+  sleep 30 & lp=$!
+  out="$(BOX_BUSY_TEST_AFTER_SCAN="printf 'pid=$lp\\nlane=cowir-late\\n' > '$T/late.s'" BOX_SLOT_MARKER="$T/late.s" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" 2>"$T/late.err")"; e=$?
+  case "$e/$out" in "1/BUSY: slot cowir-late running"*) ;; *) echo "FAIL arm21a: a marker taken mid-scan was missed (ec=$e): $out"; fails=1 ;; esac
+  rm -f "$T/late.s"
+  out="$(BOX_BUSY_TEST_AFTER_SCAN="true" BOX_SLOT_MARKER="$T/late.s" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" 2>"$T/late.err")"; e=$?
+  [ "$e" = 0 ] || { echo "FAIL arm21b: CONTROL: with the hook planting nothing it did not read free (ec=$e): $out"; fails=1; }
+  kill "$lp" 2>/dev/null; wait "$lp" 2>/dev/null
+
   A  # arm 19  the tool that WRITES the slot marker passes its own selftest against THIS box_busy (so the pair cannot drift)
   if [ -x "$(dirname "$0")/box_hold.sh" ]; then
     hs="$(BOX_HOLD_BUSY="$(cd "$(dirname "$0")" && pwd)/box_busy.sh" "$(dirname "$0")/box_hold.sh" --selftest 2>&1)" \
@@ -461,13 +480,15 @@ if r="$(busy_reason)"; then echo "BUSY: $r"; exit 1; fi
 ## busy_reason ran in a subshell above, so re-derive PLAYER_PIDS here rather than read a variable
 ## that cannot have crossed back. Named, not silent: a FREE beside a running engine must say why.
 busy_reason >/dev/null || true
+_n="$(others)"
+## The last look, after every /proc walk on this path (busy_reason twice, others once): a marker taken since is BUSY.
+if r="$(marker_reason 2>/dev/null)"; then echo "BUSY: $r"; exit 1; fi
 if [ -n "${PLAYER_PIDS:-}" ]; then
-  echo "FREE (struktured's game is up: pid $PLAYER_PIDS — a player instance, not a gate; other lanes' godot up: $(others))"; exit 0
+  echo "FREE (struktured's game is up: pid $PLAYER_PIDS — a player instance, not a gate; other lanes' godot up: ${_n:-0})"; exit 0
 fi
 ## Never a bare FREE beside another lane's engine (main 23935): the verdict covers a gate, a publish and a HELD slot; an
 ## engine in a lane tree with no hold is reported, not judged, and the reader is told what that means. Exit 0 either way:
 ## callers decide on the exit code, and --others is the mode that judges engines.
-_n="$(others)"
 if [ "${_n:-0}" -gt 0 ]; then
   echo "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: $_n; an unheld slot may be running: the channel RELEASE is the gate, and tools/box_hold.sh makes a slot visible here)"; exit 0
 fi

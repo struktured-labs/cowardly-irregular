@@ -1465,10 +1465,13 @@ func account_boss_fight_rewards(exp_gained: int, items_gained: Dictionary, grant
 		_grind_stats["total_exp"] += exp_gained
 		for member in grind_party:
 			if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
+				var share: int = exp_gained
 				if grant:
-					member.gain_job_exp(exp_gained)
+					## Live halves a boss's EXP per 3 levels over the fight too; the headless boss paid it whole.
+					share = int(exp_gained * ExpRules.over_level_factor(member.job_level, last_area_level))
+					member.gain_job_exp(share)
 				# Watched fights already paid this in battle. The bar still has to show it.
-				track_character_exp(member.combatant_name, exp_gained)
+				track_character_exp(member.combatant_name, share)
 	var gold: int = int(items_gained.get("gold", 0))
 	if gold > 0:
 		_grind_stats["total_gold"] += gold
@@ -2508,14 +2511,16 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 			return total > alive  # True if any member is dead
 
 		"member_hp":
-			return _member_predicate(party, condition, func(c): return _compare_op(c.get_hp_percentage(), op, value))
+			## A KO'd member reads 0% and is not "low": the row would shadow member_dead below it, and heal_party skips the dead.
+			return _member_predicate(party, condition, func(c): return c.is_alive and _compare_op(c.get_hp_percentage(), op, value))
 
 		"member_mp":
-			return _member_predicate(party, condition, func(c): return _compare_op(c.get_mp_percentage(), op, value))
+			return _member_predicate(party, condition, func(c): return c.is_alive and _compare_op(c.get_mp_percentage(), op, value))
 
 		"member_status":
 			var want_status := Combatant.resolve_status_alias(str(condition.get("value", "")))
-			return _member_predicate(party, condition, func(c): return c.has_status(want_status))
+			## Statuses clear at the NEXT battle's start, so a corpse still wears its poison between fights; the dead are member_dead.
+			return _member_predicate(party, condition, func(c): return c.is_alive and c.has_status(want_status))
 
 		"member_injured":
 			return check_new_injuries() > 0  # True if any new injury this session

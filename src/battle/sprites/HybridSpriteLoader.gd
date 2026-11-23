@@ -790,4 +790,7 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 	## The sheet's optional "impact_frames": {animation: the frame its hit lands on}. See BattleAnimator.impact_time.
 	var impacts = sheet_data.get("impact_frames", {})
 	sprite_frames.set_meta("impact_frames", impacts if impacts is Dictionary else {})
+	## "second_impact_frames": a swing's second hit (the Rogue's bolt). See BattleAnimator.second_impact_time.
+	var seconds = sheet_data.get("second_impact_frames", {})
+	sprite_frames.set_meta("second_impact_frames", seconds if seconds is Dictionary else {})
 	return sprite_frames if loaded_any else null

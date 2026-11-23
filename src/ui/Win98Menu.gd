@@ -960,6 +960,9 @@ func _build_menu() -> void:
 	if is_inside_tree():
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	## A floored chain (battle: the hint bar) caps its rows to the band above the floor, so a long list scrolls there and never overruns it.
+	if screen_floor_y > 0.0:
+		room_for_rows = int(screen_floor_y) - MENU_SCREEN_MARGIN * 2 - chrome_height
 	if bottom_clearance > 0:
 		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
 		var bottom_limit: int = int(viewport_height) - bottom_clearance
@@ -1499,6 +1502,7 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	submenu.expand_up = expand_up
 	submenu.z_index = z_index + 1
 	submenu._width_cap = _submenu_width_cap()
+	submenu.screen_floor_y = screen_floor_y
 
 	# Start with offset and transparent for animation
 	submenu.modulate.a = 0.0
@@ -1541,12 +1545,20 @@ func _get_character_class_from_style() -> String:
 	return "fighter"
 
 
+## The lowest y this menu chain may reach; 0 = the screen's own bottom edge. A battle sets it to the hint bar's top (struktured's
+## 200% frame: the command menu's last row was drawn on the hint bar). Submenus inherit it.
+var screen_floor_y: float = 0.0
+
+
 func _clamp_to_screen() -> void:
 	"""Keep menu on screen"""
 	var viewport_size = get_viewport_rect().size
 	if position.x + size.x > viewport_size.x:
 		position.x = viewport_size.x - size.x - 10
-	if position.y + size.y > viewport_size.y:
+	if screen_floor_y > 0.0:
+		if position.y + size.y > screen_floor_y:
+			position.y = screen_floor_y - size.y
+	elif position.y + size.y > viewport_size.y:
 		position.y = viewport_size.y - size.y - 10
 	if position.x < 0:
 		position.x = 10

@@ -1746,6 +1746,16 @@
     "cost": 0,
     "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
   },
+  "unread_briefing": {
+    "id": "unread_briefing",
+    "name": "The Unread Briefing",
+    "category": 4,
+    "target_type": 4,
+    "description": "Elder Theron's briefing on the menace in the cave, with the pauses marked. Never delivered.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'You'll do.' is underlined twice. In the margin, in a different ink: 'Clearly an action gamer. Revise for next hero.'"
+  },
   "waterskin": {
     "id": "waterskin",
     "name": "Traveller's Waterskin",

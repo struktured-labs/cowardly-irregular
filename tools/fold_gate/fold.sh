@@ -2,27 +2,31 @@
 # fold.sh — build fold/v3.33.NNN from origin/main and the announced lane tips, then write its gate scripts.
 #
 #   tools/fold_gate/fold.sh NNN branch:sha [branch:sha ...]     (branch without the lane/ prefix)
+#   tools/fold_gate/fold.sh NNN      (no tips: reads the queue_tip.sh files tmp/fold_args_NNN.txt and
+#                                     tmp/fold_verified_NNN.txt, and refuses if queue_tip.sh NNN --list fails)
 #   FOLD_ALLOW_DELETE="path1 path2" declares deletions a READY said were intentional.
 #   FOLD_VERIFIED="sha1 sha2" vouches for tips whose READY carried the evidence while their history still
 #   holds an [UNVERIFIED] subject. Lanes label before verifying and post the numbers after, and striking a
 #   label needs a force-push, so 16 of 41 tips in the .746 batch carried one. Exact commit only: a tip
-#   named under any other sha is still skipped.
+#   named under any other sha is still skipped. A token may be a bare sha or the args form branch:sha; a
+#   token that names no commit refuses the whole fold (exit 2) — it used to vouch for nothing in silence (.801).
 #
 # Each tip is merged only if the announced sha is ON origin/lane/<branch> (the READYed commit is merged
 # even when the branch has moved on since), and its three-dot diff deletes nothing undeclared (a stale tree reverts a release that
 # way, .681). A conflicting merge is aborted and reported, never committed. Exit 0 = every tip merged;
 # 1 = some tip was skipped (the fold still exists, built from the rest, so read the report); 2 = usage.
 set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
 ## FOLD_REPO points the fold at another checkout (fold_selftest.sh uses a throwaway worktree).
 cd "${FOLD_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 2
 
-## True when FOLD_VERIFIED names exactly this commit. Each token is resolved, so a short sha matches and an
-## unresolvable one vouches for nothing.
+## True when FOLD_VERIFIED names exactly this commit. Each token is resolved (a branch: prefix dropped), so a
+## short sha matches; the check after fetch has already refused any token that resolves to nothing.
 vouched() {
   local want tok full
   want="$(git rev-parse -q --verify "$1^{commit}")" || return 1
   for tok in ${FOLD_VERIFIED:-}; do
-    full="$(git rev-parse -q --verify "$tok^{commit}" 2>/dev/null)" || continue
+    full="$(git rev-parse -q --verify "${tok##*:}^{commit}" 2>/dev/null)" || continue
     [ "$full" = "$want" ] && return 0
   done
   return 1
@@ -30,14 +34,26 @@ vouched() {
 NNN="${1:-}"
 case "$NNN" in ''|*[!0-9]*) echo "usage: tools/fold_gate/fold.sh <release number> branch:sha ..." >&2; exit 2 ;; esac
 shift
-[ "$#" -gt 0 ] || { echo "fold.sh: no tips given" >&2; exit 2; }
 [ -z "$(git status --porcelain)" ] || { echo "fold.sh: working tree is dirty — refusing to start a fold on it" >&2; exit 2; }
 
 git fetch -q origin || { echo "fold.sh: git fetch failed — tips cannot be verified" >&2; exit 2; }
+## No tips named: fold the queue. --list must pass first (no GONE sha, no half-queued couple, both files
+## agree), and FOLD_VERIFIED comes from the same queue unless the caller set it.
+if [ "$#" -eq 0 ] && [ -s "tmp/fold_args_$NNN.txt" ]; then
+  "$HERE/queue_tip.sh" "$NNN" --list || { echo "fold.sh: queue_tip.sh $NNN --list failed — fix the queue first" >&2; exit 2; }
+  [ -n "${FOLD_VERIFIED:-}" ] || FOLD_VERIFIED="$(tr '\n' ' ' < "tmp/fold_verified_$NNN.txt")"
+  set -- $(cat "tmp/fold_args_$NNN.txt")
+fi
+[ "$#" -gt 0 ] || { echo "fold.sh: no tips given" >&2; exit 2; }
 PREV="$(sed -n 's/^const SEMVER := "\(.*\)"$/\1/p' src/meta/Version.gd)"
 [ -n "$PREV" ] || { echo "fold.sh: no SEMVER line in src/meta/Version.gd" >&2; exit 2; }
 NEXT="3.33.$NNN-alpha"
 [ "$PREV" != "$NEXT" ] || { echo "fold.sh: origin/main is already $NEXT" >&2; exit 2; }
+## A vouch that resolves to nothing is a typo or a wrong file, never an intent: refuse before anything is built.
+for tok in ${FOLD_VERIFIED:-}; do
+  git rev-parse -q --verify "${tok##*:}^{commit}" >/dev/null 2>&1 \
+    || { echo "fold.sh: FOLD_VERIFIED token '$tok' names no commit — refusing (fix the list, it would vouch for nothing)" >&2; exit 2; }
+done
 git checkout -q -b "fold/v3.33.$NNN" origin/main || exit 2
 
 SKIPPED=0

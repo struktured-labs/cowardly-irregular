@@ -65,14 +65,15 @@ const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04
 const SIGNATURE_HITSTOP := 0.14  # seconds of hit-stop on a signature's impact
 const SIGNATURE_TINT_ALPHA := 0.32  # how strongly the backdrop takes the boss's colour during its signature
 var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
-## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
-const ENEMY_EDGE_SHIFT := -24.0
+## The enemies stand this much nearer their edge (struktured 2026-11-01); -24 left 9 px at 200% and the pixel face's wider column took 14.
+const ENEMY_EDGE_SHIFT := -12.0
 const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
 const PARTY_RANK_GAP := 8.0  # between neighbouring members' bodies across the two ranks
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
+const STATUS_ROW_CLEAR := 3.0  # row units of air between the badge row's top and a motif floating over the head
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (DamageNumber.POPUP_Z)
 const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
 const NAME_PLATE_PAD_X := 5.0
@@ -217,12 +218,15 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed settings. Labels are engine*4, so engine 0.25 reads "1x".
 ## struktured 2026-10-30 (overriding his 2026-07-11 ruling that 1x is the default): "2x I find a bit
 ## hard to see animations but 1x feels too slow" — so a 1.5x rung exists and IS the default.
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"]
+## struktured 2026-11-15: "add the rung for now" -- 2.5x between 2x and 4x, the doubling he plays across (speed_scale_v5).
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 0.625, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "2.5x", "4x", "8x", "16x", "32x", "64x"]
 const DEFAULT_BATTLE_SPEED_INDEX: int = 1
 const DEFAULT_BATTLE_SPEED: float = 0.375
 ## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
 const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+## The ladder before the 2.5x rung, for reading a battle_speed_index saved before speed_scale_v5.
+const LEGACY_V4_BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
 ## Tap the speed button = one rung UP (wrapping, as always); hold it this long = one rung DOWN, clamped at
 ## the slowest (struktured 2026-11-01). Wall clock, like Win98Menu's Auto hold: battle time is scaled.
@@ -454,6 +458,11 @@ func _ready() -> void:
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
 	if enemy_panel_for_log:
 		enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)
+	## The turn strip's room is what the two side panels leave, so it refits whenever either one settles at its grown size.
+	for side in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+		var side_panel := get_node_or_null(side) as Control
+		if side_panel != null and _ui_manager != null:
+			side_panel.resized.connect(_ui_manager._fit_turn_info)
 	call_deferred("_reposition_battle_log_panel")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
@@ -497,6 +506,7 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -510,6 +520,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.damage_dealt.connect(_note_hit_weight)
 	BattleManager.attack_missed.connect(_on_attack_missed)
+	BattleManager.strike_starting.connect(_on_strike_starting)
 	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
 	BattleManager.status_resisted.connect(_on_status_resisted)
@@ -525,6 +536,8 @@ func _ready() -> void:
 		BattleManager.trust_interrupt_window_closed.connect(_on_trust_interrupt_window_closed)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_sound)
+	BattleManager.boss_charge_broken.connect(_on_boss_charge_broken)
 	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
 	## surfaces the autobattle editor for the caster. Wired via
 	## has_signal guard for partial-autoload boot scenarios.
@@ -543,6 +556,11 @@ func _ready() -> void:
 	# Wave E — Boss dialogue / jailbreak signals.
 	if BattleManager.has_signal("boss_taunt"):
 		BattleManager.boss_taunt.connect(_on_boss_taunt)
+	if BattleManager.has_signal("monster_counter_started"):
+		BattleManager.monster_counter_started.connect(_on_monster_counter_started)
+		BattleManager.monster_counter_finished.connect(_on_monster_counter_finished)
+	if BattleManager.has_signal("boss_cadence_bark"):
+		BattleManager.boss_cadence_bark.connect(_on_boss_cadence_bark)
 	if BattleManager.has_signal("boss_jailbreak_landed"):
 		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
 	# Wave G — end-of-fight boss gloat line (victory / defeat).
@@ -614,6 +632,10 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
 		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_changed):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_changed)
+	if SoundManager:
+		SoundManager.clear_charge_duck()  # a scene freed mid-charge must not leave the field music leaning back
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -628,6 +650,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_note_hit_weight)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.strike_starting.is_connected(_on_strike_starting):
+		BattleManager.strike_starting.disconnect(_on_strike_starting)
 	if BattleManager.status_resisted.is_connected(_on_status_resisted):
 		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.steal_resolved.is_connected(_on_steal_resolved):
@@ -648,6 +672,10 @@ func _exit_tree() -> void:
 		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
 	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):
 		BattleManager.monster_summoned.disconnect(_on_monster_summoned)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_sound):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_sound)
+	if BattleManager.boss_charge_broken.is_connected(_on_boss_charge_broken):
+		BattleManager.boss_charge_broken.disconnect(_on_boss_charge_broken)
 	if BattleManager.one_shot_achieved.is_connected(_on_one_shot_achieved):
 		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
 	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
@@ -669,6 +697,11 @@ func _exit_tree() -> void:
 		BattleManager.meta_autobattle_editor_requested.disconnect(_on_meta_autobattle_editor_requested)
 	if BattleManager.has_signal("boss_taunt") and BattleManager.boss_taunt.is_connected(_on_boss_taunt):
 		BattleManager.boss_taunt.disconnect(_on_boss_taunt)
+	if BattleManager.has_signal("monster_counter_started") and BattleManager.monster_counter_started.is_connected(_on_monster_counter_started):
+		BattleManager.monster_counter_started.disconnect(_on_monster_counter_started)
+		BattleManager.monster_counter_finished.disconnect(_on_monster_counter_finished)
+	if BattleManager.has_signal("boss_cadence_bark") and BattleManager.boss_cadence_bark.is_connected(_on_boss_cadence_bark):
+		BattleManager.boss_cadence_bark.disconnect(_on_boss_cadence_bark)
 	if BattleManager.has_signal("boss_jailbreak_landed") and BattleManager.boss_jailbreak_landed.is_connected(_on_boss_jailbreak_landed):
 		BattleManager.boss_jailbreak_landed.disconnect(_on_boss_jailbreak_landed)
 
@@ -803,28 +836,31 @@ func _update_speed_indicator() -> void:
 	var speed_label = BATTLE_SPEED_LABELS[_battle_speed_index]
 	var text = ""
 
-	match _battle_speed_index:
-		0:  # 1x - slow (pale grey-cyan)
+	## Keyed by the rung's LABEL, not its index: the 2.5x rung (.808) shifted every index from 4x up, so each wore the next-slower look and 64x had none.
+	match speed_label:
+		"1x":  # slow (pale grey-cyan)
 			text = "[color=#7a9a9a]▸[/color] [color=#cfdede]%s[/color] [color=#5a7a7a]◂[/color]" % speed_label
-		1:  # 1.5x - normal (white/cyan) — the default
+		"1.5x":  # normal (white/cyan) — the default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		2:  # 2x - brisk (green)
+		"2x":  # brisk (green)
 			text = "[color=#66cc88]▸▸[/color] [color=#88ffaa]%s[/color] [color=#44aa66]◂◂[/color]" % speed_label
-		3:  # 4x - fast (yellow)
+		"2.5x":  # quick (yellow-green), between brisk and fast
+			text = "[color=#99bb55]▸▸[/color] [color=#ccee66]%s[/color] [color=#779933]◂◂[/color]" % speed_label
+		"4x":  # fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		4:  # 8x - turbo (orange)
+		"8x":  # turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		5:  # 16x - extreme (red)
+		"16x":  # extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		6:  # 32x - very extreme (magenta)
+		"32x":  # very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		7:  # 64x - maximum (bright magenta). Five arrows like 32x: a sixth pair wrapped the PARTY header at 100% and pushed the panel down (struktured 2026-11-07)
+		"64x":  # maximum (bright magenta). Five arrows like 32x: a sixth pair wrapped the PARTY header at 100% and pushed the panel down (struktured 2026-11-07)
 			text = "[color=#ff22ff]▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂[/color]" % speed_label
 		_:
 			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
 			## empties while the battle genuinely runs faster. Degrade to the plain label instead --
 			## losing the colour ramp is survivable, losing the number is the bug struktured reported.
-			push_warning("[BATTLE] speed index %d has no readout arm; falling back to the bare label" % _battle_speed_index)
+			push_warning("[BATTLE] speed %s (index %d) has no readout arm; falling back to the bare label" % [speed_label, _battle_speed_index])
 			text = "[color=#ffffff]%s[/color]" % speed_label
 
 	if turbo_mode:
@@ -855,9 +891,14 @@ func speed_readout_width() -> float:
 	return ceilf(widest) + 4.0
 
 
-## The arrows each rung draws either side of its label (1, 1, 2, 2, 3, 4, 5, 5), mirroring _update_speed_indicator's arms.
+## Arrows each rung draws either side of its label, keyed by LABEL like _update_speed_indicator's arms; a rung with no row draws none.
+const SPEED_ARROW_COUNTS := {"1x": 1, "1.5x": 1, "2x": 2, "2.5x": 2, "4x": 2, "8x": 3, "16x": 4, "32x": 5, "64x": 5}
+
+
 static func _speed_arrows(index: int, glyph: String) -> String:
-	return glyph.repeat([1, 1, 2, 2, 3, 4, 5, 5][clampi(index, 0, 7)])
+	if index < 0 or index >= BATTLE_SPEED_LABELS.size():
+		return ""
+	return glyph.repeat(int(SPEED_ARROW_COUNTS.get(BATTLE_SPEED_LABELS[index], 0)))
 
 
 func _create_dialogue_system() -> void:
@@ -1097,6 +1138,38 @@ func _run_party_relayout() -> void:
 	_party_relayout_queued = false
 	if is_inside_tree():
 		_place_party(true)
+		_compact_party_panel()
+
+
+## The PARTY panel's floor: just above the hint bar when it shows, else the screen's bottom edge.
+func party_panel_floor_y() -> float:
+	var hint := get_node_or_null("UI/InputHintBar") as Control
+	if hint and hint.is_visible_in_tree():
+		return hint.get_global_rect().position.y - 4.0
+	return get_viewport().get_visible_rect().size.y - 4.0
+
+
+var _party_compacting := false
+## Frames a compaction step waits before the panel is measured: a Container resizes on the frame after its rows change.
+const PARTY_COMPACT_SETTLE_FRAMES := 2
+
+
+## Drops one compaction tier per SETTLED layout while the panel overruns its floor; measuring the frame a row changed read the old height.
+func _compact_party_panel() -> void:
+	if _party_compacting or _ui_manager == null:
+		return
+	_party_compacting = true
+	while is_inside_tree():
+		for f in PARTY_COMPACT_SETTLE_FRAMES:
+			await get_tree().process_frame
+			if not is_inside_tree():
+				break
+		var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+		if panel == null or not is_inside_tree():
+			break
+		if not _ui_manager.compact_party_panel_step(panel.get_global_rect().end.y, party_panel_floor_y()):
+			break
+	_party_compacting = false
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
@@ -1429,8 +1502,8 @@ func _create_battle_sprites() -> void:
 
 		# No floating name label for party members — the PARTY panel already names them, and the label drifted off-sprite in the stacked formation (struktured cap 2026-08-15). Enemies keep theirs (targeting aid).
 
-		# Setup status icons for this party member
-		_setup_status_icons(member, sprite)
+		# Setup status icons for this party member (the party stands right, facing left: evasion trails right)
+		_setup_status_icons(member, sprite, 1.0)
 	_place_party(false)
 
 	# Create enemy sprites
@@ -1890,6 +1963,9 @@ func _add_name_plate(sprite: AnimatedSprite2D, label: Label) -> void:
 
 
 ## Status effect icon display system
+## A badge is bright text on a dark pill: every colour here keeps one channel at or above STATUS_BADGE_MIN_BRIGHT.
+## blind, curse, silence and permakilled were dark text on the dark pill (sprites' render, 2026-11-12).
+const STATUS_BADGE_MIN_BRIGHT := 0.75
 const STATUS_ICON_CONFIG = {
 	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
@@ -1899,10 +1975,10 @@ const STATUS_ICON_CONFIG = {
 	"confuse": {"label": "CONF", "color": Color(0.9, 0.5, 0.9)},
 	"fear": {"label": "FEAR", "color": Color(0.6, 0.3, 0.8)},
 	"charm": {"label": "CHRM", "color": Color(1.0, 0.5, 0.7)},
-	"blind": {"label": "BLND", "color": Color(0.4, 0.4, 0.4)},
-	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
+	"blind": {"label": "BLND", "color": Color(0.78, 0.8, 0.88)},
+	"curse": {"label": "CURS", "color": Color(0.85, 0.4, 0.95)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
-	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	"permakilled": {"label": "DEAD", "color": Color(0.9, 0.3, 0.3)},
 	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
 	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
 	# fallback, giving the player vague "ATT" both for attack_up AND
@@ -1919,7 +1995,7 @@ const STATUS_ICON_CONFIG = {
 	# Standalone damage-over-time + utility effects
 	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
 	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
-	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"silence": {"label": "SLNC", "color": Color(0.8, 0.8, 0.84)},
 	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
 	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
 	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
@@ -1939,7 +2015,7 @@ const STATUS_ICON_CONFIG = {
 }
 
 
-func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void:
+func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D, trail: float = -1.0) -> void:
 	"""Create status icon container above a combatant's sprite and connect signals"""
 	var container = HBoxContainer.new()
 	container.add_theme_constant_override("separation", 2)
@@ -1963,7 +2039,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
-	_status_auras[combatant] = _make_status_aura(sprite)
+	_status_auras[combatant] = _make_status_aura(sprite, trail)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1981,11 +2057,12 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	_refresh_status_icons(combatant)
 
 
-## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
-## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
-func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
+## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
+func _make_status_aura(sprite: AnimatedSprite2D, trail: float = -1.0) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
+	aura.trail = trail
 	var sc := sprite.scale
 	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
@@ -1996,6 +2073,7 @@ func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 			if sprite.flip_h:
 				origin.x = -(origin.x + fig.size.x)
 			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	aura.head_clear = (STATUS_ROW_LIFT + STATUS_ROW_CLEAR) * STATUS_ROW_ZOOM
 	sprite.add_child(aura)
 	return aura
 
@@ -3376,6 +3454,16 @@ func signature_sound_allowed() -> bool:
 	return not turbo_mode and not autogrind_console_mode
 
 
+## The leader's limit-break stinger, or "" at turbo / in the console, where swapping the bed every limit break was a dropout.
+func limit_break_stinger_key(participants: Array) -> String:
+	if not signature_sound_allowed() or participants.is_empty() or not participants[0] is Combatant:
+		return ""
+	var leader: Combatant = participants[0]
+	var job_id: String = str(leader.job.get("id", "fighter")) if leader.job else "fighter"
+	var stinger_key := "job_%s_special" % job_id
+	return stinger_key if SoundManager.music_is_available(stinger_key) else ""
+
+
 ## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
 func signature_cue(caster: Combatant) -> String:
 	if caster == null or not is_instance_valid(caster):
@@ -3554,6 +3642,13 @@ static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
 	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
 
 
+## The `start_at` that plays a sequence `lead` seconds later than it is authored (a thrower's wind-up); -1 = as authored.
+static func sequence_start_after(seq_id: String, lead: float) -> float:
+	if lead <= 0.0:
+		return -1.0
+	return float(FractalFX.load_sequence(seq_id).get("start", 0.0)) + lead
+
+
 ## The box around a set of target points (a zero-size rect at the point for one target).
 static func line_span(points: Array) -> Rect2:
 	if points.is_empty():
@@ -3565,7 +3660,7 @@ static func line_span(points: Array) -> Rect2:
 
 
 ## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
-func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array, lead: float = 0.0) -> void:
 	var seq_id := melee_overlay(ability, "melee")
 	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
 		return
@@ -3582,7 +3677,7 @@ func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictio
 	if authored_span > 0.0:
 		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
 	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
-		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
+		k, {}, 1, not signature_sound_allowed(), sequence_start_after(seq_id, lead), Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
@@ -3722,8 +3817,9 @@ func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> 
 ## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
 ## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
 ## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
-func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false) -> void:
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false, lead: float = 0.0) -> void:
 	var seq_id := seq_override if seq_override != "" else _ability_sequence(ability)
+	var start_at := sequence_start_after(seq_id, lead)
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
@@ -3743,7 +3839,7 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
 		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _figure_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), -1.0, caster_centre)
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), start_at, caster_centre, family_tint(ability) if seq_override != "" else "")
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
@@ -4517,6 +4613,21 @@ func _get_terrain_battle_track() -> String:
 			return "battle"
 
 
+## Hides what only a live turn uses; the results screen and tools/victory_card_shots.gd both call this, so a shot is a real win.
+func retire_battle_hud() -> void:
+	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
+	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
+	if turn_panel:
+		turn_panel.visible = false
+	## Defer/Advance/Speed/Auto mean nothing on the results screen, whose own prompt names the one key that does.
+	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
+	if hint_bar:
+		hint_bar.visible = false
+	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
+	if speed_panel:
+		speed_panel.visible = false
+
+
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_end_advance_run()
@@ -4524,6 +4635,7 @@ func _on_battle_ended(victory: bool) -> void:
 	_music_follows_hp = false
 	SoundManager.clear_fight_bed()
 	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
+	SoundManager.clear_charge_duck()  # BattleManager settles its charging bosses too; this holds even if a path skips that
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()
@@ -4541,17 +4653,7 @@ func _on_battle_ended(victory: bool) -> void:
 		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
-	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
-	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
-	if turn_panel:
-		turn_panel.visible = false
-	## Defer/Advance/Speed/Auto mean nothing on the results screen, whose own prompt names the one key that does.
-	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
-	if hint_bar:
-		hint_bar.visible = false
-	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
-	if speed_panel:
-		speed_panel.visible = false
+	retire_battle_hud()
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before
@@ -4665,6 +4767,7 @@ func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
 	var p0 := s.position
 	var dx := edge - s.global_position.x
 	var t := EnemyDeathFx.real_time(s.create_tween())
+	s.set_meta("motion_tween", t)  # the hop is the runner's own; see motion_owns
 	if delay > 0.0:
 		t.tween_interval(delay)
 	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -4702,6 +4805,8 @@ func _process(delta: float) -> void:
 	_process_idle_animations(delta)
 
 	_tick_menu_watchdog()
+
+	_hide_name_plates_under_menus()
 
 	_tick_speed_hold()
 
@@ -4955,16 +5060,50 @@ static func apply_persisted_formation(members: Array) -> void:
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
 
 
-## True while a sprite's own lunge is moving it. The idle sway below wrote position.y on EVERY sprite EVERY frame, so a
-## lunge only ever moved in x: an attacker slid along its own row and swung at its target's column, a row or two away
-## (struktured 2026-11-12, "attacking someone but aims center"; seen in clips of .792). As old as the sway; the .791 hold
-## for the whole swing is what put it on screen.
+## Tweens that move a sprite keep themselves on it under one of these metas; while any is alive, the sprite's position is theirs.
+const MOTION_METAS: Array[StringName] = [&"attack_tween", &"knockback_tween", &"motion_tween"]
+
+
+## True while something is moving this sprite: a lunge or a group rush (attack_tween), a knock-back pop (knockback_tween),
+## an escape hop (motion_tween). The idle sway below wrote position.y on EVERY sprite EVERY frame, so a lunge only ever
+## moved in x and a pop's lift was taken back the same frame (struktured 2026-11-12, "attacking someone but aims center").
+## Valid, not "running": hit-stop PAUSES a lunge at the impact, and the sway took y back for exactly that frame.
+static func motion_owns(sprite: Node2D) -> bool:
+	if sprite == null or not is_instance_valid(sprite):
+		return false
+	for key in MOTION_METAS:
+		if sprite.has_meta(key):
+			var tween = sprite.get_meta(key)
+			if tween is Tween and (tween as Tween).is_valid():
+				return true
+	return false
+
+
+## Kept for .793's callers and pins: the lunge's own question.
 static func lunge_owns(sprite: Node2D) -> bool:
 	if sprite == null or not is_instance_valid(sprite) or not sprite.has_meta("attack_tween"):
 		return false
 	var tween = sprite.get_meta("attack_tween")
-	## Valid, not "running": hit-stop PAUSES the lunge at the moment of impact, and the sway took y back for exactly that frame.
 	return tween is Tween and (tween as Tween).is_valid()
+
+
+## The idle motion in px at time t: enemies sway ±3 (0.8, 0.95, 1.1 Hz…), the party breathes ±2 (0.4-0.55 Hz),
+## each out of step with its neighbours. ONE function, because a knock-back leaves from and lands on this y.
+static func idle_offset(is_enemy: bool, index: int, t: float) -> float:
+	if is_enemy:
+		return sin(t * (0.8 + float(index) * 0.15) * TAU + float(index) * 1.1) * 3.0
+	return sin(t * (0.4 + float(index) * 0.05) * TAU + float(index) * 0.9) * 2.0
+
+
+## Where the idle motion has this sprite's y right now; `fallback` for a sprite the idle writer does not move.
+func idle_y(sprite: Node2D, fallback: float) -> float:
+	var ei: int = enemy_sprite_nodes.find(sprite)
+	if ei >= 0 and ei < _enemy_base_positions.size():
+		return _enemy_base_positions[ei].y + idle_offset(true, ei, _idle_time)
+	var pi: int = party_sprite_nodes.find(sprite)
+	if pi >= 0 and pi < _party_base_positions.size():
+		return _party_base_positions[pi].y + idle_offset(false, pi, _idle_time)
+	return fallback
 
 
 func _process_idle_animations(delta: float) -> void:
@@ -4981,11 +5120,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _enemy_base_positions.size():
 			continue
 		# Each enemy has a slightly different frequency (0.8, 0.95, 1.1 Hz)
-		var freq = 0.8 + float(i) * 0.15
-		var phase = float(i) * 1.1  # Phase offset so they don't move in sync
-		var sway = sin(_idle_time * freq * TAU + phase) * 3.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _enemy_base_positions[i].y + sway
+		if not motion_owns(sprite):
+			sprite.position.y = _enemy_base_positions[i].y + idle_offset(true, i, _idle_time)
 
 	# Party idle breathing: ±2px Y oscillation at different rates per character
 	for i in range(party_sprite_nodes.size()):
@@ -4995,11 +5131,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _party_base_positions.size():
 			continue
 		# Party members breathe at slightly different rates (0.4-0.55 Hz, slower = calmer)
-		var freq = 0.4 + float(i) * 0.05
-		var phase = float(i) * 0.9
-		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _party_base_positions[i].y + breathe
+		if not motion_owns(sprite):
+			sprite.position.y = _party_base_positions[i].y + idle_offset(false, i, _idle_time)
 
 	# Update buff/debuff visual overlays for all combatants
 	_update_buff_debuff_visuals(delta)
@@ -5362,9 +5495,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
 				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
 				_melee_contact_timer = null
+				## The thing leaves the hand on the throwing pose's own impact frame, not on the pose's first one.
+				var release: float = animator.impact_time(animator.shown_animation_for(_ability_anim_name(ability, animator))) if animator else 0.0
 				if targets.size() > 1:
-					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
-				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
+					_play_melee_cloud(combatant, attacker_sprite, ability, targets, release)
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets), false, release)
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
@@ -5424,21 +5559,10 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 		match group_type:
 			"limit_break":
 				SoundManager.play_flourish("group_limit_break")
-				# Play job stinger for party leader on limit break
-				if participants.size() > 0 and participants[0] is Combatant:
-					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
-					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself, duplicating
-					## the manifest's knowledge of where the file lives; music_is_available() is the
-					## predicate CutsceneDirector and JukeboxMenu already use, so the manifest stays the
-					## single place that knows. That reason stands on its own and is the whole reason.
-					## ⚠️ The justification here USED to be "ResourceLoader.exists() reports FALSE inside a
-					## web PCK". MEASURED FALSE 2026-09-17 (cowir-main, probe inside a real .pck): it is
-					## correct for imported resources, and FileAccess.file_exists() is the broken one.
-					## SoundManager carries the correction; do not reinstate the claim or cite line
-					## numbers for it — this comment cited two that had already moved.
-					var stinger_key: String = "job_%s_special" % job_id
-					if SoundManager.music_is_available(stinger_key):
-						SoundManager.play_music(stinger_key)
+				# Job stinger for the party leader; the helper owns the turbo/console gate.
+				var stinger_key := limit_break_stinger_key(participants)
+				if stinger_key != "":
+					SoundManager.play_music(stinger_key)
 			"combo_magic":
 				SoundManager.play_flourish("group_combo_magic")
 			_:
@@ -5695,6 +5819,8 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		var hit: Dictionary = target_sprite.get_meta("hit_landing", {"w": 0.0, "kill": false})
 		target_sprite.remove_meta("hit_landing")
 		var w: float = float(hit["w"])
+		var by: Combatant = hit_attacker(hit, _last_acting_combatant)
+		var crit: bool = bool(hit.get("crit", false))
 		target_anim.play_hit()
 		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
@@ -5702,23 +5828,23 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		## The OFF tier (16x+, turbo, the console) keeps .790's effect; below it the hit draws its WEAPON's spark,
 		## sized by the weight, and the weight (not the effect) owns the shake.
 		if jt == BattleJuice.Tier.OFF:
-			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
+			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(by))
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
 			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
 			## Drawn on the FIGURE (cutscenes' _figure_anchor): a hero stands ~95 px off its frame's centre.
 			var struck: Vector2 = _figure_anchor(target_sprite)
-			var spark: String = hit_spark_for(_last_acting_combatant)
+			var spark: String = hit_spark_for(by)
 			match hit_mark(str(_current_ability_id), spark):
 				"overlay":
 					## The ability's own melee overlay owns the CUT (sprites 24010); the weight still lands below.
 					## The weapon's hit cue still sounds: an overlay's own cue is authored to sit on top of it (sfx 23790).
-					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+					EffectSystem.play_hit_cue(_weapon_type_for(by), crit)
 				"family":
-					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+					EffectSystem.play_hit_cue(_weapon_type_for(by), crit)
 					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
 				_:
-					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(by), jt == BattleJuice.Tier.MINIMAL, crit)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -5903,6 +6029,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	var held_hit: int = 0
 	if spotlight and land_on_impact:
 		held_hit = _hold_melee_damage(lead_in + approach + impact_at)
+		if attacker_anim and is_instance_valid(attacker_anim):
+			_melee_second_beat = minf(attacker_anim.second_impact_time(attacker_anim.swing_anim_name(ability_anim)), hold) - impact_at
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
 	## inverted would turn a 5-member cascade into 5 sequential full lunges.
@@ -6066,7 +6194,7 @@ func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: S
 	var kill: bool = not target.is_alive or target.current_hp <= 0
 	var w: float = hit_weight(amount, target.max_hp, is_crit, elemental_mod, kill)
 	var waiting: Dictionary = _peek_hit_weight(sprite, by, _action_serial)
-	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
+	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "crit": is_crit or bool(waiting.get("crit", false)), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
 	sprite.set_meta("hit_weight", hit)
 	## A heavy stop pauses the lunge, so the stage is held that much longer for a held single attack: the next
 	## actor must not start while this one is frozen at its target. Only where a hold was set (spotlight pace).
@@ -6087,15 +6215,123 @@ func _peek_hit_weight(sprite: Node2D, attacker: Combatant, action: int) -> Dicti
 	return {"w": 0.0, "kill": false}
 
 
+## Who a landing hit belongs to: the attacker its lunge named, else the fallback (a counter sets the cache itself).
+static func hit_attacker(hit: Dictionary, fallback: Combatant) -> Combatant:
+	var named: Object = instance_from_id(int(hit.get("by", 0))) if int(hit.get("by", 0)) != 0 else null
+	return named as Combatant if named != null and is_instance_valid(named) and named is Combatant else fallback
+
+
 ## The contact: spend the weight this attacker's action left on the target, and leave it where
 ## _delayed_play_hit_fx reads it. No weight (a miss, another attacker's note) = a chip hit, .790's recipe.
 func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
-	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action)
+	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action).duplicate()
+	## The lunge knows who swung; the acting-combatant cache is cleared before contact (action_executed fires at the action's start).
+	if attacker != null and is_instance_valid(attacker):
+		hit["by"] = attacker.get_instance_id()
 	if target_sprite != null and is_instance_valid(target_sprite):
 		if float(hit["w"]) > 0.0:
 			target_sprite.remove_meta("hit_weight")
 		target_sprite.set_meta("hit_landing", hit)
 	return hit
+
+
+## ---- A MONSTER COUNTER'S OWN BEAT (Royal Spite): its numbers are lifted out of the attacker's swing and land on a pose -> impact after it. ----
+const COUNTER_GAP := 0.2      # game s between the attacker's contact and the counter's pose
+const COUNTER_WINDUP := 0.3   # game s from the counter's pose to its impact, when its art authors no impact frame
+const COUNTER_WINDUP_MAX := 0.5  # an authored impact frame later than this is cut to it
+const COUNTER_SETTLE := 0.35  # game s the stage stays held after the impact's freeze
+var _counter_mark: int = -1
+var _counter_opened: bool = false
+
+
+## Game seconds from the counter's resolve to its pose: after the attacker's own swing lands, if one is still in flight.
+static func counter_lead(swing_in_flight: bool, contact_in: float) -> float:
+	return (maxf(contact_in, 0.0) if swing_in_flight else 0.0) + COUNTER_GAP
+
+
+## The pose's length: the art's authored impact frame when it has one, else COUNTER_WINDUP; never past COUNTER_WINDUP_MAX.
+static func counter_windup(authored_impact: float) -> float:
+	return minf(authored_impact, COUNTER_WINDUP_MAX) if authored_impact > 0.0 else COUNTER_WINDUP
+
+
+## The counter's impact: its numbers' own weight, floored by the ability's authored `impact_weight`.
+static func counter_impact(ability: Dictionary, entries: Array, target: Combatant) -> Dictionary:
+	var w: float = 0.0
+	for args in entries:
+		if args is Array and (args as Array).size() >= 3 and target != null and is_instance_valid(target) and args[0] == target:
+			w = maxf(w, hit_weight(int(args[1]), target.max_hp, bool(args[2])))
+	if not entries.is_empty():
+		w = maxf(w, clampf(float(ability.get("impact_weight", 0.0)), 0.0, 1.0))
+	var kill: bool = target != null and is_instance_valid(target) and not target.is_alive
+	return {"w": w, "kill": kill}
+
+
+func _on_monster_counter_started(_monster: Combatant, _target: Combatant, _ability_id: String) -> void:
+	_counter_mark = -1
+	_counter_opened = false
+	if _tier() == BattleJuice.Tier.OFF:
+		return
+	if _full_render_dmg_buffer == null:
+		_full_render_dmg_buffer = []
+		_counter_opened = true
+	_counter_mark = (_full_render_dmg_buffer as Array).size()
+
+
+func _on_monster_counter_finished(monster: Combatant, target: Combatant, ability_id: String) -> void:
+	if _counter_mark < 0:
+		return
+	var entries: Array = _lift_counter_entries()
+	var lead: float = counter_lead(_melee_hold_live, _last_contact_in)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, lead + COUNTER_WINDUP_MAX + HIT_KILL_HITSTOP + COUNTER_SETTLE)
+	_play_counter_beat(monster, target, ability_id, entries, lead)
+
+
+## The counter's numbers, taken out of the buffer; whatever the attacker's swing holds stays held for its own contact.
+func _lift_counter_entries() -> Array:
+	var buf: Array = _full_render_dmg_buffer if _full_render_dmg_buffer is Array else []
+	var entries: Array = buf.slice(maxi(_counter_mark, 0))
+	_full_render_dmg_buffer = null if _counter_opened else buf.slice(0, maxi(_counter_mark, 0))
+	_counter_mark = -1
+	_counter_opened = false
+	return entries
+
+
+func _play_counter_beat(monster: Combatant, target: Combatant, ability_id: String, entries: Array, lead: float) -> void:
+	await get_tree().create_timer(lead).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	var m_sprite: Node2D = _get_combatant_sprite(monster) if is_instance_valid(monster) else null
+	var m_anim: BattleAnimatorClass = _get_combatant_animator(monster) if is_instance_valid(monster) else null
+	var windup: float = COUNTER_WINDUP
+	if m_anim != null:
+		var named: String = _ability_sheet_anim(ability, m_anim)
+		if named != "":
+			m_anim.play_named_animation(named)
+			windup = counter_windup(m_anim.impact_time(named))
+		else:
+			m_anim.play_attack()
+	if m_sprite != null and is_instance_valid(m_sprite):
+		BattleJuice.flash_sprite(m_sprite, Color(1.6, 0.35, 0.3), 0.0, windup)
+	await get_tree().create_timer(windup).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	var t_sprite: Node2D = _get_combatant_sprite(target) if is_instance_valid(target) else null
+	var t_anim: BattleAnimatorClass = _get_combatant_animator(target) if is_instance_valid(target) else null
+	var hit: Dictionary = counter_impact(ability, entries, target)
+	if not entries.is_empty():
+		SoundManager.play_ability(ability_id)
+		if t_sprite != null and is_instance_valid(t_sprite):
+			t_sprite.set_meta("hit_landing", hit)
+		_hitstop_seconds = hitstop_for(hit)
+		_apply_hitstop(m_sprite, t_sprite)
+	var prev_acting: Combatant = _last_acting_combatant
+	_last_acting_combatant = monster if is_instance_valid(monster) else null
+	if not entries.is_empty():
+		_delayed_play_hit_fx(t_anim, t_sprite)
+	for args in entries:
+		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
+	_last_acting_combatant = prev_acting
 
 
 ## What a one-shot pose (a swing, a cast) may take before the next beat, in game seconds. Sheets longer than
@@ -6111,6 +6347,14 @@ var _last_contact_in: float = 0.17
 var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0
+## A two-strike attack (the Rogue): where the held buffer splits, how long after the first beat the rest lands, and its hit sound.
+var _melee_cut: int = -1
+var _melee_cut_weapon: String = ""
+var _melee_second_beat: float = 0.0
+var _melee_weapon_override: String = ""
+var _hit_weapon_override: String = ""
+## Game seconds between two strikes' numbers when the swing has no authored second beat (turbo, console, 4x+, procedural sheets).
+const STRIKE_STAGGER := 0.12
 var _action_serial: int = 0
 var _hitstop_seconds: float = 0.07
 
@@ -6132,15 +6376,31 @@ static func strike_hold(played: float, spotlight: bool) -> float:
 
 ## Hold this swing's damage presentation (number, HP bar, hit sound, death) until its impact frame, on the
 ## buffer Full Render casts already use. Returns a token; a safety timer lands it if the lunge tween dies.
-func _hold_melee_damage(lands_in: float) -> int:
+func _hold_melee_damage(lands_in: float, safety: float = 0.25) -> int:
 	_flush_full_render_damage()
 	_full_render_dmg_buffer = []
 	_full_render_dmg_attacker = _last_acting_combatant
 	_melee_hold_token += 1
 	_melee_hold_live = true
 	_melee_hold_extra = 0.0
-	get_tree().create_timer(lands_in + 0.25).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
+	_melee_cut = -1
+	_melee_cut_weapon = ""
+	_melee_second_beat = 0.0
+	_melee_weapon_override = ""
+	get_tree().create_timer(lands_in + safety).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
 	return _melee_hold_token
+
+
+## A later strike of a basic attack: its number waits for its own beat, split off the held swing or staggered after the first.
+func _on_strike_starting(_attacker: Combatant, index: int, _count: int, weapon: String) -> void:
+	if index <= 0:
+		return
+	if _melee_hold_live and _full_render_dmg_buffer != null:
+		_melee_cut = (_full_render_dmg_buffer as Array).size()
+		_melee_cut_weapon = weapon
+		return
+	_hold_melee_damage(STRIKE_STAGGER, 0.0)
+	_melee_weapon_override = weapon
 
 
 func _land_melee_damage(token: int) -> void:
@@ -6148,7 +6408,34 @@ func _land_melee_damage(token: int) -> void:
 		return
 	_melee_hold_token += 1  # spent: the safety timer (or the tween) finds a different token and does nothing
 	_melee_hold_live = false
+	if _melee_cut >= 0 and _full_render_dmg_buffer is Array and _melee_cut < (_full_render_dmg_buffer as Array).size():
+		_land_first_strike_then_hold_rest()
+		return
+	_hit_weapon_override = _melee_weapon_override
 	_flush_full_render_damage()
+	_hit_weapon_override = ""
+	_melee_weapon_override = ""
+
+
+## Land the first strike's entries now; the rest (and any death they caused) waits _melee_second_beat for its own beat.
+func _land_first_strike_then_hold_rest() -> void:
+	var buffered: Array = _full_render_dmg_buffer
+	var attacker: Combatant = _full_render_dmg_attacker
+	var rest: Array = buffered.slice(_melee_cut)
+	var rest_weapon: String = _melee_cut_weapon
+	var deaths: Array = _deaths_after_impact
+	_deaths_after_impact = []
+	_full_render_dmg_buffer = buffered.slice(0, _melee_cut)
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = rest
+	_full_render_dmg_attacker = attacker
+	_deaths_after_impact = deaths
+	_melee_cut = -1
+	_melee_cut_weapon = ""
+	_melee_weapon_override = rest_weapon
+	_melee_hold_token += 1
+	_melee_hold_live = true
+	get_tree().create_timer(maxf(_melee_second_beat, STRIKE_STAGGER)).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
 
 
 ## Land a swing's held hit at once, if one is waiting on its impact frame.
@@ -6158,6 +6445,8 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
+
+
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	## The stop's length is the hit's (see hitstop_for): the caller leaves it in _hitstop_seconds, spent here.
 	var duration: float = _hitstop_seconds
@@ -6202,11 +6491,9 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.15)
 
 
 ## Where a knocked sprite comes to rest: its HOME, not wherever the hit found it. A second hit inside the
@@ -6216,10 +6503,28 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 func _knockback_rest(sprite: Node2D) -> Vector2:
 	if sprite.has_meta("attack_tween"):
 		var lunge = sprite.get_meta("attack_tween")
-		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+		if lunge is Tween and lunge.is_valid():  # valid, not running: a hit-stop pauses the lunge, and a hit landing then sent the attacker home
 			return sprite.position
 	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
 	return home
+
+
+## The knock-back's y, in step with its x leg. While the knock-back owns the sprite (motion_owns) the idle writer
+## leaves y alone, so the pop carries the sway itself: y = where the idle motion is NOW, minus the lift. It leaves
+## from the swayed y the hit found and lands on the y the sway resumes at; a fixed home y jumped by up to 3 px at
+## both ends, most of a 4 px pop. Runs with no lift too (a tier with no pop): the sway must not freeze for 0.2 s.
+## A sprite mid-lunge is the lunge's: its y is lifted from where the hit found it, as before.
+func _knock_y_leg(tween: Tween, sprite: Node2D, found_y: float, pop: float, from: float, to: float, seconds: float) -> void:
+	if lunge_owns(sprite):
+		if pop > 0.0:
+			tween.parallel().tween_property(sprite, "position:y", found_y - pop * to, seconds).set_ease(Tween.EASE_OUT)
+		return
+	tween.parallel().tween_method(_knock_y.bind(sprite, found_y, pop), from, to, seconds).set_ease(Tween.EASE_OUT)
+
+
+func _knock_y(lift: float, sprite: Node2D, found_y: float, pop: float) -> void:
+	if is_instance_valid(sprite):
+		sprite.position.y = idle_y(sprite, found_y) - pop * lift
 
 
 ## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
@@ -6288,11 +6593,9 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.08)
 	tween.tween_property(sprite, "position:x", original_x, 0.22).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.22).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.22)
 
 
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
@@ -6559,6 +6862,13 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 							SoundManager.play_battle("buff")
 					else:
 						SoundManager.play_status(effect)
+
+
+## A charging boss leans the music back (main 23917): only a FULL-tier battle dips, and a release always passes.
+func _on_boss_charge_changed(boss: Combatant, charging: bool) -> void:
+	if charging and not (_intent_tier() == BattleJuice.Tier.FULL):
+		return
+	SoundManager.duck_for_charge(charging, boss)
 
 
 ## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
@@ -7378,7 +7688,14 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	var attacker = _last_acting_combatant
 	if attacker == null:
 		return
-	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
+	## The Rogue's second strike is the crossbow bolt, on its own voice so it layers over the blade's cue.
+	if _hit_weapon_override == "bolt":
+		if is_crit:
+			SoundManager.play_second_hit("attack_hit_bolt_crit")
+		else:
+			SoundManager.play_second_hit("attack_hit_bolt")
+		return
+	var weapon_type = _hit_weapon_override if _hit_weapon_override != "" else EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. THIS site is basic attacks only; a PHYSICAL ability reaches the same cue from the block above the early-return, because the weapon strikes there too. A MAGIC ability still never does — it already played its own cast sound, so a Fire spell won't also fire strike_fire, which is the part of this note that is load-bearing.
 	var weapon_element: String = _weapon_element_for(attacker)
@@ -7464,6 +7781,17 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A boss drawing its breath is heard once, on the rising edge; the release keeps the signature's own cue.
+func _on_boss_charge_sound(_boss: Combatant, charging: bool) -> void:
+	if charging:
+		SoundManager.play_battle("boss_charge_gather")
+
+
+## A stun or silence that breaks the charge: the gathered power snaps and spills.
+func _on_boss_charge_broken(_boss: Combatant, _status: String) -> void:
+	SoundManager.play_battle("boss_charge_broken")
 
 
 ## A cast that could not pay: the banner and cast_fizzle, never attack_miss (a fizzle is not a miss; sfx 23446).
@@ -7838,6 +8166,15 @@ func _wipe_bark() -> void:
 func _boss_bark(boss: Node, trigger: String) -> void:
 	if boss == null or not is_instance_valid(boss) or not boss.has_meta("is_boss"):
 		return
+	if not _boss_bark_allowed():
+		return
+	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
+	if line != "":
+		SoundManager.play_voiced_line(boss.combatant_name, line, self)
+
+
+## Whether a boss may bark aloud now: never in turbo or the grind console, over a scripted line, a bubble or another voice.
+func _boss_bark_allowed() -> bool:
 	var bubble_up := false
 	for b in BattleSpeechBubble._live:
 		if is_instance_valid(b):
@@ -7845,11 +8182,14 @@ func _boss_bark(boss: Node, trigger: String) -> void:
 			break
 	var blocked: bool = (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible) \
 			or bubble_up or SoundManager.is_voiced_line_playing() or SoundManager._voice_player.playing
-	if not BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked):
+	return BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked)
+
+
+## A cadence boss's authored charge/break bark is voiced when a recording exists; the bubble follows on boss_taunt.
+func _on_boss_cadence_bark(boss: Combatant, line: String) -> void:
+	if boss == null or not is_instance_valid(boss) or not _boss_bark_allowed():
 		return
-	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
-	if line != "":
-		SoundManager.play_voiced_line(boss.combatant_name, line, self)
+	SoundManager.play_voiced_line(boss.combatant_name, line, self)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
@@ -8091,6 +8431,15 @@ func _gloat_speaker_name(_is_victory: bool) -> String:
 	return "The Boss"
 
 
+## The banner's top: 60 px, or 6 px under the turn strip when a wrapped turn line has grown it past that.
+func banner_top() -> float:
+	var top := 60.0
+	var strip := get_node_or_null("UI/TurnInfoPanel") as Control
+	if strip != null and strip.is_visible_in_tree():
+		top = maxf(top, strip.get_global_rect().end.y + 6.0)
+	return top
+
+
 func _show_address_banner(text: String) -> void:
 	"""Spawns a transient banner Label centered at the top of the viewport,
 	fades in/holds/fades out via create_tween. Suppressed during turbo /
@@ -8124,12 +8473,12 @@ func _show_address_banner(text: String) -> void:
 	panel.add_child(label)
 	# Anchor at top-center.
 	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	panel.position = Vector2(-150, 60)
-	panel.size = Vector2(300, 0)  # auto-resize via child
-	## ...and that auto-resize grows RIGHTWARD by default, so the banner sat off-centre. Measured:
-	## the one string both callers pass renders 332px inside this 300px box, centre 656 vs 640 — 16px
-	## right, every time, because the text is a fixed literal. Same class as the hint bar's fallback.
+	## Grow BOTH before any size is set: the label measures off-tree, so a wider face clamped the box END-ward at `size =`.
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var banner_w: float = maxf(300.0, panel.get_combined_minimum_size().x)
+	panel.offset_left = -banner_w * 0.5
+	panel.offset_right = banner_w * 0.5
+	panel.offset_top = banner_top()
 	panel.modulate = Color(1, 1, 1, 0)
 	panel.z_index = 200
 	add_child(panel)
@@ -8139,6 +8488,12 @@ func _show_address_banner(text: String) -> void:
 	tween.tween_interval(1.6)
 	tween.tween_property(panel, "modulate:a", 0.0, 0.35)
 	tween.tween_callback(panel.queue_free)
+
+
+## The lowest y a bubble may rise to: the round banner's bottom as it is NOW (it wraps to two lines at large Text Sizes).
+func bubble_ceiling_y() -> float:
+	var banner: Control = turn_info.get_parent() as Control if turn_info else null
+	return banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
 
 
 func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "", voice_stream: AudioStream = null) -> void:
@@ -8176,12 +8531,41 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# struktured playtest 2026-08-22 "style the bubble away from them": the old always-left nudge still CENTRED the bubble on the anchor, so it sat on the speaker. Offset to a side instead — right for left-half speakers, left for right-half ones so it stays off the party panel; BattleSpeechBubble flips if the clamp would re-cover them.
 	var prefer_right: bool = anchor.x < vp_w * 0.5
 	# The top party slot's head is above the old 48px clamp, and clamped bubbles covered the SELECT banner (store capture v3.33.345) — ceiling is the banner's real bottom.
-	var banner: Control = turn_info.get_parent() as Control if turn_info else null
-	var ceiling: float = banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
+	var ceiling: float = bubble_ceiling_y()
+	var bubble := BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
+	if bubble != null:
+		bubble.watch_ceiling(bubble_ceiling_y)
 
 
 ## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).
+## The lowest y a battle menu may reach: just above the hint bar when it shows, else the screen's bottom margin.
+func menu_floor_y() -> float:
+	var hint := get_node_or_null("UI/InputHintBar") as Control
+	if hint and hint.is_visible_in_tree():
+		return hint.get_global_rect().position.y - 4.0
+	return get_viewport_rect().size.y - 10.0
+
+
+## A name tag under an open menu reads through its translucent face as a stray word on a row (200% frame, cowir-main 26666).
+func _hide_name_plates_under_menus() -> void:
+	var menus: Array = _bubble_keep_out_rects()
+	for group in [enemy_sprite_nodes, party_sprite_nodes]:
+		for sprite in group:
+			if not is_instance_valid(sprite):
+				continue
+			for tag_name in ["NameLabel", "NamePlate"]:
+				var tag := sprite.get_node_or_null(tag_name) as Control
+				if tag == null:
+					continue
+				var rect: Rect2 = tag.get_global_transform() * Rect2(Vector2.ZERO, tag.size)
+				var covered := false
+				for m in menus:
+					if m is Rect2 and (m as Rect2).intersects(rect):
+						covered = true
+						break
+				tag.self_modulate.a = 0.0 if covered else 1.0
+
+
 func _bubble_keep_out_rects() -> Array:
 	var out: Array = []
 	var m = active_win98_menu

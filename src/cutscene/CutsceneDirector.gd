@@ -47,6 +47,8 @@ var _choice_menu: Node = null
 ## Background layer (captured screenshot or solid color behind dialogue)
 var _background_texture: TextureRect
 var _background_dim: ColorRect
+## Small sprites shown over the backdrop by `show_prop`, by prop id; freed with the backdrop.
+var _props: Dictionary = {}
 
 ## Screen effects overlay
 var _effects_rect: ColorRect
@@ -446,8 +448,16 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 ## STEP EXECUTION
 ## =====================
 
+## The step before the running one and the running one, so a boss card knows whether its scene already scored it.
+var _step_before: String = ""
+var _step_now: String = ""
+const BOSS_CARD_CUE := "boss_intro_stinger"
+
+
 func _execute_step(step: Dictionary) -> void:
 	var step_type = step.get("type", "")
+	_step_before = _step_now
+	_step_now = str(step_type)
 	match step_type:
 		"dialogue":
 			await _step_dialogue(step)
@@ -487,6 +497,10 @@ func _execute_step(step: Dictionary) -> void:
 			_step_stop_timer(step)
 		"set_background":
 			_step_set_background(step)
+		"show_prop":
+			_step_show_prop(step)
+		"hide_prop":
+			_step_hide_prop(step)
 		"branch":
 			await _step_branch(step)
 		"chapter_title":
@@ -609,29 +623,24 @@ func _step_choice(step: Dictionary) -> void:
 		return
 
 	# Build the choice text list alongside the options that own those texts — an option with no text cannot be the answer.
+	var presented := _presented_options(options)
 	var choice_texts: Array[String] = []
-	var presented: Array[Dictionary] = []
-	for opt in options:
-		if not (opt is Dictionary):
-			continue
-		var t: String = str((opt as Dictionary).get("text", ""))
-		if t.strip_edges() != "":
-			choice_texts.append(t)
-			presented.append(opt as Dictionary)
+	for opt in presented:
+		choice_texts.append(str(opt.get("text", "")))
 	if choice_texts.is_empty():
 		push_warning("CutsceneDirector._step_choice: no valid option texts after filtering — skipping")
 		return
 
-	# Skip path: answer with the first option the player WOULD have been shown, never one filtered out.
+	# Skip path: answer among the options the player WOULD have been shown, never one filtered out.
 	if _skipping:
-		_set_choice_flag(presented[0])
+		_set_choice_flag(skip_answer(presented))
 		return
 
 	# Present the menu and await selection.
 	var DialogueChoiceMenuScript = load("res://src/llm/DialogueChoiceMenu.gd")
 	if DialogueChoiceMenuScript == null:
-		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first presented option's flag and continuing")
-		_set_choice_flag(presented[0])
+		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — answering as a skip would and continuing")
+		_set_choice_flag(skip_answer(presented))
 		return
 	var menu: Node = DialogueChoiceMenuScript.new()
 	# Anchor to a CanvasLayer so it renders above the cutscene UI.
@@ -816,19 +825,25 @@ func _step_screen_shake(step: Dictionary) -> void:
 		await _shake_layer(duration, intensity)
 		return
 
-	var original_offset = camera.offset
+	# st = [jitter-free base, current jitter]: another writer's move folds into the base; base + jitter is exact, so no drift.
+	var st := [camera.offset, Vector2.ZERO]
+	var apply := func(j: Vector2) -> void:
+		if is_instance_valid(camera):
+			st[0] += camera.offset - (st[0] + st[1])
+			camera.offset = st[0] + j
+		st[1] = j
 	var shake_tween = create_tween()
 	var steps_count = int(duration / 0.05)
+	var last := Vector2.ZERO
 	for i in range(steps_count):
-		var offset = Vector2(
-			randf_range(-intensity, intensity),
-			randf_range(-intensity, intensity)
-		)
-		shake_tween.tween_property(camera, "offset", original_offset + offset, 0.05)
-	shake_tween.tween_property(camera, "offset", original_offset, 0.05)
+		var j := Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		shake_tween.tween_method(apply, last, j, 0.05)
+		last = j
+	shake_tween.tween_method(apply, last, Vector2.ZERO, 0.05)
 	await _await_tween_hold(shake_tween)
 	if is_instance_valid(camera):
-		camera.offset = original_offset
+		camera.offset = st[0] + (camera.offset - (st[0] + st[1]))
+	st[1] = Vector2.ZERO
 
 
 ## Jitters this CanvasLayer's offset — backdrop, vignette and letterbox all ride it; the dialogue layer (96) stays readable.
@@ -843,13 +858,18 @@ func _shake_layer(duration: float, intensity: float) -> void:
 	offset = Vector2.ZERO
 
 
+## The player's Reduce Flashes setting, read the way battle's EffectSystem reads it.
+static func flashes_reduced() -> bool:
+	return GameState != null and ("reduce_flashes" in GameState) and bool(GameState.reduce_flashes)
+
+
 func _step_screen_flash(step: Dictionary) -> void:
 	var duration = step.get("duration", 0.15)
 	var color = Color.WHITE
 	if step.has("color"):
 		color = Color(step["color"])
-	if _skipping:
-		return
+	if _skipping or flashes_reduced():
+		return  # Reduce Flashes: a full-screen colour flash is exactly what the setting promises to remove
 
 	_effects_rect.visible = true
 	_effects_rect.color = color
@@ -1694,15 +1714,45 @@ func _apply_skipped_step_side_effects(step: Dictionary) -> void:
 			_step_branch(step)
 
 
-## Same answer _step_choice gives a skip that lands on the menu: the first option the player would have been shown.
+## Same answer _step_choice gives a skip that lands on the menu.
 func _apply_skipped_choice(step: Dictionary) -> void:
-	for opt in step.get("options", []):
-		if not (opt is Dictionary):
+	var presented := _presented_options(step.get("options", []))
+	if not presented.is_empty():
+		_set_choice_flag(skip_answer(presented))
+
+
+## The options the menu shows: dictionaries with text, minus any whose "unless_flag" is set.
+func _presented_options(options: Array) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for opt in options:
+		if not (opt is Dictionary) or _choice_option_hidden(opt as Dictionary):
 			continue
-		if str((opt as Dictionary).get("text", "")).strip_edges() == "":
-			continue
-		_set_choice_flag(opt)
-		return
+		if str((opt as Dictionary).get("text", "")).strip_edges() != "":
+			out.append(opt as Dictionary)
+	return out
+
+
+## A skip answers with the option marked "skip_answer" (a refusal, so a skipped offer cannot commit what the player never chose), else the first one shown.
+static func skip_answer(presented: Array[Dictionary]) -> Dictionary:
+	for opt in presented:
+		if bool(opt.get("skip_answer", false)):
+			return opt
+	return presented[0]
+
+
+## An option with "unless_flag" (one name or a list) is left off the menu once any of those cutscene flags is set: a trial already won is not offered again.
+static func choice_option_hidden_by(option: Dictionary, flags: Dictionary) -> bool:
+	var names: Variant = option.get("unless_flag", [])
+	if names is String:
+		names = [names]
+	for f in (names as Array):
+		if str(f) != "" and bool(flags.get("cutscene_flag_" + str(f), false)):
+			return true
+	return false
+
+
+func _choice_option_hidden(option: Dictionary) -> bool:
+	return GameState != null and choice_option_hidden_by(option, GameState.game_constants)
 
 
 ## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT
@@ -1731,7 +1781,7 @@ static func card_metrics(title_px: int, sub_px: int, base_title_px: int, base_su
 	## above-base guard `_box_metrics` carries, which I left out here.
 	if title_px <= base_title_px and sub_px <= base_sub_px:
 		return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font != null:
 		var th: float = float(font.get_height(title_px))
 		var sh: float = float(font.get_height(sub_px))
@@ -1769,7 +1819,7 @@ static func skip_pill_metrics(label_px: int, base_label_px: int, text: String,
 	}
 	if label_px <= base_label_px:
 		return out
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font == null:
 		return out
 	var h: float = float(font.get_height(label_px))
@@ -1802,7 +1852,7 @@ static func timer_rect(px: int, base_px: int, text: String, viewport_w: float,
 		base_w: float, base_h: float, right_inset: float) -> Rect2:
 	var w: float = base_w
 	var h: float = base_h
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font != null and px > base_px:
 		var m: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_RIGHT, -1, px)
 		w = maxf(base_w, m.x + 8.0)
@@ -1894,6 +1944,8 @@ func _step_boss_intro(step: Dictionary) -> void:
 
 	if _skipping:
 		return
+	if _step_before != "play_sfx" and SoundManager:  # a scene that scores its own card keeps its cue; a silent one gets the stinger
+		SoundManager.play_cutscene_sfx(BOSS_CARD_CUE)
 
 	var screen_size = get_viewport().get_visible_rect().size
 
@@ -1933,7 +1985,10 @@ func _step_boss_intro(step: Dictionary) -> void:
 		title_label = Label.new()
 		title_label.text = boss_title
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.position = Vector2(0, screen_size.y * 0.4 + float(bim["gap"]))
+		var sub_y: float = screen_size.y * 0.4 + float(bim["gap"])
+		if bi_name_px > 36:  # the pixel face steps in whole multiples, so seat the subtitle below the title's built box
+			sub_y = maxf(sub_y, screen_size.y * 0.4 + maxf(name_label.size.y, name_label.get_combined_minimum_size().y) + 2.0)
+		title_label.position = Vector2(0, sub_y)
 		title_label.size = Vector2(screen_size.x, float(bim["sub_h"]))
 		title_label.clip_text = false
 		title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -2251,8 +2306,78 @@ func _step_set_background(step: Dictionary) -> void:
 		_background_dim.visible = false
 
 
+## A small animated sprite over a panel scene's backdrop (the Rat King's tiny crown, struktured's easter egg): `prop` names
+## a sprite_manifest `prop_art` row (one horizontal strip: frames, fps), `at` is its bottom-centre as a share of the screen
+## and `scale` whole pixels. It plays its strip once and holds the last frame until hide_prop or the scene's end. `sfx` is
+## played when the strip reaches `sfx_at_frame` (cowir-sfx 24248: a cue on the frame the crown lands, not the one it falls on).
+func _step_show_prop(step: Dictionary) -> void:
+	var id := str(step.get("prop", ""))
+	var row: Dictionary = prop_art(id)
+	var path := str(row.get("path", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		push_warning("[CutsceneDirector] show_prop: no prop_art '%s'" % id)
+		return
+	_step_hide_prop(step)
+	var tex: Texture2D = load(path)
+	var count: int = maxi(1, int(row.get("frames", 1)))
+	var cell := Vector2(float(tex.get_width()) / float(count), float(tex.get_height()))
+	var frames := SpriteFrames.new()
+	frames.add_animation(&"once")
+	frames.set_animation_loop(&"once", false)
+	frames.set_animation_speed(&"once", float(row.get("fps", 8)))
+	for i in count:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(cell.x * float(i), 0.0, cell.x, cell.y)
+		frames.add_frame(&"once", atlas)
+	var spr := AnimatedSprite2D.new()
+	spr.name = "Prop_" + id
+	spr.sprite_frames = frames
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	spr.centered = false
+	spr.offset = Vector2(-cell.x / 2.0, -cell.y)
+	var px: int = maxi(1, int(step.get("scale", 3)))
+	spr.scale = Vector2(px, px)
+	var at = step.get("at", [0.5, 0.5])
+	var share := Vector2(float(at[0]), float(at[1])) if at is Array and at.size() >= 2 else Vector2(0.5, 0.5)
+	spr.position = (get_viewport().get_visible_rect().size * share).round()
+	add_child(spr)
+	move_child(spr, _background_dim.get_index() + 1)
+	var cue := str(step.get("sfx", ""))
+	if cue != "":
+		spr.frame_changed.connect(_prop_frame_cue.bind(spr, cue, int(step.get("sfx_at_frame", 0))))
+		if int(step.get("sfx_at_frame", 0)) <= 0:
+			_step_play_sfx({"sfx": cue})
+	spr.play(&"once")
+	_props[id] = spr
+
+
+func _prop_frame_cue(spr: AnimatedSprite2D, cue: String, at_frame: int) -> void:
+	if is_instance_valid(spr) and at_frame > 0 and spr.frame == at_frame:
+		_step_play_sfx({"sfx": cue})
+
+
+func _step_hide_prop(step: Dictionary) -> void:
+	var id := str(step.get("prop", ""))
+	var old = _props.get(id, null)
+	if old != null and is_instance_valid(old):
+		old.queue_free()
+	_props.erase(id)
+
+
+static func prop_art(id: String) -> Dictionary:
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var rows = (manifest as Dictionary).get("prop_art", {}) if manifest is Dictionary else {}
+	var row = (rows as Dictionary).get(id, {}) if rows is Dictionary else {}
+	return row if row is Dictionary else {}
+
+
 func _clear_background() -> void:
 	"""Hide the background capture."""
+	for id in _props.keys():
+		if is_instance_valid(_props[id]):
+			_props[id].queue_free()
+	_props.clear()
 	_background_texture.visible = false
 	_background_dim.visible = false
 	_background_texture.texture = null
@@ -2571,9 +2696,10 @@ func _play_spotlight_retry_sting() -> void:
 		await get_tree().create_timer(0.7).timeout
 		return
 	_effects_rect.visible = true
-	_effects_rect.color = Color(0.75, 0.05, 0.05, 0.0)
+	var peak := Color(0.0, 0.0, 0.0, 0.0) if flashes_reduced() else Color(0.75, 0.05, 0.05, 0.0)  # Reduce Flashes: no red peak, same fade to black
+	_effects_rect.color = peak
 	var tw := create_tween()
-	tw.tween_property(_effects_rect, "color:a", 0.55, 0.15)
+	tw.tween_property(_effects_rect, "color:a", 0.0 if flashes_reduced() else 0.55, 0.15)
 	tw.tween_interval(0.25)
 	tw.tween_property(_effects_rect, "color", Color(0.0, 0.0, 0.0, 1.0), 0.30)
 	await tw.finished

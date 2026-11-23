@@ -267,10 +267,19 @@ func played_length(anim_name: String) -> float:
 ## Game seconds from a swing's first frame to its IMPACT frame as played; 0 = it lands at once (the default,
 ## and every sheet without an authored `impact_frames` entry in sprite_manifest.json).
 func impact_time(anim_name: String) -> float:
+	return _authored_frame_time(anim_name, "impact_frames")
+
+
+## When a two-hit swing's SECOND hit lands (the sheet's `second_impact_frames`), paced like impact_time; 0 = none authored.
+func second_impact_time(anim_name: String) -> float:
+	return _authored_frame_time(anim_name, "second_impact_frames")
+
+
+func _authored_frame_time(anim_name: String, meta_key: String) -> float:
 	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(anim_name):
 		return 0.0
 	var frames: SpriteFrames = sprite.sprite_frames
-	var authored: Dictionary = frames.get_meta("impact_frames", {})
+	var authored: Dictionary = frames.get_meta(meta_key, {})
 	var at: int = clampi(int(authored.get(anim_name, 0)), 0, frames.get_frame_count(anim_name) - 1)
 	var fps: float = frames.get_animation_speed(anim_name)
 	if at <= 0 or fps <= 0.0:
@@ -591,6 +600,17 @@ func play_lunge(on_complete: Callable = Callable()) -> void:
 ## per-ability art over the generic `animation` field without changing behaviour when it is absent.
 func has_named_animation(anim_name: String) -> bool:
 	return sprite != null and sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name)
+
+
+## The sheet animation `play_named_animation(anim_name)` ends up SHOWING, for a caller that times something to the pose:
+## the name itself when the sheet has it, else the swing for the names that fall back to an attack, else the cast
+## (which a sheet with no cast draws as its attack). The few bespoke fallbacks (steal, backstab, mug, flee, defer) read as cast.
+func shown_animation_for(anim_name: String) -> String:
+	if sprite != null and sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name):
+		return anim_name
+	if anim_name in ["power_strike", "cleave", "provoke", "strike", "riff", "advance", "lunge", "dash"]:
+		return _resolve_animation("attack")
+	return _resolve_animation("cast")
 
 
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:

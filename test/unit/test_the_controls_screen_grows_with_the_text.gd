@@ -86,6 +86,7 @@ func _snapshot(m: Control) -> Dictionary:
 		fonts.append(int((pair["label"] as Label).get_theme_font_size("font_size")))
 	return {
 		"row_font": int(m._row_font()),
+		"row_line": (m.get_theme_font("font", "Label") as Font).get_height(int(m._row_font())),
 		"want_font": TextScale.scaled(14),
 		"row_h": int(m._row_h()),
 		"col_w": (m._col_w() as Array).duplicate(),
@@ -151,10 +152,8 @@ func test_the_rows_never_reach_the_bottom_labels() -> void:
 	var bad: Array = []
 	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
-		var lowest: float = 0.0
-		for h in m._highlight_refs:
-			if h and is_instance_valid(h):
-				lowest = maxf(lowest, (h as Control).position.y + (h as Control).size.y)
+		## Rows scroll inside RowsClip now, so the window is what must stop short of the bottom band.
+		var lowest: float = m._rows_clip.position.y + m._rows_clip.size.y if m._rows_clip.clip_contents else INF
 		var limit: float = m._flash_y(m._panel.size.y)
 		if lowest > limit:
 			bad.append("%.2fx: rows end at %.0f, past the bottom band at %.0f"
@@ -245,21 +244,22 @@ func test_a_binding_labels_effective_font_actually_grows() -> void:
 				% i + "80%% %.0f, 200%% %.0f" % [float(s_w[i]), float(b_w[i])])
 
 
-## ARM 7 — the documented limit, pinned so it cannot drift into a silent regression. At 2.0x the
-## rows deliberately do NOT reach the requested size; what must hold is that they grow at all.
-func test_the_capped_size_is_still_an_increase() -> void:
-	var base: Dictionary = _snapshot(await _menu_at(1.0))
-	var big: Dictionary = _snapshot(await _menu_at(2.0))
-	assert_gt(int(big["row_font"]), int(base["row_font"]),
-		"200%% must still be bigger than 100%% even though it cannot reach the full request: "
-		+ "100%% gave %d, 200%% gave %d" % [base["row_font"], big["row_font"]])
-	assert_lt(int(big["row_font"]), int(big["want_font"]),
-		"this arm documents a CAP; if 200%% now reaches the full %d the cap is gone and this "
-			% int(big["want_font"]) + "file's header is stale")
+## ARM 7 — the face's rule (main 26309): text grows, wraps or scrolls, never shrinks to fit. The cap this arm used to document is gone.
+func test_the_row_font_reaches_the_full_setting_at_every_preset() -> void:
+	var bad: Array = []
+	var prev_line: float = 0.0
+	for scale in _presets():
+		var snap: Dictionary = _snapshot(await _menu_at(float(scale)))
+		if int(snap["row_font"]) != int(snap["want_font"]):
+			bad.append("%.2fx: the row font is %d where the setting asks %d" % [scale, snap["row_font"], snap["want_font"]])
+		if float(snap["row_line"]) + 8.0 > float(snap["row_h"]) + 0.5:
+			bad.append("%.2fx: a %.0f px line in a %d px row" % [scale, snap["row_line"], snap["row_h"]])
+		if float(snap["row_line"]) < prev_line:
+			bad.append("%.2fx: the drawn line shrank (%.0f after %.0f)" % [scale, snap["row_line"], prev_line])
+		prev_line = float(snap["row_line"])
+	assert_eq(bad, [], "the rows grow with the setting and the row step follows the drawn line: %s" % [bad])
 
 
-## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
-## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
 func test_the_preset_list_derives_from_settings() -> void:
 	var p: Array = _presets()
 	assert_gt(p.size(), 1,

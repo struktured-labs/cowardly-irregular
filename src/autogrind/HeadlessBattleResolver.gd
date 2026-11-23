@@ -57,7 +57,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -816,6 +816,8 @@ func _live_choice(enemy, alive_players: Array) -> Dictionary:
 			return {"type": "attack", "target": target} if target != null and is_instance_valid(target) and target.is_alive else {}
 		"defer":
 			return {"type": "defer"}
+		"charge":
+			return {"type": "charge"}   # a cadence boss spends the turn gathering, as live does
 		"ability":
 			var ability_id := str(pick.get("ability_id", ""))
 			var targets: Array = pick.get("targets", [])
@@ -938,15 +940,15 @@ func _execute_action(action: Dictionary) -> void:
 	match action.get("type", "attack"):
 		"attack":
 			acted = true
-			var target = action.get("target")
+			var target = _retarget_foe(combatant, action.get("target"))
 			if target and target.is_alive:
 				var dmg = _resolve_attack(combatant, target)
-				_log("%s attacks %s for %d" % [combatant.combatant_name, target.combatant_name, dmg])
+				_log("%s attacks %s for %d%s" % [combatant.combatant_name, target.combatant_name, dmg, _strike_parts_text()])
 
 		"ability":
 			acted = true
 			var ability_id = action.get("ability_id", "")
-			var targets = action.get("targets", [])
+			var targets = _retarget_ability_targets(combatant, ability_id, action.get("targets", []))
 			if ability_id != "" and targets.size() > 0:
 				_resolve_ability(combatant, ability_id, targets)
 
@@ -961,6 +963,10 @@ func _execute_action(action: Dictionary) -> void:
 			acted = true
 			combatant.is_defending = true
 			_log("%s defers" % combatant.combatant_name)
+
+		"charge":
+			acted = true
+			_log("%s gathers power" % combatant.combatant_name)
 
 		"group_done":
 			pass  # Already executed during selection phase
@@ -1035,6 +1041,10 @@ func _sum_equipment_special_effect(combatant, key: String) -> float:
 	return total
 
 
+## Each strike's dealt number from the latest _resolve_attack, in strike order; read by _strike_parts_text.
+var _last_strike_parts: Array = []
+
+
 func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
@@ -1070,22 +1080,64 @@ func _resolve_attack(attacker, target) -> int:
 		_log("%s is immune to physical — %s's attack passes through!" % [target.combatant_name, attacker.combatant_name])
 		return 0
 
+	## The same strikes live loops over (Combatant.basic_attack_strikes), each with its own miss and crit roll.
+	## Defence meets the attack ONCE: each strike meets the share of it that its raw is of the attack's (twin of live).
+	var total: int = 0
+	_last_strike_parts.clear()
+	var rolls: Array = []
+	var barrier_left: bool = target.has_status("barrier")
+	var reflecting: bool = target.has_status("reflect") or target.has_status("physical_reflect")
+	## One stored charge for the whole attack, spent only if a strike connects (twin of live).
+	var charge: float = float(attacker.get_meta("_next_attack_multiplier", 0.0)) if attacker.has_method("get_meta") else 0.0
+	for st in attacker.basic_attack_strikes():
+		var roll: Dictionary = _roll_attack_strike(attacker, target, float(st["scale"]), charge)
+		if roll["fate"] == "hit" and barrier_left:
+			roll["fate"] = "barrier"
+			barrier_left = false
+		elif roll["fate"] == "hit" and reflecting:
+			roll["fate"] = "reflect"
+		rolls.append(roll)
+	if charge > 0.0 and rolls.any(func(r): return r["fate"] != "miss"):
+		_take_charged_multiplier(attacker)
+	var raw_total: int = 0
+	for roll in rolls:
+		if roll["fate"] == "hit":
+			raw_total += int(roll["damage"])
+	for i in rolls.size():
+		if i > 0 and not target.is_alive:
+			break
+		var share: float = float(rolls[i]["damage"]) / raw_total if raw_total > 0 and rolls[i]["fate"] == "hit" else 1.0
+		var dealt_i: int = _land_attack_strike(attacker, target, rolls[i], share)
+		_last_strike_parts.append(dealt_i)
+		total += dealt_i
+	return total
+
+
+## " (18 + 13)" after a multi-strike attack's total, so a grind log shows each strike as live shows each number; "" for one strike.
+func _strike_parts_text() -> String:
+	if _last_strike_parts.size() < 2:
+		return ""
+	return " (%s)" % " + ".join(PackedStringArray(_last_strike_parts.map(func(n): return str(n))))
+
+
+## One strike's rolls, before it meets the target. Twin of BattleManager._roll_attack_strike.
+func _roll_attack_strike(attacker, target, scale: float, charge: float = 0.0) -> Dictionary:
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
 		base_miss += 0.40
 	var miss_chance = max(0.02, min(0.60, base_miss - (attacker.speed - target.speed) * 0.05))
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
-		return 0
+		return {"fate": "miss", "damage": 0}
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
 	## A feared swing that was not skipped still happens, at half. Live halves the base stat before variance.
 	if attacker.has_status("fear"):
 		damage = float(int(damage * 0.5))
-	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
-	## once, not on every swing for the rest of the battle.
-	damage *= _take_charged_multiplier(attacker)
-	damage *= randf_range(0.85, 1.15)
+	## The attack's stored charge, spent once by _resolve_attack (twin of live): every strike of that attack carries it.
+	if charge > 0.0:
+		damage *= charge
+	damage *= randf_range(0.85, 1.15) * scale
 
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
 	## front). The Ninja's whole setup move is "step into the shadows so the next swing crits", and
@@ -1093,8 +1145,7 @@ func _resolve_attack(attacker, target) -> int:
 	## equipment critical_bonus, clamped at 0.50 on its own and then folded in UNDER the same total
 	## cap live applies (BattleManager:5423 caps base+speed+passive+equip+buff at 0.50) — added after
 	## the min would let gear exceed a ceiling live never lets it cross.
-	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
-	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01 + equip_crit)
+	var crit_chance: float = _swing_crit_chance(attacker)
 	var is_crit = randf() < crit_chance
 	if attacker.has_status("shadow_step"):
 		is_crit = true
@@ -1109,34 +1160,33 @@ func _resolve_attack(attacker, target) -> int:
 	## damage, exactly where live applies it, because this file's defense formula is quadratic and
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+	return {"fate": "hit", "damage": int(damage)}
+
+
+## Land one rolled strike; `defence_share` is the share of the target's defence it meets. Twin of BattleManager._land_attack_strike.
+func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: float) -> int:
+	if roll["fate"] == "miss":
+		return 0
+	var damage: float = float(roll["damage"])
 
 	## guardian_wall nullifies this one swing and breaks. Checked after the number exists, before
 	## take_damage, and the on-hit riders below do not run — same place live returns.
-	if target.has_status("barrier"):
+	if roll["fate"] == "barrier":
 		target.remove_status("barrier")
 		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
+		_maybe_monster_counter(target, attacker)
 		return 0
 
 	## reflect and physical_reflect bounce the pre-defense swing onto the attacker. Live does not
 	## remove them here; the duration tick does. A spell is not bounced — that is prismatic_reflect.
-	if target.has_status("reflect") or target.has_status("physical_reflect"):
+	if roll["fate"] == "reflect":
 		var bounced: int = attacker.take_damage(int(damage), false)
 		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
+		_maybe_monster_counter(target, attacker)
 		return 0
 
-	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
-	# combinations are reachable: get_buffed_stat returns 0 for base 0
-	# (the maxi(1, …) clamp only applies when base > 0), so a base-0
-	# attack stat × base-0 defense produces a 0/0 NaN that int() casts
-	# to a sentinel — silent garbage damage in autogrind sims.
-	var denom = maxf(1.0, damage + def_val)
-	var actual = int((damage * damage) / denom)
-	actual = max(1, actual)
-	if target.is_defending:
-		actual = actual / 2
-
-	var dealt: int = target.take_damage(actual)
+	## take_damage owns the one defence formula (and defending, vulnerability, exposed), as in live's _execute_attack. This file used to run the formula here AND there, so every swing in a grind met the defence twice.
+	var dealt: int = target.take_damage(int(damage), false, defence_share)
 	## the_absence authors heals_from_damage. Live heals from the number that landed, after the hit.
 	_maybe_heal_from_damage(target, dealt, "")
 	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to
@@ -1144,7 +1194,71 @@ func _resolve_attack(attacker, target) -> int:
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
-	return actual
+	_maybe_monster_counter(target, attacker)
+	return dealt
+
+
+## Live's chance that a struck monster with counter_abilities strikes back (BattleManager._trigger_monster_counter).
+const COUNTER_CHANCE := 0.4
+
+
+## Shared by live and grind: the chance of a monster's next counter this round, COUNTER_CHANCE * counter_decay^(counters already this round).
+static func counter_chance(decay: float, monster: Object, round_no: int) -> float:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	return COUNTER_CHANCE * pow(clampf(decay, 0.0, 1.0), n)
+
+
+## Records one fired counter against the round it fired in (counter_chance reads it back).
+static func note_counter(monster: Object, round_no: int) -> void:
+	var n := int(monster.get_meta("counters_this_round", 0)) if int(monster.get_meta("counter_round", -1)) == round_no else 0
+	monster.set_meta("counter_round", round_no)
+	monster.set_meta("counters_this_round", n + 1)
+
+
+## Twin of BattleManager._trigger_monster_counter: per landed strike, a monster's authored counter fires free at the attacker.
+func _maybe_monster_counter(monster, attacker) -> void:
+	if monster == null or not is_instance_valid(monster) or not monster.is_alive:
+		return
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if not (monster in _enemy_party):
+		return
+	if not monster.has_method("get_meta") or not monster.has_meta("monster_type"):
+		return
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return
+	var db: Variant = enc.monster_database
+	var row: Variant = (db as Dictionary).get(str(monster.get_meta("monster_type", "")), {}) if db is Dictionary else {}
+	var counters: Variant = (row as Dictionary).get("counter_abilities", []) if row is Dictionary else []
+	if not (counters is Array) or (counters as Array).is_empty():
+		return
+	var ability_id := str(counters[randi() % counters.size()])
+	if randf() > counter_chance(float((row as Dictionary).get("counter_decay", 1.0)), monster, _current_round):
+		return
+	note_counter(monster, _current_round)
+	var js = _get_autoload("JobSystem")
+	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
+	if ability.is_empty():
+		return
+	## The verb is the ability's own (`counter_verb`, cowir-battle's Royal Spite), as live reads it.
+	_log("%s %s %s!" % [monster.combatant_name, str(ability.get("counter_verb", "counters with")), str(ability.get("name", ability_id.replace("_", " ").capitalize()))])
+	_resolve_ability(monster, ability_id, _counter_targets(monster, attacker, ability), true)
+
+
+## Twin of BattleManager._counter_targets: a self/ally buff lands on the monster's side, a strike on the attacker.
+func _counter_targets(monster, attacker, ability: Dictionary) -> Array:
+	match str(ability.get("target_type", "single_enemy")):
+		"self", "single_ally":
+			return [monster]
+		"all_allies":
+			var allies: Array = _enemy_party.filter(func(e): return e != null and is_instance_valid(e) and e.is_alive)
+			return allies if not allies.is_empty() else [monster]
+		"all_enemies":
+			var foes: Array = _player_party.filter(func(p): return p != null and is_instance_valid(p) and p.is_alive)
+			return foes if not foes.is_empty() else [attacker]
+		_:
+			return [attacker]
 
 
 ## Twin of BattleManager._apply_familiar_weight_bonus (:3120). returned_sword's "Familiar Weight":
@@ -1378,7 +1492,55 @@ func _is_same_side(a, b) -> bool:
 	return (a in _player_party) == (b in _player_party)
 
 
-func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
+## A plain swing's crit chance by the rule both engines read (DamageRules); gear's share is clamped on its own first.
+func _swing_crit_chance(attacker) -> float:
+	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
+	var bm = _get_autoload("BattleManager")
+	var level: int = int(bm._archetype_level(attacker)) if bm != null and bm.has_method("_archetype_level") else int(attacker.job_level)
+	## A passive's crit_chance and a crit_rate buff count too, as live counts them (critical_strike; an enraged boss's spike).
+	var passive_crit: float = 0.0
+	var ps = _get_autoload("PassiveSystem")
+	if ps != null and ps.has_method("get_passive_mods"):
+		passive_crit = clampf(float((ps.get_passive_mods(attacker) as Dictionary).get("crit_chance", 0.0)), 0.0, 0.50)
+	var buff_crit: float = 0.0
+	if "active_buffs" in attacker:
+		for b in attacker.active_buffs:
+			if str(b.get("stat", "")) == "crit_rate":
+				buff_crit += float(b.get("modifier", 1.0)) - 1.0
+	return minf(DamageRules.crit_cap(), DamageRules.CRIT_BASE + DamageRules.speed_crit_bonus(float(attacker.speed), level) + passive_crit + equip_crit + buff_crit)
+
+
+## Live's _retarget_enemy: a blow whose target fell earlier this round goes to the lowest-HP foe still standing.
+func _retarget_foe(attacker, original):
+	if original != null and is_instance_valid(original) and original.is_alive:
+		return original
+	var foes: Array = _enemy_party if attacker in _player_party else _player_party
+	var best = null
+	for f in foes:
+		if f == null or not is_instance_valid(f) or not f.is_alive:
+			continue
+		if best == null or f.current_hp < best.current_hp:
+			best = f
+	if best != null and original != null and is_instance_valid(original):
+		_log("%s's target %s is gone, retargeting to %s" % [attacker.combatant_name, original.combatant_name, best.combatant_name])
+	return best
+
+
+## Only a one-target move aimed at a foe follows it; a heal, a revive and a pre-expanded list keep their own rules.
+func _retarget_ability_targets(caster, ability_id: String, targets: Array) -> Array:
+	if targets.size() != 1:
+		return targets
+	var js = _get_autoload("JobSystem")
+	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
+	var offensive: bool = str(ability.get("type", "")) in ["physical", "magic"]
+	var at_foes: bool = str(ability.get("target_type", "")) in ["single_enemy", "all_enemies"]
+	if not (offensive or at_foes):
+		return targets
+	var one = _retarget_foe(caster, targets[0])
+	return [one] if one != null else []
+
+
+func _resolve_ability(caster, ability_id: String, targets: Array, free: bool = false) -> void:
 	var js = _get_autoload("JobSystem")
 	var ability: Dictionary = {}
 	if js and js.has_method("get_ability"):
@@ -1396,11 +1558,12 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	## silenced character kept casting while live refuses at BattleManager:4669. Mirrors live exactly,
 	## including that the TURN IS CONSUMED and no MP is spent: live logs and returns before its own
 	## spend. Checked here rather than at selection because this is the one point every cast passes.
-	if caster.has_status("silence"):
+	## A counter is free and unsilenceable, as live's _trigger_monster_counter calls the executor directly.
+	if not free and caster.has_status("silence"):
 		_log("%s is silenced — %s won't come out" % [caster.combatant_name, ability_id])
 		return
 
-	var mp_cost = ability.get("mp_cost", 5)
+	var mp_cost = 0 if free else ability.get("mp_cost", 5)
 	if not caster.spend_mp(mp_cost):
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])
 		return
@@ -1477,7 +1640,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.remove_status("magic_block")
 						_log("%s's Magic Block cancels the spell!" % target.combatant_name)
 						continue
-					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power * DamageRules.spread_factor(targets.size(), caster in _enemy_party))
 					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
 					## compensation for take_damage's defense formula" rather than a true-damage path, and
 					## the grind must compensate the same way or phantom_byte lands at half strength here.
@@ -1511,9 +1674,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## 1.5 is a 1.5x scale rather than +150%. Skipped for element-less abilities, matching
 					## live's "no fire scroll, no fire bonus" intent.
 					if element != "":
+						var elem_scale: float = 1.0
 						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 						if elem_bonus > 0.0:
-							base_dmg = int(base_dmg * elem_bonus)
+							elem_scale *= elem_bonus
+						## A passive's own <element>_damage_bonus (undead_affinity's dark) times the gear's, as BattleManager._element_damage_bonus does.
+						if caster.has_method("_get_passive_meta_effect_sum"):
+							var passive_bonus: float = caster._get_passive_meta_effect_sum(element + "_damage_bonus")
+							if passive_bonus > 0.0:
+								elem_scale *= passive_bonus
+						if elem_scale != 1.0:
+							base_dmg = int(base_dmg * elem_scale)
 					## Same one-hit ward as the basic swing. A blocked spell does not reach elemental math.
 					if target.has_status("barrier"):
 						target.remove_status("barrier")
@@ -1583,7 +1754,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var scaled: int = _scaled_base(caster, ability)
 					if caster.has_status("fear"):
 						scaled = int(scaled * 0.5)
-					var base_dmg = int(scaled * power)
+					var base_dmg = int(scaled * power * DamageRules.spread_factor(targets.size(), caster in _enemy_party))
 					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
 					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
 					## the mistake this file's dodge fix was written for an hour ago.
@@ -1606,7 +1777,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## a repair: it changes party strength and therefore the reward economy, which is
 					## struktured's call — the same reasoning that left summon_* declared.
 					## Shadow Step forces a crit on top of the authored roll, matching the basic swing's guarantee.
-					if randf() < float(ability.get("crit_chance", 0.0)) or caster.has_status("shadow_step"):
+					if randf() < DamageRules.ability_crit_chance(ability, _swing_crit_chance(caster)) or caster.has_status("shadow_step"):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
 					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks
@@ -2291,16 +2462,8 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 		return 0
 	## Live's _execute_physical_ability applies it to the pre-mitigation damage; this file's defense
 	## formula is quadratic, so scaling the mitigated number would not be the same port.
-	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	var dmg = float(_apply_lens_execute_bonus(attacker, target, base_damage))
-	# Same divisor guard as _resolve_attack — see comment there.
-	var denom = maxf(1.0, dmg + def_val)
-	var actual = int((dmg * dmg) / denom)
-	actual = max(1, actual)
-	if target.is_defending:
-		actual = actual / 2
-	target.take_damage(actual)
-	return actual
+	## One defence formula, take_damage's, as in live's _execute_physical_ability; see _resolve_attack.
+	return target.take_damage(int(_apply_lens_execute_bonus(attacker, target, base_damage)))
 
 
 func _grind_item_revives(item_id: String) -> bool:

@@ -157,6 +157,9 @@ func test_authored_interiors_instantiate_without_stranding_npcs() -> void:
 			for npc2 in scene.npcs.get_children():
 				if not (npc2 is Node2D):
 					continue
+				## A stage act is on its platform on purpose (Aria, 2026-11-20); the mark excuses a performer and nobody else.
+				if bool(npc2.get_meta(InteriorPlacementSweep.KEEPS_MARK, false)) and bool(npc2.get("performs")):
+					continue
 				var foot: Rect2 = InteriorPlacementSweep._npc_footprint((npc2 as Node2D).position)
 				for r in furniture:
 					if (r as Rect2).intersects(foot):

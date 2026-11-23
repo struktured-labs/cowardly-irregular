@@ -200,8 +200,8 @@ func _setup_buildings() -> void:
 	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(6 * TILE_SIZE,13 * TILE_SIZE))
 	# === MELTWATER CLOCK DOOR ===
 	# South face of the CCC building (cols 12-14, rows 2-4) — Frosthold's timekeeping.
-	spawn_points["clock_exit"] = Vector2(15 * TILE_SIZE,7.5 * TILE_SIZE)
-	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
+	spawn_points["clock_exit"] = Vector2(13 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(13 * TILE_SIZE,6.5 * TILE_SIZE))  ## beside the chapel, not on its facade: the chapel's drawn door is the chapel's
 
 
 	# Snow: warm lamps read hardest against the ice, and a wind break along the west wall.

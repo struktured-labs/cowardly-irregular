@@ -1,21 +1,103 @@
 # Store screenshot captions — Cowardly Irregular
 
-**Current vintage of every shipped frame (2026-11-05, read from git, not remembered):**
+**Current vintage of every shipped frame (2026-11-20, read from git, not remembered):**
 
 | captured at | shots | section |
 |---|---|---|
-| `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
+| `v3.33.750-alpha` | `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` (`battle_storm` · `grimhollow_spiral` re-shot at `.807`; the three dungeon frames at `.809`) | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
 | `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
-| `v3.33.770-alpha` | `ironhaven_village` · `eldertree_village` · the three interiors · `whispering_cave` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
-| `v3.33.773-alpha` | `harmonia_village` · `frosthold_village` · `grimhollow_village` | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
-| `v3.33.774-alpha` | `sandrift_village` · `title_screen` (`battle` re-shot at `.788`) | "re-shot at `v3.33.774-alpha`, a name said once" |
-| `v3.33.788-alpha` | `battle` | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
+| `v3.33.770-alpha` | `tavern_interior` (`whispering_cave` re-shot at `.809`; `inn_interior` re-shot at `.802`; `ironhaven_village` · `eldertree_village` · `shop_interior` at `.807`) | "re-shot at `v3.33.770-alpha`, door labels hidden" |
+| `v3.33.773-alpha` | (none left: `frosthold_village` · `grimhollow_village` re-shot at `.807`, `harmonia_village` at `.813`) | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
+| `v3.33.774-alpha` | (none left: `sandrift_village` · `title_screen` re-shot at `.807`) | "re-shot at `v3.33.774-alpha`, a name said once" |
+| `v3.33.802-alpha` | `inn_interior` (`shop_interior` re-shot at `.807`) | "re-shot at `v3.33.802-alpha`, the rooms are drawn" |
+| `v3.33.788-alpha` | (none left: `battle` re-shot at `.807`) | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
+| `v3.33.807-alpha` | `eldertree_village` · `shop_interior` · `title_screen` (`grimhollow_village` re-shot at `.814`; `ironhaven_village` re-shot at `.810`; `battle` · `battle_storm` · `frosthold_village` · `grimhollow_spiral` · `sandrift_village` at `.813`) | "re-shot at `v3.33.807-alpha`, the pixel face" |
+| `v3.33.809-alpha` | `whispering_cave` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | "re-shot at `v3.33.809-alpha`, the stairs point the way" |
+| `v3.33.810-alpha` | `ironhaven_village` | "re-shot at `v3.33.810-alpha`, who walks there now" |
+| `v3.33.813-alpha` | `battle` · `battle_storm` · `grimhollow_spiral` · `harmonia_village` · `frosthold_village` · `sandrift_village` | "re-shot at `v3.33.813-alpha`, the frames follow the doors" |
+| `v3.33.814-alpha` | `grimhollow_village` | "re-shot at `v3.33.814-alpha`, framed inside its walls" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-20: re-shot at `v3.33.814-alpha`, framed inside its walls.** The frame held at `.813`. From `.814` the shot
+tool keeps a village's view inside the map (`[SHOT] view held inside the map: centre (260, 244) -> (320, 244)` in this
+run's log), so Grimhollow's frame no longer shows the 118 px grey band past its left edge. Moved vs the shipped `.807`
+frame 47.74%, run A vs run B 0.00%: the whole frame, because the hero now stands at the Lantern Debt Office's arch
+(608, 352), where `.813` moved that door. Read: no band; the hero is near the right edge under the arch, and one
+villager's name tag is clipped by the frame's right edge. Frame is run A of the `.814` publish's own store recheck.
+Still HELD: the three `field_elite_*` frames (no tell).
+
+**2026-11-20: re-shot at `v3.33.813-alpha`, the frames follow the doors.** `.813` moves doors in six villages and
+fits the battle's party panel. Six frames replaced, each run A of the `.813` publish's own store recheck, each read
+beside the shipped frame. Moved vs the shipped frame / run A vs run B:
+
+```
+battle             6.47%   0.07%   the PARTY column only: five members at 100% no longer list ATK/DEF lines, the panel ends higher
+battle_storm       7.29%   0.69%   the same
+grimhollow_spiral  1.14%   0.00%   "Enter Lantern Debt Office" and its arch now stand right of Cursed Curios, by the stair
+harmonia_village  90.90%   0.00%   the CAMERA moved: the shot stands the hero at a door, and that door moved 2 cells left
+                                   (hero x 1040 -> 976). The frame now takes in the purple shop, the pond and the fountain.
+frosthold_village 54.73%   0.00%   the camera moved the same way (hero x 464 -> 416, at the Meltwater Clock's new arch)
+sandrift_village  45.83%   0.57%   the whole frame is 6 px to one side; aligned by 6 px it is 0.56% (pool waves). Nothing else.
+```
+
+**HELD: `grimhollow_village`.** It moved 72.62% because its door moved too (hero 512,416 -> 608,352), and the new frame
+shows a uniform grey band 118 px wide down its left edge: the camera sees past the map. The shipped `.807` frame stays
+until the shot is framed inside the map. Still HELD from before: the three `field_elite_*` frames (no tell).
+
+**2026-11-20: re-shot at `v3.33.810-alpha`, who walks there now.** `.810` re-deals village walkers so each keeps its
+own anchor line. Of the six village frames only `ironhaven_village` moved: 0.45% (4128 px in the strip 25,606 to
+826,693), run A vs run B 0.00%. Read beside the shipped frame: the woman in the apron now walks at the far left of the
+lower street, and a child in red stands where she was. Nothing else in the frame changed. The frame is run A of the
+`.810` publish's own store recheck. Every other village frame read SAME or its known animation phase at `.810`.
+
+**2026-11-20: re-shot at `v3.33.809-alpha`, the stairs point the way.** The four dungeon frames held at `.807`.
+`.809` redraws the pixel face's `▲`/`▼` as a stepped triangle (rows 1, 3, 5), so the stairs markers read as arrows
+again; they are smaller than the old glyph, about a third of the tile. Each frame is run A of the `.809` publish's own
+store recheck, looked at beside the shipped frame. Moved vs the shipped frame / run A vs run B: `whispering_cave`
+0.13% / 0.00% · `infernal_grotto_f3` 0.44% / 0.00% · `warren_lever_portals` 0.47% / 0.00% · `warren_wrap_field`
+0.46% / 0.00%. What moved in each: the stairs markers and the floor banner, now in the pixel face. Still HELD: the
+three `field_elite_*` frames (no tell until `67b8ab1f5` ships).
+
+**2026-11-19: re-shot at `v3.33.807-alpha`, the pixel face.** `.807` is the first release drawn in the pixel UI
+face, and the villages have changed since their frames were taken. Ten frames replaced, each run A of the `.807`
+publish's own store recheck, each looked at beside the shipped frame. Share of pixels moved vs the shipped frame, and
+run A vs run B noise:
+
+```
+battle              8.40%   0.07%   the pixel face on the turn strip, panels and menu; the enemy stands 12 px further in
+battle_storm       26.87%   0.53%   same, and the party at starting levels (the .750 frame showed a maxed party)
+shop_interior      61.47%   0.00%   the camera frames the keeper on entry
+grimhollow_spiral  12.97%   0.00%   a new building and signpost, door labels in the pixel face
+ironhaven_village   1.42%   0.00%   the hay cart is a mine cart
+sandrift_village    0.75%   0.00%   pool wave phase only (the .808 recheck puts every moved pixel in the pool stripes)
+grimhollow_village  0.46%   0.00%   a signpost; a villager gone
+frosthold_village   0.26%   0.00%   a villager swap at the left edge
+eldertree_village   0.23%   0.00%   "Elder Vesper" in the pixel face
+title_screen        0.04%   0.00%   the version digit
+```
+
+**Kept, and why.** `inn_interior` is pixel-identical. `tavern_interior` (flame phase) and `harmonia_village` (pond
+phase) differ only by animation. `whispering_cave`, `infernal_grotto_f3`, `warren_lever_portals` and
+`warren_wrap_field` are HELD: at `.807` the stairs markers (`▲`/`▼`) draw in the pixel face as a stepped block that
+reads as a "T", not an arrow. The frames are faithful to the build, but the store should not show it; re-shoot when
+the glyph is redrawn. The three `field_elite_*` frames are HELD until the elite is aimed at the seen player
+(`67b8ab1f5`, not in `.807`): they still shoot without the purple tell.
+
+**2026-11-14: re-shot at `v3.33.802-alpha`, the rooms are drawn.** Since `.795` the inn and the item shop are drawn
+rooms (InteriorArt pieces: the inn's long table, armchairs and rug; the shop's shelves, counter, barrels and sacks) and
+the shipped frames still showed the flat `.770` placeholder floors. Every release recheck since `.795` read them MOVED
+against the stored set: `inn_interior` 74.40% (685680 px), `shop_interior` 95.61% (881145 px), whole frame, run-to-run
+noise 0.00% on both, on `.795` through `.802`. These frames are run A of the `.802` publish's own store recheck
+(`tools/marketing_shots.gd` at the tag, sandboxed, under box_hold). Run B is NOT byte-for-byte equal: 270 (inn) / 227 (shop) pixels differ, every one by at most 1 in
+one channel, all in a 38x20 box at the door's exit arrow (x 620-657, y 700-719); store_shot_pixels reads that as noise 0.00%. Kept: every other frame
+(villages and battle SAME; `harmonia_village` / `sandrift_village` / `tavern_interior` / `title_screen` moved only inside
+their known animation regions). Compared by eye with the frames they replace: same rooms, same hero at the door, same
+villagers, now furnished.
 
 **2026-11-07: re-shot at `v3.33.788-alpha`, the speed readout keeps its width.** Judged in pixels against the shipped
 set with two runs of the tag (noise 0.00% on each), the changed region read off store_shot_pixels' own box and its mask:

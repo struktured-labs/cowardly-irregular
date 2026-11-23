@@ -248,13 +248,87 @@ func test_the_preview_never_draws_over_the_buttons() -> void:
 			"at %.2fx the preview box ends at y=%.0f and the buttons start at y=%.0f" % [scale, box.get_global_rect().end.y, buttons.get_global_rect().position.y])
 		var preview: Label = o.get_node("Panel/VBox/PreviewPanel/PreviewLabel")
 		gut.p("    %.2fx  box %.0f  label %.0f  lines %d" % [scale, box.size.y, preview.size.y, preview.get_line_count()])
-		# The teeth, and the node that matters is the LABEL. A Label cannot shrink below its own
-		# wrapped content, so the shipped 200px box left a 378px label hanging out of its parent at
-		# 200% -- the box reported 200 and fitted, and the text was what drew over the buttons.
+		# Fits: the LABEL sits inside the box. Outgrows all the room (200%: 480 in 410): it scrolls and says how (main 25805).
+		if o._preview_overflow() > 0.0:
+			var status: Label = o.get_node("Panel/VBox/StatusLabel")
+			assert_string_contains(status.text, "Scroll (%s)" % o._scroll_hint_text(),
+				"at %.2fx the composition overflows its box and the status line does not say how to scroll it" % scale)
+			continue
 		assert_lte(preview.get_global_rect().end.y, box.get_global_rect().end.y + 0.5,
 			"at %.2fx the composition's text is %.0fpx tall in a %.0fpx preview box" % [scale, preview.size.y, box.size.y])
 		assert_gte(preview.get_visible_line_count(), preview.get_line_count(),
 			"at %.2fx the preview shows %d of the composition's %d lines" % [scale, preview.get_visible_line_count(), preview.get_line_count()])
+
+
+func _key(keycode: Key) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = keycode
+	e.pressed = true
+	return e
+
+
+## Grown note by note (the composer writes one per repaired rule, up to 64) until it outgrows the box in the face it draws; null if 32 do not.
+func _open_overflowing(scale: float):
+	var o = await _open_populated(scale)
+	var c: Dictionary = COMPOSITION.duplicate(true)
+	var notes: Array = c["notes"]
+	while o._preview_overflow() <= 0.0 and notes.size() < 32:
+		notes.append("%s (rule %d)" % [COMPOSITION["notes"][notes.size() % 3], notes.size() + 1])
+		o._show_preview(c)
+		await _settle()
+	return o
+
+
+func test_the_preview_reads_in_the_body_tier() -> void:
+	var o = await _open_populated(1.0)
+	var preview: Label = o.get_node("Panel/VBox/PreviewPanel/PreviewLabel")
+	assert_eq(UiFont.of(preview), UiFont.body(), "the composition is sentences, so it draws in the reading face (main 25814)")
+
+
+func test_an_overflowing_preview_pages_down_to_its_last_line() -> void:
+	var o = await _open_overflowing(2.0)
+	var box := o.get_node("Panel/VBox/PreviewPanel") as Control
+	var preview: Label = o.get_node("Panel/VBox/PreviewPanel/PreviewLabel")
+	var over: float = o._preview_overflow()
+	assert_gt(over, 0.0, "CONTROL: a grown composition must outgrow its box at 200%% (%.0f in %.0f), or nothing here scrolls" % [preview.size.y, box.size.y])
+	var status: Label = o.get_node("Panel/VBox/StatusLabel")
+	assert_string_contains(status.text, "Scroll (%s)" % o._scroll_hint_text(), "an overflowing preview says how to scroll it")
+	assert_ne(o._scroll_hint_text(), "", "CONTROL: the scroll hint names an input")
+	var presses: int = int(ceil(over / maxf(1.0, o._preview_page()))) + 1
+	for _i in presses:
+		o._input(_key(KEY_PAGEDOWN))
+	assert_lte(preview.get_global_rect().end.y, box.get_global_rect().end.y + 0.5,
+		"after %d PageDown presses the last line is still below the box (text ends %.0f, box %.0f)" % [presses, preview.get_global_rect().end.y, box.get_global_rect().end.y])
+	assert_almost_eq(o._preview_scroll, over, 0.5, "and paging stops at the last line, like the Bestiary")
+	for _i in presses:
+		o._input(_key(KEY_PAGEUP))
+	assert_almost_eq(preview.get_global_rect().position.y, box.get_global_rect().position.y, 0.5, "PageUp brings the first line back")
+
+
+func test_the_right_stick_scrolls_the_preview_too() -> void:
+	var o = await _open_overflowing(2.0)
+	assert_gt(o._preview_overflow(), 0.0, "CONTROL: the preview overflows at 200%")
+	var m := InputEventJoypadMotion.new()
+	m.axis = JOY_AXIS_RIGHT_Y
+	m.axis_value = 1.0
+	o._input(m)
+	o._process(0.1)
+	assert_gt(o._preview_scroll, 0.0, "holding the right stick down scrolls the preview")
+	var held: float = o._preview_scroll
+	m.axis_value = 0.0
+	o._input(m)
+	o._process(0.1)
+	assert_eq(o._preview_scroll, held, "and releasing it stops")
+
+
+func test_control_a_preview_that_fits_shows_no_scroll_hint() -> void:
+	var o = await _open_populated(1.0)
+	await _settle()
+	assert_eq(o._preview_overflow(), 0.0, "CONTROL: at 100% the composition fits its box")
+	var status: Label = o.get_node("Panel/VBox/StatusLabel")
+	assert_false(status.text.contains("Scroll"), "a preview that fits never advertises a dead input: '%s'" % status.text)
+	o._input(_key(KEY_PAGEDOWN))
+	assert_eq(o._preview_scroll, 0.0, "and PageDown does not move it")
 
 
 func test_each_button_caption_fits_its_own_box() -> void:
@@ -282,9 +356,10 @@ func test_each_button_caption_fits_its_own_box() -> void:
 func test_the_overlay_still_has_what_this_file_drives() -> void:
 	var o = OverlayScene.instantiate()
 	add_child_autofree(o)
-	for m in ["open", "_show_preview", "_populate_preview", "_apply_text_scale", "_text_scale", "_apply_preview_room"]:
+	for m in ["open", "_show_preview", "_populate_preview", "_apply_text_scale", "_text_scale", "_apply_preview_room",
+			"_input", "_process", "_preview_overflow", "_preview_page", "_scroll_hint_text"]:
 		assert_true(o.has_method(m), "RuleComposerOverlay has no %s(), so the arms that drive it pass without running" % m)
-	for f in ["_status_label", "_preview_panel", "_compose_button"]:
+	for f in ["_status_label", "_preview_panel", "_compose_button", "_preview_scroll"]:
 		assert_true(f in o, "RuleComposerOverlay has no %s, so this file's fixture is stale" % f)
 	# A const is not a property, so `in` cannot see it -- read the script's own constant map.
 	var consts: Dictionary = o.get_script().get_script_constant_map()

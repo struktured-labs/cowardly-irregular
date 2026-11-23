@@ -33,6 +33,9 @@ check_templates() {
   # The runner is NOT in the derived corpus -- publish_all's closure never names it -- so the chain
   # is the only caller that ever runs its arms, and its fail-open direction fails silently.
   grep -q 'run_publish_selftests.sh --selftest' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs the corpus runner's own selftest arms" >&2; bad=1; }
+  # The fold tools are in no selftest corpus either; the chain is the only caller of their arms.
+  grep -q 'fold_selftest.sh >' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs fold.sh's selftest arms" >&2; bad=1; }
+  grep -q 'queue_tip.sh --selftest' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs queue_tip.sh's selftest arms" >&2; bad=1; }
   # The box protocol has ONE source, tools/box_busy.sh. A template that scans one lane's _detached
   # by literal path could not see a publish from any other lane (the box_busy defect of 2026-10-17).
   for f in chain rungate; do

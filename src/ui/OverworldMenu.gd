@@ -31,10 +31,6 @@ signal party_leader_changed(new_index: int)
 var _menu_options: Array = []
 
 const BASE_MENU_OPTIONS = [
-	# First on purpose. The controls reference used to be reachable ONLY from the title
-	# screen, so a player who got confused after pressing NEW GAME had no way back to it.
-	# Demo feedback 2026-08-20: "the controls are impossible to figure out."
-	{"id": "controls", "label": "Controls", "enabled": true},
 	{"id": "quest_log", "label": "Quest Log", "enabled": true},
 	{"id": "party", "label": "Party", "enabled": true},
 	{"id": "items", "label": "Items", "enabled": true},
@@ -57,6 +53,8 @@ const BASE_MENU_OPTIONS = [
 	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
+	## Top-level so the reference is reachable in game, directly above Settings and never first (struktured 2026-11-19).
+	{"id": "controls", "label": "Controls", "enabled": true},
 	{"id": "settings", "label": "Settings", "enabled": true},
 ]
 
@@ -101,6 +99,7 @@ const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 ## derived from it — see _menu_row_h.
 const MENU_FONT_SIZE := 14
 const MENU_LABEL_X := 24.0
+const MENU_CURSOR_X := 4.0
 const NEWS_TAG_GAP := 8.0
 const MENU_ROW_PAD_X := 24.0
 const MENU_ROW_GAP := 4.0
@@ -276,9 +275,15 @@ func _build_ui() -> void:
 	_update_selection()
 
 
-## Party-card geometry factor: the card was laid out in literals for a 10-14 px font, so at 200% its lines overprinted. Upward only, like TeleportMenu._tf.
+## The line height the card's literal offsets were authored around: a 14 px name in the shipped face.
+const CARD_DESIGN_NAME_LINE := 20.0
+
+
+## Party-card geometry factor, from the name's MEASURED line height (a larger Text Size and a taller face both make room), in 5% steps: the card was laid out in literals for a 10-14 px font, so at 200% its lines overprinted. Upward only, like TeleportMenu._tf.
 func _card_k() -> float:
-	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+	var f: Font = _menu_font()
+	var line: float = float(TextScale.scaled(14)) * 1.36 if f == null else f.get_height(TextScale.scaled(14))
+	return maxf(1.0, snappedf(line / CARD_DESIGN_NAME_LINE, 0.05))
 
 
 func _create_party_panel(panel_size: Vector2) -> Control:
@@ -305,15 +310,17 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	var gold_lbl = Label.new()
 	gold_lbl.name = "GoldLabel"
 	gold_lbl.text = "%d G" % (GameState.get_gold() if GameState and GameState.has_method("get_gold") else 0)
-	gold_lbl.position = Vector2(8, 4)
-	gold_lbl.size = Vector2(panel_size.x - 16, 20.0 * _card_k())
+	var mf: Font = _menu_font()
+	var title_w: float = mf.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x if mf != null else title.get_minimum_size().x
+	gold_lbl.position = Vector2(8 + title_w + 8, 4)
+	gold_lbl.size = Vector2(maxf(0.0, panel_size.x - 24 - title_w), 20.0 * _card_k())
 	gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 	panel.add_child(gold_lbl)
 
 	# Party member cards
-	var card_height: float = 100.0 * _card_k()
+	var card_height: float = _card_height()
 	var y_offset: float = 28.0 * _card_k()
 	var card_pitch: float = card_height + 8.0
 
@@ -367,8 +374,12 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	leader_label.name = "LeaderStar"
 	leader_label.text = "★" if is_leader else ""
 	var k: float = _card_k()
-	leader_label.position = Vector2(4, 82.0 * k)
-	leader_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	var star_px: int = TextScale.scaled(10)
+	var mf: Font = _menu_font()
+	## Seated above the card's bottom border by its DRAWN line: the face steps the star to 2x at 150% while k still follows the name.
+	var star_h: float = mf.get_height(star_px) if mf != null else 18.0 * k
+	leader_label.position = Vector2(4, minf(82.0 * k, 100.0 * k - RetroPanel.TILE_SIZE - star_h))
+	leader_label.add_theme_font_size_override("font_size", star_px)
 	leader_label.add_theme_color_override("font_color", Color.YELLOW)
 	card.add_child(leader_label)
 
@@ -392,7 +403,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
 	job_label.text = card_job_text(member)
-	job_label.position = Vector2(58, 20.0 * k)
+	job_label.position = Vector2(58, 22.0 * k)  # 2 below the name's 20-line: a name's g/y touched the job's capitals at 20 (ink-measured)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	card.add_child(job_label)
@@ -400,19 +411,21 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	# HP Bar
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
 	hp_bar.name = "HPBar"
-	hp_bar.position = Vector2(58, 36.0 * k)
+	# Seated under the job line it DRAWS: at 150% the face steps the 10 px job to 2x while k still follows the name, and its g reached the HP label.
+	var hp_y: float = _card_hp_y()
+	hp_bar.position = Vector2(58, hp_y)
 	card.add_child(hp_bar)
 
 	# MP Bar
 	var mp_bar = _create_stat_bar("MP", member.current_mp, member.max_mp, Color.CYAN, Color.DARK_CYAN)
 	mp_bar.name = "MPBar"
-	mp_bar.position = Vector2(58, 52.0 * k)
+	mp_bar.position = Vector2(58, hp_y + _card_row_step())
 	card.add_child(mp_bar)
 
 	# EXP progress indicator
 	var exp_row = _create_exp_indicator(member)
 	exp_row.name = "EXPRow"
-	exp_row.position = Vector2(58, 68.0 * k)
+	exp_row.position = Vector2(58, hp_y + 2.0 * _card_row_step())
 	card.add_child(exp_row)
 
 	# Dead indicator — always-present, visibility toggled per is_alive so a later Phoenix Down refresh (via _update_party_stats) can clear the overlay without a full rebuild (playtest 2026-07-15: Bard KO status persisted after in-menu revive because the overlay/label were only appended on first build).
@@ -437,7 +450,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	ailment_label.name = "AilmentLabel"
 	ailment_label.text = StatusNames.list_line(member.status_effects)
 	ailment_label.visible = ailment_label.text != ""
-	ailment_label.position = Vector2(58, 84.0 * k)
+	ailment_label.position = Vector2(58, hp_y + 3.0 * _card_row_step())
 	ailment_label.size = Vector2(180.0 * k, 14.0 * k)
 	ailment_label.clip_text = true
 	ailment_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
@@ -445,6 +458,26 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	card.add_child(ailment_label)
 
 	return card
+
+
+## The 10 px stat line as the face DRAWS it; the stat rows step by it, not by k, which follows the 14 px name.
+func _card_line10() -> float:
+	var f: Font = _menu_font()
+	return f.get_height(TextScale.scaled(10)) if f else 14.0 * _card_k()
+
+
+func _card_hp_y() -> float:
+	return maxf(36.0 * _card_k(), 22.0 * _card_k() + _card_line10())
+
+
+## HP to MP to EXP to ailment: the shipped 16 px step, or the drawn line when the face draws it taller (r7: 4.8 px overlap at 150%).
+func _card_row_step() -> float:
+	return maxf(16.0 * _card_k(), _card_line10())
+
+
+## Tall enough for the ailment row, the last one; 100 px at 100% exactly as shipped.
+func _card_height() -> float:
+	return maxf(100.0 * _card_k(), _card_hp_y() + 3.0 * _card_row_step() + maxf(14.0 * _card_k(), _card_line10()) + 2.0 * _card_k())
 
 
 func _create_stat_bar(label: String, current: int, maximum: int, color_full: Color, color_low: Color) -> Control:
@@ -542,7 +575,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 ##
 ## Mirrors SettingsMenu's `_line_h` / `_row_font` pair rather than inventing a third spelling.
 func _menu_font() -> Font:
-	return ThemeDB.fallback_font
+	return UiFont.display()
 
 
 func _menu_row_h() -> float:
@@ -550,6 +583,14 @@ func _menu_row_h() -> float:
 	var f: Font = _menu_font()
 	var line: float = float(fs) * 1.4 if f == null else f.get_height(fs)
 	return maxf(24.0, line + 6.0)
+
+
+## Where a row's label starts: MENU_LABEL_X, or past the cursor arrow when a larger Text Size makes the arrow wider than that.
+func _menu_label_x() -> float:
+	var f: Font = _menu_font()
+	if f == null:
+		return MENU_LABEL_X
+	return maxf(MENU_LABEL_X, MENU_CURSOR_X + f.get_string_size("▶", HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(MENU_FONT_SIZE)).x + 2.0)
 
 
 ## Wide enough for the longest option at the current scale, bounded by the panel.
@@ -563,7 +604,7 @@ func _menu_row_w(panel_w: float) -> float:
 			if _option_has_news(o):
 				w += NEWS_TAG_GAP + NewItemTag.width(MENU_FONT_SIZE)
 			widest = maxf(widest, w)
-	return clampf(MENU_LABEL_X + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
+	return clampf(_menu_label_x() + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
 
 
 ## Line step for the info block under the rows (play time, location, corruption). Same reason as
@@ -784,8 +825,8 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 	# Cursor indicator
 	var cursor = Label.new()
 	cursor.text = "▶" if index == selected_index else " "
-	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	cursor.position = Vector2(MENU_CURSOR_X, 2)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(MENU_FONT_SIZE))
 	cursor.add_theme_color_override("font_color", Color.YELLOW if option["enabled"] else DISABLED_COLOR)
 	cursor.name = "Cursor"
 	item.add_child(cursor)
@@ -793,7 +834,7 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 	# Label
 	var label = Label.new()
 	label.text = option["label"]
-	label.position = Vector2(MENU_LABEL_X, 2)
+	label.position = Vector2(_menu_label_x(), 2)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
@@ -804,7 +845,7 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 		var fs: int = TextScale.scaled(MENU_FONT_SIZE)
 		var f: Font = _menu_font()
 		var label_w: float = float(str(option["label"]).length() * fs) if f == null else f.get_string_size(str(option["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		tag.position = Vector2(MENU_LABEL_X + label_w + NEWS_TAG_GAP, 2)
+		tag.position = Vector2(_menu_label_x() + label_w + NEWS_TAG_GAP, 2)
 		tag.visible = _option_has_news(option)
 		item.add_child(tag)
 		_news_tags[str(option["id"])] = tag

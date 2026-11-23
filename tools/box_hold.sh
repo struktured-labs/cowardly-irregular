@@ -21,7 +21,7 @@ BB="${BOX_HOLD_BUSY:-$HERE/box_busy.sh}"
 
 if [ "${1:-}" = "--selftest" ]; then
   mkdir -p "$HERE/../tmp"; T="$(mktemp -d "$HERE/../tmp/box_hold_selftest.XXXXXX")"; T="$(cd "$T" && pwd)"; trap 'rm -rf "$T"' EXIT
-  fails=0; arms=0; EXPECT_ARMS=7; A() { arms=$((arms + 1)); }
+  fails=0; arms=0; EXPECT_ARMS=8; A() { arms=$((arms + 1)); }
   ## every arm runs against SCRATCH markers and a fold tree that does not exist: nothing here can see or touch a real hold
   E=(BOX_SLOT_MARKER="$T/slot" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" DEPLOY_GLOB="$T/none" FOLD_TREE="$T/none" BOX_BUSY_ENGINE="$T/no-engine")
   A  # arm 1  the command runs, its exit code comes back, and the marker is gone afterwards
@@ -29,8 +29,8 @@ if [ "${1:-}" = "--selftest" ]; then
   [ "$e" = 7 ] || { echo "FAIL arm1a: exit code not passed through (got $e, want 7)"; fails=1; }
   [ ! -e "$T/slot" ] || { echo "FAIL arm1b: the marker outlived its hold"; fails=1; }
   A  # arm 2  WHILE it runs, box_busy reads BUSY and names the lane; a process INSIDE the hold reads free
-  ## the holder asks box_busy BEFORE it writes its marker, and that scan walks /proc (seconds on a busy box): wait for the
-  ## marker itself, bounded, never a fixed sleep; the held command then stays up until this arm releases it
+  ## wait for the marker itself, bounded, never a fixed sleep (the holder's own box_busy check walks /proc for seconds,
+  ## and arm 8 is about exactly that window); the held command then stays up until this arm releases it
   env "${E[@]}" "$0" cowir-zz -- sh -c "\"$BB\" > \"$T/inside.out\" 2>&1; echo \$? > \"$T/inside.ec\"; while [ ! -e \"$T/go\" ]; do sleep 0.2; done" & hp=$!
   n=0; while [ ! -e "$T/slot" ] && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n + 1)); done
   [ -e "$T/slot" ] || { echo "FAIL arm2: the hold never wrote its marker (60 s)"; fails=1; }
@@ -57,6 +57,18 @@ if [ "${1:-}" = "--selftest" ]; then
   out="$(env "${E[@]}" BOX_MARKER="$T/gate.m" "$0" cowir-zz -- sh -c "touch \"$T/gate.ran\"" 2>&1)"; e=$?
   kill "$gp" 2>/dev/null; wait "$gp" 2>/dev/null
   { [ "$e" = 3 ] && [ ! -e "$T/gate.ran" ]; } || { echo "FAIL arm6: a hold started beside a live gate marker (ec=$e): $out"; fails=1; }
+  [ ! -e "$T/slot" ] || { echo "FAIL arm6b: a REFUSED hold left its marker behind (it takes the marker before it looks)"; fails=1; }
+  A  # arm 8  THE WINDOW: while the hold is still ASKING box_busy, a sibling reader already reads BUSY naming it
+  ## The holder's box_busy is a stub that waits (bounded) for this arm to finish reading, then runs the real one: so the
+  ## sibling read below lands, deterministically, inside the check. Before the fix it read FREE there (no marker yet).
+  printf '#!/usr/bin/env bash\ncase "${1:-}" in "") n=0; while [ ! -e "%s/sib.done" ] && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n + 1)); done ;; esac\nexec "%s" "$@"\n' "$T" "$BB" > "$T/slowbb"; chmod +x "$T/slowbb"
+  env "${E[@]}" BOX_HOLD_BUSY="$T/slowbb" "$0" cowir-race -- sh -c "touch \"$T/race.ran\"" > "$T/race.out" 2>&1 & rp=$!
+  n=0; while [ ! -e "$T/slot" ] && kill -0 "$rp" 2>/dev/null && [ "$n" -lt 300 ]; do sleep 0.2; n=$((n + 1)); done
+  out="$(env "${E[@]}" "$BB" 2>/dev/null)"; e=$?
+  : > "$T/sib.done"; wait "$rp"; re=$?
+  case "$e/$out" in "1/BUSY: slot cowir-race running"*) ;; *) echo "FAIL arm8a: a sibling read the box mid-check as not BUSY (ec=$e): $out"; fails=1 ;; esac
+  { [ "$re" = 0 ] && [ -e "$T/race.ran" ]; } || { echo "FAIL arm8b: the hold did not go on to run once its check said free (ec=$re): $(cat "$T/race.out")"; fails=1; }
+  [ ! -e "$T/slot" ] || { echo "FAIL arm8c: the marker outlived the raced hold"; fails=1; }
   A  # arm 7  usage: no lane, no --, no command, a lane with a space
   for bad in "" "cowir-zz" "cowir-zz --" "cowir zz -- true"; do
     # shellcheck disable=SC2086
@@ -82,8 +94,11 @@ if [ -f "$MARK" ]; then
     rm -f "$MARK"
   fi
 fi
-r="$("$BB" 2>/dev/null)"; bec=$?
-[ "$bec" = 0 ] || { echo "box_hold: REFUSED for $LANE, nothing run: ${r:-box_busy exit $bec with no reason}" >&2; exit 3; }
+## ⛔ TAKE THE MARKER FIRST, THEN LOOK. It used to ask box_busy and THEN write the marker. box_busy's FREE path walks /proc
+## (~4 s on this box, measured 2026-11-13), and for those seconds a hold that was about to run read FREE to every other
+## reader: a sibling lane's check, or the fold chain's. Now the marker exists before the question is asked, so a reader
+## anywhere in that window reads BUSY. The question is still asked: box_busy runs as OUR child, reads our own marker as free
+## by ancestry, and still judges a gate, a publish and a fold-tree engine. A refusal takes the marker back (the trap).
 body="$(printf 'pid=%s\nlane=%s\nwhat=%s\nsince=%s\n' "$$" "$LANE" "$(printf '%s ' "$@" | cut -c1-120)" "$(date -u +%H:%M:%SZ)")"
 if ! ( set -C; printf '%s\n' "$body" > "$MARK" ) 2>/dev/null; then
   echo "box_hold: REFUSED for $LANE, nothing run: another hold took the marker first: $(tr '\n' ' ' < "$MARK" 2>/dev/null)" >&2; exit 3
@@ -91,6 +106,8 @@ fi
 _release() { [ "$(sed -n 's/^pid=//p' "$MARK" 2>/dev/null | head -1)" = "$$" ] && rm -f "$MARK"; return 0; }
 trap _release EXIT
 trap 'exit 130' INT; trap 'exit 143' TERM
+r="$("$BB" 2>/dev/null)"; bec=$?
+[ "$bec" = 0 ] || { echo "box_hold: REFUSED for $LANE, nothing run: ${r:-box_busy exit $bec with no reason}" >&2; exit 3; }
 echo "box_hold: $LANE holds the box ($MARK) for: $*" >&2
 "$@"
 exit $?

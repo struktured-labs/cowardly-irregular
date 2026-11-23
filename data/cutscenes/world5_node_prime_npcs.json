@@ -1,0 +1,127 @@
+{
+  "id": "world5_node_prime_npcs",
+  "title": "Node Prime",
+  "world": 5,
+  "keep_music": true,
+  "trigger": "world5_node_prime_entry",
+  "background": "node_prime",
+  "description": "Futuristic hub that kept the old town's floor plan and optimized everything else away. ADMIN-01 classifies the party at 61% confidence. DEBUG-7 hopes they are a bug. The Data Archivist keeps the town's old name where the system cannot index it.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Node Prime kept the old town's floor plan and nothing else. The streets ran where the streets had always run, because moving them would have cost more than leaving them. Everything that could not be measured had been removed in the last optimization pass, quietly, the way a spreadsheet loses a column nobody was reading."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "ADMIN-01",
+          "text": "> NEW PROCESS DETECTED IN NODE PRIME.",
+          "theme": "system",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "ADMIN-01",
+          "text": "> CLASSIFICATION: adventurer. CLASSIFICATION CONFIDENCE: 61%.",
+          "theme": "system",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "ADMIN-01",
+          "text": "> The remaining 39% has been logged. Please do not do anything that would raise it.",
+          "theme": "system",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "What would raise it?",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "ADMIN-01",
+          "text": "> Anything unscheduled.",
+          "theme": "system",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "DEBUG-7",
+          "text": "Ignore the admin. The admin reads everything as a schedule, including you.",
+          "theme": "villager",
+          "portrait": "young_man"
+        },
+        {
+          "speaker": "DEBUG-7",
+          "text": "I find bugs for a living. Down here a bug is just a thing the system did not plan for, so technically the four of you are my workload now.",
+          "theme": "villager",
+          "portrait": "young_man"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Is that a threat?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "DEBUG-7",
+          "text": "It's a request. Nothing has surprised me in three cycles. Please walk in at least one crooked line before you leave.",
+          "theme": "villager",
+          "portrait": "young_man"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Data Archivist",
+          "text": "Don't let them give you a designation. That is how it starts. First a label, then a slot, and one day you are 'optimal' and nobody remembers the rest of you.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Data Archivist",
+          "text": "This place had a name before. I won't say it out loud. Saying it puts it in the logs, and whatever is in the logs can be tidied.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Data Archivist",
+          "text": "So I keep it where they cannot index it. Come back when nobody is counting and I might tell you.",
+          "theme": "elder",
+          "portrait": "old_man"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world5_node_prime_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

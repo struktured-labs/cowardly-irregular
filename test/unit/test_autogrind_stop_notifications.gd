@@ -22,11 +22,11 @@ func test_notification_helper_references_expected_sfx_key() -> void:
 	# The .ogg for the sting lives on cowir-sfx's parallel branch
 	# (feature/sfx-autogrind-stop-sting, key 'autogrind_stop_sting'), so this
 	# test can't check the bank directly. It pins my side of the coordination
-	# contract: the notification helper calls play_ui("autogrind_stop_sting").
+	# contract: the notification helper plays "autogrind_stop_sting" (play_alert, its own voice).
 	# If cowir-sfx renames the key, both sides update in lockstep.
 	var src := _game_loop_source()
 	assert_true(src.contains('"autogrind_stop_sting"'),
-		"GameLoop must call SoundManager.play_ui(\"autogrind_stop_sting\") — cowir-sfx's registered key. Rename must happen in lockstep on both sides.")
+		"GameLoop must play \"autogrind_stop_sting\" — cowir-sfx's registered key. Rename must happen in lockstep on both sides.")
 
 
 func test_show_notification_helper_defined() -> void:

@@ -38,10 +38,16 @@ func _wrapped_h(text: String, width: float, px: int, align: int) -> float:
 	return ThemeDB.fallback_font.get_multiline_string_size(text, align, width, px, -1, InnScript.WRAP_FLAGS).y
 
 
+## A readable page's body draws in the BODY tier (main 25808), so its fit is measured in that face, not the display one.
+func _page_h(text: String, width: float, px: int) -> float:
+	return UiFont.body().get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, width, px, -1, InnScript.WRAP_FLAGS).y
+
+
 ## Every message the rest panel can show: the price prompt at three purses and every authored line, per village.
 func _inn_messages() -> Array:
 	var inn: Node = autofree(InnScript.new())
 	var out: Array = []
+	var dead: Array[String] = ["Fighter", "Cleric"]
 	for key in InnDialogue.village_keys():
 		var map_id: String = str(key) + "_village"
 		for purse in [-1, 5, 100000]:
@@ -51,7 +57,7 @@ func _inn_messages() -> Array:
 			var v = lines.get(kind, [])
 			for line in (v if v is Array else [v]):
 				if str(line) != "":
-					out.append(str(line) + "\nHP and MP restored. (-%d G)\nFighter, Cleric cannot be roused — that death is permanent." % InnScript.REST_COST)
+					out.append(InnScript.morning_text(str(line), dead))
 					out.append(str(line) + "\nNeed %d G, you have %d G." % [InnScript.REST_COST, 3])
 	out.append("Not enough gold!\nNeed %d G, you have %d G." % [InnScript.REST_COST, 3])
 	return out
@@ -65,7 +71,7 @@ func _page_that_fits_at_1x() -> String:
 		+ "and the word ENOUGH, pressed so hard the nib tore the paper, and below it a list of names in the same hand.").repeat(3).split(" ")
 	var box := ReadableProp.body_box()
 	var text := " ".join(words)
-	while words.size() > 1 and _wrapped_h(text, box.x, ReadableProp.BODY_FONT, HORIZONTAL_ALIGNMENT_LEFT) > box.y:
+	while words.size() > 1 and _page_h(text, box.x, ReadableProp.BODY_FONT) > box.y:
 		words.remove_at(words.size() - 1)
 		text = " ".join(words)
 	return text
@@ -102,7 +108,7 @@ func test_the_text_fits_its_built_panel_at_every_preset() -> void:
 	for p in _presets():
 		GameState.text_size_scale = float(p)
 		var box := ReadableProp.body_box()
-		assert_lte(_wrapped_h(page, box.x, TextScale.scaled(ReadableProp.BODY_FONT), HORIZONTAL_ALIGNMENT_LEFT), box.y,
+		assert_lte(_page_h(page, box.x, TextScale.scaled(ReadableProp.BODY_FONT)), box.y,
 			"a page that fits at 100%% overflows the reading panel at %s" % str(p))
 		var rp := _reading_panel()
 		assert_true(Rect2(Vector2.ZERO, SCREEN).encloses(Rect2((SCREEN - rp.size) / 2.0, rp.size)), "the reading panel leaves the screen at %s" % str(p))
@@ -120,6 +126,22 @@ func test_the_text_fits_its_built_panel_at_every_preset() -> void:
 			var tin := tsz - Vector2(TavernScript.DIALOGUE_PAD, TavernScript.DIALOGUE_PAD) * 2.0 * ktav
 			assert_lte(_wrapped_h(t, tin.x, TextScale.scaled(TavernScript.DIALOGUE_FONT), HORIZONTAL_ALIGNMENT_LEFT), tin.y + 0.5,
 				"the tavern panel cannot hold '%s' at %s" % [t.left(40), str(p)])
+
+
+## The BUILT body label draws in the font its fit was judged in, and its drawn height for one page grows at every Text Size step.
+func test_the_built_body_draws_in_the_reading_face_and_grows() -> void:
+	var page := _page_that_fits_at_1x()
+	var last := 0.0
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		var body: Label = _reading_panel().get_child(1)
+		body.text = page
+		var face: Font = UiFont.of(body)
+		assert_eq(face, UiFont.body(), "the page body draws in the reading face at Text Size %s" % str(p))
+		var h: float = face.get_multiline_string_size(page, HORIZONTAL_ALIGNMENT_LEFT, body.size.x, body.get_theme_font_size("font_size"), -1, InnScript.WRAP_FLAGS).y
+		assert_lte(h, body.size.y + 0.5, "the drawn page needs %.0f px of a %.0f px body at Text Size %s" % [h, body.size.y, str(p)])
+		assert_gt(h, last, "the drawn page grows past %.0f px at Text Size %s" % [last, str(p)])
+		last = h
 
 
 ## The fit arm judges the sizing functions; this one judges that the BUILT panels use them, or a builder ignoring them stays green.
@@ -197,21 +219,14 @@ func _tavern_edge_line(px: int, inner: float) -> String:
 	return ""
 
 
-func test_a_tavern_line_on_the_rounding_edge_fits_its_panel() -> void:
+## The dial-9 pixel face advances in whole pixels, so no line measures differently at a fractional width and at its floor: the rounding-edge defect cannot occur. This pins that premise; if it reds, the face gained fractional advances and the edge arm (git log -S _tavern_edge_line) must come back.
+func test_the_face_has_no_rounding_edge_for_the_tavern_floor() -> void:
 	GameState.text_size_scale = 0.8
 	var px := TextScale.scaled(TavernScript.DIALOGUE_FONT)
 	var k := k_of(TavernScript.DIALOGUE_FONT)
 	var inner := TavernScript.DIALOGUE_MIN.x * k - TavernScript.DIALOGUE_PAD * 2.0 * k
-	var edge := _tavern_edge_line(px, inner)
-	assert_ne(edge, "", "CONTROL: no candidate line measures differently at %.2f px and at its floor %d at 0.8x, so the tavern's floor changes nothing there; delete this arm" % [inner, int(floorf(inner))])
-	if edge == "":
-		return
-	var text := "*A regular raises a mug.*\n*Another one does too.*\n*The barkeep sighs.*\n" + edge
-	var l := _on_screen(autofree(TavernScript.new())._make_dialogue_layer(text))
-	var panel: Panel = l.get_parent()
-	assert_lte(_drawn_h(l), panel.size.y - TavernScript.DIALOGUE_PAD * 2.0 * k + 0.5,
-		"a tavern line on the rounding edge draws %d lines in a panel sized for fewer at 0.8x" % l.get_line_count())
-
+	assert_ne(inner, floorf(inner), "CONTROL: the 0.8x inner width %.2f must be fractional, else floor and width are the same number and this proves nothing" % inner)
+	assert_eq(_tavern_edge_line(px, inner), "", "a line measures differently at %.2f px and at %d: the face has fractional advances again, so restore the rounding-edge arm" % [inner, int(floorf(inner))])
 
 func test_the_tavern_dialogue_is_screen_space() -> void:
 	var layer = autofree(TavernScript.new())._make_dialogue_layer("*hm*")

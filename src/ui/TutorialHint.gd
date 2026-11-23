@@ -57,6 +57,7 @@ var _last_t: float = -1.0
 
 func _ready() -> void:
 	layer = 98  # Above game, below game over
+	add_to_group(Toast.HINT_GROUP)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
 	visible = false
@@ -91,6 +92,7 @@ func _build_ui() -> void:
 	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_body_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	UiFont.as_body(_body_label)  # a hint is sentences: the reading tier, not the pixel face's whole steps
 	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_body_label)
 
@@ -128,6 +130,7 @@ func show_hint(hint_id: String, title: String, body: String, min_dismiss: float 
 	_update_dismiss_label()
 	visible = true
 	_panel.position.y = PANEL_TOP
+	_seat()  # sized and placed before its first draw: a 0.8 census caught it 776 px tall on frame one
 
 	# Input is blocked by _input consuming all events while _active
 	_active = true
@@ -142,6 +145,16 @@ func _update_dismiss_label() -> void:
 		_dismiss_label.text = "▶ [in %ds]" % ceili(_min_dismiss_timer)
 	else:
 		_dismiss_label.text = READY_DISMISS_TEXT
+
+
+## Yields its ground (a victory overlay docking under it) without spending its one showing: it shows again next time.
+func step_aside() -> void:
+	if not _active:
+		return
+	_shown_hints.erase(_current_hint_id)
+	if GameState:
+		GameState.game_constants.erase("tutorial_" + _current_hint_id)
+	_dismiss()
 
 
 func _dismiss() -> void:
@@ -172,8 +185,7 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 	# Down only while shown: the arrival banner fades out under the hint, and a panel that climbed back would jump.
-	_panel.size = Vector2(_panel.size.x, 0.0)  # A PanelContainer only grows; measure its real content height each frame.
-	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
+	_seat()
 
 	var now: float = float(clock.call())
 	var real_dt: float = delta if _last_t < 0.0 else maxf(0.0, now - _last_t)
@@ -210,6 +222,26 @@ func _input(event: InputEvent) -> void:
 		_dismiss()
 
 
+## Size the panel to its content at its own width and seat it below the reserved HUD. A PanelContainer only grows, and an
+## autowrap Label not yet sorted measures at width 0 (one word a line), so the labels get the panel's inner width first.
+func _seat() -> void:
+	if not is_inside_tree() or not is_instance_valid(_panel):
+		return
+	var inner_w: float = _panel.size.x - _panel.get_theme_stylebox("panel").get_minimum_size().x
+	for l in [_title_label, _body_label, _dismiss_label]:
+		(l as Label).size.x = inner_w
+		(l as Label).update_minimum_size()  # a Label's resize does not drop the cached minimum the panel clamps to
+	_panel.size = Vector2(_panel.size.x, 0.0)
+	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
+
+
+## The open panel's screen rect (empty when no hint is showing), so a toast can settle below it.
+func panel_rect() -> Rect2:
+	if not _active or not visible or not is_instance_valid(_panel):
+		return Rect2()
+	return Rect2(_panel.position, _panel.size)
+
+
 ## The panel's resting top; on a world arrival it shares that band with the quest tracker and the zone banner.
 const PANEL_TOP: float = 8.0
 
@@ -219,13 +251,13 @@ func _reserved_rects() -> Array:
 	if not is_inside_tree():
 		return out
 	for n in get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
-		if n.has_method("reserved_rect"):
+		if n.has_method("reserved_rect") and n.get_viewport() == get_viewport():  # another screen's HUD is not in the way
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
 	# An open command/field menu is never covered: the battle hint sat on the command menu (demo 2026-11).
 	for m in get_tree().get_nodes_in_group("win98_menus"):
-		if m is Control and (m as Control).is_visible_in_tree():
+		if m is Control and (m as Control).is_visible_in_tree() and m.get_viewport() == get_viewport():
 			var mr: Rect2 = (m as Control).get_global_rect()
 			if mr.has_area():
 				out.append(mr)
@@ -239,10 +271,16 @@ static func fit_on_screen(y: float, panel_h: float, view_h: float) -> float:
 	return clampf(y, PANEL_TOP, maxf(PANEL_TOP, view_h - panel_h - 8.0))
 
 
+## Repeats until no block is in the way: one pass missed a block listed BEFORE the one that pushed it down (field census, .802).
 static func top_clear_of(panel_x: float, panel_size: Vector2, reserved: Array) -> float:
 	var y := PANEL_TOP
-	for r in reserved:
-		var band := Rect2(panel_x, y, panel_size.x, maxf(panel_size.y, 1.0))
-		if band.intersects(r):
-			y = r.end.y + 6.0
+	for _pass in reserved.size() + 1:
+		var moved := false
+		for r in reserved:
+			var band := Rect2(panel_x, y, panel_size.x, maxf(panel_size.y, 1.0))
+			if band.intersects(r):
+				y = r.end.y + 6.0
+				moved = true
+		if not moved:
+			break
 	return y

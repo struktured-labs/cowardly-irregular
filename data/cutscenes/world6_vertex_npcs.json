@@ -1,0 +1,127 @@
+{
+  "id": "world6_vertex_npcs",
+  "title": "Vertex",
+  "world": 6,
+  "keep_music": true,
+  "trigger": "world6_vertex_entry",
+  "background": "vertex_village",
+  "description": "The last village, reduced to a floor and a few points of light. The Keeper offers one place without a quest. The Shape explains arriving. The Echo remembers every fight, including the ones the rules fought. The Absence does not speak, which is its contribution.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Vertex was what remained once everything that could be taken away had been. A floor. A few points of light. Four residents, if you counted generously, and one of them would rather you didn't."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Keeper",
+          "text": "You arrived.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "The Keeper",
+          "text": "Most villages would ask where you came from. Vertex does not keep that kind of record.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "That's it? No quest? No warning?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "The Keeper",
+          "text": "You have had a great many of both. I thought you might like one place without either.",
+          "theme": "elder",
+          "portrait": "old_man"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Shape",
+          "text": "You came in along an edge. Everyone does. There is no other way to reach a point.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "The Shape",
+          "text": "You will leave along one too. The direction will be different.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That isn't how geometry works.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "The Shape",
+          "text": "It is how arriving works.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Echo",
+          "text": "I remember you. Every fight, even the ones you let the rules take.",
+          "theme": "villager",
+          "portrait": "young_woman"
+        },
+        {
+          "speaker": "The Echo",
+          "text": "That isn't an accusation. Somebody wrote those rules. That counts as being there.",
+          "theme": "villager",
+          "portrait": "young_woman"
+        },
+        {
+          "speaker": "Bard",
+          "text": "...That's the kindest thing anyone has ever said about autobattle.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "The Echo",
+          "text": "It's the only thing anyone has said about it here. Vertex is small.",
+          "theme": "villager",
+          "portrait": "young_woman"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world6_vertex_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

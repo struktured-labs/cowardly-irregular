@@ -278,11 +278,6 @@ func is_active() -> bool:
 	return _active
 
 
-## Exchanges completed in the last run — what ConversationRewards gates on.
-func get_exchange_count() -> int:
-	return _exchange_count
-
-
 ## Pays out at most one reward per NPC per quest phase; ConversationRewards owns
 ## every eligibility rule, so the LLM cannot talk its way into a payout.
 func _maybe_grant_reward() -> void:

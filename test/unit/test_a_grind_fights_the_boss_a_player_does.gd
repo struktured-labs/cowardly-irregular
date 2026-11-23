@@ -72,7 +72,7 @@ func test_the_grind_asks_the_live_ladder() -> void:
 	assert_lt(int(mix.get(strongest, 0)), DRAWS / 2, "the signature is a minority of turns, as it is live")
 	assert_gt(mix.size(), 2, "and the mix has more than two distinct actions in it")
 	for key in mix:
-		assert_true(key in ["attack", "defer"] or key in boss.learned_abilities, "every pick is the boss's own: %s" % key)
+		assert_true(key in ["attack", "defer", "charge"] or key in boss.learned_abilities, "every pick is the boss's own: %s" % key)
 
 
 func test_the_old_picker_is_what_the_mix_replaced() -> void:

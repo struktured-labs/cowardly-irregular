@@ -100,9 +100,11 @@ func show_zone(zone_id: String) -> void:
 	_tween.parallel().tween_property(_bg, "modulate:a", 0.0, FADE_OUT)
 
 
-## The arrival banner, while it is showing at all, for HUD that must keep off it (TutorialHint).
+## The arrival banner from the moment it is shown (its fade-in starts at alpha 0), for HUD that must keep off it (TutorialHint).
 func reserved_rect() -> Rect2:
-	if _bg == null or not is_instance_valid(_bg) or _bg.modulate.a <= 0.01:
+	if _bg == null or not is_instance_valid(_bg):
+		return Rect2()
+	if _bg.modulate.a <= 0.01 and not (_tween != null and _tween.is_valid() and _tween.is_running()):
 		return Rect2()
 	return _bg.get_rect()
 
@@ -121,9 +123,43 @@ func _fit_banner_to(text: String) -> void:
 	_bg.anchor_right = 0.5
 	_bg.offset_left = -half
 	_bg.offset_right = half
-	var h: float = maxf(BANNER_MIN_H, (font.get_height(_label.get_theme_font_size("font_size")) if font else 0.0) + 16.0)
-	_bg.offset_bottom = BANNER_TOP + h
-	_label.offset_bottom = BANNER_TOP + h
+	_label.anchor_left = 0.5
+	_label.anchor_right = 0.5
+	_label.offset_left = -half
+	_label.offset_right = half
+	_banner_h = maxf(BANNER_MIN_H, (font.get_height(_label.get_theme_font_size("font_size")) if font else 0.0) + 16.0)
+	_seat_below_hud()
+
+
+var _banner_h: float = BANNER_MIN_H
+
+## Gap kept between the banner and a HUD block it moves below.
+const HUD_GAP: float = 6.0
+
+
+## The banner starts at BANNER_TOP and drops below any other HUD block (the quest tracker) its strip would cross.
+func _seat_below_hud() -> void:
+	var top := BANNER_TOP
+	if is_inside_tree():
+		var vw: float = _bg.get_viewport_rect().size.x
+		var x0: float = vw * 0.5 + _bg.offset_left
+		var w: float = _bg.offset_right - _bg.offset_left
+		for n in get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
+			if n == self or not n.has_method("reserved_rect"):
+				continue
+			var r: Rect2 = n.reserved_rect()
+			if r.has_area() and Rect2(x0, top, w, _banner_h).intersects(r):
+				top = r.end.y + HUD_GAP
+	_bg.offset_top = top
+	_bg.offset_bottom = top + _banner_h
+	_label.offset_top = top
+	_label.offset_bottom = top + _banner_h
+
+
+## The tracker is built after the banner on a world's first frame and grows a side line later, so re-seat while showing.
+func _process(_delta: float) -> void:
+	if _bg != null and _bg.modulate.a > 0.01:
+		_seat_below_hud()
 
 
 ## A Text Size change re-scales the kept banner and re-fits it around the name it holds.

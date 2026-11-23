@@ -82,8 +82,9 @@ func test_skip_path_sets_first_option() -> void:
 	var skip_idx: int = body.find("if _skipping:")
 	assert_gt(skip_idx, -1)
 	var skip_body: String = body.substr(skip_idx, 200)
-	assert_true(skip_body.contains("_set_choice_flag(presented[0])"),
-		"skip path must answer with the first PRESENTED option and return")
+	# .795: through skip_answer (an option marked skip_answer, else presented[0]); its default is pinned in test_theron_offers_the_trials_you_skipped.
+	assert_true(skip_body.contains("_set_choice_flag(skip_answer(presented))"),
+		"skip path must answer from the PRESENTED options and return")
 	assert_false(skip_body.contains("_set_choice_flag(options[0])"),
 		"and must not index the unfiltered array — the two forms cannot both be true")
 

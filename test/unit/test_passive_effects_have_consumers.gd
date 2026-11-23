@@ -127,6 +127,20 @@ func _consumed_by_the_derived_stat_loop(key: String, src: String) -> bool:
 	return false
 
 
+## True when `key` is `<element>_damage_bonus` for an element some ability casts AND src holds the constructed read.
+func _consumed_by_the_element_bonus_read(key: String, src: String) -> bool:
+	if not key.ends_with("_damage_bonus") or not src.contains("_get_passive_meta_effect_sum(element + \"_damage_bonus\")"):
+		return false
+	var element := key.trim_suffix("_damage_bonus")
+	var abilities: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	if not (abilities is Dictionary):
+		return false
+	for a in (abilities as Dictionary).values():
+		if a is Dictionary and str((a as Dictionary).get("element", "")) == element:
+			return true
+	return false
+
+
 func _passives() -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string(PASSIVES))
 	return d.get("passives", d) if d is Dictionary else {}
@@ -224,6 +238,9 @@ func _unwired() -> Dictionary:
 				## only key shape a text search cannot see. Bounded and exhausted rather
 				## than left as a stated caveat (cowir-sfx msg 3471).
 				if str(key).ends_with("_absorb"):
+					continue
+				## THIRD constructed read: BattleManager._element_damage_bonus reads _get_passive_meta_effect_sum(element + "_damage_bonus"); bounded to a real element and to that line existing.
+				if _consumed_by_the_element_bonus_read(str(key), src):
 					continue
 				## SECOND constructed read, surfaced once declaration lines stopped
 				## counting as consumers: PassiveSystem._conditional_key_satisfied()

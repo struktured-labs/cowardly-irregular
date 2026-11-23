@@ -5876,7 +5876,7 @@
           "dur": 0.17,
           "arc_height": 46,
           "size": 0.7,
-          "palette": "steel",
+          "palette": "spark",
           "trail_palette": "smoke",
           "trail_spacing": 12
         },
@@ -5896,7 +5896,7 @@
           "radius": 44,
           "life": 0.18,
           "size": 0.8,
-          "palette": "steel",
+          "palette": "spark",
           "bloom": false
         }
       ]

@@ -102,7 +102,8 @@ func test_the_passive_half_is_still_absent_on_purpose() -> void:
 	## scoping call was answered and this note should retire.
 	var code: String = GdSource.code_of(GRIND)
 	var passive_reads: Array = []
-	for probe in ["steal_chance", "get_passive_mods", "PassiveSystem"]:
+	## The grind does read ONE passive key now, crit_chance (declared in test_autogrind_the_passive_gap_is_named_regression); the steal half is still absent.
+	for probe in ["steal_chance"]:
 		if code.contains(probe):
 			passive_reads.append(probe)
 	assert_eq(passive_reads, [],

@@ -68,6 +68,13 @@ const TAIL_MAX_PX: float = 56.0
 ## True once a voice clip set the hold — that hold is in real seconds, so the tween must be too.
 var _voiced: bool = false
 var _panel: PanelContainer = null
+## The tail and the keep-out rects this bubble was last seated against; a menu that opens later changes them.
+var _pointer: Polygon2D = null
+var _seen_keep_out: Array = []
+## True while a menu covers this bubble and no move clears it: the bubble is not drawn, and returns when the menu leaves.
+var _waiting_behind_menu: bool = false
+## Reads the ceiling as it is now (the round banner's bottom); the banner wraps to a second line after a bubble is seated.
+var _ceiling_now: Callable = Callable()
 ## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
 var _keep_out: Callable = Callable()
 
@@ -350,7 +357,74 @@ func _finalize_layout(bubble: PanelContainer, pointer: Polygon2D, anchor_x: floa
 		_lift_clear_of(cover, bubble.size)
 	_build_tail(pointer, bubble.size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))
 	_panel = bubble
+	_pointer = pointer
+	_seen_keep_out = _keep_out_now()
+	reclear()
 	_retire_overlapped_elders()
+
+
+## The keep-out rects as they are this frame.
+func _keep_out_now() -> Array:
+	if not _keep_out.is_valid():
+		return []
+	var rects = _keep_out.call()
+	return (rects as Array).duplicate() if rects is Array else []
+
+
+## struktured 2026-11-19 ("the speech bubbles cut off text"): a line spoken at turn start was laid out before the command
+## menu opened, and the menu then drew over its rows. A seated bubble watches the keep-out and steps clear when it changes.
+func _process(_delta: float) -> void:
+	if _panel == null or not is_instance_valid(_panel):
+		return
+	_follow_ceiling()
+	var now := _keep_out_now()
+	if now == _seen_keep_out:
+		return
+	_seen_keep_out = now
+	reclear()
+
+
+## The caller hands over how to read the ceiling, so a banner that grows later still pushes the bubble down off it.
+func watch_ceiling(read: Callable) -> void:
+	_ceiling_now = read
+
+
+## A banner that grew over a seated bubble: the bubble drops to the new ceiling and its float is re-aimed (adhoc 26687, 200%).
+func _follow_ceiling() -> void:
+	if not _ceiling_now.is_valid():
+		return
+	var c = _ceiling_now.call()
+	if not (c is float or c is int):
+		return
+	var ceiling: float = maxf(TOP_MARGIN, float(c))
+	if ceiling <= _ceiling_y + 0.5:
+		return
+	_ceiling_y = ceiling
+	if position.y - _float_px >= ceiling:
+		return
+	position.y = ceiling
+	_float_px = 0.0
+	_start_float()
+	if _pointer != null and is_instance_valid(_pointer):
+		_build_tail(_pointer, _panel.size, Vector2(_anchor_global.x - position.x, _anchor_global.y - position.y))
+
+
+## Seats this bubble against the keep-out rects as they are now: sideways if a side is clear, else above the menu.
+## With neither, its text would sit under the menu (cowir-main 26648: never), so it waits undrawn until the menu leaves.
+func reclear() -> void:
+	if _panel == null or not is_instance_valid(_panel) or _pointer == null or not is_instance_valid(_pointer):
+		return
+	var size: Vector2 = _panel.size
+	if _covering_rect(position.x, size).size != Vector2.ZERO:
+		var anchor_x: float = _anchor_global.x
+		position.x = _clear_keep_out(position.x, size, anchor_x)
+		var cover := _covering_rect(position.x, size)
+		if cover.size != Vector2.ZERO:
+			_lift_clear_of(cover, size)
+		_build_tail(_pointer, size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))
+	_waiting_behind_menu = _covering_rect(position.x, size).size != Vector2.ZERO
+	_panel.visible = not _waiting_behind_menu
+	_pointer.visible = not _waiting_behind_menu
 
 
 ## Places the bubble BESIDE the speaker, flipping side when the clamp would drag it back onto them — centring on the anchor is what covered the sprite (struktured 2026-08-22).

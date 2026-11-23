@@ -559,9 +559,12 @@ func test_battle_manager_action_type_default_case() -> void:
 	var content = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 
 	# Find the action match statement and check for default case
+	## Bounded by the FUNCTION, like the arm below: a fixed 1000-char window went red when the .795 "charge" arm grew the match.
 	var idx = content.find('match action.get("type"')
+	assert_gt(idx, -1, "CONTROL: the action-type match must exist for this arm to mean anything")
 	if idx > 0:
-		var context = content.substr(idx, 1000)
+		var next_func: int = content.find("\nfunc ", idx + 1)
+		var context = content.substr(idx, (next_func - idx) if next_func > idx else 2000)
 		assert_true(context.contains("_:") and context.contains("Unknown action type"),
 			"BattleManager should have default case with warning for unknown action types")
 

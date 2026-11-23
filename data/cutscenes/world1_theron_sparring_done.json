@@ -1,0 +1,25 @@
+{
+  "id": "world1_theron_sparring_done",
+  "title": "Nothing Left to Teach",
+  "world": 1,
+  "trigger": "talk_elder_theron_after_every_trial_won",
+  "background": "harmonia_square",
+  "description": "Plays once, from Elder Theron's talk, when every trial in world1_theron_sparring_offer has been won.",
+  "steps": [
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Elder Theron",
+          "text": "That was all of them. I have nothing left to teach you that you did not already do to a rat.",
+          "theme": "elder",
+          "portrait": "theron"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "theron_sparring_done"
+    }
+  ]
+}

@@ -124,6 +124,26 @@ func test_the_idle_sway_leaves_a_lunging_sprite_alone() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	var at := src.find("func _process_idle_animations(")
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
-	assert_eq(body.count("if not lunge_owns(sprite):"), 2, "both idle writes, the enemies' sway and the party's breathing, ask first")
+	assert_eq(body.count("if not motion_owns(sprite):"), 2, "both idle writes, the enemies' sway and the party's breathing, ask first")
 	assert_eq(body.count("sprite.position.y = "), 2, "CONTROL: there are exactly two such writes to guard")
+
+
+func test_every_mover_owns_its_sprite_while_it_moves() -> void:
+	for key in BS.MOTION_METAS:
+		var s := _sprite(Rect2i(10, 20, 40, 70), Vector2(900, 200))
+		assert_false(BS.motion_owns(s), "CONTROL: at rest nothing owns it (%s)" % key)
+		var tween := s.create_tween()
+		tween.tween_property(s, "position:y", 150.0, 0.5)
+		s.set_meta(key, tween)
+		assert_true(BS.motion_owns(s), "a live %s owns the sprite" % key)
+		tween.pause()
+		assert_true(BS.motion_owns(s), "paused, a %s still owns it" % key)
+		tween.kill()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		assert_false(BS.motion_owns(s), "ended, the %s hands it back" % key)
+	assert_eq(BS.MOTION_METAS.size(), 3, "CONTROL: lunge/rush, knock-back and the escape hop")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	for key in BS.MOTION_METAS:
+		assert_true(("set_meta(\"%s\"" % key) in src, "something in the scene keeps its tween under %s" % key)
 
