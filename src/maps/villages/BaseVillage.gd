@@ -1173,13 +1173,36 @@ func _setup_camera() -> void:
 	camera.zoom = Vector2(2.0, 2.0)
 
 	var map_pixel_size = _get_map_pixel_size()
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_size.x
-	camera.limit_bottom = map_pixel_size.y
+	## A map smaller than the screen cannot be clamped into view: the limits widen evenly and the spill is painted with the map's own edge.
+	var spill: Vector2i = camera_spill(Vector2(map_pixel_size), camera.zoom)
+	_paint_past_the_map(spill)
+	camera.limit_left = -spill.x
+	camera.limit_top = -spill.y
+	camera.limit_right = map_pixel_size.x + spill.x
+	camera.limit_bottom = map_pixel_size.y + spill.y
 
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
+
+
+## Pixels per side by which the screen (the project's base view at this zoom) is wider or taller than the map; zero for every map that fills it.
+static func camera_spill(map: Vector2, zoom: Vector2) -> Vector2i:
+	var view := Vector2(float(ProjectSettings.get_setting("display/window/size/viewport_width", 1280)), float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))) / zoom
+	return Vector2i(maxi(0, ceili((view.x - map.x) / 2.0)), maxi(0, ceili((view.y - map.y) / 2.0)))
+
+
+## Repeats the map's edge cells outward over the spill, so what the camera shows past the map is its own border and not the void.
+func _paint_past_the_map(spill: Vector2i) -> void:
+	if tile_map == null or spill == Vector2i.ZERO:
+		return
+	var size: Vector2i = _get_map_pixel_size() / TILE_SIZE
+	var pad := Vector2i(ceili(float(spill.x) / TILE_SIZE), ceili(float(spill.y) / TILE_SIZE))
+	for y in range(-pad.y, size.y + pad.y):
+		for x in range(-pad.x, size.x + pad.x):
+			if x >= 0 and x < size.x and y >= 0 and y < size.y:
+				continue
+			var edge := Vector2i(clampi(x, 0, size.x - 1), clampi(y, 0, size.y - 1))
+			tile_map.set_cell(Vector2i(x, y), tile_map.get_cell_source_id(edge), tile_map.get_cell_atlas_coords(edge), tile_map.get_cell_alternative_tile(edge))
 
 
 func _setup_controller() -> void:
