@@ -6623,9 +6623,14 @@ func _invalidate_pending_area_start() -> void:
 func discard_interrupted_area_bed() -> void:
 	_interrupted_area_bed = {}
 
+## Two names for one bed: the cave asks for "cave", GameLoop and cutscenes for its map id, and the bed restarted 3x on entry (his .808 log).
+const AREA_ALIASES: Dictionary = {"whispering_cave": "cave"}
+
+
 func play_area_music(area_type: String, resume_at: float = 0.0, home_area: String = "") -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
+	area_type = str(AREA_ALIASES.get(area_type, area_type))
 	if _current_area == area_type and _music_playing:
 		## ⛔ A PENDING FADE-OUT OUTLIVES THIS RETURN. fade_out_music's callback stops BOTH
 		## players and clears _current_music, and it leaves _music_playing true until it fires —
