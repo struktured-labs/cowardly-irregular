@@ -143,6 +143,9 @@ func test_an_undrawn_bubble_keeps_its_hold_until_it_is_drawn() -> void:
 	for i in 4:
 		await get_tree().process_frame
 	assert_true(b._panel.visible, "the menu left: the bubble is drawn")
-	assert_gt(b.modulate.a, 0.5, "and readable, not mid-fade (alpha %.2f)" % b.modulate.a)
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(b) and b.modulate.a < 0.95 and Time.get_ticks_msec() - t0 < 3000:
+		await get_tree().process_frame
+	assert_true(is_instance_valid(b) and b.modulate.a >= 0.95, "and it fades IN to full, not out (alpha %.2f)" % (b.modulate.a if is_instance_valid(b) else -1.0))
 	var after := await _ms_until_gone(b, 4000)
 	assert_lt(after, 4000, "once drawn it plays its hold and goes (took %d ms)" % after)
