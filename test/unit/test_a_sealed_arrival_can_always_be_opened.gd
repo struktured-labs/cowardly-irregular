@@ -29,6 +29,12 @@ const CASES := [
 ]
 
 var _vp: SubViewport = null
+var _saved_constants: Dictionary = {}
+
+
+## The real `_transition_to_floor` persists `<cave_id>_floor`, so the file restores every constant it found (a saved floor 3 fired the chain test's mage).
+func before_all() -> void:
+	_saved_constants = GameState.game_constants.duplicate(true)
 
 
 ## \u26d4 BOTH PERSISTED KEYS, AND THE SECOND ONE CAUGHT ME. Puzzle switches live under
@@ -216,3 +222,4 @@ func test_every_sealed_arrival_rests_on_a_named_limb() -> void:
 
 func after_all() -> void:
 	SoundState.restore()
+	GameState.game_constants = _saved_constants.duplicate(true)
