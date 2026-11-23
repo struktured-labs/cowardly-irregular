@@ -12,15 +12,24 @@
 | `v3.33.774-alpha` | (none left: `sandrift_village` · `title_screen` re-shot at `.807`) | "re-shot at `v3.33.774-alpha`, a name said once" |
 | `v3.33.802-alpha` | `inn_interior` (`shop_interior` re-shot at `.807`) | "re-shot at `v3.33.802-alpha`, the rooms are drawn" |
 | `v3.33.788-alpha` | (none left: `battle` re-shot at `.807`) | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
-| `v3.33.807-alpha` | `eldertree_village` · `grimhollow_village` · `shop_interior` · `title_screen` (`ironhaven_village` re-shot at `.810`; `battle` · `battle_storm` · `frosthold_village` · `grimhollow_spiral` · `sandrift_village` at `.813`) | "re-shot at `v3.33.807-alpha`, the pixel face" |
+| `v3.33.807-alpha` | `eldertree_village` · `shop_interior` · `title_screen` (`grimhollow_village` re-shot at `.814`; `ironhaven_village` re-shot at `.810`; `battle` · `battle_storm` · `frosthold_village` · `grimhollow_spiral` · `sandrift_village` at `.813`) | "re-shot at `v3.33.807-alpha`, the pixel face" |
 | `v3.33.809-alpha` | `whispering_cave` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | "re-shot at `v3.33.809-alpha`, the stairs point the way" |
 | `v3.33.810-alpha` | `ironhaven_village` | "re-shot at `v3.33.810-alpha`, who walks there now" |
 | `v3.33.813-alpha` | `battle` · `battle_storm` · `grimhollow_spiral` · `harmonia_village` · `frosthold_village` · `sandrift_village` | "re-shot at `v3.33.813-alpha`, the frames follow the doors" |
+| `v3.33.814-alpha` | `grimhollow_village` | "re-shot at `v3.33.814-alpha`, framed inside its walls" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-20: re-shot at `v3.33.814-alpha`, framed inside its walls.** The frame held at `.813`. From `.814` the shot
+tool keeps a village's view inside the map (`[SHOT] view held inside the map: centre (260, 244) -> (320, 244)` in this
+run's log), so Grimhollow's frame no longer shows the 118 px grey band past its left edge. Moved vs the shipped `.807`
+frame 47.74%, run A vs run B 0.00%: the whole frame, because the hero now stands at the Lantern Debt Office's arch
+(608, 352), where `.813` moved that door. Read: no band; the hero is near the right edge under the arch, and one
+villager's name tag is clipped by the frame's right edge. Frame is run A of the `.814` publish's own store recheck.
+Still HELD: the three `field_elite_*` frames (no tell).
 
 **2026-11-20: re-shot at `v3.33.813-alpha`, the frames follow the doors.** `.813` moves doors in six villages and
 fits the battle's party panel. Six frames replaced, each run A of the `.813` publish's own store recheck, each read
