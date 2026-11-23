@@ -2592,7 +2592,7 @@
     },
     "masterite_warden_suburban": {
       "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
-      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back). 2026-11-23 cowir-sprites: frames 0-1 (every anim, by repoint) lost an orange streak that ran from between the feet through the shadow to the frame's bottom edge; rows 232-255 cleared, the streak inside the shadow painted shadow black. Frames 2-7 untouched.",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
