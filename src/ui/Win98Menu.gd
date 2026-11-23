@@ -270,7 +270,7 @@ var _width_cap: int = 0
 ## floor and bright battle backgrounds. A menu you cannot read is worse than one that covers
 ## scenery, and fading the border is what costs legibility, not fading the fill.
 const PANEL_ALPHA := 0.55
-const OVERLAP_PANEL_ALPHA := 0.94
+const OVERLAP_PANEL_ALPHA := 1.0
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -571,7 +571,8 @@ func _update_tooltip() -> void:
 func _tooltip_backing() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	var bg: Color = style.get("bg", Color(0.1, 0.1, 0.2))
-	sb.bg_color = Color(bg.r, bg.g, bg.b, 0.88)
+	## Opaque with its list when that list rests on its parent, so no parent row reads through the description (cowir-main 26913).
+	sb.bg_color = Color(bg.r, bg.g, bg.b, 1.0 if _fill_alpha >= 1.0 else 0.88)
 	sb.border_color = Color(style.get("border", Color.WHITE), 0.5)
 	sb.set_border_width_all(1)
 	sb.set_corner_radius_all(3)
@@ -906,6 +907,8 @@ func _description_room_for(menu_w: int) -> int:
 
 ## Lines a row's name may take: 2 where a name is wider than the list is allowed, so it wraps and is never cut to a stub.
 var _row_lines: int = 1
+## A list whose names must read whole (the battle Ability list): it may grow over its parent and wraps before it cuts. Other lists keep the shipped gap and ellipsis.
+var _names_whole: bool = false
 
 
 func _row_height() -> int:
@@ -981,7 +984,7 @@ func _build_menu() -> void:
 		viewport_width = int(get_viewport_rect().size.x)
 	var menu_width = clampi(max(210, max_label_width + content_padding), 210, _effective_width_cap(viewport_width))
 	## The list is as wide as it may be and a name still does not fit: every row takes a second line (struktured's 200% frame: "Power ...").
-	if max_label_width + content_padding > menu_width:
+	if _names_whole and max_label_width + content_padding > menu_width:
 		_row_lines = 2
 
 	var row_h := _row_height()
@@ -1084,9 +1087,16 @@ func _build_menu() -> void:
 	_can_close_on_click = true
 
 
+## The fill's share of the style's alpha: PANEL_ALPHA over the battlefield, OVERLAP_PANEL_ALPHA (opaque) over a parent list.
+var _fill_alpha: float = PANEL_ALPHA
+
+
 func _set_fill_alpha(alpha: float) -> void:
+	_fill_alpha = alpha
 	if _panel_fill and is_instance_valid(_panel_fill):
 		_panel_fill.color.a = style.bg.a * alpha
+	if _tooltip_label and is_instance_valid(_tooltip_label):
+		_tooltip_label.add_theme_stylebox_override("normal", _tooltip_backing())
 
 
 func _create_retro_panel(w: int, h: int) -> Control:
@@ -1467,15 +1477,15 @@ func _do_open_submenu(parent_index: int, item: Dictionary) -> void:
 	_open_submenu(parent_index, item)
 
 
-func _submenu_width_cap() -> int:
+func _submenu_width_cap(names_whole: bool = false) -> int:
 	var viewport_width := 1280
 	if is_inside_tree():
 		viewport_width = int(get_viewport_rect().size.x)
 	var half := maxi(210, int(viewport_width / 2.0))
 	if not expand_left or not is_inside_tree():
 		return half
-	## As wide as its longest row needs, between the enemy panel and the party panel: past the gap before its parent it rests over the dimmed parent (cowir-main 26791).
-	var room := int(floor(_submenu_right_wall() - _submenu_left_bound()))
+	## An Ability list is as wide as its longest row needs, between the enemy and party panels, resting over its parent past the gap (cowir-main 26791). Others stay left of the parent.
+	var room := int(floor(_submenu_right_wall() - _submenu_left_bound())) if names_whole else int(floor(global_position.x - 6.0 - _submenu_left_bound()))
 	if room < 210:
 		return half
 	return mini(half, room)
@@ -1555,7 +1565,8 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	submenu.expand_left = expand_left
 	submenu.expand_up = expand_up
 	submenu.z_index = z_index + 1
-	submenu._width_cap = _submenu_width_cap()
+	submenu._names_whole = str(item.get("id", "")) == "ability_menu"
+	submenu._width_cap = _submenu_width_cap(submenu._names_whole)
 	submenu.screen_floor_y = screen_floor_y
 
 	# Start with offset and transparent for animation

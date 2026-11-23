@@ -89,6 +89,7 @@ func _real_rows(job: String) -> Array:
 func _list(rows: Array, cap: int, floor_y: float = 0.0) -> Win98Menu:
 	var m := Win98Menu.new()
 	m._width_cap = cap
+	m._names_whole = true
 	m.screen_floor_y = floor_y
 	add_child_autofree(m)
 	m.setup("Ability", rows, Vector2(300, 100), "fighter")
@@ -131,9 +132,9 @@ func _half_screen() -> int:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m := Win98Menu.new()
 	autofree(m)
-	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label"]:
+	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label", "_names_whole", "_fill_alpha", "_panel_fill"]:
 		assert_true(p in m, "FLOOR: Win98Menu.%s" % p)
-	for f in ["setup", "_row_height", "_line_row_height", "_submenu_width_cap", "_submenu_right_wall", "_submenu_left_bound", "_open_submenu", "_update_tooltip"]:
+	for f in ["setup", "_row_height", "_line_row_height", "_submenu_width_cap", "_submenu_right_wall", "_submenu_left_bound", "_open_submenu", "_update_tooltip", "_tooltip_backing"]:
 		assert_true(m.has_method(f), "FLOOR: Win98Menu.%s()" % f)
 	for job in STARTERS:
 		assert_gt(_real_rows(job).size(), 2, "FLOOR: BattleCommandMenu builds %s an Ability list to judge" % job)
@@ -250,7 +251,45 @@ func test_a_wide_list_rests_between_the_two_panels() -> void:
 		if why != "":
 			cut.append(why)
 	assert_eq(cut, [], "and no label in it is cut:\n%s" % "\n".join(PackedStringArray(cut)))
+	## cowir-main 26913: no root text through the list. The fill and the description box are opaque where the list rests on the root.
+	assert_eq(sub._panel_fill.color.a, sub.style.bg.a, "the list's fill is opaque over the root (%.2f of %.2f)" % [sub._panel_fill.color.a, sub.style.bg.a])
+	assert_eq(sub._tooltip_backing().bg_color.a, 1.0, "and so is its description box")
+	assert_lt(root._tooltip_backing().bg_color.a, 1.0, "CONTROL: a list over the open battlefield keeps its see-through backing")
 	root.force_close()
+
+
+## Ruling 4 (cowir-main 26913, the red neighbour): only the Ability list grows over the root. A target list with a boss name keeps the shipped gap, its one-line rows and its ellipsis.
+func test_a_list_that_is_not_the_ability_list_stays_where_it_shipped() -> void:
+	GameState.text_size_scale = 1.0
+	var enemies := Control.new()
+	enemies.name = "EnemyStatusPanel"
+	enemies.position = Vector2(5, 60)
+	enemies.size = Vector2(175, 220)
+	add_child_autofree(enemies)
+	await get_tree().process_frame
+	var targets: Array = [{"id": "t0", "label": "Slime (48 HP) ~12 dmg [KILL]"}, {"id": "t1", "label": "Glacius, the Frozen Sovereign (248 HP) ~86 dmg [KILL]"}]
+	var opened: Dictionary = {}
+	for id in ["attack_menu", "ability_menu"]:
+		var item := {"label": "Attack" if id == "attack_menu" else "Ability", "id": id, "submenu": targets}
+		var root := Win98Menu.new()
+		add_child_autofree(root)
+		root.setup("Fighter", [item], Vector2(537.6, 180), "fighter")
+		await get_tree().process_frame
+		await get_tree().process_frame
+		root._open_submenu(0, item)
+		for i in 30:
+			await get_tree().process_frame
+		var sub: Win98Menu = root.submenu
+		assert_not_null(sub, "CONTROL: the %s list opened" % id)
+		if sub == null:
+			return
+		opened[id] = {"end": sub.get_global_rect().end.x, "root": root.get_global_rect().position.x, "lines": sub._row_lines, "whole": sub._names_whole}
+		root.force_close()
+	assert_false(opened["attack_menu"]["whole"], "a target list is not asked to keep names whole")
+	assert_lte(opened["attack_menu"]["end"], opened["attack_menu"]["root"] - 4.0, "it ends left of the command menu, as shipped (%d vs %d)" % [int(opened["attack_menu"]["end"]), int(opened["attack_menu"]["root"])])
+	assert_eq(opened["attack_menu"]["lines"], 1, "and keeps one-line rows")
+	assert_true(opened["ability_menu"]["whole"], "CONTROL: the same rows opened as the Ability list are")
+	assert_gt(opened["ability_menu"]["end"], opened["ability_menu"]["root"], "CONTROL: and that list rests over the root, so the gap is what held the target list")
 
 
 ## Ruling 3: under a floor the list leaves room for its description box, giving up rows before the box leaves the screen.
