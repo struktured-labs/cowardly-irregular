@@ -3,7 +3,7 @@ Spends nothing: the strips are the normalised output of calls already on the spe
 
 Frame 0 becomes the shipped idle (the manifest's idle start, which is not always 0), kept byte for byte, soft edge included (cowir-main 26252). Frame 1 = the idle strip's breath panel, 2-3 attack, 4-5 hit, 6-7 dead, and any frame
 past 7 (the Rat King's royal_spite) is kept. The ranges go back to idle 0-1 / attack 2-3 / hit 4-5 / dead 6-7.
-Refuses a sheet whose tier is not T1, and a strip that is not two 256 px frames with binary alpha.
+Refuses a sheet whose tier is not T1, an id that reuses another id's PNG, and a strip that is not two 256 px frames with binary alpha.
 Prints, per monster, the EYE_REVIEWED pins test_a_monster_stays_one_creature needs, so a look is pinned to those pixels.
 
 Usage: uv run python tools/install_motion_regen.py <strips_dir> <monster|tag-map.json> [--write]
@@ -17,11 +17,13 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from tools.artist_guard import tier_refusal
+from tools.regen_s4_motion_batch import shared_sheet_refusal, sheet_borrowers
 
 MANIFEST = "data/sprite_manifest.json"
 FW = 256
 LAYOUT = {"idle": (0, 1), "attack": (2, 3), "hit": (4, 5), "dead": (6, 7)}
 # Which strip panel fills each frame; frame 0 stays the shipped idle.
+IDLE_FLOOR = 0.70   # test_a_monster_idles_as_one_creature.MIN_IDLE_OVERLAP
 FILL = {1: ("idle", 1), 2: ("attack", 0), 3: ("attack", 1), 4: ("hit", 0), 5: ("hit", 1), 6: ("dead", 0), 7: ("dead", 1)}
 
 
@@ -70,7 +72,18 @@ def build(sheet: np.ndarray, strips: dict, log=None, idle_at: int = 0) -> np.nda
         if gone and log is not None:
             log.append(f"frame {f}: cleared {gone}")
         out[:, f * FW:(f + 1) * FW] = fr
+    lap = idle_overlap(out[:, :FW], out[:, FW:2 * FW])
+    if lap < IDLE_FLOOR:   # test_a_monster_idles_as_one_creature: the idle would jump between two drawings
+        out[:, FW:2 * FW] = out[:, :FW]
+        if log is not None:
+            log.append(f"frame 1: breath overlapped the shipped idle {lap:.2f} < {IDLE_FLOOR}, holds frame 0 instead")
     return out
+
+
+def idle_overlap(a: np.ndarray, b: np.ndarray) -> float:
+    """The guard's overlap: alpha >= 128 in both over alpha >= 128 in either."""
+    x, y = a[..., 3] >= 128, b[..., 3] >= 128
+    return float((x & y).sum()) / max(1, int((x | y).sum()))
 
 
 def range_hash(sheet: np.ndarray, a: int, b: int) -> str:
@@ -93,9 +106,11 @@ def install(monster: str, files: dict, strips_dir: Path, write: bool) -> dict:
     entry = man["monster_sheets"].get(monster)
     if entry is None:
         raise SystemExit(f"{monster}: not a registered monster_sheet")
-    why = tier_refusal(entry.get("tier"), monster)
+    why = tier_refusal(entry.get("tier"), monster) or shared_sheet_refusal(man["monster_sheets"], monster)
     if why:
         raise SystemExit(why)
+    for b in sheet_borrowers(man["monster_sheets"], monster):
+        print(f"  NOTE {b} also shows this PNG: give it {monster}'s new ranges and pins")
     path = entry["path"].replace("res://", "")
     sheet = np.array(Image.open(path).convert("RGBA"))
     if sheet.shape[1] < 8 * FW or sheet.shape[0] != FW:
@@ -156,6 +171,14 @@ def selftest() -> int:
         px = out[0, f * FW]
         if px[1] != 100 + list(LAYOUT).index(a) or px[2] != k:
             fails.append(f"frame {f} should be {a} panel {k}, got G={px[1]} B={px[2]}")
+    shifted = {k: v.copy() for k, v in strips.items()}
+    shifted["idle"][:, FW:, 3] = 0; shifted["idle"][:200, FW + 200:, 3] = 255   # a breath that is not the idle
+    small = sheet.copy(); small[..., 3] = 0; small[:, :FW, 3] = 0; small[:100, :100, 3] = 255
+    lg = []; o4 = build(small, shifted, lg)
+    if not np.array_equal(o4[:, FW:2 * FW], o4[:, :FW]) or not any("holds frame 0" in m for m in lg):
+        fails.append("a breath under the idle floor must hold frame 0 and say so")
+    if np.array_equal(out[:, FW:2 * FW], out[:, :FW]):
+        fails.append("CONTROL: a breath that overlaps the idle must be kept")
     if strip_refusal(np.zeros((FW, FW, 4), np.uint8)) == "":
         fails.append("CONTROL: a one-frame strip must be refused")
     soft = strips["idle"].copy(); soft[0, 0, 3] = 128
