@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Recipe-card frames for the earned-autobattle-recipe reveal: a PREVIEW, not registered anywhere.
 
-Draws a 64x88 pixel card in three rarity tiers (common / rare / epic) plus a LOCKED state, and a
-few sample 20x20 recipe icons, procedurally (T1, $0, no model). No text is baked into the art:
-the game draws the recipe name and the "6/10" progress in its own font, so a renamed recipe never
-needs new pixels. Nothing here touches assets/ or data/sprite_manifest.json; the spec decides
+Draws a 64x88 pixel card in three rarity tiers (common / rare / epic) plus a LOCKED state, a 4x4
+progress pip (filled + empty), and a few sample 20x20 recipe icons, procedurally (T1, $0, no
+model). The card carries NO text (cutscenes 26974, adhoc 26968): the pixel face at the card's own
+scale cannot fit a name in a plate, so the name and reveal line go in the popup's text panel, and
+progress is 10 empty sockets baked into the frame, of which the game lights N with pip_filled. Nothing here touches assets/ or data/sprite_manifest.json; the spec decides
 where (and whether) these land.
 
     uv run python tools/gen_recipe_card_frames.py --out tmp/recipe_cards
@@ -17,7 +18,9 @@ from pathlib import Path
 from PIL import Image
 
 W, H = 64, 88
-WIN = (6, 6, 58, 50)            # art window, icon centred in it
+WIN = (6, 6, 58, 62)            # art window, icon centred in it
+PIPS_RECT = (7, 72, 49, 4)      # x, y, w, h: 10 pips of 4 px with 1 px gaps
+PIP = 4
 INK = (20, 16, 24, 255)         # outline
 
 # tier -> (base, light, dark, window tint)
@@ -70,11 +73,12 @@ def card(tier):
     for y in range(y0 - 1, y1 + 1):
         px[x0 - 1, y] = a(dark)
         px[x1, y] = a(light)
-    # name plate (the game writes the name here) and a progress trough below it
-    _rect(px, 6, 54, 58, 66, a(dark))
-    _rect(px, 7, 55, 57, 65, a(tint))
-    _rect(px, 6, 70, 58, 76, a(dark))
-    _rect(px, 7, 71, 57, 75, a(tint))
+    # pip trough: the game lights N pips across PIPS_RECT
+    _rect(px, 5, 69, 59, 79, a(dark))
+    _rect(px, 6, 70, 58, 78, a(tint))
+    for i in range(10):
+        im.alpha_composite(pip(False), (PIPS_RECT[0] + i * (PIP + 1), PIPS_RECT[1]))
+    px = im.load()
     # corner studs, tier-coloured light
     for x, y in ((4, 80), (59, 80), (4, 4), (59, 4)):
         px[x, y] = a(light)
@@ -133,6 +137,27 @@ def icon(rows):
     return im
 
 
+def pip(filled):
+    im = Image.new("RGBA", (PIP, PIP), (0, 0, 0, 0))
+    px = im.load()
+    if filled:
+        _rect(px, 0, 0, PIP, PIP, (250, 210, 70, 255))
+        _rect(px, 1, 1, PIP, PIP, (196, 140, 30, 255))
+        px[1, 1] = (255, 246, 200, 255)
+    else:
+        _rect(px, 0, 0, PIP, PIP, (8, 6, 10, 255))
+        _rect(px, 1, 1, PIP - 1, PIP - 1, (36, 32, 40, 255))
+    return im
+
+
+def with_pips(c, n, total=10):
+    out = c.copy()
+    x, y, _, _ = PIPS_RECT
+    for i in range(min(n, total)):
+        out.alpha_composite(pip(True), (x + i * (PIP + 1), y))
+    return out
+
+
 def with_icon(c, ic):
     out = c.copy()
     x0, y0, x1, y1 = WIN
@@ -154,9 +179,11 @@ def main():
         im.save(out / f"card_{t}.png")
     for k, im in icons.items():
         im.save(out / f"icon_{k}.png")
-    # preview: row 1 the bare tiers + locked, row 2 each sample icon on a tier, 4x, grey ground
-    tiles = [cards[t] for t in (*TIERS, "locked")]
-    tiles += [with_icon(cards[t], icons[k]) for t, k in zip(TIERS, ICONS)]
+    pip(True).save(out / "pip_filled.png")
+    pip(False).save(out / "pip_empty.png")
+    # preview: row 1 the bare tiers (earned, 10/10) + locked at 6/10, row 2 a sample icon per tier, 4x, grey
+    tiles = [with_pips(cards[t], 10) for t in TIERS] + [with_pips(cards["locked"], 6)]
+    tiles += [with_pips(with_icon(cards[t], icons[k]), 10) for t, k in zip(TIERS, ICONS)]
     gap, s = 8, 4
     cols = 4
     pw = cols * (W + gap) + gap
