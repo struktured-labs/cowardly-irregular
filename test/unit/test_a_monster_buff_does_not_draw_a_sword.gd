@@ -8,7 +8,21 @@ const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
 const SWORD := "ability_physical"
 
 
+var _saved_area: String = ""
+var _saved_suffix: String = ""
+
+
+## Pinned to World 1: a world leaked by an earlier test sends play_ability to a w6_ variant first.
+func before_each() -> void:
+	_saved_area = SoundManager._current_area
+	_saved_suffix = SoundManager._current_world_suffix
+	SoundManager._current_area = "overworld_medieval"
+	SoundManager._current_world_suffix = "medieval"
+
+
 func after_each() -> void:
+	SoundManager._current_area = _saved_area
+	SoundManager._current_world_suffix = _saved_suffix
 	SoundManager._sfx_cooldowns.clear()
 	SoundManager._sfx_suppressed_by_cooldown = false
 	SfxState.release_streams()
