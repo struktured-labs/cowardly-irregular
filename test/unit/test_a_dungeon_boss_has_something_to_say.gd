@@ -125,3 +125,36 @@ func test_no_boss_concedes_when_it_wipes_the_party() -> void:
 	assert_gt(seen_in_victory, 10, "CONTROL: the marker list must recognise the concessions bosses already make when they lose")
 	assert_gt(gloats, 40, "CONTROL: the wipe lines were read")
 	assert_eq(conceding, [], "a defeat_line plays when the boss WINS; these concede instead")
+
+
+## 2026-11-24 (cowir-story): nine dungeon bosses (the Cartographer, five Masterites, the three trials) had no `low_hp` line, so the
+## once-per-battle "I'm wounded" beat (BattleScene, <25% HP) said nothing. Its only source is monsters.json dialogue.low_hp.
+func test_every_dungeon_boss_says_it_is_wounded() -> void:
+	var ids := _dungeon_boss_ids()
+	assert_gt(ids.size(), 15, "CONTROL: every reach was walked")
+	var monsters := _json("res://data/monsters.json")
+	assert_true(_has_lines((monsters.get("ice_dragon", {}) as Dictionary).get("dialogue", {}), "low_hp"), "CONTROL: the reader sees a shipped low_hp line")
+	var silent: Array = []
+	for boss_id in ids:
+		var row: Variant = monsters.get(boss_id, {})
+		var md: Variant = (row as Dictionary).get("dialogue", {}) if row is Dictionary else {}
+		if not _has_lines(md, "low_hp"):
+			silent.append("%s (%s)" % [boss_id, ids[boss_id]])
+	assert_eq(silent, [], "dungeon bosses with nothing to say when they drop below a quarter HP")
+
+
+## 2026-11-24 (cowir-story): Masterites are fielded by MasteriteEncounter (villages, roads), not only by dungeons, so the derived
+## dungeon set saw 5 of 24. Every Masterite row (masterite_type) must carry its wounded line too.
+func test_every_masterite_says_it_is_wounded() -> void:
+	var monsters := _json("res://data/monsters.json")
+	var judged := 0
+	var silent: Array = []
+	for id in monsters:
+		var row: Variant = monsters[id]
+		if not (row is Dictionary) or str((row as Dictionary).get("masterite_type", "")) == "":
+			continue
+		judged += 1
+		if not _has_lines((row as Dictionary).get("dialogue", {}), "low_hp"):
+			silent.append(str(id))
+	assert_gt(judged, 20, "CONTROL: the Masterite rows were found")
+	assert_eq(silent, [], "Masterites with nothing to say when they drop below a quarter HP")
