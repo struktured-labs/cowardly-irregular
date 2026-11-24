@@ -153,7 +153,10 @@ func test_the_battle_names_the_elite_as_its_speaker() -> void:
 	elite.set_meta("field_elite_speaker", true)
 	autofree(pool_enemy)
 	autofree(elite)
-	scene.test_enemies = [pool_enemy, elite]
+	assert_true("test_enemies" in scene, "FLOOR: BattleScene must still hold its enemies in test_enemies")
+	scene.test_enemies.clear()
+	scene.test_enemies.append(pool_enemy)
+	scene.test_enemies.append(elite)
 	assert_eq(scene._boss_combatant(), elite,
 		"the elite's lines would be spoken in the name of the first enemy on the field, not the elite")
 	assert_eq(scene._get_boss_intro_speaker(), "Brass Golem", "the elite's intro names the wrong speaker")
@@ -161,5 +164,7 @@ func test_the_battle_names_the_elite_as_its_speaker() -> void:
 	boss.combatant_name = "Some Boss"
 	boss.set_meta("is_boss", true)
 	autofree(boss)
-	scene.test_enemies = [elite, boss]
+	scene.test_enemies.clear()
+	scene.test_enemies.append(elite)
+	scene.test_enemies.append(boss)
 	assert_eq(scene._boss_combatant(), boss, "CONTROL: a real boss still outranks an elite speaker")
