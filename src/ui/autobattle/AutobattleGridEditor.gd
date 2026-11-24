@@ -660,7 +660,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var hint = _create_empty_condition_hint(row_idx, conditions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
-		x_offset += CELL_WIDTH / 2 + CELL_PADDING
+		x_offset += hint.custom_minimum_size.x + CELL_PADDING
 
 	# Arrow connector between conditions and actions (with dedicated space)
 	var arrow = _create_arrow_connector()
@@ -706,13 +706,13 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var hint = _create_empty_action_hint(row_idx, actions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
-		x_offset += CELL_WIDTH / 2 + CELL_PADDING
+		x_offset += hint.custom_minimum_size.x + CELL_PADDING
 
 	# Row insert button [++] at end of row
 	var row_btn = _create_row_insert_hint(row_idx)
 	row_btn.position = Vector2(x_offset, y_offset)
 	_grid_container.add_child(row_btn)
-	x_offset += 48  # Row insert button width + padding
+	x_offset += row_btn.custom_minimum_size.x + 8  # Row insert button width + padding
 
 	# Row toggle cell [ON]/[OFF] at the very end
 	var toggle_cell = _create_row_toggle_cell(row_idx, is_enabled)
@@ -904,10 +904,21 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 	return cell
 
 
+## A row-tail cell (the +AND / +ACTION hints, the [ON]/[OFF] toggle) is as wide as its label needs at the current Text
+## Size, and never narrower than its old fixed width. These are single words, so they cannot wrap, and text here never
+## shrinks: at 2.0 "+ACTION" alone is wider than the half cell it used to get. _draw_rule_row advances by the built width.
+func _tail_w(text: String, px: int, floor_w: float) -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return floor_w
+	return maxf(floor_w, ceilf(fnt.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x) + 12.0)  # the widest label inset (8) + 2 px a side
+
+
 func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	"""Create an empty action slot hint"""
+	var w: float = _tail_w("+ACTION", TextScale.scaled(11), CELL_WIDTH / 2)
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
+	cell.custom_minimum_size = Vector2(w, _cell_h())
 	cell.set_meta("cell_type", "empty_action")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", act_idx)
@@ -916,7 +927,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = style.get("action_bg", Color(0.2, 0.2, 0.2)).darkened(0.5)
 	bg.modulate.a = 0.4
-	bg.size = Vector2(CELL_WIDTH, _cell_h())
+	bg.size = Vector2(w, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
@@ -928,7 +939,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	## thing added is correct under both readings, so the ambiguity does not need resolving.
 	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
-	label.size = Vector2(CELL_WIDTH - 8, _cell_h() - 8)
+	label.size = Vector2(w - 8, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -936,7 +947,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to add action, hover to highlight
-	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, _cell_h(),
+	MenuMouseHelper.make_clickable(cell, act_idx, w, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -945,8 +956,9 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 func _create_row_insert_hint(row_idx: int) -> Control:
 	"""Create a row insert button [++] at end of row"""
+	var w: float = _tail_w("[++]", TextScale.scaled(10), 40.0)
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(40, _cell_h())
+	cell.custom_minimum_size = Vector2(w, _cell_h())
 	cell.set_meta("cell_type", "row_insert")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", -2)  # Special index for row insert
@@ -955,14 +967,14 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = Color(0.2, 0.25, 0.2).darkened(0.3)
 	bg.modulate.a = 0.5
-	bg.size = Vector2(40, _cell_h())
+	bg.size = Vector2(w, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
 	var label = Label.new()
 	label.text = "[++]"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(36, _cell_h() - 8)
+	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -970,7 +982,7 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to insert row, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, 40, _cell_h(),
+	MenuMouseHelper.make_clickable(cell, row_idx, w, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -979,8 +991,10 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 
 func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	"""Create a selectable toggle cell [ON]/[OFF] for enabling/disabling the row"""
+	## Sized for "[OFF]", the longer state, so a row does not change width when toggled.
+	var w: float = _tail_w("[OFF]", TextScale.scaled(12), 50.0)
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(50, _cell_h())
+	cell.custom_minimum_size = Vector2(w, _cell_h())
 	cell.set_meta("cell_type", "row_toggle")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", -3)  # Special index for toggle cell (after row_insert which is -2)
@@ -991,20 +1005,20 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 		bg.color = Color(0.15, 0.35, 0.15)  # Dark green
 	else:
 		bg.color = Color(0.35, 0.15, 0.15)  # Dark red
-	bg.size = Vector2(50, _cell_h())
+	bg.size = Vector2(w, _cell_h())
 	cell.add_child(bg)
 
 	# Border
 	var border_color = Color.GREEN if is_enabled else Color.RED
 	var border_top = ColorRect.new()
 	border_top.color = border_color
-	border_top.size = Vector2(50, 2)
+	border_top.size = Vector2(w, 2)
 	border_top.position = Vector2(0, 0)
 	cell.add_child(border_top)
 
 	var border_bottom = ColorRect.new()
 	border_bottom.color = border_color.darkened(0.3)
-	border_bottom.size = Vector2(50, 2)
+	border_bottom.size = Vector2(w, 2)
 	border_bottom.position = Vector2(0, _cell_h() - 2)
 	cell.add_child(border_bottom)
 
@@ -1017,14 +1031,14 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	var border_right = ColorRect.new()
 	border_right.color = border_color.darkened(0.3)
 	border_right.size = Vector2(2, _cell_h())
-	border_right.position = Vector2(48, 0)
+	border_right.position = Vector2(w - 2, 0)
 	cell.add_child(border_right)
 
 	# Label text
 	var label = Label.new()
 	label.text = "[ON]" if is_enabled else "[OFF]"
 	label.position = Vector2(4, 8)
-	label.size = Vector2(42, _cell_h() - 16)
+	label.size = Vector2(w - 8, _cell_h() - 16)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color.LIME if is_enabled else Color(1.0, 0.4, 0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1032,7 +1046,7 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to toggle, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, 50, _cell_h(),
+	MenuMouseHelper.make_clickable(cell, row_idx, w, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -1041,8 +1055,9 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 
 func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	"""Create an empty AND condition slot hint"""
+	var w: float = _tail_w("+AND", TextScale.scaled(9), CELL_WIDTH / 2)
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH / 2, _cell_h())
+	cell.custom_minimum_size = Vector2(w, _cell_h())
 	cell.set_meta("cell_type", "empty_condition")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", cond_idx)
@@ -1051,14 +1066,14 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = style.get("condition_bg", Color(0.2, 0.2, 0.3)).darkened(0.5)
 	bg.modulate.a = 0.4
-	bg.size = Vector2(CELL_WIDTH / 2, _cell_h())
+	bg.size = Vector2(w, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
 	var label = Label.new()
 	label.text = "+AND"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(CELL_WIDTH / 2 - 4, _cell_h() - 8)
+	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1066,7 +1081,7 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to add condition, hover to highlight
-	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, _cell_h(),
+	MenuMouseHelper.make_clickable(cell, cond_idx, w, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
