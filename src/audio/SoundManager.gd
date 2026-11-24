@@ -267,6 +267,8 @@ const SOUNDS = {
 
 # Ability sound mappings (ability_id -> sound_key)
 var _ability_sounds: Dictionary = {}
+## Support abilities with an effect and no cue of their own: their cast is silent, because _on_action_executed cues the landing (buff/debuff/status).
+var _silent_cast_abilities: Dictionary = {}
 
 
 func _ready() -> void:
@@ -851,7 +853,7 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["esuna"] = "ability_esuna"
 
 	# Rogue utility + the Fighter's taunt — the rest of the NINE support abilities reachable in
-	# normal play. Same id-keyed route; 65 monster-only and 11 debug-gated ones still thump.
+	# normal play. Same id-keyed route; the unmapped rest (monster-only, debug-gated) cast silently: _silent_cast_abilities.
 	_ability_sounds["scan"] = "ability_scan"
 	_ability_sounds["shadow_step"] = "ability_shadow_step"
 	_ability_sounds["smoke_bomb"] = "ability_smoke_bomb"
@@ -1030,6 +1032,9 @@ func _derive_ability_sounds_from_data() -> void:
 		if not (entry is Dictionary):
 			continue
 		var ability_type: String = str(entry.get("type", ""))
+		if ability_type == "support" and str(entry.get("effect", "")) != "":
+			_silent_cast_abilities[ability_id] = true
+			continue
 		if ability_type != "magic" and not _TYPE_SFX.has(ability_type):
 			continue
 		## ⛔ THE LOSER OF THE PRECEDENCE IS STILL A CANDIDATE. Element outranks type — a DELIBERATE
@@ -1699,6 +1704,9 @@ func play_crit_thud() -> void:
 
 func play_ability(ability_id: String) -> void:
 	"""Play sound for an ability — tries world-variant first, then default"""
+	## A monster's support cast was a sword unsheathing (65 of them, every Masterite buff); its landing cue already speaks for it.
+	if not _ability_sounds.has(ability_id) and _silent_cast_abilities.has(ability_id):
+		return
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
 	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
 	var world_key = _get_world_sfx_prefix() + sound_key
