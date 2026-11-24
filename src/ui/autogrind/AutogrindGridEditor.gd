@@ -591,9 +591,10 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 
 
 func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
-	"""Create empty action slot hint"""
+	"""Create empty action slot hint. Half a cell wide, like the +AND hint: _draw_rule_row advances
+	CELL_WIDTH / 2 + CELL_PADDING past it, so a full-width hint ran under the [++] beside it (text, click and cursor)."""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
+	cell.custom_minimum_size = Vector2(CELL_WIDTH / 2, _cell_h())
 	cell.set_meta("cell_type", "empty_action")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", act_idx)
@@ -601,14 +602,14 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = style.action_bg.darkened(0.5)
 	bg.modulate.a = 0.4
-	bg.size = Vector2(CELL_WIDTH, _cell_h())
+	bg.size = Vector2(CELL_WIDTH / 2, _cell_h())
 	cell.add_child(bg)
 
 	var label = Label.new()
 	label.text = "[+R]"
 	label.clip_text = true
-	label.position = Vector2(4, 4)
-	label.size = Vector2(CELL_WIDTH - 8, _cell_h() - 8)
+	label.position = Vector2(2, 4)
+	label.size = Vector2(CELL_WIDTH / 2 - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", _fit_px(label.text, 11, label.size))
 	label.add_theme_color_override("font_color", style.text.darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -616,7 +617,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	cell.add_child(label)
 
 	# Mouse: click to add action, hover to highlight
-	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, _cell_h(),
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH / 2, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
