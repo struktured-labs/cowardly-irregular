@@ -18,6 +18,7 @@ const PIP_SIZE := 4.0
 const MANIFEST_PATH := "res://data/sprite_manifest.json"
 const MANIFEST_SECTION := "recipe_cards"
 const JINGLE_KEY := "recipe_learned"
+## sfx renders the ticks at 70 ms, the same beat as PIP_STEP.
 
 const PANEL_W := 600.0
 const PAD := 24.0
@@ -327,6 +328,9 @@ func _light(i: int) -> void:
 		else:
 			(_pips[i] as ColorRect).color = PIP_LIT
 		_lit = maxi(_lit, i + 1)
+		var tick: String = pip_tick_key(_lit)
+		if has_sfx(tick):
+			SoundManager.play_ui(tick)
 
 
 func _finale() -> void:
@@ -338,17 +342,22 @@ func _finale() -> void:
 	t.chain().tween_property(_card, "scale", Vector2.ONE, 0.15)
 	if _texts.has("hint"):
 		t.tween_property(_texts["hint"], "modulate:a", 1.0, 0.2)
-	if SoundManager and has_jingle():
+	if has_sfx(JINGLE_KEY):
 		SoundManager.play_jingle(JINGLE_KEY)
 	_dismissable = true
 
 
-## Silent until sfx registers the key: play_jingle would fall back to play_ui and warn on an unknown one.
-static func has_jingle() -> bool:
+## Silent until sfx registers the key: an unknown one would fall back and warn.
+static func has_sfx(key: String) -> bool:
 	if not SoundManager:
 		return false
 	SoundManager._load_sfx_manifest()
-	return SoundManager._sfx_manifest.has(JINGLE_KEY)
+	return SoundManager._sfx_manifest.has(key)
+
+
+## sfx's rising count-up blip for the Nth pip lit (5bf9f2b6a), recipe_pip_01..10.
+static func pip_tick_key(n: int) -> String:
+	return "recipe_pip_%02d" % n
 
 
 func dismiss() -> void:

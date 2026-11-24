@@ -111,3 +111,10 @@ func test_lit_count_scales_progress_onto_the_sockets() -> void:
 	assert_eq(RecipeReveal.lit_count({"progress": 25, "threshold": 10}, 10), 10, "past the threshold stays full")
 	assert_eq(RecipeReveal.lit_count({"progress": 3, "threshold": 6}, 10), 5, "a threshold of 6 fills half at 3")
 	assert_eq(RecipeReveal.lit_count({"threshold": 10}, 10), 10, "no progress means the earned reveal, full")
+
+
+func test_the_count_up_ticks_name_sfx_s_keys_and_stay_silent_until_registered() -> void:
+	assert_eq(RecipeReveal.pip_tick_key(1), "recipe_pip_01")
+	assert_eq(RecipeReveal.pip_tick_key(10), "recipe_pip_10")
+	assert_false(RecipeReveal.has_sfx("recipe_pip_never_registered"), "an unregistered key plays nothing")
+	assert_true(RecipeReveal.has_sfx("item_obtain") or RecipeReveal.has_sfx("menu_select"), "CONTROL: a registered cue reads as present")
