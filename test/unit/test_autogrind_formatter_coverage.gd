@@ -11,6 +11,18 @@ extends GutTest
 
 const AUTOGRIND_UI_PATH := "res://src/ui/autogrind/AutogrindUI.gd"
 const GRID_EDITOR_PATH := "res://src/ui/autogrind/AutogrindGridEditor.gd"
+const SYSTEM_PATH := "res://src/autogrind/AutogrindSystem.gd"
+
+
+## Both UIs delegate to AutogrindSystem's one reader; the arms are read there, and each UI formatter must still call it.
+func _shared_arms(ui_path: String, ui_fn: String, shared_fn: String) -> Array:
+	var ui_src: String = load(ui_path).source_code
+	var start := ui_src.find("func %s(" % ui_fn)
+	assert_gt(start, -1, "CONTROL: %s must still define %s" % [ui_path.get_file(), ui_fn])
+	var end := ui_src.find("\nfunc ", start + 10)
+	var body := ui_src.substr(start, (end if end > 0 else ui_src.length()) - start)
+	assert_true(body.contains("AutogrindSystem.%s(" % shared_fn), "%s.%s no longer delegates to AutogrindSystem.%s" % [ui_path.get_file(), ui_fn, shared_fn])
+	return _handled_types_in_func(load(SYSTEM_PATH).source_code, shared_fn)
 
 
 func _extract_ids(src: String, marker_prefix: String) -> Array:
@@ -74,7 +86,7 @@ func _handled_types_in_func(src: String, fn_name: String) -> Array:
 func test_autogrind_ui_format_condition_covers_every_picker_id() -> void:
 	var src: String = load(AUTOGRIND_UI_PATH).source_code
 	var picker_ids := _extract_ids(src, "const CONDITION_TYPES = [")
-	var handled := _handled_types_in_func(src, "_format_condition")
+	var handled := _shared_arms(AUTOGRIND_UI_PATH, "_format_condition", "describe_condition")
 	assert_gt(picker_ids.size(), 0, "must find CONDITION_TYPES const")
 	var missing: Array = []
 	for id in picker_ids:
@@ -87,7 +99,7 @@ func test_autogrind_ui_format_condition_covers_every_picker_id() -> void:
 func test_autogrind_ui_format_action_covers_every_picker_id() -> void:
 	var src: String = load(AUTOGRIND_UI_PATH).source_code
 	var picker_ids := _extract_ids(src, "const ACTION_TYPES = [")
-	var handled := _handled_types_in_func(src, "_format_action")
+	var handled := _shared_arms(AUTOGRIND_UI_PATH, "_format_action", "describe_action")
 	assert_gt(picker_ids.size(), 0, "must find ACTION_TYPES const")
 	var missing: Array = []
 	for id in picker_ids:
@@ -103,8 +115,7 @@ func test_grid_editor_format_condition_covers_same_ids_as_autogrind_ui() -> void
 	## as the picker-key-sync test in test_autogrind.gd).
 	var ui_src: String = load(AUTOGRIND_UI_PATH).source_code
 	var picker_ids := _extract_ids(ui_src, "const CONDITION_TYPES = [")
-	var editor_src: String = load(GRID_EDITOR_PATH).source_code
-	var handled := _handled_types_in_func(editor_src, "_format_condition")
+	var handled := _shared_arms(GRID_EDITOR_PATH, "_format_condition", "describe_condition")
 	var missing: Array = []
 	for id in picker_ids:
 		if not (id in handled):
@@ -116,8 +127,7 @@ func test_grid_editor_format_condition_covers_same_ids_as_autogrind_ui() -> void
 func test_grid_editor_format_action_covers_same_ids_as_autogrind_ui() -> void:
 	var ui_src: String = load(AUTOGRIND_UI_PATH).source_code
 	var picker_ids := _extract_ids(ui_src, "const ACTION_TYPES = [")
-	var editor_src: String = load(GRID_EDITOR_PATH).source_code
-	var handled := _handled_types_in_func(editor_src, "_format_action")
+	var handled := _shared_arms(GRID_EDITOR_PATH, "_format_action", "describe_action")
 	var missing: Array = []
 	for id in picker_ids:
 		if not (id in handled):

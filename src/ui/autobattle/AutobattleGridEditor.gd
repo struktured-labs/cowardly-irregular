@@ -1946,6 +1946,13 @@ func _input(event: InputEvent) -> void:
 		# Edit modal handles input
 		return
 
+	## With the portrait focused no cell is shown, so a press that edits a cell would edit the hidden one under the grid cursor: refuse it.
+	if _portrait_focused and _edits_a_cell(event):
+		if not event is InputEventJoypadMotion:
+			SoundManager.play_ui("menu_error")
+		get_viewport().set_input_as_handled()
+		return
+
 	# Right stick X only — ui_up/ui_down bind axis 1, so a blanket motion return kills navigation
 	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_RIGHT_X:
 		if _handle_value_stick(event):
@@ -2161,6 +2168,23 @@ func _input(event: InputEvent) -> void:
 		closed.emit()
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
+
+
+## The presses that change the cell under the grid cursor (character- and profile-level verbs are not here).
+func _edits_a_cell(event: InputEvent) -> bool:
+	if event.is_action_pressed("battle_defer"):
+		return true
+	if event is InputEventJoypadMotion:
+		return (event as InputEventJoypadMotion).axis == JOY_AXIS_RIGHT_X
+	if event is InputEventJoypadButton and event.pressed and (event as InputEventJoypadButton).button_index == JOY_BUTTON_Y:
+		return true
+	if event is InputEventKey and event.pressed and not (event as InputEventKey).ctrl_pressed:
+		var k: int = (event as InputEventKey).keycode
+		if k in [KEY_DELETE, KEY_BACKSPACE, KEY_C, KEY_T, KEY_EQUAL, KEY_PLUS, KEY_KP_ADD, KEY_MINUS, KEY_KP_SUBTRACT]:
+			return true
+		if k == KEY_TAB and not (event as InputEventKey).shift_pressed:
+			return true
+	return false
 
 
 func _edit_current_cell() -> void:
