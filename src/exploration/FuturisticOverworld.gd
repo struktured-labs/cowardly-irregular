@@ -309,7 +309,7 @@ func _place_wanderers() -> void:
 			"archetype": "old_man",
 			"dialogue": "They keep trying to deprecate me. I keep running.",
 			"color": Color(0.4, 0.6, 0.3),
-			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
+			"path": [Vector2(39, 30), Vector2(44, 30), Vector2(44, 35), Vector2(39, 35)],
 			"hints": [
 				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
 				{"flag": "arbiter_futuristic_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
