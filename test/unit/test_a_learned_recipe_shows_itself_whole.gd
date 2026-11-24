@@ -83,7 +83,7 @@ func test_the_card_is_the_registered_frame_and_its_pips_count_up() -> void:
 	var section := RecipeReveal.manifest_section()
 	var entry := RecipeReveal.card_entry(section, "card_rare")
 	assert_false(entry.is_empty(), "CONTROL: sprites registered recipe_cards.card_rare")
-	var r: RecipeReveal = await _reveal(WORST.merged({"progress": 7}))
+	var r: RecipeReveal = await _reveal(WORST.merged({"progress": 7}, true))
 	var frame := r.card_node().get_node_or_null("Frame") as TextureRect
 	assert_not_null(frame, "the card draws the registered frame, not the procedural fallback")
 	if frame != null:
@@ -91,7 +91,7 @@ func test_the_card_is_the_registered_frame_and_its_pips_count_up() -> void:
 		assert_eq(frame.size, Vector2(float(entry["frame_width"]), float(entry["frame_height"])) * RecipeReveal.CARD_SCALE,
 			"at CARD_SCALE")
 	assert_not_null(r.card_node().get_node_or_null("Icon"), "the recipe's icon_key names sprites' icon, drawn in the art window")
-	var bare: RecipeReveal = await _reveal(WORST.merged({"icon_key": "icon_not_drawn_yet"}))
+	var bare: RecipeReveal = await _reveal(WORST.merged({"icon_key": "icon_not_drawn_yet"}, true))
 	assert_null(bare.card_node().get_node_or_null("Icon"), "an icon with no art yet leaves the window empty")
 	assert_null(bare.card_node().get_node_or_null("Emblem"), "and puts no emblem over the registered frame")
 	bare.free()

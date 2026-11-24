@@ -133,33 +133,29 @@ func pip_count() -> int:
 	return _pips.size()
 
 
-func _measure(text: String, font_size: int, width: float) -> float:
-	var probe := Label.new()
-	probe.add_theme_font_size_override("font_size", font_size)
-	add_child(probe)
-	var h: float = float(font_size) * 1.4
-	var f: Font = probe.get_theme_font("font")
-	if f != null and text != "":
-		h = f.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size).y
-	remove_child(probe)
-	probe.queue_free()
-	return ceilf(h)
-
-
-func _text(which: String, text: String, font_size: int, color: Color, pos: Vector2, w: float, h: float) -> Label:
+## A label built at its final width and given height 0: a Label clamps UP to its own content (theme margins included), so its size IS the measurement.
+func _label(which: String, text: String, font_size: int, color: Color, w: float, align: int, wrap: bool) -> Label:
 	var l := Label.new()
 	l.name = which.capitalize().replace(" ", "")
 	## Wrap BEFORE size and text, or the label clamps its width to the whole line (KeyItemPopup).
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if wrap:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	l.position = pos
-	l.size = Vector2(w, h)
-	l.text = text
+	l.horizontal_alignment = align
 	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", color)
-	_panel.add_child(l)
+	l.text = text
+	add_child(l)
+	l.size = Vector2(w, 0)
+	l.size = Vector2(w, 0)
 	_texts[which] = l
 	return l
+
+
+func _place(l: Label, pos: Vector2) -> void:
+	remove_child(l)
+	_panel.add_child(l)
+	l.position = pos
 
 
 func _present(recipe: Dictionary) -> void:
@@ -184,15 +180,17 @@ func _present(recipe: Dictionary) -> void:
 	var pad: float = k(PAD)
 	var text_x: float = pad + card_sz.x + pad
 	var text_w: float = maxf(k(120.0), pw - text_x - pad)
-	var name_h: float = _measure(str(recipe.get("name", "???")), TextScale.scaled(NAME_FONT), text_w)
-	var line_h: float = _measure(str(recipe.get("line", "")), TextScale.scaled(LINE_FONT), text_w)
-	var flav_h: float = _measure(str(recipe.get("flavour", "")), TextScale.scaled(FLAVOUR_FONT), text_w)
+	var title := _label("title", "Recipe Learned!", TextScale.scaled(TITLE_FONT), TITLE_COLOR, pw, HORIZONTAL_ALIGNMENT_CENTER, true)
+	var name_l := _label("name", str(recipe.get("name", "???")), TextScale.scaled(NAME_FONT), NAME_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
+	var line_l := _label("line", str(recipe.get("line", "")), TextScale.scaled(LINE_FONT), LINE_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
+	var flav_l := _label("flavour", str(recipe.get("flavour", "")), TextScale.scaled(FLAVOUR_FONT), FLAVOUR_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
+	var hint := _label("hint", KeyItemPopup.continue_hint_text(), TextScale.scaled(HINT_FONT), HINT_COLOR, pw, HORIZONTAL_ALIGNMENT_CENTER, true)
 	var gap: float = k(10.0)
-	var text_h: float = name_h + gap + line_h + gap + flav_h
-	var title_h: float = k(36.0)
-	var hint_h: float = k(22.0)
+	var text_h: float = name_l.size.y + gap + line_l.size.y + gap + flav_l.size.y
+	var title_h: float = title.size.y
+	var hint_h: float = hint.size.y
 	var body_h: float = maxf(card_sz.y, text_h)
-	var ph: float = pad + title_h + body_h + pad + hint_h
+	var ph: float = pad * 0.5 + title_h + pad * 0.5 + body_h + pad + hint_h + pad * 0.5
 
 	_panel = Control.new()
 	_panel.size = Vector2(pw, ph)
@@ -205,37 +203,19 @@ func _present(recipe: Dictionary) -> void:
 	_panel.add_child(panel_bg)
 	RetroPanel.add_border(_panel, _panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
-	var title := Label.new()
-	title.text = "Recipe Learned!"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, pad * 0.5)
-	title.size = Vector2(pw, title_h)
-	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_FONT))
-	title.add_theme_color_override("font_color", TITLE_COLOR)
-	_panel.add_child(title)
-	_texts["title"] = title
+	_place(title, Vector2(0, pad * 0.5))
 
 	var body_y: float = pad * 0.5 + title_h + pad * 0.5
 	_build_card(recipe, section, entry, Vector2(pad, body_y + floorf((body_h - card_sz.y) / 2.0)), card_px)
 
 	var ty: float = body_y + floorf((body_h - text_h) / 2.0)
-	_text("name", str(recipe.get("name", "???")), TextScale.scaled(NAME_FONT), NAME_COLOR, Vector2(text_x, ty), text_w, name_h)
-	ty += name_h + gap
-	_text("line", str(recipe.get("line", "")), TextScale.scaled(LINE_FONT), LINE_COLOR, Vector2(text_x, ty), text_w, line_h)
-	ty += line_h + gap
-	_text("flavour", str(recipe.get("flavour", "")), TextScale.scaled(FLAVOUR_FONT), FLAVOUR_COLOR, Vector2(text_x, ty), text_w, flav_h)
-
-	var hint := Label.new()
-	hint.text = KeyItemPopup.continue_hint_text()
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	hint.position = Vector2(0, ph - pad * 0.5 - hint_h)
-	hint.size = Vector2(pw, hint_h)
-	hint.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT))
-	hint.add_theme_color_override("font_color", HINT_COLOR)
+	_place(name_l, Vector2(text_x, ty))
+	ty += name_l.size.y + gap
+	_place(line_l, Vector2(text_x, ty))
+	ty += line_l.size.y + gap
+	_place(flav_l, Vector2(text_x, ty))
+	_place(hint, Vector2(0, ph - pad * 0.5 - hint_h))
 	hint.modulate.a = 0.0
-	_panel.add_child(hint)
-	_texts["hint"] = hint
 
 	_play_entrance(recipe)
 
