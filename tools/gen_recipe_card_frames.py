@@ -2,7 +2,7 @@
 """Recipe-card frames for the earned-autobattle-recipe reveal (registered under manifest `recipe_cards`, 30e2bce63).
 
 Draws a 64x88 pixel card in three rarity tiers (common / rare / epic) plus a LOCKED state, a 4x4
-progress pip (filled + empty), and a few sample 20x20 recipe icons, procedurally (T1, $0, no
+progress pip (filled + empty), and one 20x20 icon per catalog recipe (data/autobattle_recipes.json), procedurally (T1, $0, no
 model). The card carries NO text (cutscenes 26974, adhoc 26968): the pixel face at the card's own
 scale cannot fit a name in a plate, so the name and reveal line go in the popup's text panel, and
 progress is 10 empty sockets baked into the frame, of which the game lights N with pip_filled.
@@ -99,7 +99,15 @@ def card(tier):
 ICON_PAL = {
     "k": INK, "r": (206, 52, 60, 255), "R": (250, 120, 120, 255), "w": (240, 236, 224, 255),
     "g": (90, 190, 90, 255), "y": (250, 210, 70, 255), "Y": (196, 140, 30, 255), "b": (120, 90, 60, 255),
+    "G": (40, 120, 56, 255), "o": (236, 128, 40, 255), "p": (150, 96, 204, 255),
 }
+
+
+def _sym(halves):
+    """Mirror 10-wide left halves into 20-wide rows, so a symmetric icon cannot drift by a pixel."""
+    return [h + h[::-1] for h in halves]
+
+
 ICONS = {
     # Triage: a heart with a white cross
     "heal_ally_under_50": [
@@ -125,6 +133,49 @@ ICONS = {
         "..kyyyyyyykyyyyyk...", "..kYYYYYYYkYYYYYk...", "...kkkkkkkkkkkkk....", "..kyyyyyyykyyyyyk...",
         "..kYYYYYYYkYYYYYk...", "...kkkkkkkkkkkkk....", "....................", "....................",
     ],
+    # Bedside Manner: a corked flask of green remedy
+    "cure_status": _sym([
+        "..........", ".......kkk", ".......kbb", ".......kkk", "........kw", "........kw",
+        ".......kww", ".....kkwww", "....kwwwww", "...kwggggg", "...kgggggg", "...kgggggg",
+        "...kgggggg", "...kGggggg", "....kGgggg", ".....kkGGG", ".......kkk", "..........",
+        "..........", "..........",
+    ]),
+    # Read the Room: an eye with a fire-orange iris -- you noticed
+    "hit_known_weakness": _sym([
+        "..........", "..........", "..........", "..........", "..........", ".......kkk",
+        ".....kkwww", "...kkwwwww", "..kwwwwkkk", ".kwwwwkooo", "kwwwwkookk", "kwwwwkookk",
+        ".kwwwwkooo", "..kwwwwkkk", "...kkwwwww", ".....kkwww", ".......kkk", "..........",
+        "..........", "..........",
+    ]),
+    # Mercy Rule: a plain sword, point down
+    "finish_under_25": _sym([
+        ".........k", "........ky", "........kb", "........kb", "...kkkkkkk", "...kyyyyyy",
+        "...kkkkkkk", "........kw", "........kw", "........kw", "........kw", "........kw",
+        "........kw", "........kw", "........kw", "........kw", "........kw", ".........k",
+        "..........", "..........",
+    ]),
+    # Heckler: two beamed notes
+    "bard_riff_unblinded": [
+        "....................", "....................", "......kkkkkkkkkkkk..", "......kppppppppppk..",
+        "......kppppppppppk..", "......kpkkkkkkkkpk..", "......kpk......kpk..", "......kpk......kpk..",
+        "......kpk......kpk..", "......kpk......kpk..", "......kpk......kpk..", "..kkkkkpk.kkkkkkpk..",
+        ".kppppppk.kppppppk..", ".kpwppppk.kpwppppk..", ".kppppppk.kppppppk..", "..kkkkkk...kkkkkk...",
+        "....................", "....................", "....................", "....................",
+    ],
+    # Pockets First: a tied coin pouch
+    "steal_first": _sym([
+        "..........", "..........", "........kk", ".......kbb", "........kk", ".......kbb",
+        ".....kkbbb", "....kbbbbb", "...kbbbbbb", "..kbbbbyyy", "..kbbbbyYY", "..kbbbbyyy",
+        "..kbbbbbbb", "..kbbbbbbb", "...kbbbbbb", "....kkkkkk", "..........", "..........",
+        "..........", "..........",
+    ]),
+    # Not Today: an ankh, the old sign for life
+    "revive_ko": _sym([
+        "..........", "........kk", ".......kyy", "......kyyk", "......kyk.", "......kyk.",
+        "......kyk.", "......kyyk", ".......kyy", "..kkkkkkyy", "..kyyyyyyy", "..kkkkkkyy",
+        ".......kyy", ".......kyy", ".......kyy", ".......kyy", ".......kyy", ".......kkk",
+        "..........", "..........",
+    ]),
 }
 
 
