@@ -1,0 +1,124 @@
+{
+  "_comment": "Autobattle recipes earned by playing manually (struktured 2026-11-23). UNWIRED until the autobattle spec is approved: nothing calls RecipeLedger yet. ids follow battle's 26887 starter catalog; name/line/flavour are cowir-story's 26928 draft and are theirs to edit. threshold is per recipe so his 'maybe 10' is a data edit. rule is one rule in the autobattle_rule_templates.json shape, validated by AutobattleSystem.validate_rule. Which choices COUNT toward a recipe is RecipeMatcher's job (battle lane), not this file's.",
+  "recipes": [
+    {
+      "id": "heal_ally_under_50",
+      "threshold": 10,
+      "name": "Triage",
+      "line": "Healed 10 times with an ally below half HP",
+      "flavour": "Somebody has to keep the idiots alive.",
+      "rule": {
+        "conditions": [{"type": "ally_hp_percent", "op": "<", "value": 50}],
+        "actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "cure_status",
+      "threshold": 10,
+      "name": "Bedside Manner",
+      "line": "Cured 10 ailments with the right remedy",
+      "flavour": "Poison is just a suggestion.",
+      "rule": {
+        "conditions": [
+          {"type": "has_status", "status": "poison"},
+          {"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+        ],
+        "actions": [{"type": "item", "id": "antidote", "target": "self"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "hit_known_weakness",
+      "threshold": 10,
+      "name": "Read the Room",
+      "line": "Hit 10 weak spots you already knew about",
+      "flavour": "It's weak to fire. You noticed. Now so does the script.",
+      "rule": {
+        "conditions": [{"type": "enemy_weak_to", "element": "fire"}],
+        "actions": [{"type": "ability", "id": "fire", "target": "weakest_to_ability"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "finish_under_25",
+      "threshold": 10,
+      "name": "Mercy Rule",
+      "line": "Finished off 10 foes below 25% with a plain attack",
+      "flavour": "Why waste MP on the nearly dead?",
+      "rule": {
+        "conditions": [{"type": "enemy_hp_percent", "op": "<", "value": 25}],
+        "actions": [{"type": "attack", "target": "lowest_hp_enemy"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "defer_at_low_ap",
+      "threshold": 10,
+      "name": "Strategic Cowardice",
+      "line": "Deferred 10 times with no AP to spare",
+      "flavour": "The title was never ironic.",
+      "rule": {
+        "conditions": [{"type": "ap", "op": "<=", "value": 0}],
+        "actions": [{"type": "defer"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "advance_full_bank",
+      "threshold": 10,
+      "name": "All In",
+      "line": "Spent a full AP bank in one turn, 10 times",
+      "flavour": "Tomorrow is someone else's problem.",
+      "rule": {
+        "conditions": [{"type": "ap", "op": ">=", "value": 4}],
+        "actions": [
+          {"type": "attack", "target": "lowest_hp_enemy"},
+          {"type": "attack", "target": "lowest_hp_enemy"},
+          {"type": "attack", "target": "lowest_hp_enemy"},
+          {"type": "attack", "target": "lowest_hp_enemy"}
+        ],
+        "enabled": true
+      }
+    },
+    {
+      "id": "bard_riff_unblinded",
+      "threshold": 10,
+      "name": "Heckler",
+      "line": "Riffed 10 times at an enemy who could still see",
+      "flavour": "Booing is a support skill.",
+      "rule": {
+        "conditions": [{"type": "not_enemy_has_status", "status": "blind"}],
+        "actions": [{"type": "ability", "id": "riff", "target": "highest_atk_enemy"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "steal_first",
+      "threshold": 10,
+      "name": "Pockets First",
+      "line": "Stole 10 times from a foe nobody had hit yet",
+      "flavour": "Violence can wait. Loot cannot.",
+      "rule": {
+        "conditions": [{"type": "turn", "op": "==", "value": 1}],
+        "actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}],
+        "enabled": true
+      }
+    },
+    {
+      "id": "revive_ko",
+      "threshold": 10,
+      "name": "Not Today",
+      "line": "Brought back 10 fallen allies",
+      "flavour": "Death is a status effect with commitment issues.",
+      "rule": {
+        "conditions": [
+          {"type": "ally_dead"},
+          {"type": "item_count", "item_id": "phoenix_down", "op": ">", "value": 0}
+        ],
+        "actions": [{"type": "item", "id": "phoenix_down", "target": "self"}],
+        "enabled": true
+      }
+    }
+  ]
+}
