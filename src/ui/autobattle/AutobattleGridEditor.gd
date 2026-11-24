@@ -665,6 +665,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var hint = _create_empty_condition_hint(row_idx, conditions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
+		_settle_tail_label(hint)
 		x_offset += hint.custom_minimum_size.x + CELL_PADDING
 
 	# Arrow connector between conditions and actions (with dedicated space)
@@ -711,18 +712,21 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		var hint = _create_empty_action_hint(row_idx, actions.size())
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
+		_settle_tail_label(hint)
 		x_offset += hint.custom_minimum_size.x + CELL_PADDING
 
 	# Row insert button [++] at end of row
 	var row_btn = _create_row_insert_hint(row_idx)
 	row_btn.position = Vector2(x_offset, y_offset)
 	_grid_container.add_child(row_btn)
+	_settle_tail_label(row_btn)
 	x_offset += row_btn.custom_minimum_size.x + 8  # Row insert button width + padding
 
 	# Row toggle cell [ON]/[OFF] at the very end
 	var toggle_cell = _create_row_toggle_cell(row_idx, is_enabled)
 	toggle_cell.position = Vector2(x_offset, y_offset)
 	_grid_container.add_child(toggle_cell)
+	_settle_tail_label(toggle_cell)
 
 
 func _group_actions(actions: Array) -> Array:
@@ -919,6 +923,18 @@ func _tail_w(text: String, px: int, floor_w: float) -> float:
 	return maxf(floor_w, ceilf(fnt.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x) + 12.0)  # the widest label inset (8) + 2 px a side
 
 
+## Re-size a tail cell's label once it is IN the tree. Out of the tree a Label measures with another font ("+ACTION" at
+## 11 px read 84 px, the pixel face's 2x width), grows its size to that, and keeps it after entering the tree (where it
+## measures 42), so at Text Size 1.0 the label overhung its 55 px cell into [++]. In the tree its minimum is the real one.
+func _settle_tail_label(cell: Control) -> void:
+	if not cell.is_inside_tree():
+		return
+	for ch in cell.get_children():
+		if ch is Label:
+			var l := ch as Label
+			l.size = Vector2(cell.custom_minimum_size.x - 2.0 * l.position.x, cell.custom_minimum_size.y - 2.0 * l.position.y)
+
+
 func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	"""Create an empty action slot hint"""
 	var w: float = _tail_w("+ACTION", TextScale.scaled(11), CELL_WIDTH / 2)
@@ -944,8 +960,8 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	## thing added is correct under both readings, so the ambiguity does not need resolving.
 	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
-	label.size = Vector2(w - 8, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	label.size = Vector2(w - 8, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -979,8 +995,8 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	var label = Label.new()
 	label.text = "[++]"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	label.size = Vector2(w - 4, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1043,8 +1059,8 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	var label = Label.new()
 	label.text = "[ON]" if is_enabled else "[OFF]"
 	label.position = Vector2(4, 8)
-	label.size = Vector2(w - 8, _cell_h() - 16)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	label.size = Vector2(w - 8, _cell_h() - 16)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", Color.LIME if is_enabled else Color(1.0, 0.4, 0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1078,8 +1094,8 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	var label = Label.new()
 	label.text = "+AND"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
+	label.size = Vector2(w - 4, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
