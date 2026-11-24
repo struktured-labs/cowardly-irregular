@@ -2225,10 +2225,10 @@
       ]
     },
     "victory_lines": [
-      "The Lost Cartographer: 'Off the edge of the map. Here be... you.'"
+      "The Lost Cartographer: 'Mark it on the chart: the honest line held. Mine never did.'"
     ],
     "defeat_lines": [
-      "The Lost Cartographer: 'Mark it on the chart: the honest line held. Mine never did.'"
+      "The Lost Cartographer: 'Off the edge of the map. Here be... you.'"
     ]
   }
 }
