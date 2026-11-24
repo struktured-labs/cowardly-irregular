@@ -118,3 +118,20 @@ func test_the_count_up_ticks_name_sfx_s_keys_and_stay_silent_until_registered() 
 	assert_eq(RecipeReveal.pip_tick_key(10), "recipe_pip_10")
 	assert_false(RecipeReveal.has_sfx("recipe_pip_never_registered"), "an unregistered key plays nothing")
 	assert_true(RecipeReveal.has_sfx("item_obtain") or RecipeReveal.has_sfx("menu_select"), "CONTROL: a registered cue reads as present")
+
+
+## The frame at 100% drew the flavour and the hint at the face's 1x step, too small to read (cutscenes 27126): every tier is 2x or more, the name a step above its line.
+func test_every_tier_reads_at_100_percent_and_the_name_leads() -> void:
+	GameState.text_size_scale = 1.0
+	var r: RecipeReveal = await _reveal(WORST)
+	var steps := {}
+	for which in ["title", "name", "line", "flavour", "hint"]:
+		var l: Label = r.text_label(which)
+		assert_not_null(l, "CONTROL: the %s label exists" % which)
+		if l == null:
+			continue
+		steps[which] = UiFont.scale_for(l.get_theme_font_size("font_size"))
+		assert_gte(int(steps[which]), 2, "%s draws at the face's %dx step at 100%%, too small to read" % [which, int(steps[which])])
+	if steps.has("name") and steps.has("line"):
+		assert_gt(int(steps["name"]), int(steps["line"]), "the recipe's name stands a step above its line")
+	r.free()

@@ -22,11 +22,12 @@ const JINGLE_KEY := "recipe_learned"
 
 const PANEL_W := 600.0
 const PAD := 24.0
-const TITLE_FONT := 20
-const NAME_FONT := 22
-const LINE_FONT := 14
-const FLAVOUR_FONT := 13
-const HINT_FONT := 10
+## On the pixel face's steps (UiFont.scale_for: 9 px per step) so every tier draws at least 2x at 100%, and the name stands one step above its line.
+const TITLE_FONT := 27
+const NAME_FONT := 27
+const LINE_FONT := 18
+const FLAVOUR_FONT := 18
+const HINT_FONT := 18
 ## Seconds between two pips lighting, and before the first: the count-up is the show.
 const PIP_STEP := 0.07
 const PIP_LEAD := 0.35
