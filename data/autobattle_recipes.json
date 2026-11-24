@@ -5,7 +5,7 @@
       "id": "heal_ally_under_50",
       "threshold": 10,
       "name": "Triage",
-      "line": "Healed an ally below half HP 10 times",
+      "line": "Healed 10 times with an ally below half HP",
       "flavour": "Somebody has to keep the idiots alive.",
       "rule": {
         "conditions": [{"type": "ally_hp_percent", "op": "<", "value": 50}],
@@ -17,7 +17,7 @@
       "id": "cure_status",
       "threshold": 10,
       "name": "Bedside Manner",
-      "line": "Cured a status with the right remedy 10 times",
+      "line": "Cured 10 ailments with the right remedy",
       "flavour": "Poison is just a suggestion.",
       "rule": {
         "conditions": [
@@ -32,7 +32,7 @@
       "id": "hit_known_weakness",
       "threshold": 10,
       "name": "Read the Room",
-      "line": "Struck a known weakness 10 times",
+      "line": "Hit 10 weak spots you already knew about",
       "flavour": "It's weak to fire. You noticed. Now so does the script.",
       "rule": {
         "conditions": [{"type": "enemy_weak_to", "element": "fire"}],
@@ -44,7 +44,7 @@
       "id": "finish_under_25",
       "threshold": 10,
       "name": "Mercy Rule",
-      "line": "Finished a foe below 25% with a basic attack 10 times",
+      "line": "Finished off 10 foes below 25% with a plain attack",
       "flavour": "Why waste MP on the nearly dead?",
       "rule": {
         "conditions": [{"type": "enemy_hp_percent", "op": "<", "value": 25}],
@@ -56,7 +56,7 @@
       "id": "defer_at_low_ap",
       "threshold": 10,
       "name": "Strategic Cowardice",
-      "line": "Deferred at 0 AP or less 10 times",
+      "line": "Deferred 10 times with no AP to spare",
       "flavour": "The title was never ironic.",
       "rule": {
         "conditions": [{"type": "ap", "op": "<=", "value": 0}],
@@ -68,7 +68,7 @@
       "id": "advance_full_bank",
       "threshold": 10,
       "name": "All In",
-      "line": "Spent a full AP bank in one turn 10 times",
+      "line": "Spent a full AP bank in one turn, 10 times",
       "flavour": "Tomorrow is someone else's problem.",
       "rule": {
         "conditions": [{"type": "ap", "op": ">=", "value": 4}],
@@ -85,7 +85,7 @@
       "id": "bard_riff_unblinded",
       "threshold": 10,
       "name": "Heckler",
-      "line": "Riffed an enemy who could still see 10 times",
+      "line": "Riffed 10 times at an enemy who could still see",
       "flavour": "Booing is a support skill.",
       "rule": {
         "conditions": [{"type": "not_enemy_has_status", "status": "blind"}],
@@ -97,7 +97,7 @@
       "id": "steal_first",
       "threshold": 10,
       "name": "Pockets First",
-      "line": "Stole before the first strike 10 times",
+      "line": "Stole 10 times from a foe nobody had hit yet",
       "flavour": "Violence can wait. Loot cannot.",
       "rule": {
         "conditions": [{"type": "turn", "op": "==", "value": 1}],
@@ -109,7 +109,7 @@
       "id": "revive_ko",
       "threshold": 10,
       "name": "Not Today",
-      "line": "Revived a fallen ally 10 times",
+      "line": "Brought back 10 fallen allies",
       "flavour": "Death is a status effect with commitment issues.",
       "rule": {
         "conditions": [
