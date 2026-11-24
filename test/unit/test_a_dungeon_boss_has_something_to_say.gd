@@ -158,3 +158,23 @@ func test_every_masterite_says_it_is_wounded() -> void:
 			silent.append(str(id))
 	assert_gt(judged, 20, "CONTROL: the Masterite rows were found")
 	assert_eq(silent, [], "Masterites with nothing to say when they drop below a quarter HP")
+
+
+## 2026-11-24 (cowir-story): Optimization Itself (W6 roamer and field elite) had a scripted intro, low_hp and defeat sequence but
+## nothing when it WIPES the party. Any boss authored with an end-of-fight line when it loses must also speak when it wins.
+func test_a_boss_that_speaks_when_it_loses_speaks_when_it_wins() -> void:
+	var monsters := _json("res://data/monsters.json")
+	var dialogue := _json("res://data/boss_dialogue.json")
+	var judged := 0
+	var mute: Array = []
+	for id in monsters:
+		var row: Variant = monsters[id]
+		if not (row is Dictionary) or not (bool(row.get("boss", false)) or bool(row.get("miniboss", false))):
+			continue
+		if not (_has_lines(row.get("dialogue", {}), "defeat") or _has_lines(dialogue.get(_persona(monsters, str(id)), {}), "victory_lines")):
+			continue
+		judged += 1
+		if _silent_end(monsters, dialogue, str(id)) != "":
+			mute.append("%s: %s" % [id, _silent_end(monsters, dialogue, str(id))])
+	assert_gt(judged, 15, "CONTROL: the bosses with a losing line were found")
+	assert_eq(mute, [], "bosses that speak when they lose but are silent when they win")

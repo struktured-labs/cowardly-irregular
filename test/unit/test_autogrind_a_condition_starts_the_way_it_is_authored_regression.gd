@@ -118,10 +118,10 @@ func test_the_editor_offers_every_party_condition_the_evaluator_supports() -> vo
 	## The private list also omitted win_streak and time_elapsed — party-level, evaluated, and
 	## already rendered by _format_condition. The editor could DISPLAY conditions it could not offer.
 	var ids: Array = AutogrindSystem.party_level_condition_ids()
-	var src: String = GdSource.code_of(ED)
+	assert_true(GdSource.code_of(ED).contains("AutogrindSystem.describe_condition("), "the editor renders conditions through the shared reader")
 	var missing: Array = []
 	for id in ids:
-		if not src.contains('"%s"' % str(id)):
+		if AutogrindSystem.describe_condition({"type": str(id)}) == str(id):
 			missing.append(str(id))
 	gut.p("    party-level ids: %s" % str(ids))
 	assert_true(ids.has("win_streak") and ids.has("time_elapsed"),

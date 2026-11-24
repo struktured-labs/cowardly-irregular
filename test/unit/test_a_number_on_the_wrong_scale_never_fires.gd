@@ -73,8 +73,8 @@ func test_the_evaluator_really_does_work_in_minutes() -> void:
 	assert_false(code.is_empty(), "CONTROL: the source must be readable")
 	## The MATCH ARM, not the display-name table: the label map has `"time_elapsed": "Time
 	## Elapsed",` on one line and appears FIRST, so a bare find() lands there and the arm
-	## fails on a string that was never the subject. It did, before this anchor.
-	var at: int = code.find("\"time_elapsed\":\n")
+	## fails on a string that was never the subject. It did, before this anchor. Scoped to the evaluator since the shared rule reader also has an arm.
+	var at: int = code.find("\"time_elapsed\":\n", code.find("func _evaluate_party_condition("))
 	assert_gt(at, -1, "CONTROL: the time_elapsed match arm must still be findable")
 	var arm: String = code.substr(at, 400)
 	assert_true(arm.find("/ 60.0") != -1,
