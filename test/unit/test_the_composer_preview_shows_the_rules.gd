@@ -45,10 +45,17 @@ func test_a_description_that_disagrees_cannot_hide_the_rules() -> void:
 	assert_string_contains(text, AutobattleSystem.describe_rule_for_llm(STRIKE, true), "and the attack the player would really get is beside it")
 
 
-func test_control_an_autogrind_composition_is_not_listed_as_autobattle_rules() -> void:
-	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOGRIND, [HEAL])
-	assert_string_contains(text, "1 rule(s) composed", "CONTROL: the autogrind preview still renders")
-	assert_false(text.contains("IF "), "autogrind rules have their own shape; the autobattle reader is not used on them")
+func test_an_autogrind_composition_lists_its_rules_in_the_grinds_own_words() -> void:
+	var stop := {"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}], "actions": [{"type": "stop_grinding"}]}
+	var heal := {"conditions": [{"type": "party_hp_min", "op": "<", "value": 50}], "actions": [{"type": "heal_party"}]}
+	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOGRIND, [stop, heal])
+	for rule in [stop, heal]:
+		var line: String = AutogrindSystem.describe_rule(rule)
+		assert_true(line != "" and not line.contains("party_hp"), "CONTROL: the grind's reader gives words (%s)" % line)
+		assert_string_contains(text, line, "a grind rule is shown before it is installed")
+	assert_lt(text.find(AutogrindSystem.describe_rule(stop)), text.find(AutogrindSystem.describe_rule(heal)), "in the order they are checked")
+	assert_false(text.contains("IF "), "CONTROL: the autobattle reader is not used on grind rules")
+	assert_false(text.contains("rule(s) composed"), "the list is the count; it is not said twice")
 
 
 func test_an_ability_reads_by_its_display_name_not_its_id() -> void:

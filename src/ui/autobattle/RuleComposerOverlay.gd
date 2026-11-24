@@ -462,8 +462,13 @@ func _populate_preview(result: Dictionary) -> void:
 		lines.append(desc)
 	## The description is the model's prose; the rules are what gets installed, so the player reads those.
 	var autobattle: Node = get_node_or_null("/root/AutobattleSystem")
+	var autogrind: Node = get_node_or_null("/root/AutogrindSystem")
 	if _domain == RC_DOMAIN_AUTOBATTLE and rule_count > 0 and autobattle != null:
 		lines.append(autobattle.describe_rules_for_player(preview_rules))
+	elif _domain == RC_DOMAIN_AUTOGRIND and rule_count > 0 and autogrind != null:
+		for i in range(preview_rules.size()):
+			if preview_rules[i] is Dictionary:
+				lines.append("%d. %s" % [i + 1, autogrind.describe_rule(preview_rules[i] as Dictionary)])
 	else:
 		lines.append("%d rule(s) composed." % rule_count)
 	# The composer silently edits rules that would fizzle — adding the MP guard the

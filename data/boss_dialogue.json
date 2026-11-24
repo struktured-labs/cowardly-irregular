@@ -2309,5 +2309,12 @@
     "defeat_lines": [
       "Chancellor's Warden: 'Appeal dismissed. The docket stands as written.'"
     ]
+  },
+  "optimization_itself": {
+    "display_name": "Optimization Itself",
+    "_comment": "Wipe line only: its party-wins line is monsters.json dialogue.defeat (BattleScene), so a victory_lines here would speak twice.",
+    "defeat_lines": [
+      "Optimization Itself: 'Four processes, terminated. One remains. You see? It was always going to be one.'"
+    ]
   }
 }
