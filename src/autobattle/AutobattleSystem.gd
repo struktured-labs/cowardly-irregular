@@ -1130,7 +1130,7 @@ func describe_rule_for_llm(rule: Dictionary, display_names: bool = false) -> Str
 	var cond_parts: PackedStringArray = PackedStringArray()
 	for c in conds:
 		if c is Dictionary:
-			cond_parts.append(_describe_condition_for_llm(c as Dictionary))
+			cond_parts.append(_describe_condition_for_llm(c as Dictionary, display_names))
 	var acts: Array = rule.get("actions", []) as Array
 	var act_parts: PackedStringArray = PackedStringArray()
 	for a in acts:
@@ -1141,17 +1141,19 @@ func describe_rule_for_llm(rule: Dictionary, display_names: bool = false) -> Str
 	return "IF %s THEN %s" % [cond_text, act_text]
 
 
-func _describe_condition_for_llm(c: Dictionary) -> String:
+func _describe_condition_for_llm(c: Dictionary, display_names: bool = false) -> String:
 	var ctype: String = str(c.get("type", "?"))
 	if ctype == "always":
 		return "ALWAYS"
 	var label: String = str(CONDITION_TYPES.get(ctype, ctype))
-	# The subject key varies by condition type; take whichever identifying one is present.
+	## The subject is the field the validator requires for this type, so the reading cannot drop it.
 	var subject: String = ""
-	for key in ["status", "item_id", "buff", "ability_id"]:
-		if c.has(key):
-			subject = " " + str(c[key])
-			break
+	var key: String = str(CONDITION_REQUIRED_FIELD.get(ctype, ""))
+	if key != "" and c.has(key):
+		var shown: String = str(c[key])
+		if display_names and key == "item_id":
+			shown = str(ItemSystem.get_item(shown).get("name", shown))
+		subject = " " + shown
 	var op: String = str(c.get("op", c.get("compare_op", "")))
 	if op == "" or not c.has("value"):
 		return (label + subject).strip_edges()

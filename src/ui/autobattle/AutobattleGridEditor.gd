@@ -1959,6 +1959,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	## A held Tab or C repeats as echoes, and each one toggled the rule or cycled the operator again, ending wherever the hold stopped. Swallow them.
+	if event is InputEventKey and event.pressed and event.is_echo() and event.keycode in [KEY_TAB, KEY_C]:
+		get_viewport().set_input_as_handled()
+		return
+
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
 		if nav == "ui_up":

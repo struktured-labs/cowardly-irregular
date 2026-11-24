@@ -91,6 +91,9 @@ const GLYPHS := {
 	## Their filled partners: an ON status dot and an EXP pip.
 	"●": [".....", ".###.", "#####", "#####", "#####", ".###.", "....."],
 	"■": [".....", "#####", "#####", "#####", "#####", "#####", "....."],
+	## The rule grid's stack badge (AutobattleGridEditor, a collapsed run of actions). Its cycle badge ↻ stays on the
+	## Noto fallback: no 5x7 loop read as a cycle at the badge's 1x step (they read as ¢ or G).
+	"⊞": ["#####", "#.#.#", "#.#.#", "#####", "#.#.#", "#.#.#", "#####"],
 	# Latin-1 the game authors (Frosthold's ö, Maple's ä, InteractGeometry's °, the battle log's ± ² ÷ §, an actor's ‼).
 	# The old face drew these until it left the pixel face's chain (UiFont._ensure_built says why).
 	# The i accents are drawn, not composed: a two-row mark would run into the stem with no gap.

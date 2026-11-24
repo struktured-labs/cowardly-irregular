@@ -1654,8 +1654,10 @@ func _input(event: InputEvent) -> void:
 		_open_options_ring()
 		get_viewport().set_input_as_handled()
 
+	## A held Tab's key repeats each toggled the row again, so a hold ended wherever it stopped; echoes are swallowed, not passed on to focus.
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
-		_toggle_current_row()
+		if not event.is_echo():
+			_toggle_current_row()
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_menu") and not event.is_echo():

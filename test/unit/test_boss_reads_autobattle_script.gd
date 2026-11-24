@@ -143,3 +143,15 @@ func test_prompt_omits_the_section_entirely_for_a_manual_party() -> void:
 	var prompt: String = DialoguePrompts.build_boss_intent("The Calibrant", ctx)
 	assert_false(prompt.contains("HAS WRITTEN THE PARTY'S BEHAVIOUR"),
 		"a hand-played party must not be described as automated")
+
+
+## Regression 2026-11-24: the reader looked for status/item_id/buff/ability_id, so has_buff (stat), enemy_weak_to (element) and weather dropped their subject.
+func test_every_condition_names_the_field_it_requires() -> void:
+	var a = _abs()
+	var required: Dictionary = a.CONDITION_REQUIRED_FIELD
+	assert_gt(required.size(), 8, "CONTROL: the validator's required-field table is read (%d types)" % required.size())
+	for ctype in required:
+		var field: String = str(required[ctype])
+		var marker: String = "zq_%s_%s" % [ctype, field]
+		var text: String = a.describe_rule_for_llm({"conditions": [{"type": ctype, field: marker}], "actions": [{"type": "attack", "target": "lowest_hp_enemy"}]})
+		assert_string_contains(text, marker, "%s must name its %s" % [ctype, field])
