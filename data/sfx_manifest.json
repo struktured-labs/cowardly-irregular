@@ -15951,6 +15951,36 @@
       "whisper_heard": "Appeal dismissed. The docket stands as written.",
       "whisper_score": 1.0,
       "gain_db": 0.8
+    },
+    "boss_line_cartographer_10": {
+      "description": "The Lost Cartographer voiced line (boss_dialogue cartographer_wraith.victory_lines[0])",
+      "file": "assets/audio/sfx/boss_line_cartographer_10.ogg",
+      "speaker": "The Lost Cartographer",
+      "line": "Mark it on the chart: the honest line held. Mine never did.",
+      "spoken": "Mark it on the chart: the honest line held. Mine never did.",
+      "source_sha": "fbaf5437451dbd2d",
+      "voice": "Chatterbox clone of VCTK p274 (Essex), reference -2 st formants shifted, voice_refs/cartographer_wraith.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
+      "seed": 42,
+      "whisper_heard": "Mark it on the chart, the honest line held.  Mine never did.",
+      "whisper_score": 1.0,
+      "gain_db": 0.7
+    },
+    "boss_line_chancellors_warden_05": {
+      "description": "Chancellor's Warden voiced line (boss_dialogue castle_warden.defeat_lines[0])",
+      "file": "assets/audio/sfx/boss_line_chancellors_warden_05.ogg",
+      "speaker": "Chancellor's Warden",
+      "line": "Appeal dismissed. The docket stands as written.",
+      "spoken": "Appeal dismissed. The docket stands as written.",
+      "source_sha": "a7bf195c703d1633",
+      "voice": "Chatterbox clone of VCTK p273 (Suffolk), reference -3 st formants shifted, voice_refs/castle_warden.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "Appeal dismissed. The docket stands as written.",
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     }
   }
 }
