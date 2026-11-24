@@ -2196,5 +2196,39 @@
     "defeat_lines": [
       "Not drained — spent. There is a difference, and you have run out of both."
     ]
+  },
+  "cartographer_wraith": {
+    "display_name": "The Lost Cartographer",
+    "opening_lines": [
+      "The Lost Cartographer: 'Every wall in this warren is a line I drew under protest. Mind the ones that lie.'",
+      "The Lost Cartographer: 'You read my shortcut. Now read THIS.'",
+      "The Lost Cartographer: 'Hold still. I want you on the map before I erase you.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Lost Cartographer: 'The legend is wrong. The legend was always wrong. I am revising it.'",
+        "The Lost Cartographer: 'North is wherever I say it is now.'"
+      ],
+      "phase_3": [
+        "The Lost Cartographer: 'They never wanted the map. They wanted a picture of a map that agreed with them.'",
+        "The Lost Cartographer: 'Scale: one of you to nothing at all.'"
+      ]
+    },
+    "automation_lines": {
+      "_comment": "A surveyor who was fired for being right: a script walking a fixed route is the thing he respects and resents most.",
+      "autobattle": [
+        "The Lost Cartographer: 'A fixed route. Clean lines. I would have drawn it the same way. That is what bothers me.'",
+        "The Lost Cartographer: 'You let a script survey the fight. I was replaced by one too.'"
+      ],
+      "autogrind": [
+        "The Lost Cartographer: 'Back again, on the same path. You are wearing a trail into my floor.'"
+      ]
+    },
+    "victory_lines": [
+      "The Lost Cartographer: 'Off the edge of the map. Here be... you.'"
+    ],
+    "defeat_lines": [
+      "The Lost Cartographer: 'Mark it on the chart: the honest line held. Mine never did.'"
+    ]
   }
 }
