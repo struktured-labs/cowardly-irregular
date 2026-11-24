@@ -15981,6 +15981,21 @@
       "whisper_heard": "Appeal dismissed. The docket stands as written.",
       "whisper_score": 1.0,
       "gain_db": 1.0
+    },
+    "boss_line_cartographer_11": {
+      "description": "The Lost Cartographer voiced line (monsters cartographer_wraith.low_hp)",
+      "file": "assets/audio/sfx/boss_line_cartographer_11.ogg",
+      "speaker": "The Lost Cartographer",
+      "line": "The ink is running. I can see the blank parts of the page from here.",
+      "spoken": "The ink is running. I can see the blank parts of the page from here.",
+      "source_sha": "2abc3bb35c8f9d3e",
+      "voice": "Chatterbox clone of VCTK p274 (Essex), reference -2 st formants shifted, voice_refs/cartographer_wraith.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "The ink is running. I can see the blank parts of the page from here.",
+      "whisper_score": 1.0,
+      "gain_db": 1.0
     }
   }
 }
