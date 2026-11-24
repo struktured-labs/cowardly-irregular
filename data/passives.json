@@ -265,7 +265,7 @@
 		"id": "damage_reduction",
 		"name": "Damage Reduction",
 		"category": 1,
-		"description": "Take 15% less damage from all sources",
+		"description": "+15% Defense and Magic Defense",
 		"stat_mods": {
 			"defense_multiplier": 1.15,
 			"magic_defense_multiplier": 1.15
@@ -331,7 +331,7 @@
 		"id": "summon_boost",
 		"name": "Summon Boost",
 		"category": 0,
-		"description": "+35% summon damage and duration",
+		"description": "+35% magic damage, and summons last 1 turn longer",
 		"stat_mods": {
 			"magic_multiplier": 1.35
 		},
