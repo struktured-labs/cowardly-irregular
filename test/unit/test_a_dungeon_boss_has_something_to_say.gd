@@ -64,7 +64,7 @@ func test_the_cartographer_opens_and_turns_in_his_own_voice() -> void:
 	assert_true(_has_lines(entry, "opening_lines"), "the Cartographer opens his fight")
 	var phases: Dictionary = entry.get("phase_transition_lines", {})
 	assert_true(_has_lines(phases, "phase_2") and _has_lines(phases, "phase_3"), "and speaks at both phase turns")
-	var dlg := load("res://src/llm/BossDialogue.gd").new()
+	var dlg: Node = load("res://src/llm/BossDialogue.gd").new()
 	add_child_autofree(dlg)
 	assert_true(dlg.has_entry("cartographer_wraith"), "the runtime catalog loads his entry")
 	assert_eq(dlg.get_display_name("cartographer_wraith"), "The Lost Cartographer", "signed as his monsters.json name")
