@@ -35,6 +35,15 @@ func _rect(c: Control) -> Rect2:
 	return Rect2(c.position, c.size)
 
 
+## Drawn width in the theme font, so the composite is the WIDEST of each field rather than the longest (main 27186).
+func _drawn(text: String) -> float:
+	var probe := Label.new()
+	add_child(probe)
+	var w: float = probe.get_theme_font("font").get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+	probe.free()
+	return w
+
+
 ## Every catalog recipe as the reveal will receive it, plus one made of the longest name, line and flavour so the worst case is whatever the data says.
 func _corpus() -> Array:
 	var ledger := RecipeLedger.new()
@@ -45,7 +54,7 @@ func _corpus() -> Array:
 		d["progress"] = d["threshold"]
 		out.append(d)
 		for f in worst:
-			if str(d[f]).length() > str(worst[f]).length():
+			if _drawn(str(d[f])) > _drawn(str(worst[f])):
 				worst[f] = str(d[f])
 	out.append(WORST.merged(worst, true))
 	return out
