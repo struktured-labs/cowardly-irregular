@@ -922,13 +922,25 @@ func _row_height() -> int:
 	return _line_row_height() + (_row_lines - 1) * _drawn_line_height(_row_label_font_size())
 
 
+## Row tops measured ONCE per build (size rows+1): re-measuring the font per row made a 40-row nav step cost ~15 ms (probe2, 27170).
+var _row_tops: Array[int] = []
+
+
+func _row_tops_current() -> bool:
+	return _row_tops.size() == menu_items.size() + 1
+
+
 func _row_height_at(index: int) -> int:
+	if _row_tops_current() and index >= 0 and index < menu_items.size():
+		return _row_tops[index + 1] - _row_tops[index]
 	var lines: int = _row_line_counts[index] if index >= 0 and index < _row_line_counts.size() else 1
 	return _line_row_height() + (lines - 1) * _drawn_line_height(_row_label_font_size())
 
 
 ## Where row `index` starts, measured from the first row.
 func _row_top(index: int) -> int:
+	if _row_tops_current():
+		return _row_tops[clampi(index, 0, menu_items.size())]
 	var y := 0
 	for i in mini(index, menu_items.size()):
 		y += _row_height_at(i)
@@ -1023,6 +1035,13 @@ func _build_menu() -> void:
 		var lines := 2 if _names_whole and w + content_padding > menu_width else 1
 		_row_line_counts.append(lines)
 		_row_lines = maxi(_row_lines, lines)
+	_row_tops.clear()
+	var one_line := _line_row_height()
+	var extra_line := _drawn_line_height(_row_label_font_size())
+	_row_tops.append(0)
+	for i in menu_items.size():
+		var lines_i: int = _row_line_counts[i] if i < _row_line_counts.size() else 1
+		_row_tops.append(_row_tops[i] + one_line + (lines_i - 1) * extra_line)
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
 	var viewport_height = 720

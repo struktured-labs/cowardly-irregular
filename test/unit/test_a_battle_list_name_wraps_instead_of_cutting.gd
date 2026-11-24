@@ -132,9 +132,9 @@ func _half_screen() -> int:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m := Win98Menu.new()
 	autofree(m)
-	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label", "_names_whole", "_fill_alpha", "_panel_fill", "_row_line_counts", "_window_px", "_scroll_offset", "_max_visible_rows"]:
+	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label", "_names_whole", "_fill_alpha", "_panel_fill", "_row_line_counts", "_window_px", "_scroll_offset", "_max_visible_rows", "_row_tops", "selected_index"]:
 		assert_true(p in m, "FLOOR: Win98Menu.%s" % p)
-	for f in ["setup", "_row_height", "_line_row_height", "_submenu_width_cap", "_submenu_right_wall", "_submenu_left_bound", "_open_submenu", "_update_tooltip", "_tooltip_backing"]:
+	for f in ["setup", "_row_height", "_line_row_height", "_submenu_width_cap", "_submenu_right_wall", "_submenu_left_bound", "_open_submenu", "_update_tooltip", "_tooltip_backing", "_row_top", "_row_height_at", "_nav_step"]:
 		assert_true(m.has_method(f), "FLOOR: Win98Menu.%s()" % f)
 	for job in STARTERS:
 		assert_gt(_real_rows(job).size(), 2, "FLOOR: BattleCommandMenu builds %s an Ability list to judge" % job)
@@ -390,3 +390,48 @@ func test_rows_are_budgeted_from_under_the_turn_banner() -> void:
 	assert_gt(free.size.y, room, "CONTROL: budgeted from the top margin, the list (%d px) is taller than the room under the banner (%d)" % [int(free.size.y), int(room)])
 	assert_lte(m.size.y, room + 0.5, "under a banner the list (%d px) fits between it and its description box (%d)" % [int(m.size.y), int(room)])
 	assert_gt(m._max_visible_rows, 0, "and it scrolls for it")
+
+
+## probe2 (27170): row tops re-measured the font per row, so one nav step on a 40-row list cost ~15 ms. Built once now.
+func _plain_list(n: int) -> Win98Menu:
+	var items: Array = []
+	for i in n:
+		items.append({"id": "r%d" % i, "label": "Spell %03d" % i})
+	var m: Win98Menu = Win98Menu.new()
+	add_child_autofree(m)
+	m.setup("Spells", items, Vector2(40, 40), "mage")
+	await get_tree().create_timer(0.25, true, false, true).timeout
+	return m
+
+
+func test_row_positions_are_read_from_the_build_not_remeasured() -> void:
+	var m := await _plain_list(12)
+	assert_eq(m._row_tops.size(), 13, "CONTROL: the build recorded a top for every row and the end")
+	var built: int = m._row_top(5)
+	assert_eq(built, m._row_tops[5], "CONTROL: a row's top is the recorded one")
+	m._row_tops[5] += 1000
+	assert_eq(m._row_top(5), built + 1000, "a row's top is read from the build, not re-measured row by row")
+	assert_eq(m._row_height_at(4), m._row_tops[5] - m._row_tops[4], "a row's height comes from the same record")
+
+
+func _nav_cost_usec(m: Win98Menu, steps: int) -> int:
+	var best := 1 << 40
+	for _rep in 3:
+		m.selected_index = 0
+		m._scroll_offset = 0
+		var t0 := Time.get_ticks_usec()
+		for _i in steps:
+			m._nav_step(1)
+		best = mini(best, Time.get_ticks_usec() - t0)
+	return maxi(1, best)
+
+
+## A ratio, never a ms bound (cowir-main 27171): 4x the rows may cost ~4x per step (the selection repaint is linear), not ~16x.
+func test_a_step_on_a_long_list_does_not_grow_with_the_square_of_its_rows() -> void:
+	var short := await _plain_list(40)
+	var big := await _plain_list(160)
+	assert_gt(short._max_visible_rows, 0, "CONTROL: the 40-row list scrolls, so the scroll path is what is timed")
+	assert_gt(big._max_visible_rows, 0, "CONTROL: so does the 160-row one")
+	var a := _nav_cost_usec(short, 10)
+	var b := _nav_cost_usec(big, 10)
+	assert_lt(float(b) / float(a), 8.0, "10 steps on 160 rows cost %d us vs %d us on 40: a nav step grows faster than its row count" % [b, a])
