@@ -67,3 +67,13 @@ func test_the_count_is_not_said_twice() -> void:
 
 func test_the_model_facing_reading_still_uses_ids() -> void:
 	assert_string_contains(AutobattleSystem.describe_rule_for_llm(HEAL), "ability cure", "CONTROL: the LLM prompt keeps the ids it must write back")
+
+
+func test_an_item_condition_reads_by_the_items_name() -> void:
+	var shown: String = str(ItemSystem.get_item("hi_potion").get("name", ""))
+	assert_true(shown != "" and shown != "hi_potion", "CONTROL: hi_potion has a display name distinct from its id (%s)" % shown)
+	var rule := {"conditions": [{"type": "item_count", "item_id": "hi_potion", "op": ">", "value": 0}], "actions": [{"type": "attack", "target": "lowest_hp_enemy"}]}
+	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [rule])
+	assert_string_contains(text, shown, "the player reads the item's name in the condition too")
+	assert_false(text.contains("hi_potion"), "and never its internal id")
+	assert_string_contains(AutobattleSystem.describe_rule_for_llm(rule), "hi_potion", "CONTROL: the model still gets the id")
