@@ -5703,14 +5703,14 @@
     "gold_reward": 520,
     "dialogue": {
       "intro": [
-        "Warden: 'The Chancellor is in session. You are not on the docket.'",
-        "Warden: 'Appeals are heard below. Begin yours.'"
+        "Chancellor's Warden: 'The Chancellor is in session. You are not on the docket.'",
+        "Chancellor's Warden: 'Appeals are heard below. Begin yours.'"
       ],
       "low_hp": [
-        "Warden: 'Amendment filed: the anomaly... persists.'"
+        "Chancellor's Warden: 'Amendment filed: the anomaly... persists.'"
       ],
       "defeat": [
-        "Warden: 'Docket... cleared. She will see you now.'",
+        "Chancellor's Warden: 'Docket... cleared. She will see you now.'",
         "*The stairway to the throne room stands open.*"
       ]
     },

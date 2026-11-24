@@ -11,6 +11,8 @@
     "ice_dragon": {"voice": "glacius.wav", "rev": 1},
     "lightning_dragon": {"voice": "voltharion.wav", "rev": 1},
     "shadow_dragon": {"voice": "umbraxis.wav", "rev": 1},
-    "chancellor_mordaine": {"voice": "mordaine.wav", "rev": 1}
+    "chancellor_mordaine": {"voice": "mordaine.wav", "rev": 1},
+    "cartographer_wraith": {"voice": "cartographer_wraith.wav", "rev": 1},
+    "castle_warden": {"voice": "castle_warden.wav", "rev": 1}
   }
 }

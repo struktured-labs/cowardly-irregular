@@ -25,17 +25,16 @@ func _preview(domain: String, rules: Array, description: String = "Heal, then at
 
 func test_every_composed_rule_is_listed_before_confirm() -> void:
 	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [HEAL, STRIKE])
-	assert_string_contains(text, "2 rule(s) composed", "CONTROL: the count still renders")
 	for rule in [HEAL, STRIKE]:
-		var line: String = AutobattleSystem.describe_rule_for_llm(rule)
+		var line: String = AutobattleSystem.describe_rule_for_llm(rule, true)
 		assert_ne(line, "", "CONTROL: the rule has a description")
 		assert_string_contains(text, line, "the preview lists what will be installed")
 
 
 func test_rules_are_listed_in_priority_order() -> void:
 	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [HEAL, STRIKE])
-	var first: int = text.find(AutobattleSystem.describe_rule_for_llm(HEAL))
-	var second: int = text.find(AutobattleSystem.describe_rule_for_llm(STRIKE))
+	var first: int = text.find(AutobattleSystem.describe_rule_for_llm(HEAL, true))
+	var second: int = text.find(AutobattleSystem.describe_rule_for_llm(STRIKE, true))
 	assert_gt(first, -1, "CONTROL: the heal rule is shown")
 	assert_gt(second, first, "first match wins, so the list reads top to bottom in that order")
 
@@ -43,10 +42,28 @@ func test_rules_are_listed_in_priority_order() -> void:
 func test_a_description_that_disagrees_cannot_hide_the_rules() -> void:
 	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [STRIKE], "Always heal the party.")
 	assert_string_contains(text, "Always heal the party.", "CONTROL: the model's prose still renders")
-	assert_string_contains(text, AutobattleSystem.describe_rule_for_llm(STRIKE), "and the attack the player would really get is beside it")
+	assert_string_contains(text, AutobattleSystem.describe_rule_for_llm(STRIKE, true), "and the attack the player would really get is beside it")
 
 
 func test_control_an_autogrind_composition_is_not_listed_as_autobattle_rules() -> void:
 	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOGRIND, [HEAL])
 	assert_string_contains(text, "1 rule(s) composed", "CONTROL: the autogrind preview still renders")
 	assert_false(text.contains("IF "), "autogrind rules have their own shape; the autobattle reader is not used on them")
+
+
+func test_an_ability_reads_by_its_display_name_not_its_id() -> void:
+	var shown: String = str(JobSystem.get_ability("cure").get("name", ""))
+	assert_true(shown != "" and shown != "cure", "CONTROL: cure has a display name distinct from its id (%s)" % shown)
+	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [HEAL])
+	assert_string_contains(text, "ability %s" % shown, "the player reads the spell's name")
+	assert_false(text.contains("ability cure"), "and never its internal id")
+
+
+func test_the_count_is_not_said_twice() -> void:
+	var text: String = _preview(OVERLAY.RC_DOMAIN_AUTOBATTLE, [HEAL, STRIKE])
+	assert_string_contains(text, "2. ", "CONTROL: the numbered list is the count")
+	assert_false(text.contains("rule(s) composed"), "the status line above already says how many; the preview does not repeat it")
+
+
+func test_the_model_facing_reading_still_uses_ids() -> void:
+	assert_string_contains(AutobattleSystem.describe_rule_for_llm(HEAL), "ability cure", "CONTROL: the LLM prompt keeps the ids it must write back")
