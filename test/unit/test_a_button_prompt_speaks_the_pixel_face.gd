@@ -1,36 +1,55 @@
 extends GutTest
 
-## Every pad prompt ("Ⓐ / ", "Ⓑ skip", the controls menu, how-to-play, tutorial hints) prints a face glyph in a plain
-## Label, and none of Ⓐ Ⓑ Ⓧ Ⓨ ○ □ △ was in the pixel face, so the one character naming the button fell to a smooth
-## Noto glyph at another size. ● ○ (autobattle ON/OFF) and ■ □ (EXP pips) are the same shapes, filled and hollow.
+## Pad prompts print a face glyph in a plain Label. The PlayStation shapes ○ □ △ were not in the pixel face, so they fell
+## to a smooth Noto glyph at another size; ● ○ (autobattle ON/OFF) and ■ □ (EXP pips) are the same shapes. The circled
+## letters are DELIBERATELY left to Noto: drawn as a cut-out in a 5-wide cell (0ab7cf8d4) they read as "0" at 1x.
 
-const SHAPES := ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ", "○", "□", "△", "●", "■"]
+const SHAPES := ["○", "□", "△", "●", "■"]
+## Shrink-only. Drawing one of these in the face reds below, so the legibility call is made again on purpose.
+const LEFT_TO_NOTO := ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ"]
 
 
-func test_every_face_glyph_of_every_pad_family_is_drawn_by_the_face() -> void:
-	var seen := 0
-	var missing := ""
+func _face_glyphs() -> Array:
+	var out: Array = []
 	for family in InputProfileManager.FACE_GLYPHS:
 		for idx in InputProfileManager.FACE_GLYPHS[family]:
-			var g := str(InputProfileManager.FACE_GLYPHS[family][idx])
-			seen += 1
-			for ch in g:
-				if not UiFont.draws(ch):
-					missing += ch
-	assert_gte(seen, 12, "CONTROL: three families of four face buttons were read")
-	assert_eq(missing, "", "face glyphs a prompt prints that the pixel face does not draw")
+			out.append(str(InputProfileManager.FACE_GLYPHS[family][idx]))
+	return out
 
 
-func test_the_printed_layouts_are_whole_in_the_face() -> void:
-	# The real string the controls screen prints, not a list typed here.
-	for family in InputProfileManager.FACE_GLYPHS:
-		var s: String = InputProfileManager.face_layout_diagram(family)
-		assert_false(s.contains("?"), "CONTROL: %s's diagram names all four buttons: %s" % [family, s])
-		var missing := ""
-		for ch in s:
-			if not UiFont.draws(ch):
+func test_every_face_glyph_is_in_the_face_or_deliberately_left_to_noto() -> void:
+	var glyphs := _face_glyphs()
+	assert_gte(glyphs.size(), 12, "CONTROL: three families of four face buttons were read")
+	var missing := ""
+	for g in glyphs:
+		for ch in g:
+			if not UiFont.draws(ch) and not LEFT_TO_NOTO.has(ch):
 				missing += ch
-		assert_eq(missing, "", "%s layout '%s' leaves the face" % [family, s])
+	assert_eq(missing, "", "face glyphs a prompt prints that the pixel face neither draws nor deliberately leaves to Noto")
+
+
+func test_the_letters_left_to_noto_are_not_in_the_face_and_still_resolve() -> void:
+	var f: Font = UiFont.display()
+	assert_gt(f.fallbacks.size(), 0, "CONTROL: the face has a chain behind it")
+	var glyphs := _face_glyphs()
+	for ch in LEFT_TO_NOTO:
+		assert_true(glyphs.has(ch), "CONTROL: '%s' is still a face glyph some pad prints (else drop it from the list)" % ch)
+		assert_false(UiFont.draws(ch), "'%s' is drawn by the face again: re-judge it at 1x before shrinking LEFT_TO_NOTO" % ch)
+		var found := false
+		for fb in f.fallbacks:
+			found = found or (fb != null and fb.has_char(ch.unicode_at(0)))
+		assert_true(found, "'%s' resolves in the chain behind the face (no tofu)" % ch)
+
+
+func test_the_playstation_layout_is_whole_in_the_face() -> void:
+	# The real string the controls screen prints, not a list typed here.
+	var s: String = InputProfileManager.face_layout_diagram("playstation")
+	assert_false(s.contains("?"), "CONTROL: the diagram names all four buttons: %s" % s)
+	var missing := ""
+	for ch in s:
+		if not UiFont.draws(ch):
+			missing += ch
+	assert_eq(missing, "", "playstation layout '%s' leaves the face" % s)
 
 
 func test_each_shape_is_one_cell_of_the_face() -> void:
@@ -39,13 +58,6 @@ func test_each_shape_is_one_cell_of_the_face() -> void:
 		assert_eq(rows.size(), UiFontGlyphs.ROWS, "'%s' has seven rows" % ch)
 		for row in rows:
 			assert_eq(str(row).length(), 5, "'%s' is five columns, like the letters beside it" % ch)
-
-
-func test_the_cut_letters_are_four_different_buttons() -> void:
-	var drawn := {}
-	for ch in ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ"]:
-		drawn[str(UiFontGlyphs.GLYPHS.get(ch, []))] = ch
-	assert_eq(drawn.size(), 4, "no two face letters share a drawing")
 
 
 func test_the_built_face_draws_the_table_rows() -> void:
