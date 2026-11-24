@@ -84,6 +84,17 @@ const GLYPHS := {
 	"♪": ["..#..", "..##.", "..#.#", "..#..", ".##..", "###..", ".#..."],
 	"☠": [".....", ".###.", "#####", "#.#.#", "#####", ".###.", ".#.#."],
 	"⚔": ["#...#", ".#.#.", "..#..", ".#.#.", "##.##", "#...#", "....."],
+	## Pad face buttons as hint text prints them (InputProfileManager.FACE_GLYPHS): a disc with its letter cut out; the PlayStation shapes as outlines.
+	"Ⓐ": [".###.", "##.##", "#.#.#", "#...#", "#.#.#", "#.#.#", ".###."],
+	"Ⓑ": [".###.", "#..##", "#.#.#", "#..##", "#.#.#", "#..##", ".###."],
+	"Ⓧ": [".###.", "#.#.#", "#.#.#", "##.##", "#.#.#", "#.#.#", ".###."],
+	"Ⓨ": [".###.", "#.#.#", "#.#.#", "##.##", "##.##", "##.##", ".###."],
+	"○": [".....", ".###.", "#...#", "#...#", "#...#", ".###.", "....."],
+	"□": [".....", "#####", "#...#", "#...#", "#...#", "#####", "....."],
+	"△": [".....", "..#..", ".#.#.", ".#.#.", "#...#", "#####", "....."],
+	## Their filled partners: an ON status dot and an EXP pip.
+	"●": [".....", ".###.", "#####", "#####", "#####", ".###.", "....."],
+	"■": [".....", "#####", "#####", "#####", "#####", "#####", "....."],
 	# Latin-1 the game authors (Frosthold's ö, Maple's ä, InteractGeometry's °, the battle log's ± ² ÷ §, an actor's ‼).
 	# The old face drew these until it left the pixel face's chain (UiFont._ensure_built says why).
 	# The i accents are drawn, not composed: a two-row mark would run into the stem with no gap.
