@@ -1488,7 +1488,16 @@
       "Umbraxis: 'You return to the heap, and I remain allocated. Neither of us chose this.'",
       "*The void simply forgets the party was ever instanced.*",
       "Umbraxis: 'Do not mourn. You were always going to be deallocated. Today merely scheduled it.'"
-    ]
+    ],
+    "charge_line": "*The light at the cavern's edges bends toward Umbraxis and does not come back. Void Breath is coming.* Umbraxis: 'Hold still. I want to see what you are without your buffs.'",
+    "charge_barks": [
+      "Breathe in. Everything else does, eventually.",
+      "This part is just a variable. Watch it go to null."
+    ],
+    "interrupted_line": {
+      "bark": "...You interrupted the void. That should not be possible. Do it again.",
+      "log": "*The bent light snaps back to the walls. Umbraxis's breath unravels into nothing, and he seems almost pleased to be wrong.*"
+    }
   },
   "fighter_skeleton_knight": {
     "display_name": "The Skeleton Knight",
