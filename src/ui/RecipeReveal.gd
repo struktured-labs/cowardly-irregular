@@ -145,10 +145,11 @@ func _label(which: String, text: String, font_size: int, color: Color, w: float,
 	l.horizontal_alignment = align
 	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", color)
-	l.text = text
 	add_child(l)
-	l.size = Vector2(w, 0)
-	l.size = Vector2(w, 0)
+	## Width BEFORE text: shaped at width 0 first, a wrapping label clamps to one glyph per line and never shrinks back.
+	l.size = Vector2(w, 1)
+	l.text = text
+	l.size = Vector2(w, l.get_minimum_size().y)
 	_texts[which] = l
 	return l
 
