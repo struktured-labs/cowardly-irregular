@@ -895,6 +895,12 @@ func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Arra
 			if typeof(a) != TYPE_DICTIONARY:
 				continue
 			var atype: String = str(a.get("type", ""))
+			## An item action naming a spell of this kit and no item ("item: cure", "item: channel") is that spell.
+			var aid: String = str(a.get("id", ""))
+			if atype == "item" and kit.has(aid) and ItemSystem.get_item(aid).is_empty():
+				a["type"] = "ability"
+				notes.append("Read item '%s' as the ability it names — %s is not an item." % [aid, aid])
+				continue
 			if actions_ok.has(atype) or not kit.has(atype):
 				continue
 			a["type"] = "ability"

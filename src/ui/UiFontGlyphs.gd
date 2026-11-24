@@ -84,6 +84,13 @@ const GLYPHS := {
 	"♪": ["..#..", "..##.", "..#.#", "..#..", ".##..", "###..", ".#..."],
 	"☠": [".....", ".###.", "#####", "#.#.#", "#####", ".###.", ".#.#."],
 	"⚔": ["#...#", ".#.#.", "..#..", ".#.#.", "##.##", "#...#", "....."],
+	## The PlayStation face shapes as hint text prints them (InputProfileManager.FACE_GLYPHS). Ⓐ Ⓑ Ⓧ Ⓨ stay on the Noto fallback: a cut-out letter in a 5-wide cell reads as 0 at 1x.
+	"○": [".....", ".###.", "#...#", "#...#", "#...#", ".###.", "....."],
+	"□": [".....", "#####", "#...#", "#...#", "#...#", "#####", "....."],
+	"△": [".....", "..#..", ".#.#.", ".#.#.", "#...#", "#####", "....."],
+	## Their filled partners: an ON status dot and an EXP pip.
+	"●": [".....", ".###.", "#####", "#####", "#####", ".###.", "....."],
+	"■": [".....", "#####", "#####", "#####", "#####", "#####", "....."],
 	# Latin-1 the game authors (Frosthold's ö, Maple's ä, InteractGeometry's °, the battle log's ± ² ÷ §, an actor's ‼).
 	# The old face drew these until it left the pixel face's chain (UiFont._ensure_built says why).
 	# The i accents are drawn, not composed: a two-row mark would run into the stem with no gap.
