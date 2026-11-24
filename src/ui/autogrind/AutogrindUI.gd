@@ -2804,6 +2804,22 @@ func _add_rule() -> void:
 	_refresh_grid()
 
 
+## A paste or import writes AutogrindSystem, not this screen's copy; without adopting it the grid shows the old rules and the next close or start writes them back.
+func _adopt_applied_rules(before: Array, what: String) -> void:
+	rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+	cursor_row = clampi(cursor_row, 0, maxi(0, rules.size() - 1))
+	cursor_col = 0
+	if rules != before:
+		_undo_snapshot = {"rules": before.duplicate(true), "after": rules.duplicate(true), "row": cursor_row, "col": 0, "what": what}
+	_refresh_grid()
+
+
+## The pad's undo is the delete button on an EMPTY slot (on a condition it cycles the operator), so the hint says where.
+func _undo_hint(where: String = "") -> String:
+	var pad: String = InputProfileManager.button_name_for_index(DELETE_BUTTON)
+	return _pad_or_key(pad + where if pad != "" else "", "Ctrl+Z")
+
+
 func _delete_current_cell() -> void:
 	"""Delete current condition or action"""
 	var before: Array = rules.duplicate(true)
@@ -2813,8 +2829,7 @@ func _delete_current_cell() -> void:
 	if rules != before:
 		var what := "rule" if rules.size() < before.size() else "condition or action"
 		_undo_snapshot = {"rules": before, "after": rules.duplicate(true), "row": at_row, "col": at_col, "what": what}
-		var undo_btn: String = _pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON), "Ctrl+Z")
-		_log_message("[color=yellow]Deleted the %s — %s to undo.[/color]" % [what, undo_btn])
+		_log_message("[color=yellow]Deleted the %s — %s to undo.[/color]" % [what, _undo_hint()])
 
 
 func _delete_cell_now() -> void:
@@ -3159,14 +3174,21 @@ func _paste_rules_share_code() -> void:
 		_log_message("[color=yellow]Cannot import while grinding.[/color]")
 		SoundManager.play_ui("menu_error")
 		return
-	var data := ScriptShareManager.decode_share_code(DisplayServer.clipboard_get())
+	_apply_rules_share_code(DisplayServer.clipboard_get())
+
+
+## The paste minus the clipboard read, so a test can hand it a code; headless has no clipboard.
+func _apply_rules_share_code(code: String) -> void:
+	var data := ScriptShareManager.decode_share_code(code)
 	if data.is_empty() or data.get("type") != "autogrind_rules":
 		var decode_why := ScriptShareManager.last_import_reason()
 		_log_message("[color=yellow]%s[/color]" % (("Share code rejected: %s" % decode_why) if decode_why != "" else "Clipboard has no valid autogrind share code."))
 		SoundManager.play_ui("menu_error")
 		return
+	var before: Array = rules.duplicate(true)
 	if ScriptShareManager.apply_autogrind_rules(data):
-		_log_message("[color=%s]Autogrind rules applied from share code (%d rules).[/color]" % [AccessibilityPalette.bonus_bbcode(), data.get("rules", []).size()])
+		_adopt_applied_rules(before, "rules you had before the paste")
+		_log_message("[color=%s]Autogrind rules applied from share code (%d rules) — %s to undo.[/color]" % [AccessibilityPalette.bonus_bbcode(), rules.size(), _undo_hint(" on an empty slot")])
 		SoundManager.play_ui("menu_select")
 	else:
 		## Say WHY. The reason was computed by the validator and thrown away; "valid but could not
@@ -3256,14 +3278,15 @@ func _import_scripts() -> void:
 					imported += 1
 					_log_message("[color=%s]Imported script for %s[/color]" % [AccessibilityPalette.bonus_bbcode(), char_id])
 			"autogrind_rules":
+				var before_import: Array = rules.duplicate(true)
 				if not ScriptShareManager.apply_autogrind_rules(data):
 					refused += 1
 					_log_message("[color=yellow]%s: autogrind rules refused%s[/color]"
 						% [filename, _refusal_suffix()])
 				else:
 					imported += 1
-					rules = AutogrindSystem.get_autogrind_rules()
-					_log_message("[color=%s]Imported autogrind rules from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), filename])
+					_adopt_applied_rules(before_import, "rules you had before the import")
+					_log_message("[color=%s]Imported autogrind rules from %s — %s to undo.[/color]" % [AccessibilityPalette.bonus_bbcode(), filename, _undo_hint(" on an empty slot")])
 
 	## ⛔ WAS UNCONDITIONAL ON imported == 0, WHICH IS AFFIRMATIVELY WRONG AFTER A REFUSAL: the
 	## file WAS compatible and was rejected for a reason this UI already knows how to print.
