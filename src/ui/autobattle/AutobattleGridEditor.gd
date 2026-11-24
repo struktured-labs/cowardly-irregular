@@ -60,6 +60,9 @@ var _pad_change_pending: bool = false # a pad changed under the composer; rebuil
 var _simulate_panel: Control = null # Simulate readout; blocks grid input while open
 var _splash_shown: bool = false    # Latches the empty-grid composer splash to once per setup() call
 var _flash_label: Label = null     # Transient status flash for export/import feedback
+## The legend strip's height as last laid out: LEGEND_H until its two lines wrap (Text Size 2.0+), then taller.
+var _legend_h: float = LEGEND_H
+var _legend_nodes: Array = []  # [strip, line 1, line 2] as last laid out, for the fit test
 var _flash_timer: float = 0.0
 const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposerOverlay.tscn")
 
@@ -87,7 +90,7 @@ const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full
 ## Raising the number is the cheap move if a real bound is ever needed; a clamp is not.
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
-const LEGEND_H := 48.0
+const LEGEND_H := 48.0  # the legend strip at Text Size 1.0; _legend_h is what it is now (it grows up when its lines wrap)
 const GRID_BOTTOM_GAP := 24.0  # F12 2026-09-20: 2px of air left the selected card truncated into the help strip
 
 ## Numeric conditions whose engine range is NARROWER than the editor's generic 0-100. A value
@@ -419,6 +422,8 @@ func _build_ui() -> void:
 	help_label2.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label2)
+	_lay_out_legend(legend_bg, help_label1, help_label2)
+	_grid_container.size = Vector2(size.x - 136, _grid_view_h())
 
 	# Transient status flash (export/import feedback), centered above the legend strip
 	_flash_label = Label.new()
@@ -1363,8 +1368,37 @@ func _row_stride() -> int:
 	return _cell_h() + ROW_SPACING
 
 
+## The key legend's two lines wrap at the strip's width (wraps, never shrinks: at Text Size 2.0 the first line ran off
+## the right edge at "RClic"). At 1.0 they sit exactly where they always did (y - 44 and y - 28 in a 48 px strip);
+## when wrapped lines need more room, the whole strip grows UP, and the grid view and the flash line follow _legend_h.
+func _lay_out_legend(bg: ColorRect, l1: Label, l2: Label) -> void:
+	var w: float = maxf(100.0, size.x - 32.0)
+	var hs: Array[float] = []
+	for l in [l1, l2]:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var f: Font = l.get_theme_font("font")
+		var px: int = l.get_theme_font_size("font_size")
+		var h: float = 12.0
+		if f:
+			h = ceilf(f.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, w, px, -1,
+				TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y)
+		l.size = Vector2(w, h)
+		hs.append(h)
+	var top: float = size.y - LEGEND_H
+	var y1: float = top + 4.0
+	var y2: float = y1 + maxf(16.0, hs[0])
+	var over: float = maxf(0.0, (y2 + hs[1] + 4.0) - (size.y - 4.0))
+	top -= over
+	l1.position = Vector2(16.0, y1 - over)
+	l2.position = Vector2(16.0, y2 - over)
+	bg.position = Vector2(8.0, top)
+	bg.size = Vector2(size.x - 16.0, size.y - top - 4.0)
+	_legend_h = size.y - top
+	_legend_nodes = [bg, l1, l2]
+
+
 func _grid_view_h() -> float:
-	return maxf(float(_cell_h() + 8), size.y - GRID_BASE_POS.y - LEGEND_H - GRID_BOTTOM_GAP)
+	return maxf(float(_cell_h() + 8), size.y - GRID_BASE_POS.y - _legend_h - GRID_BOTTOM_GAP)
 
 
 func _notification(what: int) -> void:
@@ -4015,7 +4049,7 @@ func _place_flash() -> void:
 		h = maxf(h, f.get_multiline_string_size(_flash_label.text, HORIZONTAL_ALIGNMENT_CENTER, w, px, -1,
 			TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y)
 	_flash_label.size = Vector2(w, ceilf(h))
-	_flash_label.position = Vector2(16.0, size.y - LEGEND_H - FLASH_LEGEND_GAP - ceilf(h))
+	_flash_label.position = Vector2(16.0, size.y - _legend_h - FLASH_LEGEND_GAP - ceilf(h))
 
 
 ## One row step, shared by a press and a held repeat so the two can never drift apart.
