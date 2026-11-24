@@ -62,3 +62,50 @@ static func counts_toward(recipe_id: String, c: Dictionary) -> bool:
 			return kind == "revive" and side == "ally" and ko
 	push_warning("[RecipeMatcher] unknown recipe id '%s'" % recipe_id)
 	return false
+
+
+## The choice record for one committed player action; pure over its arguments (the caller passes the ability dict and its own party).
+static func choice_from(actor: Combatant, action_type: String, ability: Dictionary, target: Combatant, allies: Array, queued: int = 0, strike_element: String = "") -> Dictionary:
+	var c := {
+		"action_type": action_type,
+		"ability_id": str(ability.get("id", "")),
+		"ability_kind": ability_kind(ability) if action_type == "ability" else "",
+		"actor_ap": actor.current_ap if actor != null else 0,
+		"queued": queued,
+	}
+	if action_type == "attack":
+		c["ability_kind"] = "damage"
+	if target == null:
+		return c
+	c["target_side"] = "ally" if target in allies else "enemy"
+	c["target_ko"] = not target.is_alive
+	c["target_hp_pct"] = float(target.current_hp) / float(maxi(1, target.max_hp))
+	var statuses: Array = []
+	for s in target.status_effects:
+		statuses.append(str(s))
+	c["target_statuses"] = statuses
+	var element := str(ability.get("element", "")) if action_type == "ability" else strike_element
+	c["target_weak"] = element != "" and element in target.elemental_weaknesses
+	if c["ability_kind"] == "cure":
+		var cures: Array = []
+		for s in BM.ESUNA_AILMENTS:
+			cures.append(s)
+		c["cures"] = cures
+	return c
+
+
+## The recipe-facing kind of an ability row from abilities.json.
+static func ability_kind(ability: Dictionary) -> String:
+	var type := str(ability.get("type", ""))
+	var effect := str(ability.get("effect", ""))
+	if type == "revival":
+		return "revive"
+	if type == "healing":
+		return "heal"
+	if effect == "cleanse":
+		return "cure"
+	if effect == "steal":
+		return "steal"
+	if type == "magic" or type == "physical":
+		return "damage"
+	return "other"
