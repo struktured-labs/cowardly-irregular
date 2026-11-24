@@ -90,6 +90,7 @@ func test_every_text_reads_whole_at_every_text_size() -> void:
 			assert_true(Rect2(Vector2.ZERO, Vector2(SCREEN)).encloses(Rect2(panel.position, panel.size)),
 				"%s: the panel %s leaves the screen" % [tag, str(Rect2(panel.position, panel.size))])
 			var placed: Array = []
+			var wrapped: Array = []
 			for which in ["title", "name", "line", "flavour", "hint"]:
 				var l: Label = r.text_label(which)
 				assert_not_null(l, "%s: no %s label" % [tag, which])
@@ -105,8 +106,11 @@ func test_every_text_reads_whole_at_every_text_size() -> void:
 				placed.append([which, l])
 				if which in ["name", "line", "flavour"] and l.get_line_count() > 1:
 					wrapped_at_200 += 1 if float(p) == 2.0 else 0
-					_assert_balanced(l, "%s: %s" % [tag, which])
+					wrapped.append([which, l])
 			assert_true(Rect2(Vector2.ZERO, panel.size).encloses(_rect(card)), "%s: the card leaves the panel" % tag)
+			## Judged LAST: the probe resizes the label, which would move what the overlap checks above see.
+			for wl in wrapped:
+				_assert_balanced(wl[1], "%s: %s" % [tag, wl[0]])
 			if recipe == corpus.back():
 				name_px[p] = (r.text_label("name") as Label).get_theme_font_size("font_size")
 				card_px[p] = card.size
