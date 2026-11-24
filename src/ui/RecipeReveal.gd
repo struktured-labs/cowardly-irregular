@@ -170,9 +170,29 @@ func _label(which: String, text: String, font_size: int, color: Color, w: float,
 	## Width BEFORE text: shaped at width 0 first, a wrapping label clamps to one glyph per line and never shrinks back.
 	l.size = Vector2(w, 1)
 	l.text = text
+	if wrap:
+		w = _balanced_width(l, w)
 	l.size = Vector2(w, l.get_minimum_size().y)
 	_texts[which] = l
 	return l
+
+
+## The narrowest width that keeps a wrapped label's line count, so its lines come out even and no lone word trails (main 27255).
+func _balanced_width(l: Label, w: float) -> float:
+	var lines := l.get_line_count()
+	if lines < 2:
+		return w
+	var lo := w / float(lines) * 0.5
+	var hi := w
+	for _i in range(12):
+		var mid := (lo + hi) * 0.5
+		l.size = Vector2(mid, 1)
+		if l.get_line_count() == lines:
+			hi = mid
+		else:
+			lo = mid
+	l.size = Vector2(hi, 1)
+	return hi
 
 
 func _place(l: Label, pos: Vector2) -> void:

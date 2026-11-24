@@ -60,6 +60,16 @@ func _corpus() -> Array:
 	return out
 
 
+## A wrapped text is as narrow as its line count allows, so its lines are even and no lone word trails (main 27255).
+func _assert_balanced(l: Label, tag: String) -> void:
+	var lines := l.get_line_count()
+	var w := l.size.x
+	l.size = Vector2(w - 8.0, 1)
+	var tighter := l.get_line_count()
+	l.size = Vector2(w, l.get_minimum_size().y)
+	assert_gt(tighter, lines, "%s wraps to %d lines at %d px and still does 8 px narrower: a short last line trails" % [tag, lines, int(w)])
+
+
 ## Every line of every text is drawn (the engine's own count), inside the panel, clear of the card and of each other.
 func test_every_text_reads_whole_at_every_text_size() -> void:
 	var wrapped_at_200 := 0
@@ -93,8 +103,9 @@ func test_every_text_reads_whole_at_every_text_size() -> void:
 				for other in placed:
 					assert_false(_rect(l).intersects(_rect(other[1])), "%s: %s overlaps %s" % [tag, which, other[0]])
 				placed.append([which, l])
-				if float(p) == 2.0 and which in ["name", "line", "flavour"] and l.get_line_count() > 1:
-					wrapped_at_200 += 1
+				if which in ["name", "line", "flavour"] and l.get_line_count() > 1:
+					wrapped_at_200 += 1 if float(p) == 2.0 else 0
+					_assert_balanced(l, "%s: %s" % [tag, which])
 			assert_true(Rect2(Vector2.ZERO, panel.size).encloses(_rect(card)), "%s: the card leaves the panel" % tag)
 			if recipe == corpus.back():
 				name_px[p] = (r.text_label("name") as Label).get_theme_font_size("font_size")
