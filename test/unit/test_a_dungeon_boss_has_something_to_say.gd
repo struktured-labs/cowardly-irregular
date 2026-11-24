@@ -141,3 +141,20 @@ func test_every_dungeon_boss_says_it_is_wounded() -> void:
 		if not _has_lines(md, "low_hp"):
 			silent.append("%s (%s)" % [boss_id, ids[boss_id]])
 	assert_eq(silent, [], "dungeon bosses with nothing to say when they drop below a quarter HP")
+
+
+## 2026-11-24 (cowir-story): Masterites are fielded by MasteriteEncounter (villages, roads), not only by dungeons, so the derived
+## dungeon set saw 5 of 24. Every Masterite row (masterite_type) must carry its wounded line too.
+func test_every_masterite_says_it_is_wounded() -> void:
+	var monsters := _json("res://data/monsters.json")
+	var judged := 0
+	var silent: Array = []
+	for id in monsters:
+		var row: Variant = monsters[id]
+		if not (row is Dictionary) or str((row as Dictionary).get("masterite_type", "")) == "":
+			continue
+		judged += 1
+		if not _has_lines((row as Dictionary).get("dialogue", {}), "low_hp"):
+			silent.append(str(id))
+	assert_gt(judged, 20, "CONTROL: the Masterite rows were found")
+	assert_eq(silent, [], "Masterites with nothing to say when they drop below a quarter HP")

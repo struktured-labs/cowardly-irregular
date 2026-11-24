@@ -3493,6 +3493,9 @@
         "Warden of the Old Guard: I am the Warden.",
         "Warden of the Old Guard: The Master placed me here to test your resolve.",
         "Warden of the Old Guard: Show me your strength... or perish."
+      ],
+      "low_hp": [
+        "Warden of the Old Guard: Your resolve holds. Mine is... dented."
       ]
     },
     "spectrum_ratio": 0.226129
@@ -3550,6 +3553,9 @@
         "Arbiter of Steel: The Master demands precision.",
         "Arbiter of Steel: Show me your sharpest edge...",
         "Arbiter of Steel: ...or be found wanting."
+      ],
+      "low_hp": [
+        "Arbiter of Steel: A clean cut. I have measured my own wound, and it is precise."
       ]
     },
     "spectrum_ratio": 0.266875
@@ -3609,6 +3615,9 @@
         "Tempo of the Hunt: Speed is mastery. The Master taught me this.",
         "Tempo of the Hunt: Can you keep pace...",
         "Tempo of the Hunt: ...or will time leave you behind?"
+      ],
+      "low_hp": [
+        "Tempo of the Hunt: You are keeping pace. No one keeps pace. The hunt has turned."
       ]
     },
     "spectrum_ratio": 0.226129
@@ -3667,6 +3676,9 @@
         "Curator of the Flame: Resources are finite. The Master knows this truth.",
         "Curator of the Flame: Do you waste what you're given...",
         "Curator of the Flame: ...or wield it with purpose?"
+      ],
+      "low_hp": [
+        "Curator of the Flame: I am spending reserves I swore I would never touch."
       ]
     },
     "spectrum_ratio": 0.266875
@@ -3789,6 +3801,9 @@
         "Arbiter of the Grade: Pop quiz. Subject: survival.",
         "Arbiter of the Grade: You have one attempt.",
         "Arbiter of the Grade: The Master does not grade on a curve."
+      ],
+      "low_hp": [
+        "Arbiter of the Grade: This was not on the syllabus. I am... reconsidering the curve."
       ]
     },
     "spectrum_ratio": 2.35
@@ -3848,6 +3863,9 @@
         "Tempo of the Rush Hour: Late late late!",
         "Tempo of the Rush Hour: The Master's schedule waits for no one!",
         "Tempo of the Rush Hour: You're slowing me DOWN!"
+      ],
+      "low_hp": [
+        "Tempo of the Rush Hour: Wait wait WAIT. I'm the one who's late now!"
       ]
     },
     "spectrum_ratio": 2.262941
@@ -3911,6 +3929,9 @@
         "Curator of the Budget: Let's review your expenses.",
         "Curator of the Budget: Healing: frivolous. Buffs: unnecessary overhead.",
         "Curator of the Budget: The Master demands austerity."
+      ],
+      "low_hp": [
+        "Curator of the Budget: Fine. FINE. Emergency spending is authorized. This once."
       ]
     },
     "spectrum_ratio": 2.35
@@ -3969,6 +3990,9 @@
         "The Standing Order: The Schedule has a tolerance for delay.",
         "The Standing Order: You are inside it. Barely.",
         "The Standing Order: I am the part that does not move."
+      ],
+      "low_hp": [
+        "The Standing Order: The part that does not move is moving. That is not on any drawing."
       ]
     },
     "spectrum_ratio": 3.185714
@@ -4027,6 +4051,9 @@
         "The Tolerance Limit: Every part is permitted a margin of error.",
         "The Tolerance Limit: You have consumed yours.",
         "The Tolerance Limit: Correction is not punishment. It is maintenance."
+      ],
+      "low_hp": [
+        "The Tolerance Limit: My margin of error is... exceeded. Maintenance required. On me."
       ]
     },
     "spectrum_ratio": 3.274722
@@ -4146,6 +4173,9 @@
         "The Requisition: Consumption logged. Steam, mana, patience.",
         "The Requisition: The account is not in your favour.",
         "The Requisition: Settlement is mandatory."
+      ],
+      "low_hp": [
+        "The Requisition: The account has reversed. I appear to owe you."
       ]
     },
     "spectrum_ratio": 3.274722
@@ -4270,6 +4300,9 @@
         "Arbiter of Efficiency: Production metrics show your party operates at 34% efficiency.",
         "Arbiter of Efficiency: The Master finds this...",
         "Arbiter of Efficiency: ...unacceptable."
+      ],
+      "low_hp": [
+        "Arbiter of Efficiency: EFFICIENCY REVISED UPWARD. Yours. Mine is in free fall."
       ]
     },
     "spectrum_ratio": 4.210789
@@ -4328,6 +4361,9 @@
         "Tempo of the Shift: SHIFT CHANGE. Your break is over.",
         "Tempo of the Shift: The Master's clock doesn't stop.",
         "Tempo of the Shift: And neither do I."
+      ],
+      "low_hp": [
+        "Tempo of the Shift: OVERTIME. I am not paid for overtime."
       ]
     },
     "spectrum_ratio": 4.122703
@@ -4391,6 +4427,9 @@
         "Curator of the Pipeline: Supply chain analysis complete.",
         "Curator of the Pipeline: Your resource allocation is... wasteful.",
         "Curator of the Pipeline: The Master demands optimization."
+      ],
+      "low_hp": [
+        "Curator of the Pipeline: Supply chain disrupted. I am the shortage."
       ]
     },
     "spectrum_ratio": 4.210789
@@ -4455,6 +4494,9 @@
         "Warden of the Firewall: ACCESS DENIED.",
         "Warden of the Firewall: The Master's firewall does not yield.",
         "Warden of the Firewall: Prove your authorization through force."
+      ],
+      "low_hp": [
+        "Warden of the Firewall: FIREWALL BREACHED. This was not in the threat model."
       ]
     },
     "spectrum_ratio": 5.0015
@@ -4584,6 +4626,9 @@
         "Tempo of the Clock Cycle: CLOCK_CYCLE_ALLOCATION: priority=MAXIMUM.",
         "Tempo of the Clock Cycle: The Master's scheduler gives you...",
         "Tempo of the Clock Cycle: ...lowest priority."
+      ],
+      "low_hp": [
+        "Tempo of the Clock Cycle: PRIORITY INVERSION DETECTED. You are now scheduled ahead of me."
       ]
     },
     "spectrum_ratio": 5.0015
@@ -4651,6 +4696,9 @@
         "Curator of the Memory Pool: MEMORY ALLOCATION ERROR: party.mp exceeds authorized limits.",
         "Curator of the Memory Pool: Initiating garbage collection.",
         "Curator of the Memory Pool: The Master's memory pool has no room for waste."
+      ],
+      "low_hp": [
+        "Curator of the Memory Pool: OUT OF MEMORY. Collecting... myself."
       ]
     },
     "spectrum_ratio": 5.088049
@@ -4715,6 +4763,9 @@
         "Warden of Form: I am Form. The Master's final shape.",
         "Warden of Form: To pass, you must break what cannot be broken.",
         "Warden of Form: Begin."
+      ],
+      "low_hp": [
+        "Warden of Form: Form is cracking. I did not know Form could crack."
       ]
     },
     "spectrum_ratio": 5.688605
@@ -4799,6 +4850,9 @@
         "Arbiter of Function: I am Function. f(x) = defeat.",
         "Arbiter of Function: The Master reduced me to this.",
         "Arbiter of Function: Your variables will not save you."
+      ],
+      "low_hp": [
+        "Arbiter of Function: f(x) is undefined at you. I was not told that was possible."
       ]
     },
     "spectrum_ratio": 5.774091
@@ -4866,6 +4920,9 @@
         "Tempo of Sequence: I am Sequence. First, second, third... last.",
         "Tempo of Sequence: The Master arranged all things in order.",
         "Tempo of Sequence: You are last."
+      ],
+      "low_hp": [
+        "Tempo of Sequence: Last... is not where I left you. The order has changed."
       ]
     },
     "spectrum_ratio": 5.688605
