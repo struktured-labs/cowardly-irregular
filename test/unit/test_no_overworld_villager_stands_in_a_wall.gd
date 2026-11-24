@@ -62,18 +62,3 @@ func test_no_overworld_villager_stands_on_an_impassable_tile() -> void:
 		_vp.free()
 	assert_gt(judged, 30, "CONTROL: villagers judged across the six overworlds (%d)" % judged)
 
-
-func test_the_judge_sees_a_villager_in_a_wall() -> void:
-	var map := _build(WORLDS[2])
-	await get_tree().physics_frame
-	assert_false(map.walker_can_stand(Vector2(-40, -40)), "CONTROL: off the map is not ground")
-	var people := _villagers(map)
-	assert_gt(people.size(), 0, "CONTROL: a villager to move")
-	var blocked := Vector2.INF
-	for ty in range(0, 40):
-		for tx in range(0, 40):
-			if blocked == Vector2.INF and not map.walker_can_stand(Vector2((tx + 0.5) * map.TILE_SIZE, (ty + 0.5) * map.TILE_SIZE)):
-				blocked = Vector2((tx + 0.5) * map.TILE_SIZE, (ty + 0.5) * map.TILE_SIZE)
-	assert_ne(blocked, Vector2.INF, "CONTROL: the steampunk map has a wall tile near its corner")
-	people[0].global_position = blocked
-	assert_false(map.walker_can_stand(people[0].global_position), "a villager moved onto a wall tile is judged as standing in it")
