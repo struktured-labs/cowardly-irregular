@@ -450,6 +450,10 @@ func _populate_preview(result: Dictionary) -> void:
 	if not desc.is_empty():
 		lines.append(desc)
 	lines.append("%d rule(s) composed." % rule_count)
+	## The description is the model's prose; the rules are what gets installed, so the player reads those.
+	var autobattle: Node = get_node_or_null("/root/AutobattleSystem")
+	if _domain == RC_DOMAIN_AUTOBATTLE and rule_count > 0 and autobattle != null:
+		lines.append(autobattle.describe_rules_for_llm(preview_rules, rule_count))
 	# The composer silently edits rules that would fizzle — adding the MP guard the
 	# validator requires. Installing a ruleset that differs from what was asked for
 	# without saying so is the silent-change half of this project's silent-failure
