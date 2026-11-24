@@ -338,7 +338,7 @@ func _place_wanderers() -> void:
 			"archetype": "merchant",
 			"dialogue": "Nobody reads mail anymore. Nobody reads anything anymore.",
 			"color": Color(0.3, 0.3, 0.65),
-			"path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)],
+			"path": [Vector2(26, 13), Vector2(31, 13), Vector2(31, 18), Vector2(26, 18)],
 			"hints": [
 				{"flag": "w2_entered", "text": "The strip mall south of the main road has everything. Well, five stores."},
 				{"flag": "warden_suburban_defeated", "text": "Past the portal it smells like copper and oil. Not my kind of neighborhood."},

@@ -399,9 +399,11 @@ DROPS_20260902 = {
         # "Celebration" is the ARTIST's label for the victory pose; the engine's slot is "victory". It replaces
         # the v0.15.0 victory, which is HIS earlier art (byte-identical to that tag) -- git holds it, so no
         # pre_artist copy: that name means "the AI art an artist replaced".
+        # 2026-11-23 drop added "Get dmg" (4 frames) after Celebration; it replaces hit (struktured 2026-11-23),
+        # which was his v0.15.0 art, so like victory no pre_artist copy. Weak/Dead/Dash/ATK shifted +4.
         "map": {"idle": ("IDLE", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
                 "dash": ("Dash", 0, 0), "attack": ("ATK", 0, 0), "slash": ("ATK", 0, 0),
-                "victory": ("Celebration", 0, 0)},
+                "victory": ("Celebration", 0, 0), "hit": ("Get dmg", 0, 0)},
     },
 }
 
