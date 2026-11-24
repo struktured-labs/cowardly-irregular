@@ -1,10 +1,10 @@
 extends GutTest
 
 ## struktured 2026-11-23: an earned autobattle recipe "should really show off when you learn them", and no text is ever cut.
-## RecipeReveal is built for real on a 1280x720 viewport with story's longest recipe text (26928) at every Text Size.
+## RecipeReveal is built for real on a 1280x720 viewport at every Text Size, fed every catalog recipe through the ledger's own reveal_dict.
 
 const SCREEN := Vector2i(1280, 720)
-## story 26933: the worst case at 200%, and a short one for contrast.
+## A fixed sample for the card and pip arms; the FIT arms derive their corpus from the catalog (main 27183).
 const WORST := {"icon_key": "icon_defer_at_low_ap", "name": "Strategic Cowardice", "line": "Deferred at 0 AP or less 10 times",
 	"flavour": "The title was never ironic.", "rarity": "rare", "progress": 10, "threshold": 10}
 const SHORT := {"icon_key": "icon_heal_ally_under_50", "name": "Triage", "line": "Healed an ally below half HP 10 times",
@@ -35,13 +35,31 @@ func _rect(c: Control) -> Rect2:
 	return Rect2(c.position, c.size)
 
 
+## Every catalog recipe as the reveal will receive it, plus one made of the longest name, line and flavour so the worst case is whatever the data says.
+func _corpus() -> Array:
+	var ledger := RecipeLedger.new()
+	var out: Array = []
+	var worst := {"name": "", "line": "", "flavour": ""}
+	for id in RecipeCatalog.ids():
+		var d: Dictionary = ledger.reveal_dict("fighter", id)
+		d["progress"] = d["threshold"]
+		out.append(d)
+		for f in worst:
+			if str(d[f]).length() > str(worst[f]).length():
+				worst[f] = str(d[f])
+	out.append(WORST.merged(worst, true))
+	return out
+
+
 ## Every line of every text is drawn (the engine's own count), inside the panel, clear of the card and of each other.
 func test_every_text_reads_whole_at_every_text_size() -> void:
 	var name_px := {}
 	var card_px := {}
 	for p in SettingsMenu.TEXT_SIZE_PRESETS:
 		GameState.text_size_scale = float(p)
-		for recipe in [WORST, SHORT]:
+		var corpus := _corpus()
+		assert_gt(corpus.size(), 9, "CONTROL: the catalog's 9 recipes and the composite worst were judged at %s" % str(p))
+		for recipe in corpus:
 			var r: RecipeReveal = await _reveal(recipe)
 			var panel := r.panel_node()
 			var card := r.card_node()
@@ -66,7 +84,7 @@ func test_every_text_reads_whole_at_every_text_size() -> void:
 					assert_false(_rect(l).intersects(_rect(other[1])), "%s: %s overlaps %s" % [tag, which, other[0]])
 				placed.append([which, l])
 			assert_true(Rect2(Vector2.ZERO, panel.size).encloses(_rect(card)), "%s: the card leaves the panel" % tag)
-			if recipe == WORST:
+			if recipe == corpus.back():
 				name_px[p] = (r.text_label("name") as Label).get_theme_font_size("font_size")
 				card_px[p] = card.size
 			r.free()
