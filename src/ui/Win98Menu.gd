@@ -911,8 +911,40 @@ var _row_lines: int = 1
 var _names_whole: bool = false
 
 
+## Lines each row's own name takes, so a short name keeps its one-line row beside a wrapped long one (cowir-main 27037). Empty = every row one line.
+var _row_line_counts: Array[int] = []
+## The scrolled window's height: the tallest run of whole rows that fits the room, so the panel never resizes as it scrolls.
+var _window_px: int = 0
+
+
+## The tallest row's height.
 func _row_height() -> int:
 	return _line_row_height() + (_row_lines - 1) * _drawn_line_height(_row_label_font_size())
+
+
+func _row_height_at(index: int) -> int:
+	var lines: int = _row_line_counts[index] if index >= 0 and index < _row_line_counts.size() else 1
+	return _line_row_height() + (lines - 1) * _drawn_line_height(_row_label_font_size())
+
+
+## Where row `index` starts, measured from the first row.
+func _row_top(index: int) -> int:
+	var y := 0
+	for i in mini(index, menu_items.size()):
+		y += _row_height_at(i)
+	return y
+
+
+## The whole rows a window starting at `first` can show inside `px`.
+func _rows_fitting_from(first: int, px: int) -> int:
+	var used := 0
+	var n := 0
+	for i in range(first, menu_items.size()):
+		used += _row_height_at(i)
+		if used > px:
+			break
+		n += 1
+	return maxi(1, n)
 
 
 ## A one-line row: the height every row had before names could wrap. Icons are sized from it.
@@ -969,6 +1001,7 @@ func _build_menu() -> void:
 			badge_column = maxi(badge_column, _text_px(str(item["badge"]), cost_font) + 8)
 	_badge_column_width = badge_column
 	var max_label_width := 0
+	var row_widths: Array[int] = []
 	for item in menu_items:
 		var label_text := str(item.get("label", "Item"))
 		if item.has("submenu"):
@@ -979,15 +1012,17 @@ func _build_menu() -> void:
 		if str(item.get("badge", "")) != "":
 			text_width += badge_column
 		max_label_width = maxi(max_label_width, text_width)
+		row_widths.append(text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
 		viewport_width = int(get_viewport_rect().size.x)
 	var menu_width = clampi(max(210, max_label_width + content_padding), 210, _effective_width_cap(viewport_width))
 	## The list is as wide as it may be and a name still does not fit: every row takes a second line (struktured's 200% frame: "Power ...").
-	if _names_whole and max_label_width + content_padding > menu_width:
-		_row_lines = 2
-
-	var row_h := _row_height()
+	_row_line_counts.clear()
+	for w in row_widths:
+		var lines := 2 if _names_whole and w + content_padding > menu_width else 1
+		_row_line_counts.append(lines)
+		_row_lines = maxi(_row_lines, lines)
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
 	var viewport_height = 720
@@ -1002,11 +1037,16 @@ func _build_menu() -> void:
 		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
 		var bottom_limit: int = int(viewport_height) - bottom_clearance
 		room_for_rows = bottom_limit - anchor_y - chrome_height
-	_max_visible_rows = maxi(1, room_for_rows / row_h)
-	if menu_items.size() <= _max_visible_rows:
-		_max_visible_rows = 0  # fits; no scrolling
-	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
-	var menu_height = chrome_height + shown_rows * row_h
+	var all_rows_px := _row_top(menu_items.size())
+	_max_visible_rows = 0  # fits; no scrolling
+	_window_px = all_rows_px
+	if all_rows_px > room_for_rows:
+		_max_visible_rows = _rows_fitting_from(0, room_for_rows)
+		_window_px = 0
+		for first in menu_items.size():
+			var n := _rows_fitting_from(first, room_for_rows)
+			_window_px = maxi(_window_px, _row_top(first + n) - _row_top(first))
+	var menu_height = chrome_height + _window_px
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
@@ -1031,7 +1071,7 @@ func _build_menu() -> void:
 	var item_clip := Control.new()
 	item_clip.name = "ItemClip"
 	item_clip.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
-	item_clip.size = Vector2(item_content_width, shown_rows * row_h)
+	item_clip.size = Vector2(item_content_width, _window_px if _max_visible_rows == 0 else _row_top(_max_visible_rows))
 	item_clip.clip_contents = true
 	item_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	menu_panel.add_child(item_clip)
@@ -1172,7 +1212,7 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -> Control:
 	"""Create a single menu item row"""
-	var row_h := _row_height()
+	var row_h := _row_height_at(index)
 	var row = Control.new()
 	row.custom_minimum_size = Vector2(content_width, row_h)
 	row.name = "Item%d" % index
@@ -1248,12 +1288,12 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		text_label.text = label + " >"
 	else:
 		text_label.text = label
-	if _row_lines > 1:
+	var lines_here: int = _row_line_counts[index] if index < _row_line_counts.size() else 1
+	if lines_here > 1:
 		text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		text_label.max_lines_visible = _row_lines
-		## A name that fits one line sits mid-row as before; one that wraps starts a line higher, so the pair is centred.
-		var fits: bool = _text_px(text_label.text, _row_label_font_size()) <= label_w
-		var block_h: float = float(row_h) if fits else float(row_h - (_row_lines - 1) * _drawn_line_height(_row_label_font_size()))
+		text_label.max_lines_visible = lines_here
+		## A wrapped name starts a line higher, so the pair is centred in its taller row.
+		var block_h: float = float(row_h - (lines_here - 1) * _drawn_line_height(_row_label_font_size()))
 		text_label.position.y = FontFallbacks.row_label_y(_menu_font(), _row_label_font_size(), block_h)
 	# A Label will not shrink below font.get_height(), which includes leading the glyph does not use. The clip is the visible row.
 	var label_clip := Control.new()
@@ -1446,13 +1486,20 @@ func _auto_expand_submenu() -> void:
 func _scroll_selection_into_view(container: VBoxContainer) -> void:
 	if _max_visible_rows <= 0:
 		return
-	var last_visible: int = _scroll_offset + _max_visible_rows - 1
+	## Whole rows only: the window holds as many rows from the offset as fit, and the clip ends at the last whole one.
 	if selected_index < _scroll_offset:
 		_scroll_offset = selected_index
-	elif selected_index > last_visible:
-		_scroll_offset = selected_index - _max_visible_rows + 1
-	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
-	container.position.y = _items_base_y - float(_scroll_offset * _row_height())
+	while _scroll_offset < selected_index and _row_top(selected_index + 1) - _row_top(_scroll_offset) > _window_px:
+		_scroll_offset += 1
+	var last_first := menu_items.size() - 1
+	while last_first > 0 and _row_top(menu_items.size()) - _row_top(last_first - 1) <= _window_px:
+		last_first -= 1
+	_scroll_offset = clampi(_scroll_offset, 0, last_first)
+	_max_visible_rows = _rows_fitting_from(_scroll_offset, _window_px)
+	container.position.y = _items_base_y - float(_row_top(_scroll_offset))
+	var clip := container.get_parent() as Control
+	if clip:
+		clip.size.y = float(_row_top(_scroll_offset + _max_visible_rows) - _row_top(_scroll_offset))
 
 
 func _get_items_container() -> VBoxContainer:
@@ -1515,9 +1562,8 @@ func _submenu_left_bound() -> float:
 
 
 func _submenu_rest_position(parent_index: int, submenu_size: Vector2, description_room: float = 0.0) -> Vector2:
-	var row_h := _row_height()
-	var visual := parent_index - _scroll_offset
-	var item_y := visual * row_h + TILE_SIZE + MENU_PADDING
+	var row_h := _row_height_at(parent_index)
+	var item_y := _row_top(parent_index) - _row_top(_scroll_offset) + TILE_SIZE + MENU_PADDING
 	var pos := Vector2()
 	if expand_left:
 		pos.x = global_position.x - submenu_size.x - 6.0

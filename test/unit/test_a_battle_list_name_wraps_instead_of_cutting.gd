@@ -132,7 +132,7 @@ func _half_screen() -> int:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m := Win98Menu.new()
 	autofree(m)
-	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label", "_names_whole", "_fill_alpha", "_panel_fill"]:
+	for p in ["_width_cap", "_row_lines", "_description_room", "screen_floor_y", "expand_left", "submenu", "_tooltip_label", "_names_whole", "_fill_alpha", "_panel_fill", "_row_line_counts", "_window_px", "_scroll_offset", "_max_visible_rows"]:
 		assert_true(p in m, "FLOOR: Win98Menu.%s" % p)
 	for f in ["setup", "_row_height", "_line_row_height", "_submenu_width_cap", "_submenu_right_wall", "_submenu_left_bound", "_open_submenu", "_update_tooltip", "_tooltip_backing"]:
 		assert_true(m.has_method(f), "FLOOR: Win98Menu.%s()" % f)
@@ -320,3 +320,56 @@ func test_the_description_box_stays_above_the_floor() -> void:
 	var tr: Rect2 = tip.get_global_rect()
 	assert_lte(tr.end.y, floor_y + 0.5, "the description box ends at %d, above the floor %d" % [int(tr.end.y), int(floor_y)])
 	assert_gte(tr.position.y, m.position.y + m.size.y, "and still sits under its list")
+
+
+func _row_nodes(m: Win98Menu) -> Array:
+	var out: Array = []
+	for n in m.find_children("Item*", "Control", true, false):
+		if (n as Node).get_parent() != null and (n as Node).get_parent().name == "Items":
+			out.append(n)
+	return out
+
+
+## cowir-main 27037, the Mage's 200% frame: four long labels wrapped EVERY row (96 px, 4 of 11 shown). Only a row whose own name needs it takes a second line.
+func test_only_a_long_name_takes_a_second_line() -> void:
+	GameState.text_size_scale = 2.0
+	var m: Win98Menu = await _list(_real_rows("mage"), _half_screen(), 670.0)
+	var one := m._line_row_height()
+	var rows: Array = _row_nodes(m)
+	assert_eq(rows.size(), m.menu_items.size(), "FLOOR: every row was built (%d)" % rows.size())
+	var tall := 0
+	var short := 0
+	for i in rows.size():
+		var l: Label = _name_labels(m)[i]
+		var h := int((rows[i] as Control).custom_minimum_size.y)
+		if _one_line_px(l) <= l.size.x + 0.5:
+			short += 1
+			assert_eq(h, one, "'%s' fits one line, so its row stays %d px (got %d)" % [l.text, one, h])
+		else:
+			tall += 1
+			assert_gt(h, one, "'%s' wraps, so its row is taller" % l.text)
+		assert_eq(_cut(m, l), "", "and '%s' reads whole" % l.text)
+	assert_gt(tall, 0, "CONTROL: some Mage label needs two lines at 200%")
+	assert_gt(short, tall, "CONTROL: most Mage labels fit one line")
+	var shown: int = m._max_visible_rows if m._max_visible_rows > 0 else rows.size()
+	assert_gt(shown, m._window_px / m._row_height(), "the window shows more rows than it would if every row were tall (%d in %d px)" % [shown, m._window_px])
+
+
+## Scrolling a mixed list keeps whole rows: the row under the cursor is inside the window, top and bottom.
+func test_a_mixed_list_scrolls_by_whole_rows() -> void:
+	GameState.text_size_scale = 2.0
+	var m: Win98Menu = await _list(_real_rows("mage"), _half_screen(), 670.0)
+	assert_gt(m._max_visible_rows, 0, "CONTROL: the Mage's list scrolls at 200%")
+	var container: VBoxContainer = m._get_items_container()
+	var bad: Array = []
+	for i in m.menu_items.size():
+		m.selected_index = i
+		m._scroll_selection_into_view(container)
+		var top: int = m._row_top(i) - m._row_top(m._scroll_offset)
+		var bottom: int = top + m._row_height_at(i)
+		if top < 0 or bottom > m._window_px:
+			bad.append("row %d spans %d..%d of a %d px window" % [i, top, bottom, m._window_px])
+		if int(container.position.y) != -m._row_top(m._scroll_offset):
+			bad.append("row %d: items sit at %d, the offset's top is %d" % [i, int(container.position.y), -m._row_top(m._scroll_offset)])
+	assert_eq(bad, [], "\n".join(PackedStringArray(bad)))
+	assert_gt(m._scroll_offset, 0, "CONTROL: reaching the last row scrolled")
