@@ -29,5 +29,72 @@
     "industrial": "rust_elemental",
     "futuristic": "data_wraith",
     "abstract": "optimization_itself"
+  },
+  "_elite_lines_note": "Spoken only when the spawn IS a scaled field elite (field_elite == true), never keyed on monsters.json, so an ordinary pool brass_golem stays quiet. Same shape as a boss's monsters.json dialogue (intro / low_hp / defeat). abstract has none on purpose: optimization_itself is boss-flagged and already speaks its own monsters.json dialogue, so lines here would speak twice.",
+  "elite_lines": {
+    "medieval": {
+      "intro": [
+        "*The Dark Knight has not moved since you first saw it. It does not move now. The air around it hums.*",
+        "Dark Knight: You came to me. Most have the sense not to."
+      ],
+      "low_hp": [
+        "Dark Knight: ...You are stronger than the road said you were."
+      ],
+      "defeat": [
+        "*The armour folds in on itself with a sound like a held breath let go.*",
+        "Dark Knight: Go on, then. It is your road now."
+      ]
+    },
+    "suburban": {
+      "intro": [
+        "*A dog trots up to the party*",
+        "*It looks... normal?*",
+        "*Something about its eyes says otherwise.*"
+      ],
+      "low_hp": [
+        "*The dog sits. It is panting. It is still radiating, but less smugly.*"
+      ],
+      "defeat": [
+        "*The dog rolls over. Belly up. The glow fades to an ordinary afternoon.*",
+        "*Somewhere, a screen door bangs. The dog trots home.*"
+      ]
+    },
+    "steampunk": {
+      "intro": [
+        "*Every gauge on the Brass Golem's chest is past the red line. It has been past the red line for a very long time.*",
+        "*Its furnace heart opens, and the light inside is the wrong colour for coal.*"
+      ],
+      "low_hp": [
+        "*A valve shrieks. Pressure that should have vented an hour ago finally finds a way out.*"
+      ],
+      "defeat": [
+        "*The furnace gutters, coughs, and goes out. The gauges fall back to zero one by one.*"
+      ]
+    },
+    "industrial": {
+      "intro": [
+        "*The Rust Elemental has eaten the fence, the sign that warned about it, and most of the ground it stands on.*",
+        "*Your weapons feel heavier. Older. Like they already know.*"
+      ],
+      "low_hp": [
+        "*Flakes of it drift off in the wind. It is losing more than it is taking.*"
+      ],
+      "defeat": [
+        "*It settles into a red stain on the concrete. The metal around it stops aging.*"
+      ]
+    },
+    "futuristic": {
+      "intro": [
+        "*The Data Wraith flickers at a frame rate the world was not built for.*",
+        "Data Wraith: >> HOSTILE PROCESS DETECTED. it's you. it's always you."
+      ],
+      "low_hp": [
+        "Data Wraith: >> integrity 23%. i was not compiled to lose."
+      ],
+      "defeat": [
+        "Data Wraith: >> process terminated with exit code 0. that means success. i don't understand.",
+        "*The wraith resolves into a single blinking cursor, then nothing.*"
+      ]
+    }
   }
 }
