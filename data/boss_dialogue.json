@@ -2307,7 +2307,7 @@
     "display_name": "The Chancellor's Warden",
     "_comment": "Wipe line only: its party-wins line is monsters.json dialogue.defeat (BattleScene), so a victory_lines here would speak twice.",
     "defeat_lines": [
-      "Warden: 'Appeal dismissed. The docket stands as written.'"
+      "Chancellor's Warden: 'Appeal dismissed. The docket stands as written.'"
     ]
   }
 }
