@@ -1199,6 +1199,9 @@
       "intro": [
         "Hero: Is that a compass made of teeth?",
         "The Lost Cartographer: I mapped every inch of this warren. Nobody read past page one."
+      ],
+      "low_hp": [
+        "The Lost Cartographer: The ink is running. I can see the blank parts of the page from here."
       ]
     },
     "spectrum_ratio": 0.581081
@@ -3727,6 +3730,9 @@
         "Warden of Routine: No running in the halls. No exceptions.",
         "Warden of Routine: The Master's rules are absolute.",
         "Warden of Routine: And I enforce them absolutely."
+      ],
+      "low_hp": [
+        "Warden of Routine: This is highly irregular. I am writing you up. I am writing ALL of you up."
       ]
     },
     "spectrum_ratio": 2.262941
@@ -4079,6 +4085,9 @@
         "The Grand Schedule: You are four minutes ahead of the estimate.",
         "The Grand Schedule: I have adjusted the estimate.",
         "The Grand Schedule: You are now precisely on time."
+      ],
+      "low_hp": [
+        "The Grand Schedule: You are early. Nobody is early. I am revising the schedule. I am revising it again."
       ]
     },
     "spectrum_ratio": 3.185714
@@ -4200,6 +4209,9 @@
         "Warden of the Assembly Line: UNIT OPERATIONAL.",
         "Warden of the Assembly Line: The Master's quality control demands perfection.",
         "Warden of the Assembly Line: COMMENCING STRESS TEST."
+      ],
+      "low_hp": [
+        "Warden of the Assembly Line: WARNING: UNIT INTEGRITY BELOW TOLERANCE. LINE WILL NOT STOP. LINE WILL NOT STOP."
       ]
     },
     "spectrum_ratio": 4.122703
@@ -4506,6 +4518,9 @@
         "Arbiter of the Benchmark: BENCHMARK INITIATED. Performance metrics will be recorded.",
         "Arbiter of the Benchmark: The Master expects you to surpass all previous results.",
         "Arbiter of the Benchmark: Begin."
+      ],
+      "low_hp": [
+        "Arbiter of the Benchmark: RESULT OUT OF RANGE. Re-running... result confirmed. Recording under protest."
       ]
     },
     "spectrum_ratio": 5.088049
@@ -4922,6 +4937,9 @@
         "Curator of Entropy: I am Entropy. All resources tend toward zero.",
         "Curator of Entropy: The Master's final lesson: everything runs out.",
         "Curator of Entropy: Even you."
+      ],
+      "low_hp": [
+        "Curator of Entropy: Ah. My turn to run out. I did say everything."
       ]
     },
     "spectrum_ratio": 5.774091
@@ -5763,6 +5781,11 @@
   "the_operator": {
     "id": "the_operator",
     "name": "The Operator",
+    "dialogue": {
+      "low_hp": [
+        "The Operator: 'Variance. In MY run. Somebody logged a manual input.'"
+      ]
+    },
     "description": "It does not fight you. It runs you, the way you have been running yourself since the first slime, and it is better at it. Every repetition you make, it has already filed.",
     "level": 57,
     "boss": true,
@@ -5821,6 +5844,11 @@
   "the_examiner": {
     "id": "the_examiner",
     "name": "The Examiner",
+    "dialogue": {
+      "low_hp": [
+        "The Examiner: 'Five minutes remaining. I find I am the one checking the clock.'"
+      ]
+    },
     "description": "It sets a question, waits, and marks the answer. It will not hurry you. It has read every attempt anyone has ever made and it is still, faintly, hoping to be surprised.",
     "level": 57,
     "boss": true,
@@ -5881,6 +5909,11 @@
   "the_margin": {
     "id": "the_margin",
     "name": "The Margin",
+    "dialogue": {
+      "low_hp": [
+        "The Margin: 'You're rounding me down. Nobody rounds me down.'"
+      ]
+    },
     "description": "The slack in the numbers. Everything that was left over after the curve was fitted, standing up. It objects to you for the same reason an accountant objects to a rounding error that keeps winning.",
     "level": 57,
     "boss": true,
