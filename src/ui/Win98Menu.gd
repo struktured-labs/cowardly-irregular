@@ -1033,6 +1033,10 @@ func _build_menu() -> void:
 	_description_room = _description_room_for(menu_width) if screen_floor_y > 0.0 else 0
 	if screen_floor_y > 0.0:
 		room_for_rows = int(screen_floor_y) - MENU_SCREEN_MARGIN * 2 - chrome_height - _description_room
+		## The Ability list rests below the turn banner (_clear_of_turn_banner), so its rows are budgeted from there, or its description covers the last one.
+		var banner_end := _turn_banner_end()
+		if _names_whole and banner_end > 0.0:
+			room_for_rows = mini(room_for_rows, int(screen_floor_y) - _description_room - int(ceil(banner_end + 4.0)) - chrome_height)
 	if bottom_clearance > 0:
 		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
 		var bottom_limit: int = int(viewport_height) - bottom_clearance
@@ -1581,11 +1585,21 @@ func _submenu_rest_position(parent_index: int, submenu_size: Vector2, descriptio
 	## A floored chain keeps the list AND its description box above the floor.
 	var bottom := (screen_floor_y - description_room) if screen_floor_y > 0.0 else vp.y - 10.0
 	pos.y = clampf(pos.y, 10.0, maxf(10.0, bottom - submenu_size.y))
-	return _clear_of_turn_banner(pos, submenu_size, vp)
+	return _clear_of_turn_banner(pos, submenu_size, vp, bottom)
 
 
 ## A list that would rest across the "Round N - SELECT" banner drops just below it, so neither covers the other.
-func _clear_of_turn_banner(pos: Vector2, submenu_size: Vector2, vp: Vector2) -> Vector2:
+## The visible "Round N - SELECT" banner's bottom edge, or 0 when none shows.
+func _turn_banner_end() -> float:
+	if not is_inside_tree():
+		return 0.0
+	var banner := get_tree().root.find_child("TurnInfoPanel", true, false) as Control
+	if banner == null or not is_instance_valid(banner) or not banner.is_visible_in_tree():
+		return 0.0
+	return banner.get_global_rect().end.y
+
+
+func _clear_of_turn_banner(pos: Vector2, submenu_size: Vector2, vp: Vector2, bottom: float = -1.0) -> Vector2:
 	if not is_inside_tree():
 		return pos
 	var banner := get_tree().root.find_child("TurnInfoPanel", true, false) as Control
@@ -1595,7 +1609,7 @@ func _clear_of_turn_banner(pos: Vector2, submenu_size: Vector2, vp: Vector2) -> 
 	if not Rect2(pos, submenu_size).intersects(rect):
 		return pos
 	var below := rect.end.y + 4.0
-	if below + submenu_size.y > vp.y - 10.0:
+	if below + submenu_size.y > (bottom if bottom > 0.0 else vp.y - 10.0):
 		return pos
 	pos.y = below
 	return pos

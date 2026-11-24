@@ -373,3 +373,20 @@ func test_a_mixed_list_scrolls_by_whole_rows() -> void:
 			bad.append("row %d: items sit at %d, the offset's top is %d" % [i, int(container.position.y), -m._row_top(m._scroll_offset)])
 	assert_eq(bad, [], "\n".join(PackedStringArray(bad)))
 	assert_gt(m._scroll_offset, 0, "CONTROL: reaching the last row scrolled")
+
+
+## The 200% Mage frame (d3f25820e): the list rested under "Round 1 - SELECT" at y 134 but budgeted rows from the top margin, so its description covered the 8th row.
+func test_rows_are_budgeted_from_under_the_turn_banner() -> void:
+	GameState.text_size_scale = 2.0
+	var floor_y := 670.0
+	var free: Win98Menu = await _list(_real_rows("mage"), _half_screen(), floor_y)
+	var banner := Control.new()
+	banner.name = "TurnInfoPanel"
+	banner.position = Vector2(260, 10)
+	banner.size = Vector2(760, 120)
+	add_child_autofree(banner)
+	var m: Win98Menu = await _list(_real_rows("mage"), _half_screen(), floor_y)
+	var room := floor_y - float(m._description_room) - (banner.get_global_rect().end.y + 4.0)
+	assert_gt(free.size.y, room, "CONTROL: budgeted from the top margin, the list (%d px) is taller than the room under the banner (%d)" % [int(free.size.y), int(room)])
+	assert_lte(m.size.y, room + 0.5, "under a banner the list (%d px) fits between it and its description box (%d)" % [int(m.size.y), int(room)])
+	assert_gt(m._max_visible_rows, 0, "and it scrolls for it")
