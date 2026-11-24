@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Recipe-card frames for the earned-autobattle-recipe reveal: a PREVIEW, not registered anywhere.
+"""Recipe-card frames for the earned-autobattle-recipe reveal (registered under manifest `recipe_cards`, 30e2bce63).
 
 Draws a 64x88 pixel card in three rarity tiers (common / rare / epic) plus a LOCKED state, a 4x4
 progress pip (filled + empty), and a few sample 20x20 recipe icons, procedurally (T1, $0, no
 model). The card carries NO text (cutscenes 26974, adhoc 26968): the pixel face at the card's own
 scale cannot fit a name in a plate, so the name and reveal line go in the popup's text panel, and
-progress is 10 empty sockets baked into the frame, of which the game lights N with pip_filled. Nothing here touches assets/ or data/sprite_manifest.json; the spec decides
-where (and whether) these land.
+progress is 10 empty sockets baked into the frame, of which the game lights N with pip_filled.
+The shipped copies live in assets/sprites/ui/recipe_cards/ (all but preview.png and pip_empty.png,
+which is baked into each card); this script never writes there unless --out names it.
 
     uv run python tools/gen_recipe_card_frames.py --out tmp/recipe_cards
-writes card_<tier>.png, card_locked.png, icon_<id>.png and preview.png (4x, on the grey
-(128,128,128) review ground).
+writes card_<tier>.png, card_locked.png, icon_<id>.png, pip_*.png and preview.png (4x, on the
+grey (128,128,128) review ground).
 """
 import argparse
 from pathlib import Path
