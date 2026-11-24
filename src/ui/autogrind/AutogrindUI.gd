@@ -1300,76 +1300,13 @@ func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	bg.add_child(label)
 
 func _format_condition(condition: Dictionary) -> String:
-	"""Format condition for display"""
-	var cond_type = condition.get("type", "always")
-	var op = condition.get("op", "==")
-	var value = condition.get("value", 0)
-
-	match cond_type:
-		"party_hp_avg":
-			return "Party HP\n%s %d%%" % [op, value]
-		"party_hp_min":
-			return "Lowest HP\n%s %d%%" % [op, value]
-		"party_mp_avg":
-			return "Party MP\n%s %d%%" % [op, value]
-		"alive_count":
-			return "Alive\n%s %d" % [op, value]
-		"battles_done":
-			return "Battles\n%s %d" % [op, value]
-		"win_streak":
-			return "Win Streak\n%s %d" % [op, value]
-		"corruption":
-			return "Corruption\n%s %.1f" % [op, value]
-		"efficiency":
-			return "Efficiency\n%s %.1f" % [op, value]
-		"time_elapsed":
-			return "Minutes\n%s %d" % [op, value]
-		"member_dead":
-			return "Member\nDead"
-		"member_injured":
-			return "New\nInjury"
-		"member_hp":
-			return "%s HP\n%s %d" % [_member_label(condition), op, value]
-		"member_mp":
-			return "%s MP\n%s %d" % [_member_label(condition), op, value]
-		"member_status":
-			return "%s\n%s" % [_member_label(condition), StatusNames.display(str(condition.get("value", "status")))]
-		"inventory_items":
-			return "Inv Items\n%s %d" % [op, value]
-		"ability_learned":
-			return "New\nAbility"
-		"reached_level":
-			return "Level\n%s %d" % [op, value]
-		"rare_item_found":
-			return "Rare\nDrop"
-		"always":
-			return "ALWAYS"
-		_:
-			return cond_type
+	"""Format condition for display (AutogrindSystem owns the words)"""
+	return AutogrindSystem.describe_condition(condition)
 
 
 func _format_action(action: Dictionary) -> String:
-	"""Format action for display"""
-	var action_type = action.get("type", "stop_grinding")
-
-	match action_type:
-		"stop_grinding":
-			return "STOP\nGRINDING"
-		"switch_profile":
-			var target = action.get("target", "all")
-			return "Switch\nProfile (%s)" % target
-		"member_ability":
-			return "%s casts\n%s" % [AutogrindSystem.member_display_name(str(action.get("member", ""))), AbilityIcons.name_of(str(action.get("ability", "?")))]
-		"heal_party":
-			return "Use\nPotions"
-		"restore_mp":
-			return "Use\nEthers"
-		"flee_battle":
-			return "Flee\nNext"
-		"revive_fallen":
-			return "Revive\nFallen"
-		_:
-			return action_type
+	"""Format action for display (AutogrindSystem owns the words)"""
+	return AutogrindSystem.describe_action(action)
 
 
 ## The grid never had a viewport of its own, so rows past its bottom drew OVER the buttons below --

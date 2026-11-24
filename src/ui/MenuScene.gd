@@ -1445,40 +1445,12 @@ func _show_autogrind_view() -> void:
 
 func _format_condition_brief(condition: Dictionary) -> String:
 	"""Brief format for condition display in overview"""
-	var cond_type = condition.get("type", "always")
-	var op = condition.get("op", "==")
-	var value = condition.get("value", 0)
-
-	match cond_type:
-		"party_hp_avg": return "HP Avg %s %d%%" % [op, value]
-		"party_mp_avg": return "MP Avg %s %d%%" % [op, value]
-		"party_hp_min": return "Min HP %s %d%%" % [op, value]
-		"alive_count": return "Alive %s %d" % [op, value]
-		"battles_done": return "Battles %s %d" % [op, value]
-		"corruption": return "Corrupt %s %s" % [op, value]
-		"efficiency": return "Effic %s %s" % [op, value]
-		"always": return "ALWAYS"
-	return cond_type
+	return AutogrindSystem.describe_condition(condition).replace("\n", " ")
 
 
 func _format_action_brief(action: Dictionary) -> String:
 	"""Brief format for action display in overview"""
-	var action_type = action.get("type", "switch_profile")
-
-	match action_type:
-		"switch_profile":
-			var char_id = action.get("character_id", "hero")
-			var profile_idx = action.get("profile_index", 0)
-			var profile_name = ""
-			var profiles = AutobattleSystem.get_character_profiles(char_id)
-			if profile_idx < profiles.size():
-				profile_name = profiles[profile_idx].get("name", "P%d" % profile_idx)
-			else:
-				profile_name = "P%d" % profile_idx
-			return "%s→%s" % [char_id.capitalize(), profile_name]
-		"stop_grinding":
-			return "STOP"
-	return action_type
+	return AutogrindSystem.describe_action(action).replace("\n", " ")
 
 
 func _open_autogrind_editor() -> void:
