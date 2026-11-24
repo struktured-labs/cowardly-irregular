@@ -69,3 +69,31 @@ func test_the_cartographer_opens_and_turns_in_his_own_voice() -> void:
 	assert_true(dlg.has_entry("cartographer_wraith"), "the runtime catalog loads his entry")
 	assert_eq(dlg.get_display_name("cartographer_wraith"), "The Lost Cartographer", "signed as his monsters.json name")
 	assert_eq(dlg.get_verbs("cartographer_wraith"), [], "no Address verbs, so no half-built Talk menu appears")
+
+
+## 2026-11-24 (cowir-story): .817 shipped the Cartographer's pair inverted, conceding when he WIPES the party. victory_lines play when
+## the PARTY wins, defeat_lines when the BOSS wins (BossDialogue.gd:12-13). One-sided: a concession marker may never sit in a wipe line.
+const CONCEDES := "(?i)\\b(well played|you won|you win|pass[,.!]|worth|at last|never did|held|i yield|i concede|you beat me|defeated)"
+
+
+func test_no_boss_concedes_when_it_wipes_the_party() -> void:
+	var re := RegEx.new()
+	re.compile(CONCEDES)
+	var dialogue := _json("res://data/boss_dialogue.json")
+	var seen_in_victory := 0
+	var gloats := 0
+	var conceding: Array = []
+	for id in dialogue:
+		var entry: Variant = dialogue[id]
+		if not (entry is Dictionary):
+			continue
+		for l in (entry as Dictionary).get("victory_lines", []):
+			if re.search(str(l)) != null:
+				seen_in_victory += 1
+		for l in (entry as Dictionary).get("defeat_lines", []):
+			gloats += 1
+			if re.search(str(l)) != null:
+				conceding.append("%s: %s" % [id, l])
+	assert_gt(seen_in_victory, 10, "CONTROL: the marker list must recognise the concessions bosses already make when they lose")
+	assert_gt(gloats, 40, "CONTROL: the wipe lines were read")
+	assert_eq(conceding, [], "a defeat_line plays when the boss WINS; these concede instead")
