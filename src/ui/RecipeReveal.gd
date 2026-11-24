@@ -9,7 +9,7 @@ class_name RecipeReveal
 signal dismissed()
 
 ## The card is pixel art: it is drawn at this integer scale at every Text Size, and only the text beside it grows.
-const CARD_SCALE := 3
+const CARD_SCALE := 4
 ## Fallback card geometry in card pixels, as sprites cut it; the `recipe_cards` manifest entry wins when present.
 const CARD_SIZE := Vector2(64, 88)
 const ART_WINDOW := Rect2(6, 6, 52, 56)
@@ -20,7 +20,8 @@ const MANIFEST_SECTION := "recipe_cards"
 const JINGLE_KEY := "recipe_learned"
 ## sfx renders the ticks at 70 ms, the same beat as PIP_STEP.
 
-const PANEL_W := 600.0
+## The narrowest the text column may get before it wraps; the panel otherwise hugs its widest line (main 27127).
+const MIN_TEXT_W := 160.0
 const PAD := 24.0
 ## On the pixel face's steps (UiFont.scale_for: 9 px per step) so every tier draws at least 2x at 100%, and the name stands one step above its line.
 const TITLE_FONT := 27
@@ -135,6 +136,25 @@ func pip_count() -> int:
 	return _pips.size()
 
 
+## The confirm control as THIS player's device names it (a pad's own face, else the key), never a written-out letter (main 27127).
+static func continue_hint(device_name: String = "") -> String:
+	var cap: String = InputProfileManager.hint_for_action("ui_accept", device_name) if InputProfileManager else ""
+	return "Press %s to continue" % cap if cap != "" else "Press Confirm to continue"
+
+
+## One line's drawn width in the theme font at this size, measured on a throwaway label so the font is the one the panel will resolve.
+func _line_width(text: String, font_size: int) -> float:
+	var probe := Label.new()
+	add_child(probe)
+	var f: Font = probe.get_theme_font("font")
+	var w: float = 0.0
+	if f != null and text != "":
+		w = ceilf(f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + 4.0
+	remove_child(probe)
+	probe.free()
+	return w
+
+
 ## A label built at its final width and given height 0: a Label clamps UP to its own content (theme margins included), so its size IS the measurement.
 func _label(which: String, text: String, font_size: int, color: Color, w: float, align: int, wrap: bool) -> Label:
 	var l := Label.new()
@@ -179,15 +199,22 @@ func _present(recipe: Dictionary) -> void:
 	_bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_bg)
 
-	var pw: float = minf(k(PANEL_W) + card_sz.x, vp_size.x - 16.0)
 	var pad: float = k(PAD)
 	var text_x: float = pad + card_sz.x + pad
-	var text_w: float = maxf(k(120.0), pw - text_x - pad)
+	var max_pw: float = vp_size.x - 16.0
+	var widest: float = 0.0
+	for pair in [["name", NAME_FONT], ["line", LINE_FONT], ["flavour", FLAVOUR_FONT]]:
+		widest = maxf(widest, _line_width(str(recipe.get(pair[0], "")), TextScale.scaled(pair[1])))
+	var text_w: float = clampf(widest, k(MIN_TEXT_W), max_pw - text_x - pad)
+	var hint_text: String = continue_hint()
+	var pw: float = text_x + text_w + pad
+	pw = maxf(pw, _line_width("Recipe Learned!", TextScale.scaled(TITLE_FONT)) + pad * 2.0)
+	pw = minf(maxf(pw, _line_width(hint_text, TextScale.scaled(HINT_FONT)) + pad * 2.0), max_pw)
 	var title := _label("title", "Recipe Learned!", TextScale.scaled(TITLE_FONT), TITLE_COLOR, pw, HORIZONTAL_ALIGNMENT_CENTER, true)
 	var name_l := _label("name", str(recipe.get("name", "???")), TextScale.scaled(NAME_FONT), NAME_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
 	var line_l := _label("line", str(recipe.get("line", "")), TextScale.scaled(LINE_FONT), LINE_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
 	var flav_l := _label("flavour", str(recipe.get("flavour", "")), TextScale.scaled(FLAVOUR_FONT), FLAVOUR_COLOR, text_w, HORIZONTAL_ALIGNMENT_LEFT, true)
-	var hint := _label("hint", KeyItemPopup.continue_hint_text(), TextScale.scaled(HINT_FONT), HINT_COLOR, pw, HORIZONTAL_ALIGNMENT_CENTER, true)
+	var hint := _label("hint", hint_text, TextScale.scaled(HINT_FONT), HINT_COLOR, pw, HORIZONTAL_ALIGNMENT_CENTER, true)
 	var gap: float = k(10.0)
 	var text_h: float = name_l.size.y + gap + line_l.size.y + gap + flav_l.size.y
 	var title_h: float = title.size.y

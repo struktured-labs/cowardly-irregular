@@ -120,18 +120,47 @@ func test_the_count_up_ticks_name_sfx_s_keys_and_stay_silent_until_registered() 
 	assert_true(RecipeReveal.has_sfx("item_obtain") or RecipeReveal.has_sfx("menu_select"), "CONTROL: a registered cue reads as present")
 
 
-## The frame at 100% drew the flavour and the hint at the face's 1x step, too small to read (cutscenes 27126): every tier is 2x or more, the name a step above its line.
-func test_every_tier_reads_at_100_percent_and_the_name_leads() -> void:
-	GameState.text_size_scale = 1.0
+## The frame at 100% drew the flavour and the hint at the face's 1x step and the name level with its line (cutscenes 27126).
+## Judged on the DRAWN step, UiFont.scale_for, not the raw size: raw sizes stay distinct while the step collapses (adhoc 27128).
+func test_every_tier_draws_legibly_and_the_name_leads_at_every_text_size() -> void:
+	var tiers := ["title", "name", "line", "flavour", "hint"]
+	for p in SettingsMenu.TEXT_SIZE_PRESETS:
+		GameState.text_size_scale = float(p)
+		var r: RecipeReveal = await _reveal(WORST)
+		var step := {}
+		for which in tiers:
+			var l: Label = r.text_label(which)
+			assert_not_null(l, "CONTROL: the %s label exists at %s" % [which, str(p)])
+			if l != null:
+				step[which] = UiFont.scale_for(l.get_theme_font_size("font_size"))
+		if float(p) >= 1.0:
+			for which in step:
+				assert_gte(int(step[which]), 2, "%s draws at the face's %dx step at %s, too small to read" % [which, int(step[which]), str(p)])
+		if step.has("name") and step.has("line"):
+			assert_gt(int(step["name"]), int(step["line"]), "the name stands a step above its line at %s (%dx vs %dx)" % [str(p), int(step["name"]), int(step["line"])])
+		r.free()
+
+
+## A pad player is told their own Confirm face; "Press X" is true on a keyboard only (main 27127).
+func test_the_continue_hint_names_the_players_own_confirm() -> void:
+	var pad_name := "Xbox Wireless Controller"
+	var cap: String = InputProfileManager.hint_for_action("ui_accept", pad_name)
+	assert_ne(cap, "", "CONTROL: the xbox layout names a confirm button")
+	assert_eq(RecipeReveal.continue_hint(pad_name), "Press %s to continue" % cap)
 	var r: RecipeReveal = await _reveal(WORST)
-	var steps := {}
-	for which in ["title", "name", "line", "flavour", "hint"]:
+	assert_eq((r.text_label("hint") as Label).text, RecipeReveal.continue_hint(), "the panel shows the derived hint")
+	r.free()
+
+
+## The panel hugs its content: no wide empty band right of the text (main 27127).
+func test_the_panel_hugs_its_widest_line() -> void:
+	GameState.text_size_scale = 1.0
+	var r: RecipeReveal = await _reveal(SHORT)
+	var right := 0.0
+	for which in ["name", "line", "flavour"]:
 		var l: Label = r.text_label(which)
-		assert_not_null(l, "CONTROL: the %s label exists" % which)
-		if l == null:
-			continue
-		steps[which] = UiFont.scale_for(l.get_theme_font_size("font_size"))
-		assert_gte(int(steps[which]), 2, "%s draws at the face's %dx step at 100%%, too small to read" % [which, int(steps[which])])
-	if steps.has("name") and steps.has("line"):
-		assert_gt(int(steps["name"]), int(steps["line"]), "the recipe's name stands a step above its line")
+		var f: Font = l.get_theme_font("font")
+		right = maxf(right, l.position.x + f.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.get_theme_font_size("font_size")).x)
+	var slack: float = r.panel_node().size.x - right
+	assert_lt(slack, RecipeReveal.k(RecipeReveal.PAD) * 2.5, "the panel runs %d px past its widest line" % int(slack))
 	r.free()
