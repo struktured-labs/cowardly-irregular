@@ -33,10 +33,16 @@ func _authored() -> Array:
 		var declared = (sheets[job] as Dictionary).get("frame_durations_ms", {})
 		if not (declared is Dictionary):
 			continue
+		var artist: Array = (sheets[job] as Dictionary).get("frame_durations_from_artist", [])
 		for anim in declared:
 			if str(anim) != "victory":
-				out.append([str(job), str(anim), declared[anim]])
+				out.append([str(job), str(anim), declared[anim], artist.has(str(anim))])
 	return out
+
+
+## The rows OUR polish retimed: an artist's own timing (frame_durations_from_artist) is played as he wrote it.
+func _redistributed() -> Array:
+	return _authored().filter(func(r): return not r[3])
 
 
 func _frame_seconds(sf: SpriteFrames, anim: StringName, i: int) -> float:
@@ -81,7 +87,7 @@ func test_each_authored_frame_lasts_its_own_duration() -> void:
 func test_an_authored_total_equals_the_flat_timing_it_replaced() -> void:
 	var sheets := _sheets()
 	var checked := 0
-	for r in _authored():
+	for r in _redistributed():
 		var job: String = r[0]
 		var ms: Array = r[2]
 		var fps: float = float((sheets[job] as Dictionary).get("fps", 8))
@@ -99,7 +105,7 @@ func test_an_authored_total_equals_the_flat_timing_it_replaced() -> void:
 ## A rhythm that is accidentally uniform would satisfy every arm above and polish nothing. This is
 ## the arm that says the timing is actually SHAPED.
 func test_an_authored_rhythm_is_not_flat() -> void:
-	for r in _authored():
+	for r in _redistributed():
 		var ms: Array = r[2]
 		var lo := 1.0e9
 		var hi := 0.0
@@ -148,3 +154,24 @@ func test_victory_still_runs_at_half_speed() -> void:
 				"%s victory frame %d must still last %d ms x %.0f" % [job, i, int(ms[i]), PACE])
 		checked += 1
 	assert_gt(checked, 0, "CONTROL: at least one artist victory was measured")
+
+
+## cowir-main 27086: Leo's flinch is a flat 110 ms x4 and artist timing wins, so the exemption is real but only for artist sheets.
+func test_an_artist_timing_exemption_names_artist_art_it_times() -> void:
+	var sheets := _sheets()
+	var exempt: Array = []
+	for job in sheets:
+		var e: Dictionary = sheets[job]
+		var named: Array = e.get("frame_durations_from_artist", [])
+		var declared: Dictionary = e.get("frame_durations_ms", {})
+		for anim in named:
+			exempt.append("%s/%s" % [job, anim])
+			assert_true(str(e.get("tier", "")) in ["T2", "T3"],
+				"%s/%s claims the ARTIST's timing on a %s sheet -- only his art can be exempt" % [job, anim, e.get("tier", "?")])
+			assert_true(declared.has(str(anim)), "%s/%s is exempt but carries no frame_durations_ms to exempt" % [job, anim])
+	assert_has(exempt, "fighter/hit", "Leo's flinch must be declared his timing, or the arms above red on it")
+	var rows: Array = []
+	for r in _authored():
+		rows.append("%s/%s" % [r[0], r[1]])
+	assert_has(rows, "fighter/hit", "CONTROL: the per-frame arm must still time fighter/hit at his 110 ms")
+

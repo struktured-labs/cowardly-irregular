@@ -2196,5 +2196,109 @@
     "defeat_lines": [
       "Not drained — spent. There is a difference, and you have run out of both."
     ]
+  },
+  "cartographer_wraith": {
+    "display_name": "The Lost Cartographer",
+    "opening_lines": [
+      "The Lost Cartographer: 'Every wall in this warren is a line I drew under protest. Mind the ones that lie.'",
+      "The Lost Cartographer: 'You read my shortcut. Now read THIS.'",
+      "The Lost Cartographer: 'Hold still. I want you on the map before I erase you.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Lost Cartographer: 'The legend is wrong. The legend was always wrong. I am revising it.'",
+        "The Lost Cartographer: 'North is wherever I say it is now.'"
+      ],
+      "phase_3": [
+        "The Lost Cartographer: 'They never wanted the map. They wanted a picture of a map that agreed with them.'",
+        "The Lost Cartographer: 'Scale: one of you to nothing at all.'"
+      ]
+    },
+    "automation_lines": {
+      "_comment": "A surveyor who was fired for being right: a script walking a fixed route is the thing he respects and resents most.",
+      "autobattle": [
+        "The Lost Cartographer: 'A fixed route. Clean lines. I would have drawn it the same way. That is what bothers me.'",
+        "The Lost Cartographer: 'You let a script survey the fight. I was replaced by one too.'"
+      ],
+      "autogrind": [
+        "The Lost Cartographer: 'Back again, on the same path. You are wearing a trail into my floor.'"
+      ]
+    },
+    "victory_lines": [
+      "The Lost Cartographer: 'Mark it on the chart: the honest line held. Mine never did.'"
+    ],
+    "defeat_lines": [
+      "The Lost Cartographer: 'Off the edge of the map. Here be... you.'"
+    ]
+  },
+  "the_operator": {
+    "display_name": "The Operator",
+    "opening_lines": [
+      "The Operator: 'Hands off the controls. I'll take it from here.'",
+      "The Operator: 'Your routine is on file. I've already run it twice.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Operator: 'You changed an input. Noted. Adjusting.'"
+      ],
+      "phase_3": [
+        "The Operator: 'You're improvising now. That isn't in either of our scripts.'"
+      ]
+    },
+    "victory_lines": [
+      "The Operator: 'You weren't on the schedule. Nothing was supposed to be off the schedule.'"
+    ],
+    "defeat_lines": [
+      "The Operator: 'Run complete. Exactly as projected.'"
+    ]
+  },
+  "the_examiner": {
+    "display_name": "The Examiner",
+    "opening_lines": [
+      "The Examiner: 'Pens down. The question is you.'",
+      "The Examiner: 'Take your time. I always mark fairly.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Examiner: 'Partial credit so far. Show your working.'"
+      ],
+      "phase_3": [
+        "The Examiner: 'Now you're answering the question I didn't ask. Go on.'"
+      ]
+    },
+    "victory_lines": [
+      "The Examiner: 'Full marks. ...I was hoping someone would surprise me.'"
+    ],
+    "defeat_lines": [
+      "The Examiner: 'Time. Pens down. See me after.'"
+    ]
+  },
+  "the_margin": {
+    "display_name": "The Margin",
+    "opening_lines": [
+      "The Margin: 'I'm what was left over when they fitted you to the curve.'",
+      "The Margin: 'Round me down if you can.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Margin: 'Every time you win by a little, I get a little bigger.'"
+      ],
+      "phase_3": [
+        "The Margin: 'You're within tolerance. I hate that.'"
+      ]
+    },
+    "victory_lines": [
+      "The Margin: 'Carried. ...Someone always carries the one.'"
+    ],
+    "defeat_lines": [
+      "The Margin: 'Rounded to zero.'"
+    ]
+  },
+  "castle_warden": {
+    "display_name": "The Chancellor's Warden",
+    "_comment": "Wipe line only: its party-wins line is monsters.json dialogue.defeat (BattleScene), so a victory_lines here would speak twice.",
+    "defeat_lines": [
+      "Warden: 'Appeal dismissed. The docket stands as written.'"
+    ]
   }
 }
