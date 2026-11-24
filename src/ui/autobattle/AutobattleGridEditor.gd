@@ -427,6 +427,9 @@ func _build_ui() -> void:
 	_flash_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_flash_label.add_theme_color_override("font_color", Color.LIME)
 	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	## Wraps, never shrinks: an import names the player's FILE, and at Text Size 2.0 the face's 3x step
+	## put "Imported <28+ chars>. Undo: …" past both screen edges on one line. _place_flash grows it UP from the legend.
+	_flash_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_flash_label.visible = false
 	add_child(_flash_label)
 
@@ -3234,7 +3237,7 @@ func _undo_route() -> String:
 	return "Ctrl+Z, or %s on an empty slot" % pad if pad != "" else "Ctrl+Z"
 
 
-## Restores the grid as it was before the last delete. Refuses a snapshot from another grid (character, profile or import).
+## Restores the grid as it was before the last delete, import or paste. Refuses a snapshot from another grid (character, profile or import).
 func _undo_delete() -> bool:
 	if _undo_snapshot.is_empty() or not is_same(_undo_snapshot["of"], rules):
 		_undo_snapshot = {}
@@ -3812,7 +3815,7 @@ func _apply_share_selection() -> void:
 	_close_share_picker()
 
 	if ok:
-		_flash_status("Imported %s" % filename, Color.LIME)
+		_flash_status("Imported %s. Undo: %s" % [filename, _undo_route()], Color.LIME)
 		SoundManager.play_ui("menu_select")
 	else:
 		## The reason exists for a rule-level refusal; say it. "Could not apply" alone is the same
@@ -3844,10 +3847,15 @@ func _import_script_file(filename: String) -> bool:
 
 func _reload_applied_script() -> void:
 	# Reload the freshly-applied script and rebuild the visible grid (shared by file-import and code-paste).
+	var before: Array = rules.duplicate(true)
+	var at_row := cursor_row
+	var at_col := cursor_col
 	char_script = AutobattleSystem.get_character_script(character_id)
 	rules = char_script.get("rules", []).duplicate(true)
 	if rules.size() == 0:
 		rules.append(_create_default_rule())
+	## An import or paste replaces the whole grid: the delete undo restores it, so one press is never unrecoverable.
+	_undo_snapshot = {"of": rules, "rules": before, "row": at_row, "col": at_col}
 	cursor_row = 0
 	cursor_col = 0
 	_scroll_offset = 0.0
@@ -3886,9 +3894,9 @@ func _paste_share_code() -> void:
 		_reload_applied_script()
 		var adv := ScriptShareManager.last_import_advisory_text()
 		if adv != "":
-			_flash_status("Applied, but %s" % adv, Color.YELLOW)
+			_flash_status("Applied, but %s. Undo: %s" % [adv, _undo_route()], Color.YELLOW)
 		else:
-			_flash_status("Share code applied to %s" % character_name, Color.LIME)
+			_flash_status("Share code applied to %s. Undo: %s" % [character_name, _undo_route()], Color.LIME)
 		SoundManager.play_ui("menu_select")
 		if PartyChatSystem:
 			PartyChatSystem.fire_event_flag("event_flag_share_code_used")
@@ -3975,8 +3983,24 @@ func _flash_status(text: String, color: Color = Color.LIME) -> void:
 		return
 	_flash_label.text = text
 	_flash_label.add_theme_color_override("font_color", color)
+	_place_flash()
 	_flash_label.visible = true
 	_flash_timer = 2.5
+
+
+const FLASH_LEGEND_GAP := 2.0
+## The flash's bottom sits FLASH_LEGEND_GAP above the legend strip and its height is its wrapped text's, so more lines
+## (a long file name, a big Text Size) push it up over the grid's bottom gap rather than down into the legend.
+func _place_flash() -> void:
+	var w: float = maxf(100.0, size.x - 32.0)
+	var f: Font = _flash_label.get_theme_font("font")
+	var px: int = _flash_label.get_theme_font_size("font_size")
+	var h: float = 18.0
+	if f:
+		h = maxf(h, f.get_multiline_string_size(_flash_label.text, HORIZONTAL_ALIGNMENT_CENTER, w, px, -1,
+			TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y)
+	_flash_label.size = Vector2(w, ceilf(h))
+	_flash_label.position = Vector2(16.0, size.y - LEGEND_H - FLASH_LEGEND_GAP - ceilf(h))
 
 
 ## One row step, shared by a press and a held repeat so the two can never drift apart.
