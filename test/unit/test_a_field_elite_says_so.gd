@@ -1,6 +1,6 @@
 extends GutTest
 ## 2026-11-24 (cowir-story): field elites never spoke. BattleEnemySpawner keeps dialogue only for boss/miniboss rows, and an elite is
-## neither, so unassuming_dog's monsters.json intro was dead text. Elite lines live in field_elites.json `elite_lines.<world>`, keyed on
+## neither, so unassuming_dog's monsters.json intro was dead text. Elite lines live in field_elites.json `elite_lines.<species id>`, keyed on
 ## the elite spawn, never on monsters.json (brass_golem etc. are also ordinary pool enemies). Every per_world elite needs them, unless
 ## its monster row already speaks as a boss (optimization_itself), where a second set would speak twice.
 
@@ -42,11 +42,11 @@ func test_every_field_elite_has_its_lines() -> void:
 		var monster_id := str(per_world[world])
 		if _speaks_as_boss(monsters.get(monster_id)):
 			exempt += 1
-			assert_false(lines.has(world), "%s (%s) already speaks as a boss; elite lines would speak twice" % [world, monster_id])
+			assert_false(lines.has(monster_id), "%s (%s) already speaks as a boss; elite lines would speak twice" % [world, monster_id])
 			continue
 		judged += 1
 		for t in TRIGGERS:
-			if not _has_lines(lines.get(world, {}), t):
+			if not _has_lines(lines.get(monster_id, {}), t):
 				silent.append("%s (%s): no %s" % [world, monster_id, t])
 	assert_gt(judged, 3, "CONTROL: most elites are judged, not exempted")
 	assert_eq(exempt, 1, "CONTROL: exactly optimization_itself is exempt today")
