@@ -53,6 +53,7 @@ func _corpus() -> Array:
 
 ## Every line of every text is drawn (the engine's own count), inside the panel, clear of the card and of each other.
 func test_every_text_reads_whole_at_every_text_size() -> void:
+	var wrapped_at_200 := 0
 	var name_px := {}
 	var card_px := {}
 	for p in SettingsMenu.TEXT_SIZE_PRESETS:
@@ -83,11 +84,14 @@ func test_every_text_reads_whole_at_every_text_size() -> void:
 				for other in placed:
 					assert_false(_rect(l).intersects(_rect(other[1])), "%s: %s overlaps %s" % [tag, which, other[0]])
 				placed.append([which, l])
+				if float(p) == 2.0 and which in ["name", "line", "flavour"] and l.get_line_count() > 1:
+					wrapped_at_200 += 1
 			assert_true(Rect2(Vector2.ZERO, panel.size).encloses(_rect(card)), "%s: the card leaves the panel" % tag)
 			if recipe == corpus.back():
 				name_px[p] = (r.text_label("name") as Label).get_theme_font_size("font_size")
 				card_px[p] = card.size
 			r.free()
+	assert_gt(wrapped_at_200, 0, "CONTROL: some catalog text wraps to two lines at 200%, so the wrapped layout was judged (adhoc 27184 measured five)")
 	var steps: Array = SettingsMenu.TEXT_SIZE_PRESETS.duplicate()
 	assert_gt(steps.size(), 2, "CONTROL: the Text Size ladder has steps to walk")
 	for i in range(1, steps.size()):
