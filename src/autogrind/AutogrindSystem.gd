@@ -912,6 +912,103 @@ func member_display_name(who: String) -> String:
 	return who.capitalize()
 
 
+## The one reader of a grind condition: the console, the grid editor, the menu overview and the composer all call it. Grid-cell form ("\n" splits a cell's two lines).
+func describe_condition(condition: Dictionary) -> String:
+	var cond_type := str(condition.get("type", "always"))
+	var op = condition.get("op", "==")
+	var value = condition.get("value", 0)
+	var who := member_display_name(str(condition.get("member", "")))
+	match cond_type:
+		"party_hp_avg":
+			return "Party HP\n%s %d%%" % [op, value]
+		"party_hp_min":
+			return "Lowest HP\n%s %d%%" % [op, value]
+		"party_mp_avg":
+			return "Party MP\n%s %d%%" % [op, value]
+		"alive_count":
+			return "Alive\n%s %d" % [op, value]
+		"battles_done":
+			return "Battles\n%s %d" % [op, value]
+		"win_streak":
+			return "Win Streak\n%s %d" % [op, value]
+		"corruption":
+			return "Corruption\n%s %.1f" % [op, value]
+		"efficiency":
+			return "Efficiency\n%s %.1f" % [op, value]
+		"time_elapsed":
+			return "Minutes\n%s %d" % [op, value]
+		"member_dead":
+			return "Member\nDead"
+		"member_injured":
+			return "New\nInjury"
+		"member_hp":
+			return "%s HP\n%s %d" % [who, op, value]
+		"member_mp":
+			return "%s MP\n%s %d" % [who, op, value]
+		"member_status":
+			return "%s\n%s" % [who, StatusNames.display(str(condition.get("value", "status")))]
+		"inventory_items":
+			return "Inv Items\n%s %d" % [op, value]
+		"ability_learned":
+			return "New\nAbility"
+		"reached_level":
+			return "Level\n%s %d" % [op, value]
+		"rare_item_found":
+			return "Rare\nDrop"
+		"always":
+			return "ALWAYS"
+	return cond_type
+
+
+## The one reader of a grind action. switch_profile reads character_id + profile_index, the keys validate_autogrind_rule requires and the executor reads.
+func describe_action(action: Dictionary) -> String:
+	var action_type := str(action.get("type", "stop_grinding"))
+	match action_type:
+		"stop_grinding":
+			return "STOP\nGRINDING"
+		"switch_profile":
+			var char_id := str(action.get("character_id", ""))
+			var idx := int(action.get("profile_index", 0))
+			var who := "Whole party" if char_id == ALL_PARTY else member_display_name(char_id)
+			return "%s\n→ %s" % [who, _profile_label(char_id, idx)]
+		"member_ability":
+			return "%s casts\n%s" % [member_display_name(str(action.get("member", ""))), AbilityIcons.name_of(str(action.get("ability", "?")))]
+		"heal_party":
+			return "Use\nPotions"
+		"restore_mp":
+			return "Use\nEthers"
+		"flee_battle":
+			return "Flee\nNext"
+		"revive_fallen":
+			return "Revive\nFallen"
+	return action_type
+
+
+## One line, for a single Label or the composer: "Party HP < 30% AND Battles >= 50 -> STOP GRINDING".
+func describe_rule(rule: Dictionary) -> String:
+	var conds: Array = []
+	for c in rule.get("conditions", []):
+		if c is Dictionary:
+			conds.append(describe_condition(c).replace("\n", " "))
+	var acts: Array = []
+	for a in rule.get("actions", []):
+		if a is Dictionary:
+			acts.append(describe_action(a).replace("\n", " "))
+	var lhs := " AND ".join(PackedStringArray(conds)) if not conds.is_empty() else "ALWAYS"
+	var rhs := " + ".join(PackedStringArray(acts)) if not acts.is_empty() else "(no actions)"
+	return "%s -> %s" % [lhs, rhs]
+
+
+## A profile's name WITHOUT creating one: get_character_profiles() builds a default set for any id it is asked about, "*" included.
+func _profile_label(char_id: String, idx: int) -> String:
+	var ab: Node = _get_autoload_node("AutobattleSystem")
+	if ab != null and char_id != ALL_PARTY and "character_profiles" in ab:
+		var profiles: Array = (ab.character_profiles.get(char_id, {}) as Dictionary).get("profiles", [])
+		if idx >= 0 and idx < profiles.size():
+			return str((profiles[idx] as Dictionary).get("name", "Profile %d" % (idx + 1)))
+	return "Profile %d" % (idx + 1)
+
+
 ## Default autogrind profile templates
 const DEFAULT_AUTOGRIND_TEMPLATES = ["Standard Grind", "Safe Grind", "Aggressive Grind"]
 

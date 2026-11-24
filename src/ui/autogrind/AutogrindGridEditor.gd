@@ -781,98 +781,13 @@ func _add_pixel_border(cell: Control, w: float, h: float) -> void:
 ## ═══════════════════════════════════════════════════════════════════════
 
 func _format_condition(condition: Dictionary) -> String:
-	"""Format a party-level condition for display"""
-	var cond_type = condition.get("type", "always")
-	var op = condition.get("op", "==")
-	var value = condition.get("value", 0)
-
-	match cond_type:
-		"party_hp_avg":
-			return "Avg HP %s %d%%" % [op, value]
-		"party_mp_avg":
-			return "Avg MP %s %d%%" % [op, value]
-		"party_hp_min":
-			return "Min HP %s %d%%" % [op, value]
-		"alive_count":
-			return "Alive %s %d" % [op, value]
-		"battles_done":
-			return "Battles %s %d" % [op, value]
-		"corruption":
-			return "Corrupt %s %.1f" % [op, value]
-		"efficiency":
-			return "Effic %s %.1f" % [op, value]
-		"member_dead":
-			return "Member Dead"
-		"member_injured":
-			return "New Injury"
-		"member_hp":
-			return "%s HP %s %d" % [_member_label(condition), op, value]
-		"member_mp":
-			return "%s MP %s %d" % [_member_label(condition), op, value]
-		"member_status":
-			return "%s has %s" % [_member_label(condition), StatusNames.display(str(condition.get("value", "status")))]
-		"win_streak":
-			return "Wins %s %d" % [op, value]
-		"time_elapsed":
-			return "Minutes %s %d" % [op, value]
-		"inventory_items":
-			return "Inv Items %s %d" % [op, value]
-		"ability_learned":
-			return "New Ability"
-		"reached_level":
-			return "Level %s %d" % [op, value]
-		"rare_item_found":
-			return "Rare Drop"
-		"always":
-			return "ALWAYS"
-		_:
-			return cond_type
-
-	return cond_type
+	"""Format a condition for display (AutogrindSystem owns the words)"""
+	return AutogrindSystem.describe_condition(condition)
 
 
 func _format_action(action: Dictionary) -> String:
-	"""Format an autogrind action for display"""
-	var action_type = action.get("type", "switch_profile")
-
-	match action_type:
-		"switch_profile":
-			var char_id = action.get("character_id", "hero")
-			var profile_idx = action.get("profile_index", 0)
-			var char_name = AutogrindSystem.member_display_name(str(char_id))
-			var profile_name = _get_profile_name_for(char_id, profile_idx)
-			return "%s\n→ %s" % [char_name, profile_name]
-
-		"stop_grinding":
-			return "STOP\nGRINDING"
-
-		"member_ability":
-			# Two lines, like the console: one line overran the cell even before the names got longer.
-			return "%s casts\n%s" % [AutogrindSystem.member_display_name(str(action.get("member", ""))), AbilityIcons.name_of(str(action.get("ability", "?")))]
-		"heal_party":
-			return "Use\nPotions"
-
-		"restore_mp":
-			return "Use\nEthers"
-
-		"flee_battle":
-			return "Flee\nNext"
-
-		"revive_fallen":
-			return "Revive\nFallen"
-
-		_:
-			return action_type
-
-	return action_type
-
-
-func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
-	"""Get the autobattle profile name for a character at given index"""
-	var profiles = AutobattleSystem.get_character_profiles(char_id)
-	if profile_idx < profiles.size():
-		return profiles[profile_idx].get("name", "Profile %d" % profile_idx)
-	return "Profile %d" % profile_idx
+	"""Format an autogrind action for display (AutogrindSystem owns the words)"""
+	return AutogrindSystem.describe_action(action)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
