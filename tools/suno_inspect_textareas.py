@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["patchright", "requests"]
+# dependencies = ["patchright==1.64.4", "requests"]
 # ///
 """Enumerate Suno create-page textareas: placeholders, IDs, sizes, visibility.
 
