@@ -1115,8 +1115,17 @@ func describe_rules_for_llm(rules: Array, max_rules: int = 6) -> String:
 	return "\n".join(lines)
 
 
+## The same reading for a PLAYER: abilities and items by their display names, not their ids.
+func describe_rules_for_player(rules: Array) -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	for i in range(rules.size()):
+		if rules[i] is Dictionary:
+			lines.append("%d. %s" % [i + 1, describe_rule_for_llm(rules[i] as Dictionary, true)])
+	return "\n".join(lines)
+
+
 ## One rule as "IF <conditions> THEN <actions>". Unknown keys degrade to their raw id.
-func describe_rule_for_llm(rule: Dictionary) -> String:
+func describe_rule_for_llm(rule: Dictionary, display_names: bool = false) -> String:
 	var conds: Array = rule.get("conditions", []) as Array
 	var cond_parts: PackedStringArray = PackedStringArray()
 	for c in conds:
@@ -1126,7 +1135,7 @@ func describe_rule_for_llm(rule: Dictionary) -> String:
 	var act_parts: PackedStringArray = PackedStringArray()
 	for a in acts:
 		if a is Dictionary:
-			act_parts.append(_describe_action_for_llm(a as Dictionary))
+			act_parts.append(_describe_action_for_llm(a as Dictionary, display_names))
 	var cond_text: String = " AND ".join(cond_parts) if cond_parts.size() > 0 else "ALWAYS"
 	var act_text: String = " + ".join(act_parts) if act_parts.size() > 0 else "(no action)"
 	return "IF %s THEN %s" % [cond_text, act_text]
@@ -1149,10 +1158,13 @@ func _describe_condition_for_llm(c: Dictionary) -> String:
 	return "%s%s %s %s" % [label, subject, op, str(c.get("value", ""))]
 
 
-func _describe_action_for_llm(a: Dictionary) -> String:
+func _describe_action_for_llm(a: Dictionary, display_names: bool = false) -> String:
 	var atype: String = str(a.get("type", "?"))
 	var name: String = str(ACTION_TYPES.get(atype, atype)).to_lower()
 	var id: String = str(a.get("id", ""))
+	if display_names and id != "":
+		var row: Dictionary = ItemSystem.get_item(id) if atype == "item" else JobSystem.get_ability(id)
+		id = str(row.get("name", id))
 	var target: String = str(a.get("target", ""))
 	var out: String = name if id == "" else "%s %s" % [name, id]
 	if target != "":

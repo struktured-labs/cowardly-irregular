@@ -39,6 +39,8 @@ const PANEL_MARGIN_WIDEST := 0.02
 
 var _domain: String = ""
 var _character_id: String = ""
+## True while a composition waits on Confirm; it decides which button owns the accept key.
+var _previewing: bool = false
 var _current_rules: Array = []
 var _last_composition: Dictionary = {}
 var _busy: bool = false
@@ -100,12 +102,13 @@ func _on_input_device_changed(_connected = null) -> void:
 ## Each button names the player's own key or pad button. The scene's "(A)"/"(B)" were Nintendo letters: inverted on Xbox, no key at all on a keyboard.
 func _refresh_captions(device_name: String = "") -> void:
 	var accept := _hint("ui_accept", device_name)
+	## One key, one button: Confirm owns accept while a preview is up, Compose otherwise.
 	if _compose_button != null:
-		_compose_button.text = _caption("Compose", accept)
+		_compose_button.text = _caption("Compose", "" if _previewing else accept)
 	if _regen_button != null:
 		_regen_button.text = _caption("Regenerate", _hint("battle_advance", device_name))
 	if _confirm_button != null:
-		_confirm_button.text = _caption("Confirm", accept)
+		_confirm_button.text = _caption("Confirm", accept if _previewing else "")
 	if _cancel_button != null:
 		_cancel_button.text = _caption("Cancel", _hint("ui_cancel", device_name))
 	_refresh_scroll_hint(device_name)
@@ -237,6 +240,7 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 	_character_id = character_id
 	_current_rules = current_rules
 	_last_composition = {}
+	_previewing = false
 	if _prompt_field != null:
 		_prompt_field.text = ""
 	if _status_label != null:
@@ -248,6 +252,8 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 		_confirm_button.disabled = true
 	if _regen_button != null:
 		_regen_button.disabled = true
+	if _compose_button != null:
+		_compose_button.disabled = false
 	_refresh_captions()
 	_apply_text_scale()
 	show()
@@ -423,6 +429,11 @@ func _show_preview(result: Dictionary) -> void:
 	if _preview_panel != null:
 		_preview_panel.visible = true
 		_populate_preview(result)
+	## Regenerate already re-runs the prompt; a second "do it again" one step from Confirm is a misfire.
+	_previewing = true
+	if _compose_button != null:
+		_compose_button.disabled = true
+	_refresh_captions()
 	if _confirm_button != null:
 		_confirm_button.disabled = false
 		_confirm_button.grab_focus()
@@ -449,11 +460,12 @@ func _populate_preview(result: Dictionary) -> void:
 	var lines: PackedStringArray = PackedStringArray()
 	if not desc.is_empty():
 		lines.append(desc)
-	lines.append("%d rule(s) composed." % rule_count)
 	## The description is the model's prose; the rules are what gets installed, so the player reads those.
 	var autobattle: Node = get_node_or_null("/root/AutobattleSystem")
 	if _domain == RC_DOMAIN_AUTOBATTLE and rule_count > 0 and autobattle != null:
-		lines.append(autobattle.describe_rules_for_llm(preview_rules, rule_count))
+		lines.append(autobattle.describe_rules_for_player(preview_rules))
+	else:
+		lines.append("%d rule(s) composed." % rule_count)
 	# The composer silently edits rules that would fizzle — adding the MP guard the
 	# validator requires. Installing a ruleset that differs from what was asked for
 	# without saying so is the silent-change half of this project's silent-failure
@@ -482,3 +494,10 @@ func _show_error(errors: Array) -> void:
 		_status_label.add_theme_color_override("font_color", Color.ORANGE_RED)
 	if _confirm_button != null:
 		_confirm_button.disabled = true
+	## A failed compose leaves nothing to confirm, so the stale preview goes and Compose takes accept back.
+	_previewing = false
+	if _preview_panel != null:
+		_preview_panel.visible = false
+	if _compose_button != null:
+		_compose_button.disabled = false
+	_refresh_captions()
