@@ -82,7 +82,7 @@ func test_the_file_import_adopts_the_same_way() -> void:
 	assert_true(src.substr(at, end - at).contains("_adopt_applied_rules("), "the file import does not adopt what it applied")
 
 
-## The success line now ends in the undo hint, so at Text Size 2.0 with a long file name it outgrows one line; the console_log wraps it.
+## The success line now ends in the undo hint, so at Text Size 2.0 with a long file name it outgrows one line; the log wraps it.
 func test_the_long_success_line_wraps_inside_the_log_at_text_size_two() -> void:
 	var was: float = float(GameState.text_size_scale)
 	GameState.text_size_scale = 2.0
@@ -91,15 +91,15 @@ func test_the_long_success_line_wraps_inside_the_log_at_text_size_two() -> void:
 	await get_tree().process_frame
 	var console_log: RichTextLabel = ui._battle_log
 	GameState.text_size_scale = was
-	assert_not_null(console_log, "CONTROL: the console built its console_log")
+	assert_not_null(console_log, "CONTROL: the console built its log")
 	if console_log == null:
 		return
 	var line := "Imported autogrind rules from autogrind_rules_my_very_long_export_name_2026.json — %s to undo." % ui._undo_hint(" on an empty slot")
 	var px: int = console_log.get_theme_font_size("normal_font_size")
 	var one_line: float = console_log.get_theme_font("normal_font").get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-	assert_gt(one_line, console_log.size.x, "CONTROL: at 2.0 the line is wider than the console_log, or this arm proves nothing")
-	assert_ne(console_log.autowrap_mode, TextServer.AUTOWRAP_OFF, "the console's console_log does not wrap")
+	assert_gt(one_line, console_log.size.x, "CONTROL: at 2.0 the line is wider than the log, or this arm proves nothing")
+	assert_ne(console_log.autowrap_mode, TextServer.AUTOWRAP_OFF, "the console's log does not wrap")
 	var before: int = console_log.get_line_count()
 	ui._log_message(line)
 	await get_tree().process_frame
-	assert_gt(console_log.get_line_count() - before, 1, "the long success line ran past the console_log's edge instead of wrapping")
+	assert_gt(console_log.get_line_count() - before, 1, "the long success line ran past the log's edge instead of wrapping")
