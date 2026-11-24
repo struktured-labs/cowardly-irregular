@@ -427,6 +427,9 @@ func _build_ui() -> void:
 	_flash_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_flash_label.add_theme_color_override("font_color", Color.LIME)
 	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	## Wraps, never shrinks: an import names the player's FILE, and at Text Size 2.0 the face's 3x step
+	## put "Imported <28+ chars>. Undo: …" past both screen edges on one line. _place_flash grows it UP from the legend.
+	_flash_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_flash_label.visible = false
 	add_child(_flash_label)
 
@@ -3980,8 +3983,24 @@ func _flash_status(text: String, color: Color = Color.LIME) -> void:
 		return
 	_flash_label.text = text
 	_flash_label.add_theme_color_override("font_color", color)
+	_place_flash()
 	_flash_label.visible = true
 	_flash_timer = 2.5
+
+
+const FLASH_LEGEND_GAP := 2.0
+## The flash's bottom sits FLASH_LEGEND_GAP above the legend strip and its height is its wrapped text's, so more lines
+## (a long file name, a big Text Size) push it up over the grid's bottom gap rather than down into the legend.
+func _place_flash() -> void:
+	var w: float = maxf(100.0, size.x - 32.0)
+	var f: Font = _flash_label.get_theme_font("font")
+	var px: int = _flash_label.get_theme_font_size("font_size")
+	var h: float = 18.0
+	if f:
+		h = maxf(h, f.get_multiline_string_size(_flash_label.text, HORIZONTAL_ALIGNMENT_CENTER, w, px, -1,
+			TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y)
+	_flash_label.size = Vector2(w, ceilf(h))
+	_flash_label.position = Vector2(16.0, size.y - LEGEND_H - FLASH_LEGEND_GAP - ceilf(h))
 
 
 ## One row step, shared by a press and a held repeat so the two can never drift apart.
