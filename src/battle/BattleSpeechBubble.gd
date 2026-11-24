@@ -422,9 +422,15 @@ func reclear() -> void:
 		if cover.size != Vector2.ZERO:
 			_lift_clear_of(cover, size)
 		_build_tail(_pointer, size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))
+	var was_waiting := _waiting_behind_menu
 	_waiting_behind_menu = _covering_rect(position.x, size).size != Vector2.ZERO
 	_panel.visible = not _waiting_behind_menu
 	_pointer.visible = not _waiting_behind_menu
+	## An undrawn bubble keeps its hold: the clock stops while the menu covers it and the whole hold plays once it is drawn.
+	if _waiting_behind_menu and _float_tween != null and _float_tween.is_valid():
+		_float_tween.pause()
+	elif was_waiting and not _waiting_behind_menu:
+		_start_float()
 
 
 ## Places the bubble BESIDE the speaker, flipping side when the clamp would drag it back onto them — centring on the anchor is what covered the sprite (struktured 2026-08-22).
