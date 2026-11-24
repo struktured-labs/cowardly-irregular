@@ -15682,6 +15682,51 @@
       "prompt": "The Cave Rat King's own counter, Royal Spite (struktured via cowir-main 25439/25451: make it obvious it's devastating; wounded-pride spite from a tiny king). The CONTACT cue: battle plays it on the hitstop callback (cowir-battle 25459), so the transient is sample 0. The bite: incisor clack, wet crunch over a falling 110->45 Hz body and a 38 Hz sub. The spite under its tail: a sour royal brass blat, saws a minor second apart falling a fifth, under a regalia jangle. -11.1 LUFS, true peak -1.5 dBTP: a crit's level (attack_hit_dagger_crit), not an ability's (~-15.7). numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.61,
       "source": "tools/gen_royal_spite.py"
+    },
+    "boss_line_umbraxis_50": {
+      "description": "Umbraxis voiced line (boss_dialogue umbraxis.charge_barks[0])",
+      "file": "assets/audio/sfx/boss_line_umbraxis_50.ogg",
+      "speaker": "Umbraxis",
+      "line": "Breathe in. Everything else does, eventually.",
+      "spoken": "Breathe in. Everything else does, eventually.",
+      "source_sha": "ee3d39a1531490d6",
+      "voice": "Chatterbox clone of VCTK p232 (Southern England), reference -4 st formants shifted, voice_refs/umbraxis.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "Breathe in. Everything else does, eventually.",
+      "whisper_score": 1.0,
+      "gain_db": 0.9
+    },
+    "boss_line_umbraxis_51": {
+      "description": "Umbraxis voiced line (boss_dialogue umbraxis.charge_barks[1])",
+      "file": "assets/audio/sfx/boss_line_umbraxis_51.ogg",
+      "speaker": "Umbraxis",
+      "line": "This part is just a variable. Watch it go to null.",
+      "spoken": "This part is just a variable. Watch it go to null.",
+      "source_sha": "3a8fe4bbb8ddeef7",
+      "voice": "Chatterbox clone of VCTK p232 (Southern England), reference -4 st formants shifted, voice_refs/umbraxis.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "This part is just a variable. Watch it go to null.",
+      "whisper_score": 1.0,
+      "gain_db": 0.5
+    },
+    "boss_line_umbraxis_52": {
+      "description": "Umbraxis voiced line (boss_dialogue umbraxis.interrupted_line.bark)",
+      "file": "assets/audio/sfx/boss_line_umbraxis_52.ogg",
+      "speaker": "Umbraxis",
+      "line": "...You interrupted the void. That should not be possible. Do it again.",
+      "spoken": "...You interrupted the void. That should not be possible. Do it again.",
+      "source_sha": "af06e6e2f75b3b29",
+      "voice": "Chatterbox clone of VCTK p232 (Southern England), reference -4 st formants shifted, voice_refs/umbraxis.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "You interrupted the void. That should not be possible. Do it again.",
+      "whisper_score": 1.0,
+      "gain_db": 1.1
     }
   }
 }
