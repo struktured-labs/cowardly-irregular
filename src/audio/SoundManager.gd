@@ -3045,6 +3045,16 @@ func playing_track_stem() -> String:
 	return str(_music_player.stream.resource_path).get_file().get_basename()
 
 
+## True when manifest id `track` names the file audibly playing now, whichever API started it (an area bed leaves _current_music empty).
+func is_playing_track(track: String) -> bool:
+	_load_music_manifest()
+	var entry: Variant = _music_manifest.get(track, {})
+	if not (entry is Dictionary):
+		return false
+	var stem: String = str((entry as Dictionary).get("file", "")).get_file().get_basename()
+	return stem != "" and stem == playing_track_stem()
+
+
 func get_current_world_suffix() -> String:
 	return _get_current_world_suffix()
 

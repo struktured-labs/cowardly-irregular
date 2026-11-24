@@ -930,12 +930,47 @@ func _armed_bed() -> Dictionary:
 func _should_fade_music_for(data: Dictionary) -> bool:
 	if not SoundManager or (not SoundManager._music_playing and _armed_bed().is_empty()):
 		return false
+	if _scene_only_names_the_playing_bed(data):
+		return false
 	return not bool(data.get("keep_music", false))
+
+
+## world1_chapter3 asks for dungeon_medieval on cave entry while the cave bed already plays it: fading, replaying and restoring started it three times.
+func _scene_only_names_the_playing_bed(data: Dictionary) -> bool:
+	if not SoundManager or not SoundManager.has_method("is_playing_track"):
+		return false
+	var named: int = 0
+	var steps: Array = []
+	_collect_steps(data.get("steps", []), steps)
+	for step in steps:
+		var t: String = str(step.get("type", ""))
+		if t == "stop_music" or t == "battle":
+			return false
+		if t == "play_music":
+			if not SoundManager.is_playing_track(str(step.get("track", ""))):
+				return false
+			named += 1
+	return named > 0
+
+
+## Every step dictionary at any depth, so a battle or stop_music nested in a branch or choice still counts.
+func _collect_steps(node: Variant, out: Array) -> void:
+	if node is Array:
+		for v in node:
+			_collect_steps(v, out)
+	elif node is Dictionary:
+		if node.has("type"):
+			out.append(node)
+		for v in node.values():
+			_collect_steps(v, out)
 
 
 func _step_play_music(step: Dictionary) -> void:
 	var track = str(step.get("track", ""))
 	if track == "" or not SoundManager:
+		return
+	# The bed is already this file and nothing faded it, so replaying would only restart it from the top.
+	if _pre_cutscene_music.is_empty() and not _music_stopped_by_step and SoundManager.has_method("is_playing_track") and SoundManager.is_playing_track(track):
 		return
 	# An unresolvable id is NOT a no-op: play_music crossfades the current
 	# track out, then warns and plays nothing, leaving the scene in silence.
