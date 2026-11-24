@@ -101,3 +101,51 @@ func test_a_bubble_spoken_under_an_uncleared_menu_waits_from_the_start() -> void
 	for i in 4:
 		await get_tree().process_frame
 	assert_true(b._panel.visible, "and it is drawn once the menu leaves")
+
+
+func _spoken_for(anchor: Vector2, hold: float) -> BattleSpeechBubble:
+	var b := BattleSpeechBubble.spawn(_host, anchor, "Mage", "I have a migraine. It's loud.", Color.WHITE, hold, "", false, 0.0,
+		BattleSpeechBubble.TOP_MARGIN, func() -> Array: return _bands)
+	for i in 4:
+		await get_tree().process_frame
+	return b
+
+
+## Waits until the bubble is gone or the bound passes; returns the milliseconds it took (bound when it never went).
+func _ms_until_gone(b: BattleSpeechBubble, bound_ms: int) -> int:
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(b) and not b.is_queued_for_deletion() and Time.get_ticks_msec() - t0 < bound_ms:
+		await get_tree().process_frame
+	return Time.get_ticks_msec() - t0
+
+
+## A line hidden behind a menu was fading out unseen: its hold ran while nobody could read it. The clock now stops until it is drawn.
+func test_an_undrawn_bubble_keeps_its_hold_until_it_is_drawn() -> void:
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.9
+	var anchor := Vector2(_host.size.x * 0.6, _host.size.y * 0.5)
+	var control: BattleSpeechBubble = await _spoken_for(anchor, 0.2)
+	if control == null:
+		fail_test("no bubble")
+		return
+	var life := await _ms_until_gone(control, 4000)
+	assert_lt(life, 4000, "CONTROL: a drawn bubble with a 0.2 s hold is gone on its own (took %d ms)" % life)
+	_bands = [_wall()]
+	var b: BattleSpeechBubble = await _spoken_for(anchor, 0.2)
+	if b == null:
+		fail_test("no bubble")
+		return
+	assert_false(b._panel.visible, "CONTROL: it waits undrawn under the menu")
+	var waited := await _ms_until_gone(b, life * 3 + 300)
+	assert_true(is_instance_valid(b) and not b.is_queued_for_deletion(), "an undrawn bubble outlives three drawn lifetimes (%d ms) instead of fading unseen" % waited)
+	if not is_instance_valid(b):
+		return
+	_bands = []
+	for i in 4:
+		await get_tree().process_frame
+	assert_true(b._panel.visible, "the menu left: the bubble is drawn")
+	var t0 := Time.get_ticks_msec()
+	while is_instance_valid(b) and b.modulate.a < 0.95 and Time.get_ticks_msec() - t0 < 3000:
+		await get_tree().process_frame
+	assert_true(is_instance_valid(b) and b.modulate.a >= 0.95, "and it fades IN to full, not out (alpha %.2f)" % (b.modulate.a if is_instance_valid(b) else -1.0))
+	var after := await _ms_until_gone(b, 4000)
+	assert_lt(after, 4000, "once drawn it plays its hold and goes (took %d ms)" % after)
