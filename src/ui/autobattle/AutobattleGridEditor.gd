@@ -939,8 +939,8 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	## thing added is correct under both readings, so the ambiguity does not need resolving.
 	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
-	label.size = Vector2(w - 8, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	label.size = Vector2(w - 8, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -974,8 +974,8 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	var label = Label.new()
 	label.text = "[++]"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	label.size = Vector2(w - 4, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1038,8 +1038,8 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	var label = Label.new()
 	label.text = "[ON]" if is_enabled else "[OFF]"
 	label.position = Vector2(4, 8)
-	label.size = Vector2(w - 8, _cell_h() - 16)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	label.size = Vector2(w - 8, _cell_h() - 16)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", Color.LIME if is_enabled else Color(1.0, 0.4, 0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1073,8 +1073,8 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	var label = Label.new()
 	label.text = "+AND"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(w - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
+	label.size = Vector2(w - 4, _cell_h() - 8)  # after the font size: a size set first is grown to the default font's minimum and never shrinks back
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
