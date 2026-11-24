@@ -2225,6 +2225,11 @@
     "counter_abilities": [
       "counter"
     ],
+    "cadence": {
+      "signature": "void_breath",
+      "every": 1,
+      "charge_turns": 1
+    },
     "spectrum_ratio": 0.974762
   },
   "new_age_retro_hippie": {
