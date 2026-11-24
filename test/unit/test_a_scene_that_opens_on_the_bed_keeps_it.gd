@@ -77,5 +77,9 @@ func test_the_step_does_not_restart_the_bed() -> void:
 	## No frame between on purpose: a restart is stop + new stream, visible only here.
 	assert_true(SoundManager._music_player.playing, "the step stopped the bed it names")
 	assert_eq(SoundManager._music_player.stream, stream_before, "the step replaced the bed's stream, restarting it from the top")
+	## The stream is CACHED, so a replay can hand back the same object; the replay's real mark is play_music
+	## clearing the area, after which the end-of-scene restore restarts the bed.
+	assert_eq(SoundManager._current_area, AREA, "the step handed the cave bed to play_music, so the next area request restarts it")
+	assert_eq(SoundManager._current_music, "", "the step re-requested the bed through play_music")
 	d._step_play_music({"type": "play_music", "track": OTHER})
 	assert_eq(SoundManager._current_music, OTHER, "CONTROL: a step naming another track still plays it")
