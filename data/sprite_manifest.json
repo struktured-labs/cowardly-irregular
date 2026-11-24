@@ -8467,6 +8467,48 @@
       "frame_height": 20,
       "tier": "T1",
       "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Sample icon for story 26928's 'advance_full_bank', drawn 2x into art_window."
+    },
+    "icon_bard_riff_unblinded": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_bard_riff_unblinded.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'bard_riff_unblinded' (Heckler, two beamed notes), drawn 2x into art_window."
+    },
+    "icon_cure_status": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_cure_status.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'cure_status' (Bedside Manner, a corked flask of remedy), drawn 2x into art_window."
+    },
+    "icon_finish_under_25": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_finish_under_25.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'finish_under_25' (Mercy Rule, a plain sword point down), drawn 2x into art_window."
+    },
+    "icon_hit_known_weakness": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_hit_known_weakness.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'hit_known_weakness' (Read the Room, an eye with a fire-orange iris), drawn 2x into art_window."
+    },
+    "icon_revive_ko": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_revive_ko.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'revive_ko' (Not Today, an ankh), drawn 2x into art_window."
+    },
+    "icon_steal_first": {
+      "path": "res://assets/sprites/ui/recipe_cards/icon_steal_first.png",
+      "frame_width": 20,
+      "frame_height": 20,
+      "tier": "T1",
+      "source": "2026-11-24 cowir-sprites: procedural (tools/gen_recipe_card_frames.py, T1, $0). No text on the card: the reveal writes name and progress beside it (cutscenes 26974/26978). Icon for autogrind's catalog recipe 'steal_first' (Pockets First, a tied coin pouch), drawn 2x into art_window."
     }
   }
 }
