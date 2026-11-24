@@ -8,9 +8,9 @@ extends GutTest
 const MANIFEST := "res://data/sfx_manifest.json"
 
 ## Mordaine she/her (text 12 of 12, "Sorceress"); the Rat King he/him/his; the dragons are their shipped voices (struktured via cowir-main 21627).
-const CANON := {"Mordaine": "female", "Cave Rat King": "male", "Pyrroth": "male", "Glacius": "female", "Voltharion": "male", "Umbraxis": "male"}
+const CANON := {"Mordaine": "female", "Cave Rat King": "male", "The Lost Cartographer": "male", "Pyrroth": "male", "Glacius": "female", "Voltharion": "male", "Umbraxis": "male"}
 ## Voiced with no ruling yet; nothing is checked for a speaker listed here.
-const UNRULED := []
+const UNRULED := ["Chancellor's Warden"]
 ## A masked speaker is the character its key belongs to (world1_mordaine_secondary_unlock speaks as "???").
 const MASKED := {"boss_line_mordaine_unlock_": "Mordaine"}
 
