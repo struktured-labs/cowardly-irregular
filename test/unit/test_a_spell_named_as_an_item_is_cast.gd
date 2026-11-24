@@ -110,4 +110,7 @@ func test_control_a_spell_outside_this_kit_is_not_rewritten() -> void:
 	var out: Dictionary = await _compose("cleric", {"type": "item", "id": "fire", "target": "lowest_hp_enemy"})
 	assert_false(_noted(out, "Read item 'fire'"), "CONTROL: fire is not the cleric's, so it is not read as her spell")
 	assert_false(_has_action(out, "ability", "fire"), "CONTROL: and no cleric rule casts fire")
-	assert_true(str(out.get("errors", [])).contains("unknown item 'fire'"), "CONTROL: it is still refused as the unknown item it is: %s" % str(out.get("errors", [])))
+	var refused_as_item := false
+	for e in (out.get("errors", []) as Array):
+		refused_as_item = refused_as_item or str(e).contains("unknown item 'fire'")
+	assert_true(refused_as_item, "CONTROL: it is still refused as the unknown item it is: %s" % str(out.get("errors", [])))
