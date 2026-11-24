@@ -25,7 +25,7 @@ const MIN_TEXT_W := 160.0
 const PAD := 24.0
 ## On the pixel face's steps (UiFont.scale_for: 9 px per step) so every tier draws at least 2x at 100%, and the name stands one step above its line.
 const TITLE_FONT := 27
-const NAME_FONT := 27
+const NAME_FONT := 29
 const LINE_FONT := 18
 const FLAVOUR_FONT := 18
 const HINT_FONT := 18
