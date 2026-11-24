@@ -16,6 +16,14 @@ const GameLoopScript := preload("res://src/GameLoop.gd")
 const ROT := 0.8
 const SAVE_ROT := 0.5
 
+## Records the grind meter when the handler asks for stats, so the restore's place above that call is measured, not provoked by a script error.
+class OrderProbeController extends Node:
+	var meter_at_stats: float = -1.0
+	func get_grind_stats() -> Dictionary:
+		meter_at_stats = SoundManager._grind_corruption
+		return {}
+
+
 ## stop_grind calls the real completion handler, which frees the controller out from under the caller.
 class ReentrantController extends Node:
 	var loop: Node
@@ -86,14 +94,18 @@ func test_floor_the_teardown_this_file_drives() -> void:
 		assert_true(SoundManager.has_method(m), "SoundManager must still expose %s()" % m)
 
 
-func test_a_grind_that_aborts_mid_teardown_already_dropped_the_rot() -> void:
-	## Bare Node has no get_grind_stats. That call sits BELOW the restore; an abort there used to leave the detune up.
+func test_a_grind_drops_the_rot_before_it_asks_for_stats() -> void:
+	## The restore sits ABOVE get_grind_stats: anything that aborts at or below that call must not keep the detune.
 	var gl: Node = _loop()
-	gl._autogrind_controller = autofree(Node.new())
+	var ctrl: OrderProbeController = autofree(OrderProbeController.new())
+	gl._autogrind_controller = ctrl
 	SoundManager.set_corruption_intensity(ROT)
 	assert_almost_eq(SoundManager._grind_corruption, ROT, 0.0001,
 		"CONTROL: the grind meter must be loaded, or a restore that never ran still reads clean")
 	gl._on_grind_complete("Manual stop")
+	assert_ne(ctrl.meter_at_stats, -1.0, "CONTROL: the handler must have asked the controller for stats")
+	assert_almost_eq(ctrl.meter_at_stats, 0.0, 0.0001,
+		"the grind meter was still %.3f when the handler asked for stats — the restore sits below a call that can abort" % ctrl.meter_at_stats)
 	assert_almost_eq(SoundManager._grind_corruption, 0.0, 0.0001,
 		"grind complete left the grind meter at %.3f — the restore sits below an abort, so a teardown that errors keeps the detune" % SoundManager._grind_corruption)
 	assert_almost_eq(SoundManager._corruption_target, 0.0, 0.0001,
@@ -104,7 +116,7 @@ func test_a_grind_that_aborts_mid_teardown_already_dropped_the_rot() -> void:
 
 func test_a_rotting_save_is_still_audible_when_the_grind_ends() -> void:
 	var gl: Node = _loop()
-	gl._autogrind_controller = autofree(Node.new())
+	gl._autogrind_controller = autofree(OrderProbeController.new())
 	SoundManager.set_save_corruption(SAVE_ROT)
 	SoundManager.set_corruption_intensity(ROT)
 	gl._on_grind_complete("Manual stop")

@@ -35,6 +35,8 @@ signal inference_succeeded(mode: String)
 const QUEUE_CAP:          int    = 16    # Max queued (waiting) requests.
 ## opts key: this request belongs to no scene, so a scene change does not cancel it.
 const OUTLIVES_SCENE_CHANGE := "outlives_scene_change"
+## A JSON request with this opt goes out in plain JSON mode, with no schema: measured, the Rule Composer reads 12/12 that way and 10/12 under any schema.
+const PLAIN_JSON := "plain_json"
 const CACHE_TTL_SECONDS:  float  = 300.0 # 5-minute TTL on cached responses.
 const MAX_TEXT_CHARS:     int    = 2000  # Hard cap on free-text responses.
 const MAX_CHOICE_TOKENS:  int    = 120   # Guard for choice-string length.
@@ -377,6 +379,9 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 	var wire: Variant = merged_opts.get("wire_schema")
 	merged_opts.erase("wire_schema")
 	merged_opts["json_schema"] = wire if wire is Dictionary and not (wire as Dictionary).is_empty() else to_json_schema(schema)
+	if bool(merged_opts.get(PLAIN_JSON, false)):
+		merged_opts.erase("json_schema")
+	merged_opts.erase(PLAIN_JSON)
 
 	var raw: Variant = await _submit_and_wait(prompt, merged_opts)
 	if raw == null:

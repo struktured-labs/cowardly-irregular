@@ -17,11 +17,17 @@ const HEALTHY_MIN := 0.25
 
 ## id -> why. Recorded so NEW breakage reds while these do not block; shrink it, never grow it.
 ## meta_knight left 2026-11-20: the S4 redraw made every frame solid; the crisp knight is its frame 0.
+## masterite_tempo_futuristic and masterite_arbiter_futuristic left 2026-11-21: the S4 redraw replaced their panel frames.
+## masterite_curator_medieval left 2026-11-21: the S4 redraw made its flame-wrapped hit frames solid.
 const KNOWN := {
-	"masterite_tempo_futuristic": "DEFECT frame 4(hit) — multi-panel design sheet with UI chrome",
-	"masterite_arbiter_futuristic": "DEFECT frame 6(dead) — same panel-layout failure",
-	"masterite_curator_medieval": "borderline frames 4,5(hit) — visible figure under heavy flame FX",
 	"ghost": "INTENTIONAL frame 6(dead) — a ghost dissolving to a wisp is the design",
+}
+
+## id -> why its idle has ink on the frame's bottom row. Shrink it, never grow it.
+const BOTTOM_EDGE_KNOWN := {
+	"the_coordinator": "shoes drawn whole and flush on the bottom row; nothing is cut",
+	"the_regulator": "coat hem cut by the frame edge; needs an idle redraw",
+	"masterite_arbiter_suburban": "legs cut by the frame edge; needs an idle redraw",
 }
 
 
@@ -110,3 +116,53 @@ func test_known_ghost_list_has_not_gone_stale() -> void:
 		if not sheets.has(id):
 			missing.append(id)
 	assert_eq(missing, [], "KNOWN names a sheet that no longer exists — drop the entry")
+
+
+func _bottom_row_ink(img: Image, fw: int, f: int) -> int:
+	var y := img.get_height() - 1
+	var n := 0
+	for x in range(fw):
+		if img.get_pixel(f * fw + x, y).a > 0.08:
+			n += 1
+	return n
+
+
+## cowir-sprites 2026-11-23: masterite_warden_suburban's idle dripped an orange streak through its shadow to the bottom row.
+func test_no_idle_frame_runs_off_the_bottom_of_its_frame() -> void:
+	var sheets: Dictionary = _manifest().get("monster_sheets", {})
+	var scanned: Array = []
+	var offenders: Array = []
+	var excused: Array = []
+	for id in sheets:
+		var entry: Dictionary = sheets[id]
+		var path: String = str(entry.get("path", ""))
+		if not ResourceLoader.exists(path):
+			continue
+		var tex = load(path)
+		if tex == null or not (tex is Texture2D):
+			continue
+		var img: Image = tex.get_image()
+		if img == null:
+			continue
+		var fw := int(entry.get("frame_width", img.get_height()))
+		var idle: Dictionary = entry.get("animations", {}).get("idle", {})
+		if fw <= 0 or idle.is_empty():
+			continue
+		scanned.append(id)
+		var touched := false
+		for f in range(int(idle["start"]), int(idle["end"]) + 1):
+			if (f + 1) * fw <= img.get_width() and _bottom_row_ink(img, fw, f) > 0:
+				touched = true
+		if touched:
+			if BOTTOM_EDGE_KNOWN.has(id):
+				excused.append(id)
+			else:
+				offenders.append(id)
+	assert_true(scanned.has("masterite_warden_suburban"), "scan must reach the suburban Warden, the sheet this arm was written for")
+	assert_gt(scanned.size(), 50, "scan must cover the bulk of monster_sheets")
+	var want := BOTTOM_EDGE_KNOWN.keys()
+	want.sort()
+	excused.sort()
+	assert_eq(excused, want,
+		"every BOTTOM_EDGE_KNOWN sheet must STILL touch the bottom row: a missing one was fixed (drop it) or the read is broken")
+	assert_eq(offenders, [], "an idle frame runs off the bottom of its frame: %s" % [offenders])

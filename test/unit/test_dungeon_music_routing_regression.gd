@@ -216,11 +216,10 @@ func test_every_dungeon_music_key_resolves() -> void:
 	assert_eq(offenders, [], "\n".join(offenders))
 
 
-## Dungeons whose inherited "cave" default is CORRECT, each on its own merits
-## rather than as an exemption: both are World 1 and medieval, which is exactly
+## Dungeons whose inherited "cave" default is CORRECT (a DragonCave subclass; a Node2D map inherits nothing), each on its own merits
+## rather than as an exemption: each is World 1 and medieval, which is exactly
 ## what "cave" resolves to. A W2+ dungeon can never qualify.
 const MEDIEVAL_BY_LOCATION := {
-	"WhisperingCave.gd": "W1 medieval cave — \"cave\" is its true area",
 	"CastleHarmonia.gd": "W1 medieval — inherits the medieval bed correctly",
 	"DragonCave.gd": "the base class itself; defines the default",
 	"BossTrigger.gd": "not a placed map",
@@ -240,7 +239,7 @@ func test_non_medieval_dungeons_must_override_the_music_key() -> void:
 	## World 1.
 	##
 	## The predicate is not "must override" — it is "a dungeon outside medieval
-	## World 1 must SAY where it is." The four entries above pass because they
+	## World 1 must SAY where it is." The entries above pass because they
 	## genuinely are medieval, not because they are listed; a W2+ dungeon cannot
 	## join them by being added to the dict, because the assertion below is what
 	## fails and the dict only documents the four that were already correct.
