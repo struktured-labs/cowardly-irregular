@@ -246,9 +246,14 @@ func _ready() -> void:
 
 	# Start cave music
 	if SoundManager:
-		SoundManager.play_area_music("cave")
+		SoundManager.play_area_music(_get_music_area_id())
 
 	exploration_ready.emit()
+
+
+## GameLoop asks the scene for its bed (_derive_current_scene_music_key); without this it answered "overworld", so ending an autogrind here played the field bed underground.
+func _get_music_area_id() -> String:
+	return "cave"
 
 
 func _setup_scene() -> void:

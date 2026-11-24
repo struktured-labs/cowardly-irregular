@@ -77,6 +77,13 @@ const GLYPHS := {
 	"✓": [".....", "....#", "....#", "...#.", "#.#..", ".#...", "....."],
 	"✗": [".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "....."],
 	"★": ["..#..", "..#..", "#####", ".###.", ".###.", "#...#", "....."],
+	## The icons plain Labels show beside words (victory, equipment, key items, emotes, barks, doom): drawn here so they stay in the face.
+	"✦": ["..#..", "..#..", ".###.", "#####", ".###.", "..#..", "..#.."],
+	"♦": [".....", "..#..", ".###.", "#####", ".###.", "..#..", "....."],
+	"♥": [".....", ".#.#.", "#####", "#####", ".###.", "..#..", "....."],
+	"♪": ["..#..", "..##.", "..#.#", "..#..", ".##..", "###..", ".#..."],
+	"☠": [".....", ".###.", "#####", "#.#.#", "#####", ".###.", ".#.#."],
+	"⚔": ["#...#", ".#.#.", "..#..", ".#.#.", "##.##", "#...#", "....."],
 	# Latin-1 the game authors (Frosthold's ö, Maple's ä, InteractGeometry's °, the battle log's ± ² ÷ §, an actor's ‼).
 	# The old face drew these until it left the pixel face's chain (UiFont._ensure_built says why).
 	# The i accents are drawn, not composed: a two-row mark would run into the stem with no gap.

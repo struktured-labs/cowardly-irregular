@@ -245,15 +245,33 @@ func _setup_camera() -> void:
 	camera.zoom = Vector2(2.5, 2.5)
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = _get_map_width() * TILE_SIZE
-	camera.limit_bottom = _get_map_height() * TILE_SIZE
+	## A room smaller than the screen sits centred, walled on every side, instead of pinned left with the void beside it.
+	var room := Vector2(_get_map_width() * TILE_SIZE, _get_map_height() * TILE_SIZE)
+	var spill: Vector2i = BaseVillage.camera_spill(room, camera.zoom)
+	_wall_past_the_room(spill)
+	camera.limit_left = -spill.x
+	camera.limit_top = -spill.y
+	camera.limit_right = int(room.x) + spill.x
+	camera.limit_bottom = int(room.y) + spill.y
 	if player:
 		player.add_child(camera)
 	else:
 		add_child(camera)
 		camera.position = Vector2(_get_map_width() * TILE_SIZE / 2, _get_map_height() * TILE_SIZE / 2)
+
+
+## Lays the room's own wall tile over the spill, so what the camera shows past the room is masonry and not the void.
+func _wall_past_the_room(spill: Vector2i) -> void:
+	if tilemap == null or spill == Vector2i.ZERO:
+		return
+	var w := _get_map_width()
+	var h := _get_map_height()
+	var pad := Vector2i(ceili(float(spill.x) / TILE_SIZE), ceili(float(spill.y) / TILE_SIZE))
+	for y in range(-pad.y, h + pad.y):
+		for x in range(-pad.x, w + pad.x):
+			if x >= 0 and x < w and y >= 0 and y < h:
+				continue
+			tilemap.set_cell(Vector2i(x, y), 1, InteriorArt.cell_in(tilemap, 1, Vector2i(x, y)))
 
 
 ## Standard controller setup. set_area_config marks the interior as

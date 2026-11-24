@@ -27,6 +27,8 @@ var _saved_story_flags = null
 func before_each() -> void:
 	_saved_constants = GameState.game_constants.duplicate(true)
 	_saved_story_flags = GameState.story_flags.duplicate(true) if "story_flags" in GameState and GameState.story_flags is Dictionary else null
+	# Each arm authors the whole state its gate reads: a deep saved cave floor left by an earlier file fired the mage at floor 1 (music 26923).
+	GameState.game_constants = {}
 
 
 func after_each() -> void:

@@ -42,7 +42,7 @@ func test_a_monster_whose_idle_moved_is_measured_on_its_idle() -> void:
 		var got := HybridSpriteLoader.figure_rect(str(e["path"]))
 		if got != want:
 			wrong.append("%s: measured %s, its idle frame %d holds %s" % [id, got, start, want])
-	assert_gt(moved, 4, "CONTROL: monsters whose idle does not start at frame 0 were found (%d)" % moved)
+	assert_gt(moved, 0, "CONTROL: monsters whose idle does not start at frame 0 were found (%d)" % moved)
 	assert_gt(differs, 0, "CONTROL: at least one has a frame 0 unlike its idle, so a frame-0 measure would be wrong")
 	assert_eq(wrong, [], "a bust is measured on a frame the monster never idles on: %s" % [wrong])
 

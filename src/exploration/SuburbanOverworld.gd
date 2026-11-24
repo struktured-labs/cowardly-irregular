@@ -474,6 +474,7 @@ func _generate_map() -> void:
 	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
 	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
 		map_data.append(str(row))
+	map_rows = map_data
 	# no padding: padding turns a failed load into a silent empty lawn
 	if map_data.size() != MAP_HEIGHT:
 		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
@@ -503,6 +504,24 @@ func _generate_map() -> void:
 	spawn_points["from_industrial"] = Vector2(46 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for Maple Heights village — in open lawn east of house rows (was inside house wall)
 	spawn_points["maple_heights_entrance"] = Vector2(43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 9 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+
+
+## The painted rows, kept so a roamer's step can be judged where it is drawn rather than against the displaced collider.
+var map_rows: Array[String] = []
+var _walker_blocked_types: Array = []
+
+
+## Can a roamer stand at this world point? The same rule as the W1 map, read off this world's painted tiles.
+func walker_can_stand(world_pos: Vector2) -> bool:
+	var ty := int(floor(world_pos.y / TILE_SIZE))
+	var tx := int(floor(world_pos.x / TILE_SIZE))
+	if ty < 0 or ty >= map_rows.size() or tx < 0 or tx >= map_rows[ty].length():
+		return false
+	if _walker_blocked_types.is_empty():
+		var gen: Node = SuburbanTileGeneratorScript.new()
+		_walker_blocked_types = gen._get_impassable_types()
+		gen.free()
+	return not _walker_blocked_types.has(_char_to_tile_type(map_rows[ty][tx]))
 
 
 func _char_to_tile_type(char: String) -> int:
