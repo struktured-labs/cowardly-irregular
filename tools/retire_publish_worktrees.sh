@@ -86,7 +86,11 @@ run() {
         # as a failure and every registered worktree classifies as "a plain directory". The
         # tool then retires nothing and says so cheerfully. Measured: 141 with pipefail, 0
         # without, 0 when captured first.
-        if ! printf '%s' "$_wtlist" | command grep -qa "^worktree .*/${b}$"; then
+        # ⛔ AND NOT `printf "$_wtlist" | grep -q` EITHER. Capturing first only moved the pipe: once
+        # the list passes the 64 KiB pipe buffer, printf takes the SIGPIPE instead of git. Measured
+        # 2026-11-24 on the real 111 KB list: 189 of 210 lookups read "not registered" (pipe form),
+        # 0 of 70 with the here-string below (tmp/sigpipe/retire_pred.sh). No pipe at all.
+        if ! command grep -qa "^worktree .*/${b}$" <<<"$_wtlist"; then
             printf '  skip     %-10s not a registered worktree (a plain directory)\n' "$b"; continue
         fi
         if [ "$tag" = "$store" ]; then

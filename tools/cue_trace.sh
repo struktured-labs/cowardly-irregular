@@ -173,16 +173,25 @@ selftest() {
     # 17/17 by hand and fail 3 arms in the chain — my own TMPDIR had supplied a precondition.
     # [[the-harness-supplies-what-the-file-lacks]]
     dir="$(mktemp -d "$PWD/tmp/cuetrace_test.XXXXXX")"
-    # shellcheck disable=SC2064
-    trap "rm -rf '$dir'" EXIT
+        keep=0
+    # $dir expands NOW (it is gone from scope by EXIT); $keep is read at EXIT, so a failed run keeps its scratch.
+    trap "[ \"\$keep\" = 1 ] || rm -rf '$dir'" EXIT
 
+    # No pipe into grep -q: under pipefail an early-exiting grep can SIGPIPE the writer and read as
+    # NO MATCH (proven for >64 KiB; .819's one red here was 1134 B and stays unexplained). On a FAIL,
+    # print what the tool actually said and a second, pipe-free verdict, and keep the scratch, so the
+    # next red names "count wrong" vs "check missed" instead of leaving nothing (main 27233).
     chk() { local name="$1" pat="$2" want="$3"
-        if printf '%s' "$out" | command grep -aq -- "$pat"; then
+        if command grep -aq -- "$pat" <<<"$out"; then
             [ "$want" -eq 0 ] && { pass=$((pass+1)); printf '  ok    %-56s\n' "$name"; return; }
         else
             [ "$want" -eq 1 ] && { pass=$((pass+1)); printf '  ok    %-56s\n' "$name"; return; }
         fi
-        fail=$((fail+1)); printf '  FAIL  %-56s (/%s/ want %s)\n' "$name" "$pat" "$want"; }
+        fail=$((fail+1)); keep=1; printf '  FAIL  %-56s (/%s/ want %s)\n' "$name" "$pat" "$want"
+        local second=absent; [[ $out == *"$pat"* ]] && second=present
+        printf '        second check ([[ == *pat* ]], literal): %s\n' "$second"
+        printf '        tool said: %s\n' "$(command grep -a 'distinct key\|OBSERVED\|BLOCKED' <<<"$out" | head -3 | tr '\n' '|')"
+        printf '        scratch kept: %s\n' "$dir"; }
 
     # An UNTRACED log: three startup lines, no per-cue lines. Must be NAMED, not reported.
     {   printf '[SFX] Loaded sfx manifest: 951 sounds\n'
