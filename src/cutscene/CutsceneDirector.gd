@@ -940,9 +940,9 @@ func _scene_only_names_the_playing_bed(data: Dictionary) -> bool:
 	if not SoundManager or not SoundManager.has_method("is_playing_track"):
 		return false
 	var named: int = 0
-	for step in data.get("steps", []):
-		if not (step is Dictionary):
-			continue
+	var steps: Array = []
+	_collect_steps(data.get("steps", []), steps)
+	for step in steps:
 		var t: String = str(step.get("type", ""))
 		if t == "stop_music" or t == "battle":
 			return false
@@ -951,6 +951,18 @@ func _scene_only_names_the_playing_bed(data: Dictionary) -> bool:
 				return false
 			named += 1
 	return named > 0
+
+
+## Every step dictionary at any depth, so a battle or stop_music nested in a branch or choice still counts.
+func _collect_steps(node: Variant, out: Array) -> void:
+	if node is Array:
+		for v in node:
+			_collect_steps(v, out)
+	elif node is Dictionary:
+		if node.has("type"):
+			out.append(node)
+		for v in node.values():
+			_collect_steps(v, out)
 
 
 func _step_play_music(step: Dictionary) -> void:

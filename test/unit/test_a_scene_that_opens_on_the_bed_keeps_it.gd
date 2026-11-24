@@ -63,6 +63,10 @@ func test_a_scene_naming_the_playing_bed_does_not_fade_it() -> void:
 		"CONTROL: a scene that stops music still owes the bed back")
 	assert_true(d._should_fade_music_for(_scene([{"type": "dialogue", "text": "x"}])),
 		"CONTROL: a scene with no music step is unchanged")
+	var nested := _scene([{"type": "play_music", "track": BED},
+		{"type": "choice", "options": [{"text": "fight", "steps": [{"type": "battle", "enemies": ["slime"]}]}]}])
+	assert_true(d._should_fade_music_for(nested),
+		"a battle nested under a choice takes the music, so the bed must still be snapshotted and restored")
 
 
 func test_the_step_does_not_restart_the_bed() -> void:
