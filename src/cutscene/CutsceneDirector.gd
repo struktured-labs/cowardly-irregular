@@ -2700,8 +2700,7 @@ func _step_battle(step: Dictionary) -> void:
 		attempts += 1
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
 		_battle_in_flight = false
-		if GameState and GameState.boss_intro_cutscene_for == str(enemies[0]):
-			GameState.boss_intro_cutscene_for = ""
+		_forget_retry_intro_note(str(enemies[0]))
 		visible = true
 		# Restore what was found: all five duel scenes narrate before they fight, so a hardcoded true re-opened the closed box over the win and over the retry sting.
 		if _dialogue != null and is_instance_valid(_dialogue):
@@ -2722,6 +2721,12 @@ func _step_battle(step: Dictionary) -> void:
 			_:
 				push_warning("CutsceneDirector: unknown on_defeat '%s' — defaulting to retry" % on_defeat)
 				continue
+
+
+## A refused retry never spawned, so nothing consumed its note; it must not silence a later fight's intro.
+func _forget_retry_intro_note(enemy_id: String) -> void:
+	if GameState and GameState.boss_intro_cutscene_for == enemy_id:
+		GameState.boss_intro_cutscene_for = ""
 
 
 ## Spotlight-duel defeat sting: replace the silent 0.9s wait so the retry doesn't feel like a bug. Red flash → black on the director's own _effects_rect (auto-hides when the director hides at loop top), plus defeat SFX + screen shake. Reset after the tween so the aftermath (visible=true after next battle) isn't covered by leftover opaque.
