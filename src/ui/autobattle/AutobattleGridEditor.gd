@@ -1392,6 +1392,7 @@ func _lay_out_legend(bg: ColorRect, l1: Label, l2: Label) -> void:
 	var hs: Array[float] = []
 	for l in [l1, l2]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.update_minimum_size()  # the label joined the tree unwrapped; without this its stale one-line minimum (1338 px at 2.0) clamps the width below
 		var f: Font = l.get_theme_font("font")
 		var px: int = l.get_theme_font_size("font_size")
 		var h: float = 12.0
