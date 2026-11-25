@@ -92,6 +92,15 @@ func test_control_a_long_readout_outgrows_the_screen() -> void:
 	var ed: Node = await _simulate_at(float(p.max()), 12)
 	var lines: Control = _scroll(ed).get_node("SimulateLines")
 	assert_gt(lines.get_combined_minimum_size().y + 90.0, 720.0, "CONTROL: the readout is taller than the screen at %.2fx" % float(p.max()))
+	## What 100% does with the same long grid, printed for the notes (adhoc 27849): it changes only if it already ran off screen.
+	var e1: Node = await _simulate_at(1.0, 12)
+	var sc1: ScrollContainer = _scroll(e1)
+	var widest: float = 0.0
+	for l in sc1.get_node("SimulateLines").get_children():
+		var lab := l as Label
+		widest = maxf(widest, lab.get_theme_font("font").get_string_size(lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lab.get_theme_font_size("font_size")).x)
+	gut.p("AT 1.0, 12 rules: overflows=%s content_h=%.0f scroll_h=%.0f widest_line=%.0f scroll_w=%.0f" % [e1._simulate_overflows(),
+		(sc1.get_node("SimulateLines") as Control).get_combined_minimum_size().y, sc1.size.y, widest, sc1.size.x])
 
 
 ## Every preset: every line wraps inside the scroll's width, keeps its Text Size, and the hint sits on screen.
