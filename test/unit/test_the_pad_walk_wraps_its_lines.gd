@@ -29,10 +29,10 @@ func _presets() -> Array:
 
 
 ## A live walk on a 1280x720 menu, its idle warning showing (the fourth line), as a player who stalls sees it.
-func _walk_at(scale: float) -> Control:
+func _walk_at(scale: float, screen: Vector2i = Vector2i(1280, 720)) -> Control:
 	GameState.text_size_scale = scale
 	var vp := SubViewport.new()
-	vp.size = Vector2i(1280, 720)
+	vp.size = screen
 	add_child_autofree(vp)
 	var m: Control = load(CM).new()
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -119,6 +119,17 @@ func test_a_refusal_restacks_the_walk() -> void:
 		assert_string_contains(str(m._mapping_status.text), "already", "PRECONDITION: the second press of one button was refused")
 		bad.append_array(_judge(float(scale), m))
 	assert_eq(bad, [], "after a refusal the walk's lines still stack: %s" % [bad])
+
+
+## A narrow window (800x600) at the largest Text Size: the column is capped by the screen, so the status must WRAP to fit.
+func test_a_narrow_window_wraps_the_status() -> void:
+	var p: Array = _presets()
+	var m: Control = await _walk_at(float(p.max()), Vector2i(800, 600))
+	var s: Label = m._mapping_status
+	var row: float = s.get_theme_font("font").get_string_size(s.text.split("\n")[1], HORIZONTAL_ALIGNMENT_LEFT, -1, s.get_theme_font_size("font_size")).x
+	assert_gt(row, m.size.x - 32.0, "CONTROL: on this window the skip/cancel row is wider than any column the screen allows")
+	assert_gt(s.get_line_count(), 2, "the status wraps rather than running off the window")
+	assert_eq(_judge(float(p.max()), m), [], "and the four lines still stack on screen")
 
 
 ## 100%: each line keeps its authored height on screen (the column only wraps what was already wider than it).
