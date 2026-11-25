@@ -176,3 +176,25 @@ func test_every_door_that_plays_a_boss_cutscene_leaves_the_note() -> void:
 		var src := FileAccess.get_file_as_string(path)
 		assert_true(src.contains("play_cutscene("), "CONTROL: %s plays a cutscene" % path)
 		assert_true(src.contains(doors[path]), "%s plays a boss cutscene and never tells the spawner, so the boss repeats its intro" % path)
+
+
+func test_every_vertex_trial_boss_opens_on_its_own_line() -> void:
+	## Story 27655/27657: no cutscene introduces a trial, so each occupant's intro must survive the encounter spawn.
+	var trials: Dictionary = TrialRouting.TRIAL_MONSTERS
+	assert_eq(trials.size(), 3, "CONTROL: the three Vertex trials")
+	for trial in trials:
+		var species := str(trials[trial])
+		var intro: Array = _row(species).get("dialogue", {}).get("intro", [])
+		assert_false(intro.is_empty(), "CONTROL: %s authors an intro" % species)
+		var host := _spawn([species])
+		assert_eq(_lines(host, "intro"), intro, "the %s trial's %s lost its opening line" % [trial, species])
+
+
+func test_the_antechamber_plays_no_cutscene_so_leaves_no_note() -> void:
+	var room = autofree(load("res://src/maps/dungeons/VertexAntechamber.gd").new())
+	assert_eq(str(room.boss_cutscene_id), "", "the Antechamber gained a boss cutscene; its trial intro would now be dropped after it")
+	var cave := ProbeCave.new()
+	cave.boss_id = "the_operator"
+	add_child_autofree(cave)
+	await cave._show_boss_intro()
+	assert_eq(GameState.boss_intro_cutscene_for, "", "a door with no cutscene told the spawner one had spoken")
