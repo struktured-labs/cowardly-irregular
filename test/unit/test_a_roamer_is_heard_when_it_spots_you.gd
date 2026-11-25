@@ -20,7 +20,7 @@ var _player: FakePlayer = null
 
 
 func before_each() -> void:
-	RMS._last_spotted_ms = -100000
+	RMS._reset_spotted_gap()
 	SoundManager._sfx_cooldowns.erase(KEY)
 	SoundManager._ui_player.stream = null
 	_player = FakePlayer.new()
@@ -29,7 +29,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	RMS._last_spotted_ms = -100000
+	RMS._reset_spotted_gap()
 	SoundManager._sfx_cooldowns.erase(KEY)
 	SoundManager._sfx_suppressed_by_cooldown = false
 	SfxState.release_streams()
@@ -87,7 +87,7 @@ func test_the_beat_and_the_charge_after_it_stay_quiet() -> void:
 	_player.global_position = NEAR
 	m._process(0.016)
 	assert_string_ends_with(_heard(), _file(), "CONTROL: the first spotting was not heard")
-	RMS._last_spotted_ms = -100000
+	RMS._reset_spotted_gap()
 	var repeats := 0
 	var went_calm := false
 	for _i in range(40):

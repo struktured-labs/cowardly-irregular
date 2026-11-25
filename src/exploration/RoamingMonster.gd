@@ -730,6 +730,11 @@ const SPOTTED_SHARED_GAP_MS := 600
 static var _last_spotted_ms: int = -SPOTTED_SHARED_GAP_MS
 
 
+## Test hook: the gap is script-wide, so it survives between test files unless a file resets it.
+static func _reset_spotted_gap() -> void:
+	_last_spotted_ms = -SPOTTED_SHARED_GAP_MS
+
+
 func _announce_spotted() -> void:
 	var now: int = Time.get_ticks_msec()
 	if now - _last_spotted_ms < SPOTTED_SHARED_GAP_MS:
