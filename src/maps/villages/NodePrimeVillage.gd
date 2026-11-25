@@ -307,6 +307,31 @@ func _setup_npcs() -> void:
 	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
 	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
 	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
+	var _fw_lines: Array = _attendant_lines()
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _fw_lines if not _fw_lines.is_empty() else [
+		"HALT. Access to sector twelve is restricted.",
+		"Clearance level required: DELTA.",
+		"Your current clearance level: NONE.",
+		"When you have acquired sufficient system permissions, return.",
+		"...I will be here. I am always here.",
+		"I have been here for four hundred cycles. I am fine. Everything is fine."
+	])
+	firewall.npc_id = "firewall_attendant_w5"
+	npcs.add_child(firewall)
+	# The answer is sent mid-conversation; re-pick his lines when the quest moves so the next talk already knows it.
+	var _fw_qs = get_node_or_null("/root/QuestSystem")
+	if _fw_qs != null:
+		_fw_qs.objective_advanced.connect(_refresh_attendant.bind(firewall).unbind(2))
+		_fw_qs.quest_state_changed.connect(_refresh_attendant.bind(firewall).unbind(2))
+	# The overflow FIREWALL-ALPHA guards without reading: world5_termination_condition step 2
+	_add_quest_examine_point("world5_termination_condition", "quest_world5_termination_condition_stack_read", "Read the stack",
+		"Frame after frame, one parameter shifting, the same call spells it out: STATUS REPORT. GRAND MECHANISM. ALL FUNCTIONS NOMINAL. AWAITING ACKNOWLEDGEMENT. The first frame is three years old. Nobody ever wrote back.",
+		"A stack overflow, still running. Every frame is the same call, retried. Seventeen smaller processes are sheltering in its noise.", Vector2(2.5 * TILE_SIZE, 15.5 * TILE_SIZE))
+	_place_masterites()
+
+
+## FIREWALL-ALPHA's lines for the answer sent the stack (world5_termination_condition `sets`); [] before any answer.
+func _attendant_lines() -> Array:
 	var _fw_gs = get_node_or_null("/root/GameState")
 	var _fw_lines: Array = []
 	if _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_original"):
@@ -330,21 +355,15 @@ func _setup_npcs() -> void:
 			"The seventeen processes moved out. They did not say where.",
 			"Access to sector twelve is restricted. That part, at least, did not change."
 		]
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _fw_lines if not _fw_lines.is_empty() else [
-		"HALT. Access to sector twelve is restricted.",
-		"Clearance level required: DELTA.",
-		"Your current clearance level: NONE.",
-		"When you have acquired sufficient system permissions, return.",
-		"...I will be here. I am always here.",
-		"I have been here for four hundred cycles. I am fine. Everything is fine."
-	])
-	firewall.npc_id = "firewall_attendant_w5"
-	npcs.add_child(firewall)
-	# The overflow FIREWALL-ALPHA guards without reading: world5_termination_condition step 2
-	_add_quest_examine_point("world5_termination_condition", "quest_world5_termination_condition_stack_read", "Read the stack",
-		"Frame after frame, one parameter shifting, the same call spells it out: STATUS REPORT. GRAND MECHANISM. ALL FUNCTIONS NOMINAL. AWAITING ACKNOWLEDGEMENT. The first frame is three years old. Nobody ever wrote back.",
-		"A stack overflow, still running. Every frame is the same call, retried. Seventeen smaller processes are sheltering in its noise.", Vector2(2.5 * TILE_SIZE, 15.5 * TILE_SIZE))
-	_place_masterites()
+	return _fw_lines
+
+
+func _refresh_attendant(firewall: Node) -> void:
+	if not is_instance_valid(firewall):
+		return
+	var lines: Array = _attendant_lines()
+	if not lines.is_empty():
+		firewall.dialogue_lines = lines
 
 
 ## W5's three village Masterites. The Root Process already fights arbiter_futuristic; these are the other

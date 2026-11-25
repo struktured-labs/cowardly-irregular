@@ -32,6 +32,16 @@ func after_each() -> void:
 
 
 func _first_line() -> String:
+	var n: Node = await _attendant()
+	return _line0(n) if n != null else "<not placed>"
+
+
+func _line0(n: Node) -> String:
+	var lines = n.get("dialogue_lines")
+	return str(lines[0]) if lines is Array and not lines.is_empty() else ""
+
+
+func _attendant() -> Node:
 	var vp := SubViewport.new()
 	vp.world_2d = World2D.new()
 	add_child_autofree(vp)
@@ -41,9 +51,8 @@ func _first_line() -> String:
 	await get_tree().process_frame
 	for n in (made as Node).find_children("*", "Area2D", true, false):
 		if str(n.get("npc_name")) == WHO:
-			var lines = n.get("dialogue_lines")
-			return str(lines[0]) if lines is Array and not lines.is_empty() else ""
-	return "<not placed>"
+			return n
+	return null
 
 
 func test_before_an_answer_the_attendant_still_halts_you() -> void:
@@ -61,3 +70,16 @@ func test_each_answer_is_remembered_in_its_own_words() -> void:
 		GameState.story_flags = {}
 		GameState.set_story_flag(flag)
 		assert_eq(await _first_line(), CASES[flag], "after %s the attendant must speak to that answer" % flag)
+
+
+## The answer is chosen mid-conversation with him (cowir-overworld 27887), so the village is already built when the flag lands:
+## his very next talk must know it, not only after leaving Node Prime and coming back.
+func test_the_reply_arrives_without_leaving_node_prime() -> void:
+	var n: Node = await _attendant()
+	assert_not_null(n, "CONTROL: FIREWALL-ALPHA is placed")
+	if n == null:
+		return
+	assert_eq(_line0(n), BEFORE, "CONTROL: before the answer he halts you")
+	GameState.set_story_flag("quest_world5_termination_condition_sent_original")
+	QuestSystem.objective_advanced.emit("world5_termination_condition", 3)
+	assert_eq(_line0(n), CASES["quest_world5_termination_condition_sent_original"], "the reply is there on the next talk, in the same visit")
