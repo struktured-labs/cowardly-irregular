@@ -1507,6 +1507,9 @@ func _input(event: InputEvent) -> void:
 			# OVER the overworld menu (web-smoke stage-3 find 2026-07-11).
 			if event is InputEventKey and event.keycode == KEY_ESCAPE:
 				pass
+			## The editor's ability/item ring reads Start and Enter in _unhandled_input: left unconsumed, never Settings over it.
+			elif _field_editor_open():
+				pass
 			else:
 				# Block during battle transition (encounter fired but state
 				# hasn't flipped to BATTLE yet — that flip happens after the
@@ -1532,7 +1535,8 @@ func _input(event: InputEvent) -> void:
 		if _field_modal_open():
 			get_viewport().set_input_as_handled()
 			return
-		if current_state == LoopState.EXPLORATION and not _overworld_menu:
+		## The editor's ring backs out on Esc in _unhandled_input; leave the press to it, never the menu behind the editor.
+		if current_state == LoopState.EXPLORATION and not _overworld_menu and not _field_editor_open():
 			# Same race as the Start→settings guard above: an
 			# encounter-transition holds the lock but current_state is
 			# still EXPLORATION until _start_battle_async flips it.
