@@ -1809,6 +1809,7 @@ func _open_rule_composer_overlay() -> void:
 
 func _on_composer_installed(profile_index: int) -> void:
 	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile"""
+	var full_title: String = _composed_title()
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
 		_rule_composer_overlay.queue_free()
 	_rule_composer_overlay = null
@@ -1822,7 +1823,16 @@ func _on_composer_installed(profile_index: int) -> void:
 	_build_ui()
 	_refresh_grid()
 	if _status_label and is_instance_valid(_status_label):
-		_status_label.text = "Composed autogrind rules installed"
+		_status_label.text = "Composed autogrind rules installed" + ((": \"%s\"" % full_title) if not full_title.is_empty() else "")
+
+
+## The composition's full title, read before the overlay is freed. A profile name is capped (PROFILE_NAME_MAX), so the
+## install line is where the player reads the whole title the composer gave it.
+func _composed_title() -> String:
+	if _rule_composer_overlay == null or not is_instance_valid(_rule_composer_overlay):
+		return ""
+	var comp = _rule_composer_overlay.get("_last_composition")
+	return str((comp as Dictionary).get("name", "")) if comp is Dictionary else ""
 
 
 func _show_empty_grid_splash() -> void:
@@ -1926,7 +1936,7 @@ func _open_rename_profile() -> void:
 	_keyboard = VirtualKeyboardClass.new()
 	_keyboard.size = size
 	add_child(_keyboard)
-	_keyboard.setup("Rename Autogrind Profile", current_name, 20)
+	_keyboard.setup("Rename Autogrind Profile", current_name, AutogrindSystem.PROFILE_NAME_MAX)
 
 	_keyboard.text_submitted.connect(_on_profile_renamed)
 	_keyboard.cancelled.connect(_on_rename_cancelled)
