@@ -142,16 +142,20 @@ func test_a_portal_warp_rebuilds_outside_the_physics_step() -> void:
 
 
 func test_a_floor_change_puts_the_encounter_pool_back() -> void:
+	var planted: Array[String] = ["slime", "bat"]
+	EncounterSystem.set_enemy_pool(planted)
 	var before: Array = _encounter_pool()
-	assert_false(before.is_empty(), "CONTROL: EncounterSystem holds a pool to protect")
+	assert_eq(before, ["slime", "bat"], "CONTROL: this arm's own pool is in place, whatever an earlier file left")
 	var cave = FIRE_CAVE.new()
 	await _settle(cave)
 	cave.puzzle_warp_to(2, cave.player.global_position)
 	await _wait_for_floor(cave, 1)
 	assert_ne(_encounter_pool(), before, "CONTROL: the floor change pushed its own pool, so there was something to leak")
 	await get_tree().create_timer(1.0).timeout
+	var cave_pool: Array = _encounter_pool()
 	_restore_encounter_pool()
-	assert_eq(_encounter_pool(), before, "the next file's grind draws from the pool it had, not this cave's L14 floor")
+	assert_ne(_held_pool, cave_pool, "CONTROL: the pool this file found is not the cave's, so a restore is visible")
+	assert_eq(_encounter_pool(), _held_pool, "the next file's grind draws from the pool this file found, not this cave's L14 floor")
 	assert_true(GameState.game_constants.has("event_flag_dragon_cave_entered"), "CONTROL: entering the cave fired its party-chat flag")
 	var had: bool = _held.has("event_flag_dragon_cave_entered")
 	after_each()
