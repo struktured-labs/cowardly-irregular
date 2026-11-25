@@ -1101,6 +1101,12 @@ static func _victory_shape(event_data: Dictionary) -> String:
 
 # ── Prompt builder: rule composition ─────────────────────────────────────────
 
+## The cap the installing system cuts a profile name at, read from that system so the prompt cannot ask for more.
+static func profile_name_cap(domain: String) -> int:
+	var path: String = "res://src/autogrind/AutogrindSystem.gd" if domain == "autogrind" else "res://src/autobattle/AutobattleSystem.gd"
+	return int((load(path) as Script).get_script_constant_map().get("PROFILE_NAME_MAX", 16))
+
+
 ## Build the prompt asked of the LLM to draft/refine an autobattle or
 ## autogrind rule set from freeform player intent.
 ##
@@ -1127,7 +1133,7 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ prompt_text
 		+ _format_kit_reminder(kit_context)
 		+ "\n\nEmit a JSON object with fields:\n"
-		+ "  name: short (3-6 words), snake-case-friendly, describing the strategy\n"
+		+ "  name: at most %d characters (it becomes the profile's name), describing the strategy\n" % profile_name_cap(domain)
 		+ "  description: 1 sentence, in-character\n"
 		# Asking for the list as a quoted STRING makes the model nest JSON inside JSON,
 		# and that is where whole compositions died: the reply opens `"rules_json": "[{"`
