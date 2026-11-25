@@ -797,6 +797,7 @@ var autogrind_profiles: Dictionary = {}
 
 ## Max profiles (GBA-style limit)
 const MAX_AUTOGRIND_PROFILES: int = 8
+const PROFILE_NAME_MAX := 20  # the grind rename keyboard's cap (autobattle's is 16; main 27563 kept both)
 
 ## Max rules per profile
 const MAX_AUTOGRIND_RULES: int = 12
@@ -2093,6 +2094,16 @@ func set_active_autogrind_profile(index: int) -> bool:
 	return true
 
 
+
+## Every profile-name writer goes through this (create, rename, an installed composition), so a name can never be
+## longer than the rename keyboard allows: an LLM-composed title used to become the profile name uncapped and run off
+## the editor's profile pill. Over the cap it is cut with "…" INSIDE the cap. Names already in a save are not touched.
+static func cap_profile_name(n: String) -> String:
+	if n.length() <= PROFILE_NAME_MAX:
+		return n
+	return n.substr(0, PROFILE_NAME_MAX - 1).strip_edges() + "…"
+
+
 func create_new_autogrind_profile(name: String = "") -> int:
 	"""Create a new autogrind profile, returns index or -1 if at max"""
 	_ensure_autogrind_profiles()
@@ -2106,7 +2117,7 @@ func create_new_autogrind_profile(name: String = "") -> int:
 		name = "Custom %d" % (profiles.size() + 1)
 
 	profiles.append({
-		"name": name,
+		"name": cap_profile_name(name),
 		"rules": _create_empty_autogrind_rules()
 	})
 
@@ -2126,7 +2137,7 @@ func rename_autogrind_profile(index: int, new_name: String) -> bool:
 		push_warning("[AUTOGRIND] rename_autogrind_profile: empty name refused for idx %d — no-op" % index)
 		return false
 
-	profiles[index]["name"] = new_name
+	profiles[index]["name"] = cap_profile_name(new_name)
 	_save_autogrind_profiles()
 	return true
 

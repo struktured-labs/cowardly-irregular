@@ -3687,7 +3687,7 @@ func _open_rename_profile() -> void:
 	_keyboard = VirtualKeyboardClass.new()
 	_keyboard.size = size
 	add_child(_keyboard)
-	_keyboard.setup("Rename Profile", current_name, 16)
+	_keyboard.setup("Rename Profile", current_name, AutobattleSystem.PROFILE_NAME_MAX)
 
 	# Connect signals
 	_keyboard.text_submitted.connect(_on_profile_renamed)
@@ -4031,6 +4031,7 @@ func _open_rule_composer_overlay() -> void:
 
 func _on_composer_installed(profile_index: int) -> void:
 	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile."""
+	var full_title: String = _composed_title()
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
 		_rule_composer_overlay.queue_free()
 	_rule_composer_overlay = null
@@ -4045,10 +4046,21 @@ func _on_composer_installed(profile_index: int) -> void:
 	_scroll_offset = 0.0
 	_build_ui()
 	_refresh_grid()
-	if profile_index >= 0:
+	if profile_index >= 0 and not full_title.is_empty():
+		_flash_status("Composed profile \"%s\" installed (slot %d)" % [full_title, profile_index])
+	elif profile_index >= 0:
 		_flash_status("Composed profile installed (slot %d)" % profile_index)
 	else:
 		_flash_status("Composed rules applied to current profile")
+
+
+## The composition's full title, read before the overlay is freed. A profile name is capped (PROFILE_NAME_MAX), so the
+## install line is where the player reads the whole title the composer gave it.
+func _composed_title() -> String:
+	if _rule_composer_overlay == null or not is_instance_valid(_rule_composer_overlay):
+		return ""
+	var comp = _rule_composer_overlay.get("_last_composition")
+	return str((comp as Dictionary).get("name", "")) if comp is Dictionary else ""
 
 
 func _on_composer_cancelled() -> void:
