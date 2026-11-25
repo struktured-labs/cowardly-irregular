@@ -61,7 +61,7 @@ func _flash(text: String) -> Label:
 
 
 func _legend_top() -> float:
-	return _ed.size.y - float(load(ED).LEGEND_H)
+	return _ed.size.y - float(_ed._legend_h)  # the strip as laid out; it grows up when its lines wrap
 
 
 func _check(l: Label, tag: String) -> void:
