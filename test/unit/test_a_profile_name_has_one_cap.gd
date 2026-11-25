@@ -107,11 +107,13 @@ func test_a_long_name_already_in_a_save_is_kept() -> void:
 	assert_eq(str(_ag_profiles()[0].get("name", "")), LONG, "an autogrind save's long name is untouched")
 
 
-func _fake_overlay(title: String) -> Node:
+## The editors type _rule_composer_overlay as Control, so the stand-in must be one: a Node here aborted the arm, and GUT
+## scored the aborted arm as a pass.
+func _fake_overlay(title: String) -> Control:
 	var s := GDScript.new()
-	s.source_code = "extends Node\nvar _last_composition: Dictionary = {}\n"
+	s.source_code = "extends Control\nvar _last_composition: Dictionary = {}\n"
 	s.reload()
-	var n: Node = s.new()
+	var n: Control = s.new()
 	n.set("_last_composition", {"name": title, "description": "", "rules": []})
 	return n
 
