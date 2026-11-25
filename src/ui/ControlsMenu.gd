@@ -49,6 +49,7 @@ var _panel: Control
 var _rows_clip: Control
 var _rows_content: Control
 var _row_top: Dictionary = {}  # row index -> top in RowsContent
+var _row_hgt: Dictionary = {}  # row index -> its drawn height (a wrapped binding grows its own row)
 var _scroll_px: float = 0.0
 var _more_rows: Label
 var _profile_label: Label
@@ -145,11 +146,8 @@ func refresh_footer() -> void:
 
 
 ## A column label must end inside its column: "R / RB / R1 (Right Shoulder)" ran into the Keyboard column. Sized after add_child
-## (a detached Label measures at the default font), the font steps down to 10px to fit, and an ellipsis is the last resort.
-## ⛔ GEOMETRY GROWS WITH THE TEXT OR THE TEXT DOES NOT GROW AT ALL. `_fit_column_label` steps a
-## binding label's font DOWN to a floor of 10 until it fits its column, then clips with an ellipsis
-## -- so scaling those fonts without widening the columns is a SILENT NO-OP: the override rises and
-## the helper takes it straight back off. Two writers, one surface, and the later one wins.
+## (a detached Label measures at the default font), it WRAPS at its own Text Size and its row grows (`_fit_column_label`).
+## Until 2026-11-25 it stepped the font down to 10px and trimmed with an ellipsis, which took any Text Size straight back off.
 ##
 ## Only ever UPWARD (a text size may not shrink a shipped box), which is why the factor is floored
 ## at 1.0 while the FONTS still scale below it: smaller text in unchanged boxes is correct.
@@ -275,14 +273,53 @@ func _panel_h_frac() -> float:
 	return clampf(needed / size.y, 0.88, 0.96)
 
 
-func _fit_column_label(l: Label, width: float) -> void:
-	var fs: int = l.get_theme_font_size("font_size")
-	while fs > 10 and l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
-		fs -= 1
-		l.add_theme_font_size_override("font_size", fs)
-	l.clip_text = true
-	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+## Wraps at its own Text Size inside its column and returns the wrapped height; its row grows to hold it (never shrink or trim).
+func _fit_column_label(l: Label, width: float) -> float:
+	l.set_meta("col_w", width)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.update_minimum_size()
 	l.size = Vector2(width, l.size.y)
+	## Measured from the font, not the Label's cached minimum: a rebind sets new text on a built label (row stayed 32).
+	var fnt: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	var line: float = fnt.get_height(fs)
+	var lines: int = maxi(1, roundi(fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	l.size = Vector2(width, h)
+	l.update_minimum_size()
+	return h
+
+
+## A row is its authored height unless a wrapped binding needs more: 4 above and 4 below its text, as authored.
+func _row_h_of(row: Control) -> float:
+	var rh: float = float(_row_h())
+	for c in row.get_children():
+		if c is Label and c.has_meta("col_w"):
+			rh = maxf(rh, (c as Label).position.y + _fit_column_label(c, float(c.get_meta("col_w"))) + 4.0)
+	return rh
+
+
+## Stacks the rows by their own heights; run after the build and whenever a binding's text changes.
+func _relayout_rows() -> void:
+	var y: float = 0.0
+	for i in range(_highlight_refs.size()):
+		var row: Control = _highlight_refs[i]
+		if not (row and is_instance_valid(row)):
+			continue
+		if i == _row_reset:
+			y += ACTION_BLOCK_GAP
+		var rh: float = _row_h_of(row)
+		row.position.y = y
+		row.size.y = rh
+		for c in row.get_children():
+			if c is Button:
+				(c as Button).size.y = rh
+		_row_top[i] = y
+		_row_hgt[i] = rh
+		y += rh
+		if i == ROW_HELP:
+			y += HEADER_BAND * _tf()
 
 
 func _footer_text() -> String:
@@ -428,6 +465,7 @@ func _build_ui() -> void:
 	_rows_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	_rows_clip.add_child(_rows_content)
 	_row_top.clear()
+	_row_hgt.clear()
 
 	# Column header — only shown for the action rows so user knows what
 	# the right-hand columns mean. Drawn just above the first action row.
@@ -489,6 +527,7 @@ func _build_ui() -> void:
 	y += _row_h()
 
 	_add_row(_row_map_pad, y, "Map This Pad", _map_pad_hint(), false, true)
+	_relayout_rows()
 
 	# Conflict display
 	_conflict_label = Label.new()
@@ -851,7 +890,7 @@ func _scroll_to_selection() -> void:
 	var top: float = float(_row_top[selected_index])
 	if selected_index == ROW_ACTION_FIRST:
 		top -= float(HEADER_BAND) * _tf()  # the column header comes into view with its first row
-	var bottom: float = float(_row_top[selected_index]) + float(_row_h())
+	var bottom: float = float(_row_top[selected_index]) + float(_row_hgt.get(selected_index, _row_h()))
 	var view: float = _rows_clip.size.y
 	if top < _scroll_px:
 		_scroll_px = top
@@ -876,7 +915,7 @@ func _refresh_more_rows() -> void:
 func rows_content_height() -> float:
 	var h: float = 0.0
 	for k in _row_top:
-		h = maxf(h, float(_row_top[k]) + float(_row_h()))
+		h = maxf(h, float(_row_top[k]) + float(_row_hgt.get(k, _row_h())))
 	return h
 
 
@@ -887,6 +926,7 @@ func _update_all_labels() -> void:
 	# Update action labels
 	for action in _action_labels:
 		_action_labels[action].text = InputProfileManager.get_action_button_label(action)
+	_relayout_rows()
 
 	_update_conflict_display()
 

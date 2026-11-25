@@ -3,11 +3,10 @@ extends GutTest
 ## ⛔ THE CONTROLS SCREEN IGNORED TEXT SIZE — 28 raw font sizes, zero `TextScale`, on the screen a
 ## player opens BECAUSE a control is wrong. Its sibling, the F1 reference, was the same defect.
 ##
-## ⛔ AND SCALING THE FONTS ALONE IS A SILENT NO-OP FOR THE THREE BINDING COLUMNS.
-## `_fit_column_label` steps a binding label's font DOWN to a floor of 10 until it fits its column,
-## then clips with an ellipsis -- so a raised override is taken straight back off and the player
-## sees NOTHING change. Two writers, one surface, the later one wins. The columns must widen with
-## the text or the text does not grow at all, and ARM 6 is the arm that defends it.
+## ⛔ SCALING THE FONTS ALONE WAS A SILENT NO-OP FOR THE THREE BINDING COLUMNS until 2026-11-25:
+## `_fit_column_label` stepped a binding label's font down to 10 and trimmed it, taking a raised
+## override straight back off. It wraps now (test_a_controls_binding_wraps_not_shrinks); ARM 6
+## still pins that the columns widen with the text.
 ##
 ## 🔑 The geometry is derived on BOTH axes and the authored layout is the f==1 case of the SAME
 ## arithmetic: 12 + name, 320 + 160 + 10 == 490, 490 + 110 + 10 == 610 are the literals it replaces.
@@ -126,8 +125,8 @@ func test_the_row_font_follows_the_setting() -> void:
 		"row text must GROW: 80%% gave %d, 200%% gave %d" % [small["row_font"], big["row_font"]])
 
 
-## ARM 2 — no binding label spills past its own column, at any preset. Measured as DRAWN text, and
-## `_fit_column_label` sets `clip_text`, so an overflow here is text the player loses to an ellipsis.
+## ARM 2 — no binding label spills past its own column, at any preset. A wrapped label draws within
+## its own box, so its box is what must fit; a one-line label is measured as drawn text.
 func test_no_binding_label_spills_its_column_at_any_preset() -> void:
 	var bad: Array = []
 	for scale in _presets():
@@ -138,8 +137,8 @@ func test_no_binding_label_spills_its_column_at_any_preset() -> void:
 			var fnt: Font = lab.get_theme_font("font")
 			if fnt == null:
 				continue
-			var drawn: float = fnt.get_string_size(lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
-				lab.get_theme_font_size("font_size")).x
+			var drawn: float = lab.size.x if lab.autowrap_mode != TextServer.AUTOWRAP_OFF else fnt.get_string_size(
+				lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lab.get_theme_font_size("font_size")).x
 			if drawn > float(w[int(pair["col"])]) + 1.0:
 				bad.append("%.2fx: '%s' draws %.0f in a %.0f column"
 					% [scale, lab.text, drawn, float(w[int(pair["col"])])])
@@ -218,7 +217,7 @@ func test_the_click_target_matches_the_drawn_row() -> void:
 
 ## ARM 6 — THE DEFENCE OF THE ACTUAL FINDING, in two halves because the first is not sensitive
 ## enough alone. Reading the override where it is SET would pass on the broken version, since
-## `_fit_column_label` lowers it afterwards; this reads what the label ends up with.
+## a fit helper could lower it afterwards; this reads what the label ends up with.
 func test_a_binding_labels_effective_font_actually_grows() -> void:
 	var small: Dictionary = _snapshot(await _menu_at(0.8))
 	var big: Dictionary = _snapshot(await _menu_at(2.0))
