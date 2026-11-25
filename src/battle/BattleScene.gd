@@ -934,6 +934,19 @@ func _show_boss_intro_dialogue() -> void:
 		_waiting_for_dialogue = true
 		_battle_dialogue.set_party(party_members)
 		_battle_dialogue.show_boss_intro(_get_boss_intro_speaker(), _boss_dialogue_data["intro"], _boss_monster_id())
+		_mark_pool_intro_shown()
+
+
+## A non-boss enemy that speaks this fight's lines: a field elite, or a pool monster at first sighting.
+func _is_dialogue_speaker(enemy: Node) -> bool:
+	return enemy.has_meta("field_elite_speaker") or enemy.has_meta("pool_intro_speaker")
+
+
+## The heard-flag is written when the panel shows, so a sighting in autogrind or a scan never spends the line.
+func _mark_pool_intro_shown() -> void:
+	var speaker: Node = _boss_combatant()
+	if speaker and speaker.has_meta("pool_intro_speaker") and not autogrind_console_mode:
+		GameState.mark_pool_intro_heard(str(speaker.get_meta("monster_type", "")))
 
 
 func _get_boss_intro_speaker() -> String:
@@ -953,7 +966,7 @@ func _boss_combatant() -> Node:
 		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
 			return enemy
 	for enemy in test_enemies:
-		if enemy and is_instance_valid(enemy) and enemy.has_meta("field_elite_speaker"):
+		if enemy and is_instance_valid(enemy) and _is_dialogue_speaker(enemy):
 			return enemy
 	if test_enemies.size() > 0 and is_instance_valid(test_enemies[0]):
 		return test_enemies[0]
@@ -7653,7 +7666,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	## feels symmetric.
 	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
 		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
-			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and (target.has_meta("is_boss") or target.has_meta("field_elite_speaker")):
+			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and (target.has_meta("is_boss") or _is_dialogue_speaker(target)):
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])

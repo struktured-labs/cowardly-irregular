@@ -712,6 +712,12 @@ func spawn_encounter_enemies() -> void:
 			if not elite_lines.is_empty():
 				enemy.set_meta("field_elite_speaker", true)
 				_scene._boss_dialogue_data = elite_lines
+		elif not is_field_elite and not encounter_has_boss and _scene.get("autogrind_console_mode") != true and _pool_intro_lines(base_id, monster_data).size() > 0:
+			## A pool monster's monsters.json intro plays on its first live sighting only; the fight's first unheard species speaks.
+			var existing = _scene._boss_dialogue_data
+			if not (existing is Dictionary and not (existing as Dictionary).is_empty()):
+				enemy.set_meta("pool_intro_speaker", true)
+				_scene._boss_dialogue_data = _pool_intro_lines(base_id, monster_data)
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
@@ -788,6 +794,20 @@ func load_monsters_data() -> Dictionary:
 		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json parsed but root is not a Dictionary (got %s) — encounter spawning will fall back to MONSTER_TYPES defaults" % typeof(json.data))
 		return {}
 	return json.data
+
+
+## intro + low_hp of a non-boss species whose first-sighting intro this save has not heard; {} otherwise.
+func _pool_intro_lines(species: String, monster_data: Dictionary) -> Dictionary:
+	var dlg = monster_data.get("dialogue", {})
+	if not (dlg is Dictionary) or not (dlg as Dictionary).has("intro") or GameState == null:
+		return {}
+	if not GameState.has_method("pool_intro_heard") or GameState.pool_intro_heard(species):
+		return {}
+	var out := {}
+	for key in ["intro", "low_hp"]:
+		if (dlg as Dictionary).has(key):
+			out[key] = (dlg[key] as Array).duplicate()
+	return out
 
 
 func spawn_miniboss() -> void:
