@@ -2,7 +2,7 @@ extends GutTest
 
 ## Regression (cowir-main's .568 render QA, 2026-10-04): on the Controls screen the Gamepad column ran into the Keyboard column:
 ## "R / RB / R1 (Right Shoulder)W", "Back / Select / Minus / ShareTab", "L3 / L-Stick (Left Stick Click)L". The labels were sized
-## before add_child, so they grew to their text. Each column label now fits its column (font steps down, ellipsis last).
+## before add_child, so they grew to their text. Each column label now fits its column (it wraps and its row grows).
 
 const ControlsMenuScript := preload("res://src/ui/ControlsMenu.gd")
 
@@ -33,7 +33,8 @@ func test_no_binding_label_runs_into_the_next_column() -> void:
 			continue
 		checked += 1
 		var limit: float = NEXT_COLUMN[l.position.x]
-		var drawn_end: float = l.position.x + minf(_text_width(l), l.size.x) if l.clip_text else l.position.x + _text_width(l)
+		var boxed: bool = l.clip_text or l.autowrap_mode != TextServer.AUTOWRAP_OFF
+		var drawn_end: float = l.position.x + minf(_text_width(l), l.size.x) if boxed else l.position.x + _text_width(l)
 		if drawn_end > limit:
 			offenders.append("'%s' ends at %.0f, next column at %.0f" % [l.text, drawn_end, limit])
 	assert_gt(checked, 6, "SCOPE: the walk reached the binding rows' gamepad and keyboard labels")
