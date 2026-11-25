@@ -386,6 +386,19 @@ func _update_profile_indicator() -> void:
 ## its old 190 x 22 while its name fits, else grows LEFT and DOWN to hold the label; the status line steps below it.
 ## The title reads "AUTOGRIND - <name>" when that fits left of the pill, else "AUTOGRIND" (the pill shows the name).
 ## Measured in the tree after the text is set.
+## The 1.0 px of the title and status line, the sizes the top band was laid out for.
+const TOP_TITLE_PX := 14
+const TOP_STATUS_PX := 12
+
+
+## How much taller a label's line is now than at `base_px` (0 at Text Size 1.0).
+func _line_growth(l: Label, base_px: int) -> float:
+	var f: Font = l.get_theme_font("font")
+	if f == null:
+		return 0.0
+	return maxf(0.0, f.get_height(l.get_theme_font_size("font_size")) - f.get_height(base_px))
+
+
 func _lay_out_top() -> void:
 	if _profile_pill == null or _profile_label == null or not _profile_label.is_inside_tree():
 		return
@@ -405,14 +418,15 @@ func _lay_out_top() -> void:
 		_title_label.update_minimum_size()
 		_title_label.reset_size()
 	if _status_label and is_instance_valid(_status_label):
+		## Each step moves by GROWTH over the 1.0 layout (a line's extra height at the Text Size), so 1.0 is unchanged.
 		var below: float = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
-		## autogrind 27592: at 2.0 the title (28 px at y 8) reaches y ~46 and past x 130, over the status line's start.
+		## autogrind 27592: at 2.0 the title (28 px at y 8) reaches past x 130 and down over the status line's start.
 		if _title_label and is_instance_valid(_title_label) and _title_label.position.x + _title_label.get_minimum_size().x > _status_label.position.x:
-			below = maxf(below, _title_label.position.y + _title_label.get_line_height())
+			below = maxf(below, 28.0 + _line_growth(_title_label, TOP_TITLE_PX))
 		_status_label.position.y = below
-		## The grid starts where the status line ends (50 at 1.0, exactly its old GRID_BASE_POS.y), so a grown pill never
-		## pushes the status line into row 0; _update_scroll_offset reads _top_band_h too.
-		_top_band_h = maxf(GRID_BASE_POS.y, _status_label.position.y + _status_label.size.y)
+		## The grid starts below the status line, by the same gap as at 1.0 (status at 28, grid at 50), so a grown pill
+		## never pushes the status line into row 0; _update_scroll_offset reads _top_band_h too.
+		_top_band_h = maxf(GRID_BASE_POS.y, GRID_BASE_POS.y + (below - 28.0) + _line_growth(_status_label, TOP_STATUS_PX))
 		if _grid_container and is_instance_valid(_grid_container):
 			_grid_container.position.y = _top_band_h - _scroll_offset
 			_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y)
