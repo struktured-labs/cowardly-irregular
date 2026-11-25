@@ -267,8 +267,10 @@ func _build_ui() -> void:
 
 	# Height derived from where the hint actually ends, not from a magic tail.
 	var hint_y: int = PADDING_TOP + _choices.size() * row_h() + HINT_GAP_TOP
-	var hint_text_now: String = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
-	var hint_box_h: int = _hint_box_h(hint_text_now)
+	_hint_label = Label.new()
+	_hint_label.text = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
+	_hint_label.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT_SIZE))
+	var hint_box_h: int = _hint_box_h(_hint_label.text)
 	var panel_h: int = hint_y + hint_box_h + HINT_GAP_BOTTOM
 
 	_panel = RetroPanel.create_panel(
@@ -327,17 +329,18 @@ func _build_ui() -> void:
 	_panel.add_child(div)
 
 	# Hint row.
-	_hint_label = Label.new()
-	_hint_label.text = hint_text_now
 	_hint_label.position = Vector2(PADDING_SIDE, float(hint_y))
-	_hint_label.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT_SIZE))
-	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, hint_box_h)
 	_hint_label.add_theme_color_override("font_color", COL_HINT)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
 	_hint_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_panel.add_child(_hint_label)
+	# Wrap after joining the tree, then drop the stale one-line minimum before sizing (adhoc 27540/27483).
+	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_hint_label.update_minimum_size()
+	var hint_size := Vector2(_panel_w - PADDING_SIDE * 2, hint_box_h)
+	_hint_label.size = hint_size
+	_hint_label.set_deferred("size", hint_size)
 
 
 # ── Input handling ────────────────────────────────────────────────────────────
@@ -346,7 +349,7 @@ func _build_ui() -> void:
 func _hint_box_h(text: String) -> int:
 	var px: int = TextScale.scaled(HINT_FONT_SIZE)
 	var room: float = float(_panel_w - PADDING_SIDE * 2)
-	var font: Font = UiFont.of(self)
+	var font: Font = UiFont.of(_hint_label)
 	var line_h: float = font.get_height(px)
 	var n: int = maxi(1, int(round(font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, room, px).y / line_h)))
 	return hint_h() + (int(ceil(line_h)) + get_theme_constant(&"line_spacing", &"Label")) * (n - 1)

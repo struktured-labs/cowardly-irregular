@@ -261,6 +261,7 @@ func test_a_narrow_screen_wraps_the_hint_and_grows_the_panel() -> void:
 		var room: float = float(m._panel_w - DialogueChoiceMenu.PADDING_SIDE * 2)
 		assert_gt(_ink(str(h.text), px), room, "CONTROL: at %.2fx the hint is wider than a 360px screen's panel, so it must wrap" % scale)
 		assert_eq(h.get_theme_font_size("font_size"), px, "at %.2fx a narrow screen shrank the hint instead of wrapping it" % scale)
+		gut.p("    narrow %.2fx  hint rect %s  min %s  lines %d  panel %s" % [scale, str(h.size), str(h.get_minimum_size()), h.get_line_count(), str(m._panel.size)])
 		assert_gt(h.get_line_count(), 1, "at %.2fx the hint did not wrap" % scale)
 		assert_lte(h.position.y + h.get_minimum_size().y, m._panel.size.y + 0.5,
 			"at %.2fx the wrapped hint ends at %.0f, below the %.0fpx panel" % [scale, h.position.y + h.get_minimum_size().y, m._panel.size.y])
