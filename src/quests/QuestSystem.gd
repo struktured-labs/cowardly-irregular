@@ -349,11 +349,14 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	],
 }
 
-## Choice emitters: the current custom objective authors `choices` (label, optional requires_item, lines); the player picks one
-## at this NPC, its lines play, and the flag is set. Cancel leaves the step open. v1: the last shopkeeper's recall.
+## Choice emitters: the current custom objective authors `choices` (label, optional requires_item, lines, optional sets); the player
+## picks one at this NPC, its lines play, its `sets` variant flag and the step's flag are set. Cancel leaves the step open.
 const CHOICE_EMITTERS: Dictionary = {
 	"last_shopkeeper_w6": [
 		{"quest": "world6_the_last_thing", "flag": "quest_world6_the_last_thing_items_recalled"},
+	],
+	"firewall_attendant_w5": [
+		{"quest": "world5_termination_condition", "flag": "quest_world5_termination_condition_signal_sent"},
 	],
 }
 
@@ -626,6 +629,9 @@ func _run_choice_emitter(npc_id: String, npc: Node) -> bool:
 		if i < 0:
 			return false
 		await _play_lines(npc, offered[i].get("lines", []))
+		var variant: String = str(offered[i].get("sets", ""))
+		if variant != "":
+			GameState.set_story_flag(variant)
 		GameState.set_story_flag(flag)
 		notify_flag(flag)
 		return true
