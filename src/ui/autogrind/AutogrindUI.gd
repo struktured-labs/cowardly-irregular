@@ -11,6 +11,8 @@ signal grind_stop_requested()
 signal tier_cycle_requested()
 
 ## Visual style (Win98 danger theme)
+## Saved custom presets: every one is listed as [4]..[9] and loads by that key and by a ring row.
+const MAX_CUSTOM_PRESETS := 6
 const BG_COLOR = Color(0.03, 0.03, 0.08, 0.95)
 const PANEL_COLOR = Color(0.08, 0.08, 0.12)
 const BORDER_BRIGHT = Color(0.5, 0.4, 0.6)
@@ -1681,16 +1683,8 @@ func _input(event: InputEvent) -> void:
 		_save_current_as_preset()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_4 and not event.is_echo():
-		_apply_custom_preset(0)
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_5 and not event.is_echo():
-		_apply_custom_preset(1)
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_6 and not event.is_echo():
-		_apply_custom_preset(2)
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode >= KEY_4 and event.keycode < KEY_4 + MAX_CUSTOM_PRESETS:
+		_apply_custom_preset(event.keycode - KEY_4)
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_D and not event.is_echo():
@@ -1757,9 +1751,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "save_preset", "label": "Save as Preset          (S)"},
 			{"id": "delete_preset", "label": "Delete Last Preset      (D)"},
 			{"id": "resume", "label": "Resume Saved Grind      (R)"},
-			{"id": "custom_1", "label": "Custom Slot 1           (4)"},
-			{"id": "custom_2", "label": "Custom Slot 2           (5)"},
-			{"id": "custom_3", "label": "Custom Slot 3           (6)"},
+		] + _custom_slot_rows() + [
 			{"id": "export", "label": "Export to File          (E)"},
 			{"id": "import", "label": "Import from File        (I)"},
 			{"id": "copy_code", "label": "Copy Share Code   (Shift+E)"},
@@ -1768,8 +1760,19 @@ func _options_ring_spec() -> Dictionary:
 	}
 
 
+## Slots 1-3 always (an empty one says so), plus a row for every further slot that holds a preset.
+func _custom_slot_rows() -> Array:
+	var out: Array = []
+	for i in range(clampi(_custom_presets.size(), 3, MAX_CUSTOM_PRESETS)):
+		out.append({"id": "custom_%d" % (i + 1), "label": "Custom Slot %d           (%d)" % [i + 1, i + 4]})
+	return out
+
+
 ## Every arm calls the SAME handler its key binding calls — the pad gains a route, not a behaviour.
 func _commit_autogrind_option(chosen_id: String) -> void:
+	if chosen_id.begins_with("custom_") and chosen_id.substr(7).is_valid_int():
+		_apply_custom_preset(int(chosen_id.substr(7)) - 1)
+		return
 	match chosen_id:
 		"safety_hp":
 			_cycle_safety("hp")
@@ -1807,12 +1810,6 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_delete_last_custom_preset()
 		"resume":
 			_request_resume()
-		"custom_1":
-			_apply_custom_preset(0)
-		"custom_2":
-			_apply_custom_preset(1)
-		"custom_3":
-			_apply_custom_preset(2)
 		"export":
 			_export_scripts()
 		"import":
@@ -3844,8 +3841,8 @@ func _save_current_as_preset() -> void:
 		return
 
 	var slot = _custom_presets.size()
-	if slot >= 6:
-		_log_message("[color=yellow]Max 6 custom presets. Delete one first ([D] key).[/color]")
+	if slot >= MAX_CUSTOM_PRESETS:
+		_log_message("[color=yellow]Max %d custom presets. Delete one first ([D] key).[/color]" % MAX_CUSTOM_PRESETS)
 		return
 
 	var preset = {
