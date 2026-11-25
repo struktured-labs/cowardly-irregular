@@ -10,6 +10,7 @@ const MINE := [{"enabled": true, "conditions": [{"type": "battles_done", "op": "
 
 var _ag: Dictionary
 var _ui: Node
+var _scale_was := -1.0
 
 
 func before_each() -> void:
@@ -24,6 +25,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	if _scale_was >= 0.0:
+		GameState.text_size_scale = _scale_was
+		_scale_was = -1.0
 	AutogrindState.restore(_ag)
 
 
@@ -75,3 +79,34 @@ func test_the_preset_line_names_the_undo() -> void:
 	_ui._apply_preset(_a_preset_id())
 	var line := str(_ui._battle_log_lines.back()) if not _ui._battle_log_lines.is_empty() else ""
 	assert_string_contains(line, "Ctrl+Z", "the preset line does not say how to undo it")
+
+
+## The preset line grew the undo hint; at Text Size 2.0 the real line (longest description) must wrap inside the log, not run past it.
+func test_the_preset_line_wraps_inside_the_log_at_text_size_two() -> void:
+	_scale_was = float(GameState.text_size_scale)
+	GameState.text_size_scale = 2.0
+	var ui: Node = load("res://src/ui/autogrind/AutogrindUI.gd").new()
+	add_child_autofree(ui)
+	await get_tree().process_frame
+	ui._load_rules()
+	var longest := ""
+	for pid in ui.GRIND_PRESETS.keys():
+		if str(ui.GRIND_PRESETS[pid]["description"]).length() > str(ui.GRIND_PRESETS.get(longest, {}).get("description", "")).length():
+			longest = str(pid)
+	ui._apply_preset(longest)
+	await get_tree().process_frame
+	var console_log: RichTextLabel = ui._battle_log
+	assert_not_null(console_log, "CONTROL: the console rebuilt its log")
+	if console_log == null:
+		return
+	var line: String = str(ui._battle_log_lines.back()) if not ui._battle_log_lines.is_empty() else ""
+	assert_string_contains(line, "to undo the rules", "CONTROL: the logged line is the preset line with its undo")
+	var plain := RegEx.create_from_string("\\[/?[a-z]+[^\\]]*\\]").sub(line, "", true)
+	var px: int = console_log.get_theme_font_size("normal_font_size")
+	var one_line: float = console_log.get_theme_font("normal_font").get_string_size(plain, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	assert_gt(one_line, console_log.size.x, "CONTROL: at 2.0 the preset line is wider than the log, or this arm proves nothing")
+	assert_ne(console_log.autowrap_mode, TextServer.AUTOWRAP_OFF, "the console's log does not wrap")
+	var before: int = console_log.get_line_count()
+	ui._log_message(line)
+	await get_tree().process_frame
+	assert_gt(console_log.get_line_count() - before, 1, "the preset line ran past the log's edge instead of wrapping")
