@@ -31,8 +31,10 @@ func test_overworld_menu_input_checks_transition_in_progress() -> void:
 	var src := _read(GAME_LOOP)
 	var idx: int = src.find("if x_pressed:")
 	assert_gt(idx, -1, "x_pressed gate must exist (Esc/X menu open)")
-	# Look forward enough chars to clear the comment block.
-	var window: String = src.substr(idx, 1400)
+	## To the next gate, not a char count: a fixed 1400 had 116 chars of slack and red on a guard added inside the block.
+	var end: int = src.find("if event.is_action_pressed(\"party_chat\"):", idx)
+	assert_gt(end, idx, "the party_chat gate still follows the x_pressed block")
+	var window: String = src.substr(idx, end - idx)
 	assert_true(window.contains("if _transition_in_progress:"),
 		"x_pressed menu-open gate must check _transition_in_progress — otherwise menu can open during fade-in and pause the about-to-be-freed scene")
 
