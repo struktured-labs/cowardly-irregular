@@ -315,6 +315,10 @@ func _setup_npcs() -> void:
 	])
 	firewall.npc_id = "firewall_attendant_w5"
 	npcs.add_child(firewall)
+	# The overflow FIREWALL-ALPHA guards without reading: world5_termination_condition step 2
+	_add_quest_examine_point("world5_termination_condition", "quest_world5_termination_condition_stack_read", "Read the stack",
+		"Frame after frame, one parameter shifting, the same call spells it out: STATUS REPORT. GRAND MECHANISM. ALL FUNCTIONS NOMINAL. AWAITING ACKNOWLEDGEMENT. It has been asking for three years.",
+		"A stack overflow, still running. Every frame is the same call, retried.", Vector2(2 * TILE_SIZE, 15 * TILE_SIZE))
 	_place_masterites()
 
 

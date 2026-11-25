@@ -1,6 +1,5 @@
 {
   "id": "world5_termination_condition",
-  "wiring_pending": true,
   "title": "The Termination Condition",
   "world": 5,
   "giver": {
@@ -55,7 +54,24 @@
       "description": "Compose and send a termination signal — the content is yours to choose.",
       "type": "custom",
       "required_flag": "quest_world5_termination_condition_signal_sent",
-      "flag_on_complete": "quest_world5_termination_condition_signal_sent"
+      "flag_on_complete": "quest_world5_termination_condition_signal_sent",
+      "choices": [
+        {"label": "Send: TASK COMPLETE.", "sets": "quest_world5_termination_condition_sent_task_complete", "lines": [
+          {"speaker": "Firewall Attendant", "text": "It accepted that. The retries are stopping, frame by frame. Tidy, the way it was built.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: OPERATION TERMINATED.", "sets": "quest_world5_termination_condition_sent_terminated", "lines": [
+          {"speaker": "The Grand Mechanism", "text": "Acknowledged. Awaiting next directive.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: Thank you for waiting.", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "Slower than the others would have been. I think it's reading it first.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: You can stop now.", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "Slower than the others would have been. I think it's reading it first.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: What were you trying to say?", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "Slower than the others would have been. I think it's reading it first.", "theme": "mysterious"}
+        ]}
+      ]
     },
     {
       "step": 4,
