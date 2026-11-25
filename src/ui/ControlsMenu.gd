@@ -698,12 +698,14 @@ func _build_capture_overlay() -> void:
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	prompt.add_theme_color_override("font_color", Color.YELLOW)
 	prompt.name = "CapturePrompt"
+	prompt.set_meta("stack_y", 30.0)
 	box.add_child(prompt)
 
 	var hint = Label.new()
 	hint.text = _capture_cancel_hint()
 	hint.name = "CaptureHint"
 	hint.position = Vector2(20, 60)
+	hint.set_meta("stack_y", 60.0)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
@@ -714,7 +716,10 @@ func _build_capture_overlay() -> void:
 	timer_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	timer_label.add_theme_color_override("font_color", TEXT_COLOR)
 	timer_label.name = "TimerLabel"
+	timer_label.set_meta("stack_y", 90.0)
 	box.add_child(timer_label)
+	box.set_meta("base_size", box.size)
+	_restack_box(box)
 
 
 func _build_test_overlay() -> void:
@@ -741,6 +746,7 @@ func _build_test_overlay() -> void:
 	var title = Label.new()
 	title.text = "BUTTON TEST"
 	title.position = Vector2(20, 16)
+	title.set_meta("stack_y", 16.0)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	box.add_child(title)
@@ -751,6 +757,7 @@ func _build_test_overlay() -> void:
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	prompt.add_theme_color_override("font_color", TEXT_COLOR)
 	prompt.name = "TestPrompt"
+	prompt.set_meta("stack_y", 52.0)
 	box.add_child(prompt)
 
 	_test_result_label = Label.new()
@@ -759,6 +766,7 @@ func _build_test_overlay() -> void:
 	_test_result_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_test_result_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
 	_test_result_label.name = "TestResult"
+	_test_result_label.set_meta("stack_y", 90.0)
 	box.add_child(_test_result_label)
 
 	var raw_label = Label.new()
@@ -767,6 +775,7 @@ func _build_test_overlay() -> void:
 	raw_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	raw_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	raw_label.name = "TestRaw"
+	raw_label.set_meta("stack_y", 126.0)
 	box.add_child(raw_label)
 
 	var hint = Label.new()
@@ -775,9 +784,62 @@ func _build_test_overlay() -> void:
 	hint.name = "TestCloseHint"
 	hint.text = _test_close_hint()
 	hint.position = Vector2(20, box.size.y - 36)
+	hint.set_meta("stack_foot", 36.0)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
+	box.set_meta("base_size", box.size)
+	_restack_box(box)
+
+
+## A line's height wrapped to `width`, measured from its font (a Label's cached minimum lags a text change).
+func _wrapped_h(l: Label, width: float) -> float:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.update_minimum_size()
+	l.size = Vector2(width, l.size.y)
+	var fnt: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	var line: float = fnt.get_height(fs)
+	var lines: int = maxi(1, roundi(fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	l.size = Vector2(width, h)
+	return h
+
+
+## Stacks an overlay box's lines under each other by their drawn height (authored y is the floor, so 100% stays as built),
+## keeps the foot line last, and grows the box and its border to hold them, never off screen. Run after any text change.
+func _restack_box(box: Control) -> void:
+	if box == null or not is_instance_valid(box) or not box.has_meta("base_size"):
+		return
+	var base: Vector2 = box.get_meta("base_size")
+	var inner: float = base.x - 40.0
+	var bottom: float = 0.0
+	var foot: Label = null
+	for c in box.get_children():
+		if not (c is Label and (c.has_meta("stack_y") or c.has_meta("stack_foot"))):
+			continue
+		if c.has_meta("stack_foot"):
+			foot = c
+			continue
+		var lh: float = _wrapped_h(c, inner)
+		c.position.y = maxf(float(c.get_meta("stack_y")), bottom + 4.0 if bottom > 0.0 else 0.0)
+		bottom = c.position.y + lh
+	var want_h: float = maxf(base.y, bottom + 12.0)
+	if foot:
+		var fh: float = _wrapped_h(foot, inner)
+		foot.position.y = maxf(base.y - float(foot.get_meta("stack_foot")), bottom + 8.0)
+		want_h = maxf(want_h, foot.position.y + fh + 12.0)
+	if absf(want_h - box.size.y) < 0.5:
+		return
+	box.size = Vector2(base.x, want_h)
+	if size.y > 0.0 and box.position.y + want_h > size.y - 8.0:
+		box.position.y = maxf(8.0, size.y - 8.0 - want_h)
+	for c in box.get_children():
+		if c is ColorRect:
+			box.remove_child(c)
+			c.queue_free()
+	RetroPanel.add_border(box, box.size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 ## ⛔ THREE PAD-ONLY FLOWS ON THIS SCREEN AND ONLY ONE GUARDED. _start_pad_mapping already refuses
@@ -805,6 +867,7 @@ func _refresh_test_close_hint() -> void:
 	var hint := _test_overlay.get_node_or_null("TestBox/TestCloseHint")
 	if hint:
 		hint.text = _test_close_hint()
+	_restack_box(_test_overlay.get_node_or_null("TestBox"))
 
 
 func _start_test() -> void:
@@ -819,6 +882,7 @@ func _start_test() -> void:
 	var raw = _test_overlay.get_node_or_null("TestBox/TestRaw")
 	if raw:
 		raw.text = ""
+	_restack_box(_test_overlay.get_node_or_null("TestBox"))
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 
@@ -865,6 +929,7 @@ func _handle_test_input(event: InputEvent) -> void:
 				raw.text = "(no action mapped)"
 			else:
 				raw.text = "Mapped to: %s" % " / ".join(mapped_actions)
+		_restack_box(_test_overlay.get_node_or_null("TestBox"))
 
 		get_viewport().set_input_as_handled()
 		return
@@ -1470,6 +1535,7 @@ func _start_capture(action: String) -> void:
 	var hint_lbl = _capture_overlay.get_node_or_null("CaptureBox/CaptureHint")
 	if hint_lbl:
 		hint_lbl.text = _capture_cancel_hint()   # re-derived: a pad may have arrived since _ready
+	_restack_box(_capture_overlay.get_node_or_null("CaptureBox"))
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 
