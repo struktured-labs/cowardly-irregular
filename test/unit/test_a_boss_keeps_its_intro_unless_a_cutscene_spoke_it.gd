@@ -208,3 +208,24 @@ func test_the_render_smokes_wipe_boss_skips_its_cave_so_leaves_its_note() -> voi
 	var lead := src.substr(maxi(0, start - 300), 300)
 	assert_true(lead.contains('GameState.boss_intro_cutscene_for = "shadow_dragon"'),
 		"the smoke's wipe leg starts Umbraxis without the note his cave leaves; his intro panel holds the battle and no wipe comes")
+
+
+func test_the_castle_warden_opens_on_his_own_lines() -> void:
+	## battle 27612 inferred this: the F3 Warden fires from the stairs with no cutscene, so his row's lines must reach the fight.
+	var row := _row("castle_warden")
+	for key in ["intro", "low_hp", "defeat"]:
+		assert_false((row["dialogue"][key] as Array).is_empty(), "CONTROL: castle_warden authors a %s" % key)
+	var host := _spawn(["castle_warden"])
+	assert_eq(host.test_enemies.size(), 1, "CONTROL: the Castle Warden spawns")
+	for key in ["intro", "low_hp", "defeat"]:
+		assert_eq(_lines(host, key), row["dialogue"][key], "the Castle Warden fought without his %s" % key)
+
+
+func test_the_warden_door_leaves_no_cutscene_note() -> void:
+	var src := FileAccess.get_file_as_string("res://src/maps/dungeons/CastleHarmonia.gd")
+	var start := src.find("func _trigger_warden_battle()")
+	assert_gt(start, 0, "CONTROL: CastleHarmonia still opens the Warden fight in _trigger_warden_battle")
+	var end := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (end if end > 0 else src.length()) - start)
+	assert_true(body.contains("battle_triggered.emit([WARDEN_ID])"), "CONTROL: the body read is the Warden's door")
+	assert_false(body.contains("boss_intro_cutscene_for"), "the Warden door says a cutscene spoke his intro, but none plays there; his opening line would be dropped")
