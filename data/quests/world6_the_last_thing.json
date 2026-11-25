@@ -45,7 +45,7 @@
     },
     {
       "step": 2,
-      "description": "Remember what you bought that mattered — up to three things.",
+      "description": "Remember one thing you bought that mattered.",
       "type": "custom",
       "required_flag": "quest_world6_the_last_thing_items_recalled",
       "flag_on_complete": "quest_world6_the_last_thing_items_recalled",
