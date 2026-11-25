@@ -12,12 +12,15 @@ var _ag: Dictionary
 var _bm = BattleStateGuard.new()
 var _prof: Dictionary
 var _gl: Node
+var _pool: Array[String] = []
+const _GRIND_POOL: Array[String] = ["slime", "bat"]
 
 
 func before_each() -> void:
 	_ag = AutogrindState.snapshot()
 	_bm.snapshot()
 	_prof = ABProfiles.snapshot(AutobattleSystem)
+	_pool.assign(EncounterSystem.current_enemy_pool)
 	AutogrindSystem._test_disable_persistence = true
 	AutobattleSystem._test_disable_persistence = true
 
@@ -33,6 +36,7 @@ func after_each() -> void:
 	AutogrindState.restore(_ag)
 	_bm.restore()
 	ABProfiles.restore(AutobattleSystem, _prof)
+	EncounterSystem.current_enemy_pool.assign(_pool)
 	SoundManager.stop_music()
 
 
@@ -86,6 +90,9 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 	AutogrindSystem.interrupt_rules["corruption_limit"] = 4.5
 	AutogrindSystem.meta_corruption_level = 0.0
 	AutogrindSystem.battles_completed = 0
+	## The grind draws the pool it stands in: a dungeon test left Fire Cave's L14 pool, and 50 rounds could not kill one (.826).
+	EncounterSystem.set_enemy_pool(_GRIND_POOL)
+	assert_eq(EncounterSystem.current_enemy_pool, _GRIND_POOL, "CONTROL: the grind fights the pool this arm set, not one an earlier file left")
 	assert_true(AutogrindSystem.set_autogrind_rules([]), "CONTROL: an empty rule list is a valid one, so no rule of an earlier file can stop this grind")
 	_gl._start_autogrind({"ludicrous_speed": true, "auto_advance": false})
 	await wait_frames(4)
