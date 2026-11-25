@@ -500,23 +500,29 @@ func _try_replay_selected() -> void:
 	var entry := _current_entry()
 	if entry.is_empty() or not entry.get("unlocked", false):
 		return
+	if _cutscene_director == null:
+		var CutsceneDirectorClass = load("res://src/cutscene/CutsceneDirector.gd")
+		_cutscene_director = CutsceneDirectorClass.new()
+		add_child(_cutscene_director)
+	## play_cutscene returns silently when it cannot load or is refused; hiding first left the gallery invisible and deaf (_playing drops input).
+	if not _cutscene_director.can_play(entry.id):
+		push_warning("[GALLERY] '%s' cannot play; the gallery stays open" % entry.id)
+		return
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 	_playing = true
 	visible = false
 
-	if _cutscene_director == null:
-		var CutsceneDirectorClass = load("res://src/cutscene/CutsceneDirector.gd")
-		_cutscene_director = CutsceneDirectorClass.new()
-		add_child(_cutscene_director)
-
-	_cutscene_director.cutscene_finished.connect(
-		func(_id: String):
-			_playing = false
-			visible = true,
-		CONNECT_ONE_SHOT,
-	)
+	var on_finished := func(_id: String):
+		_playing = false
+		visible = true
+	_cutscene_director.cutscene_finished.connect(on_finished, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(entry.id, true)  # replay: the scene plays, the world does not change
+	if not _cutscene_director.is_active():
+		## Passed can_play and still did not start: undo, or the next replay's finish would run this one's handler.
+		if _cutscene_director.cutscene_finished.is_connected(on_finished):
+			_cutscene_director.cutscene_finished.disconnect(on_finished)
+		on_finished.call(str(entry.id))
 
 
 func _close() -> void:

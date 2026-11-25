@@ -290,21 +290,29 @@ func _play_selected() -> void:
 	if _selection < 0 or _selection >= _chats.size():
 		return
 	var chat = _chats[_selection]
-	_playing = true
 	var cutscene_id: String = chat.id
 
 	if not _cutscene_director:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
+	## play_cutscene returns silently when it cannot load or is refused; hiding first left the menu invisible and deaf (_playing drops input).
+	if not _cutscene_director.can_play(cutscene_id):
+		push_warning("[PARTY CHAT] '%s' cannot play; the menu stays open and the chat stays unviewed" % cutscene_id)
+		return
+	_playing = true
 	# Hide panel while cutscene plays so it doesn't overlay the scene
 	visible = false
-	_cutscene_director.cutscene_finished.connect(
-		func(_id: String):
-			PartyChatSystem.mark_viewed(cutscene_id)
-			_close(cutscene_id),
-		CONNECT_ONE_SHOT,
-	)
+	var on_finished := func(_id: String):
+		PartyChatSystem.mark_viewed(cutscene_id)
+		_close(cutscene_id)
+	_cutscene_director.cutscene_finished.connect(on_finished, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
+	if not _cutscene_director.is_active():
+		## Passed can_play and still did not start: a dangling handler would mark THIS chat viewed on the next one's finish.
+		if _cutscene_director.cutscene_finished.is_connected(on_finished):
+			_cutscene_director.cutscene_finished.disconnect(on_finished)
+		_playing = false
+		visible = true
 
 
 func _close(played_id: String) -> void:
