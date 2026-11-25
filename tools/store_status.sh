@@ -378,7 +378,7 @@ FAKE
     # T1) .701's case exactly: serving .701, origin answers short (top .674) then in full.
     _tl "short reply under a served .701 -> CURRENT" 0 2 'CURRENT: all 3 channels at v3.33.701' 'BEHIND' "" 701 short full
     # T2) Short on every reply: UNKNOWN (2), and it must not say BEHIND about a current store.
-    _tl "short x3 under a served .701 -> UNKNOWN"    2 3 'newest tag UNKNOWN' 'BEHIND' "" 701 short
+    _tl "short x6 under a served .701 -> UNKNOWN"    2 6 'newest tag UNKNOWN' 'BEHIND' "" 701 short
     # T3) THE TWIN: a store that is TRULY behind a truly newer tag must still read 1. An eager
     #     FLOOR would re-ask this and report "don't know" -- the one thing this tool exists to say.
     _tl "TRUE behind (.700 vs .701) stays BEHIND"    1 1 'BEHIND at v3.33.701-alpha' 'STALE' "" 700 full
@@ -389,7 +389,7 @@ FAKE
     _tl "  control: no KNOWN -> fooled by .674"      1 1 'BEHIND at v3.33.674-alpha' 'STALE' "" 673 short full
     # T5) Lexical vs numeric: as strings ".99" sorts above ".674". Serving .674 under a reply
     #     topping out at .99 is a contradiction and must be UNKNOWN, not CURRENT and not BEHIND.
-    _tl "top .99 under a served .674 -> UNKNOWN"     2 3 'newest tag UNKNOWN' 'BEHIND' "" 674 top99
+    _tl "top .99 under a served .674 -> UNKNOWN"     2 6 'newest tag UNKNOWN' 'BEHIND' "" 674 top99
 
     # 8) CONTROL -- the poll must be CONDITIONAL on verdict 1. A CURRENT first sample costs
     #    exactly ONE butler call; hoisting the poll above the `[ "$ec" -ne 1 ]` check would
