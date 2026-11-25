@@ -304,8 +304,33 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(archivist)
 
-	# Firewall Guard (blocks path, future content hint)
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), [
+	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
+	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
+	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
+	var _fw_gs = get_node_or_null("/root/GameState")
+	var _fw_lines: Array = []
+	if _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_original"):
+		_fw_lines = [
+			"The Mechanism sent me a thank you. In its own notation. I didn't know it could do that.",
+			"It took eleven cycles to compose. I watched every one.",
+			"The seventeen processes have moved out of the noise. They left a forwarding address. Here. With me.",
+			"Access to sector twelve is still restricted. I am telling you that more gently than before."
+		]
+	elif _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_terminated"):
+		_fw_lines = [
+			"Acknowledged. Awaiting next directive. That was the last thing it said.",
+			"It is still awaiting. I checked. It will be awaiting for a long time.",
+			"The seventeen processes moved out. It is very quiet where the stack was.",
+			"I will be here. Someone should be."
+		]
+	elif _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_task_complete"):
+		_fw_lines = [
+			"The stack is gone. Every frame, closed, in order. Nothing left over.",
+			"It was a very clean ending. I keep looking at where it was.",
+			"The seventeen processes moved out. They did not say where.",
+			"Access to sector twelve is restricted. That part, at least, did not change."
+		]
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _fw_lines if not _fw_lines.is_empty() else [
 		"HALT. Access to sector twelve is restricted.",
 		"Clearance level required: DELTA.",
 		"Your current clearance level: NONE.",
