@@ -1037,7 +1037,19 @@
     "learns_from": [
       "abilities"
     ],
-    "spectrum_ratio": 0.266875
+    "spectrum_ratio": 0.266875,
+    "dialogue": {
+      "intro": [
+        "*Something in the dark is breathing. It is the size of the dark.*",
+        "*The Cave Troll stands up. It keeps standing up for a while.*"
+      ],
+      "low_hp": [
+        "*The Cave Troll sits down heavily, as if the cave has finally become too much work.*"
+      ],
+      "defeat": [
+        "*The troll topples. The cave is suddenly, rudely, much larger.*"
+      ]
+    }
   },
   "shadow_knight": {
     "id": "shadow_knight",
@@ -1087,7 +1099,20 @@
     "learns_from": [
       "abilities"
     ],
-    "spectrum_ratio": 0.310606
+    "spectrum_ratio": 0.310606,
+    "dialogue": {
+      "intro": [
+        "Shadow Knight: I took this road once. Look where it left me.",
+        "*Its armour drinks the torchlight.*"
+      ],
+      "low_hp": [
+        "Shadow Knight: ...I remember this. Losing. It felt like this."
+      ],
+      "defeat": [
+        "Shadow Knight: Keep the light. I was only borrowing the dark.",
+        "*The armour empties. Nothing was inside it for a long time.*"
+      ]
+    }
   },
   "treasure_mimic": {
     "id": "treasure_mimic",
@@ -1143,6 +1168,13 @@
         "*You approach the treasure chest eagerly*",
         "*It has teeth.*",
         "Hero: Oh come ON."
+      ],
+      "low_hp": [
+        "*The mimic's lid sags. A gold coin rolls out, apologetically.*"
+      ],
+      "defeat": [
+        "*The mimic snaps shut for the last time. Inside: actual treasure. Probably.*",
+        "Hero: I am never opening a chest again."
       ]
     },
     "learns_from": [
@@ -1255,7 +1287,19 @@
     "learns_from": [
       "abilities"
     ],
-    "spectrum_ratio": 0.149667
+    "spectrum_ratio": 0.149667,
+    "dialogue": {
+      "intro": [
+        "*The ground shifts. The ground is a beetle.*",
+        "*Its carapace has three generations of sword marks. None went through.*"
+      ],
+      "low_hp": [
+        "*A crack runs down the beetle's shell. It sounds offended.*"
+      ],
+      "defeat": [
+        "*The beetle flips onto its back, legs waving, and gives up with enormous dignity.*"
+      ]
+    }
   },
   "cursed_armor": {
     "id": "cursed_armor",
@@ -1312,7 +1356,20 @@
       "abilities"
     ],
     "music_track": "battle_skeleton",
-    "spectrum_ratio": 0.266875
+    "spectrum_ratio": 0.266875,
+    "dialogue": {
+      "intro": [
+        "*An empty suit of armour clanks upright. Its visor turns to you, one hinge at a time.*",
+        "Cursed Armor: Who... wears me... now?"
+      ],
+      "low_hp": [
+        "*Pieces of plate fall away. The spirit inside holds on to what is left.*"
+      ],
+      "defeat": [
+        "Cursed Armor: Not you. Never... you.",
+        "*The armour collapses into a pile that will need a very large cupboard.*"
+      ]
+    }
   },
   "blood_wolf_alpha": {
     "id": "blood_wolf_alpha",
@@ -1367,6 +1424,12 @@
         "*A massive wolf blocks the path, red eyes gleaming*",
         "*The pack gathers behind it*",
         "*It snarls. This one is different.*"
+      ],
+      "low_hp": [
+        "*The alpha's howl cracks. Behind it, the pack hesitates.*"
+      ],
+      "defeat": [
+        "*The alpha lies down. The pack melts back into the trees without it.*"
       ]
     },
     "learns_from": [
@@ -1431,7 +1494,19 @@
     "learns_from": [
       "abilities"
     ],
-    "spectrum_ratio": 0.310606
+    "spectrum_ratio": 0.310606,
+    "dialogue": {
+      "intro": [
+        "*A golem of living crystal turns, and every face of it shows you a different you.*",
+        "*Some of those yous are losing.*"
+      ],
+      "low_hp": [
+        "*Cracks spider across the crystal. The reflections stop agreeing with each other.*"
+      ],
+      "defeat": [
+        "*The golem shatters into a thousand pieces, each still reflecting, none of them you.*"
+      ]
+    }
   },
   "rogue_automaton": {
     "id": "rogue_automaton",
@@ -1485,6 +1560,13 @@
         "*The machine's eyes flicker between red and green*",
         "*ENGAGING COMBAT PROTOCOL: KILL_ALL_HUMANS.EXE*",
         "Hero: That's... not reassuring."
+      ],
+      "low_hp": [
+        "*WARNING: STRUCTURAL INTEGRITY 24%. RECOMMEND: RETREAT.EXE (NOT FOUND)*"
+      ],
+      "defeat": [
+        "*SEGMENTATION FAULT (CORE DUMPED)*",
+        "*The automaton's eyes settle, at last, on green.*"
       ]
     },
     "learns_from": [
@@ -1549,7 +1631,19 @@
       "setup_hint": "Build AP and strike hard."
     },
     "music_track": "battle_mushroom",
-    "spectrum_ratio": 0.149667
+    "spectrum_ratio": 0.149667,
+    "dialogue": {
+      "intro": [
+        "*The tree is not a tree. The tree has been watching you since you entered the forest.*",
+        "*Spores drift down. Everything gets slightly more beautiful and slightly more wrong.*"
+      ],
+      "low_hp": [
+        "*The Elder Mushroom's cap droops. The colours in the air go back to being colours.*"
+      ],
+      "defeat": [
+        "*It sinks into the forest floor, already turning back into soil. It will be patient. It always is.*"
+      ]
+    }
   },
   "corrupted_guardian": {
     "id": "corrupted_guardian",

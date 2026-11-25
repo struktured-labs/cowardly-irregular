@@ -65,7 +65,8 @@ func test_settings_open_still_checks_lock() -> void:
 	# first member of the family. If a future cleanup removes it, the
 	# whole sweep regresses.
 	var src := _read(GAME_LOOP_PATH)
-	var block := _body_after(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
+	## The whole branch, not 800 chars: the window had 55 chars of slack and red on a guard added inside it.
+	var block := _branch_body(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu")
 	assert_ne(block, "", "Start → settings transition guard from tick 15 must still be in place")
 	assert_true(block.contains("_in_exploration_transition()"),
 		"Start → settings must use _in_exploration_transition(), which covers the lock and fade-in")

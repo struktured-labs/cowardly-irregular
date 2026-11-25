@@ -33,7 +33,12 @@ func _block_around(text: String, anchor: String, span: int) -> String:
 func test_start_handler_checks_input_lock_before_opening_settings() -> void:
 	var src := _read(GAME_LOOP_PATH)
 	# Anchor on the EXPLORATION branch of the Start-key dispatcher.
-	var block := _block_around(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
+	## To the menu-toggle read that follows the branch, not 800 chars (55 chars of slack; a guard added inside red it).
+	var anchor := "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu"
+	var at := src.find(anchor)
+	var end := src.find("var x_pressed := OverworldMenu.is_toggle_event(event)", at)
+	assert_gt(end, at, "the menu-toggle read still follows the Start branch")
+	var block := _block_around(src, anchor, end - at)
 	assert_ne(block, "", "EXPLORATION branch must have the transition-block guard")
 	assert_true(block.contains("_in_exploration_transition()"),
 		"Start→settings must use _in_exploration_transition() — is_locked() alone misses fade-in, when no lock is held yet")

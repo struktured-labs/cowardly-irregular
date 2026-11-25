@@ -707,9 +707,15 @@ func _tick_elite_watch() -> void:
 		if near:
 			_face_player()
 	if near and not _prompt_open:
-		_tell.text = ELITE_PROMPT_TEXT
+		var line := _elite_tell_text()
+		if _tell.text != line:
+			_tell.text = line
+			_tell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_tell.reset_size()
 		_tell.add_theme_color_override("font_color", Color(0.92, 0.62, 1.0))
-		_tell.position = Vector2(-58, -44)
+		## Centred on the elite, and grown upward so a second line never sinks onto the sprite.
+		var extra: float = float(_tell.get_line_count() - 1) * float(_tell.get_line_height())
+		_tell.position = Vector2(-_tell.size.x / 2.0, -44.0 - extra)
 		_tell.visible = true
 	elif not _prompt_open:
 		_tell.visible = false
@@ -718,6 +724,15 @@ func _tick_elite_watch() -> void:
 const ELITE_FIGHT := "Fight"
 const ELITE_LEAVE := "Leave it"
 const ELITE_PROMPT_TEXT := "It is watching you."
+
+
+## The elite's own name above its line, so Fight is a choice about something named; an unknown species keeps the line alone.
+func _elite_tell_text() -> String:
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if is_inside_tree() else null
+	var db = es.get("monster_database") if es != null else null
+	var row = db.get(monster_id, {}) if db is Dictionary else {}
+	var shown: String = str(row.get("name", "")) if row is Dictionary else ""
+	return ELITE_PROMPT_TEXT if shown == "" else "%s\n%s" % [shown, ELITE_PROMPT_TEXT]
 
 
 ## Reuses the game's own choice menu so the elite prompt is gamepad-navigable and looks like
