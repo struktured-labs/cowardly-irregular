@@ -114,6 +114,19 @@ func test_the_status_line_ends_above_the_grid() -> void:
 		assert_lte(g.position.y + g.size.y, _ed.size.y, "@%s: the grid view still ends on screen" % s)
 
 
+func test_the_title_and_the_status_line_do_not_meet() -> void:
+	## autogrind 27592: at 2.0 the title's tail sat on the status line's first characters (pre-existing).
+	for s in [2.0, 2.5]:
+		for n in ["Default", FROM_SAVE]:
+			await _open(s, n)
+			var t: Label = _ed._title_label
+			var st: Label = _ed._status_label
+			var tr := Rect2(t.position, Vector2(_text_w(t), t.get_line_height()))
+			var sr := Rect2(st.position, st.size)
+			assert_gt(t.position.y + t.get_line_height(), 28.0, "CONTROL @%s '%s': the title reaches below the old status top" % [s, n])
+			assert_false(tr.intersects(sr), "@%s '%s': the title %s and the status line %s do not meet" % [s, n, tr, sr])
+
+
 func test_at_1x_a_name_that_fits_moves_nothing() -> void:
 	await _open(1.0, "Default")
 	assert_eq(_ed._profile_pill.position, Vector2(_ed.size.x - 200.0, 4.0), "the pill starts where it did")

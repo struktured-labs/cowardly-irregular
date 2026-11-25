@@ -405,7 +405,11 @@ func _lay_out_top() -> void:
 		_title_label.update_minimum_size()
 		_title_label.reset_size()
 	if _status_label and is_instance_valid(_status_label):
-		_status_label.position.y = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
+		var below: float = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
+		## autogrind 27592: at 2.0 the title (28 px at y 8) reaches y ~46 and past x 130, over the status line's start.
+		if _title_label and is_instance_valid(_title_label) and _title_label.position.x + _title_label.get_minimum_size().x > _status_label.position.x:
+			below = maxf(below, _title_label.position.y + _title_label.get_line_height())
+		_status_label.position.y = below
 		## The grid starts where the status line ends (50 at 1.0, exactly its old GRID_BASE_POS.y), so a grown pill never
 		## pushes the status line into row 0; _update_scroll_offset reads _top_band_h too.
 		_top_band_h = maxf(GRID_BASE_POS.y, _status_label.position.y + _status_label.size.y)
