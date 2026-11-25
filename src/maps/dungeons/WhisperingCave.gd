@@ -729,6 +729,7 @@ func _trigger_boss_battle() -> void:
 	add_child(director)
 	director.cutscene_finished.connect(func(_id: String):
 		director.queue_free()
+		GameState.boss_intro_cutscene_for = "cave_rat_king"
 		battle_triggered.emit(["cave_rat_king"])
 	, CONNECT_ONE_SHOT)
 	director.play_cutscene("world1_rat_king_intro")

@@ -898,6 +898,7 @@ func _show_boss_intro() -> void:
 				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
 			else:
 				await director.play_cutscene(boss_cutscene_id)
+				GameState.boss_intro_cutscene_for = boss_id
 				return
 
 	# Fallback: console print + brief delay

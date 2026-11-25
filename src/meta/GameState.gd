@@ -264,6 +264,8 @@ var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true
 ##   "defeat_cutscene": String (optional, played by dungeon when scene re-instantiates)
 ## }
 var pending_boss_defeat: Dictionary = {}
+## The boss whose intro a dungeon cutscene just played; the spawner drops that row's in-battle intro once, then clears it. Not saved.
+var boss_intro_cutscene_for: String = ""
 
 var playtime_paused: bool = false
 
@@ -1356,6 +1358,7 @@ func reset_game_state() -> void:
 	party_leader_index = 0
 	_write_party_formation(0)
 	pending_boss_defeat = {}
+	boss_intro_cutscene_for = ""
 	# QuestSystem v1 + fast travel (2026-07-01): without these clears a
 	# second New Game starts with prior-run quests already complete and
 	# every crystal lit — same leak class as the 2026-04-30 fix above.

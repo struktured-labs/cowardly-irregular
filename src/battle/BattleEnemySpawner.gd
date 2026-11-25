@@ -622,6 +622,8 @@ func spawn_encounter_enemies() -> void:
 	var max_enemies = mini(valid_ids.size(), _scene.enemy_positions.size())
 	var enemy_names: Dictionary = {}
 	var encounter_has_boss: bool = false
+	var intro_spoken_by: String = GameState.boss_intro_cutscene_for
+	GameState.boss_intro_cutscene_for = ""
 
 	for i in range(max_enemies):
 		var enemy_id: String = str(valid_ids[i])
@@ -704,7 +706,9 @@ func spawn_encounter_enemies() -> void:
 				## in-battle intro ALSO skips BattleManager.start_battle at BattleScene:885. Copy, never
 				## erase in place: load_monsters_data returns the cached EncounterSystem.monster_database.
 				var dlg: Dictionary = (monster_data["dialogue"] as Dictionary).duplicate(true)
-				dlg.erase("intro")
+				## Only a door whose cutscene just spoke the intro drops it; a floor re-level or a pool miniboss has no cutscene.
+				if intro_spoken_by == base_id:
+					dlg.erase("intro")
 				_scene._boss_dialogue_data = dlg
 		elif is_field_elite and not encounter_has_boss and EncounterSystem.has_method("field_elite_lines"):
 			## No cutscene precedes an elite, so its intro stays; it speaks without becoming a boss (no banner, no boss music).
@@ -823,6 +827,10 @@ func spawn_miniboss() -> void:
 
 	# Store monster type ID for sprite selection
 	enemy.set_meta("monster_type", boss_type["id"])
+	## This door had no dialogue at all; it speaks its monsters.json row like the pool roll does (no cutscene precedes it).
+	var row: Dictionary = load_monsters_data().get(str(boss_type["id"]), {})
+	if row.get("dialogue", null) is Dictionary:
+		_scene._boss_dialogue_data = (row["dialogue"] as Dictionary).duplicate(true)
 	## BOTH, as the other three spawn paths do for any monster flagged boss or miniboss. These two ARE
 	## flagged miniboss in monsters.json, so the same Cave Troll was a boss through an encounter and an
 	## ordinary enemy through this door -- five is_boss consumers have no is_miniboss fallback.
