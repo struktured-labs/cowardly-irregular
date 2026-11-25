@@ -227,6 +227,14 @@ func _setup_npcs() -> void:
 		"Thank you. That's an odd kind of gift."
 	])
 	npcs.add_child(absence)
+
+	# The Shopkeeper, at the Exchange's corner: gives world6_the_last_thing
+	var shopkeeper = _create_npc("The Shopkeeper", "shopkeeper", Vector2(13 * TILE_SIZE, 2 * TILE_SIZE), [
+		"...",
+		"I'll be here. Being here is the part I've always been good at."
+	])
+	shopkeeper.npc_id = "last_shopkeeper_w6"
+	npcs.add_child(shopkeeper)
 	_place_masterites()
 
 
@@ -272,7 +280,7 @@ func _place_masterites() -> void:
 	npcs.add_child(arbiter)
 
 
-## No ambient walkers, by measurement: four shops, a door, four NPCs and three masterites fill every floor island,
+## No ambient walkers, by measurement: four shops, a door, five NPCs and three masterites fill every floor island,
 ## so no 5-cell line clears them. Vertex stays sparse by design; anyone added here would stand in someone's way.
 func _get_ambient_walkers() -> Array:
 	return []

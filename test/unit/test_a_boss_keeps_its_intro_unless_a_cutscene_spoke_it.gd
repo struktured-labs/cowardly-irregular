@@ -54,12 +54,46 @@ class ProbeCave:
 		pass
 
 
+class ProbeMasterite:
+	extends "res://src/exploration/MasteriteEncounter.gd"
+
+	func _ready() -> void:
+		pass
+
+
+class ProbeWhisper:
+	extends "res://src/maps/dungeons/WhisperingCave.gd"
+
+	func _ready() -> void:
+		pass
+
+
+class RatDirector:
+	extends Node
+	signal cutscene_finished(cutscene_id: String)
+	var refuse: bool = false
+	var active: bool = false
+
+	func play_cutscene(_cutscene_id: String) -> void:
+		if refuse:
+			return
+		active = true
+
+	func is_active() -> bool:
+		return active
+
+
 class ProbeDirector:
 	extends Node
+	signal cutscene_started(cutscene_id: String)
 	var played: Array = []
+	var refuse: bool = false
 
 	func play_cutscene(cutscene_id: String) -> void:
+		if refuse:
+			return
 		played.append(cutscene_id)
+		cutscene_started.emit(cutscene_id)
 
 
 class ProbeLoop:
@@ -146,10 +180,20 @@ func test_the_forced_miniboss_door_carries_its_row_dialogue() -> void:
 
 
 func test_a_dungeon_notes_the_boss_its_cutscene_introduced() -> void:
+	await _cave_door(false)
+
+
+func test_a_refused_boss_cutscene_leaves_no_note() -> void:
+	## The director refuses silently when another cutscene is playing or the file will not load; nothing spoke, so the intro stays.
+	await _cave_door(true)
+
+
+func _cave_door(refuse: bool) -> void:
 	assert_null(get_tree().root.get_node_or_null("GameLoop"), "FLOOR: a real GameLoop is up; this arm's stub would shadow it")
 	if get_tree().root.get_node_or_null("GameLoop") != null:
 		return
 	var director := ProbeDirector.new()
+	director.refuse = refuse
 	var loop := ProbeLoop.new()
 	loop.name = "GameLoop"
 	loop.director = director
@@ -160,8 +204,12 @@ func test_a_dungeon_notes_the_boss_its_cutscene_introduced() -> void:
 	cave.boss_cutscene_id = "world1_pyrroth_intro"
 	add_child_autofree(cave)
 	await cave._show_boss_intro()
-	assert_eq(director.played, ["world1_pyrroth_intro"], "CONTROL: the cave played its boss cutscene")
-	assert_eq(GameState.boss_intro_cutscene_for, "fire_dragon", "the cave played Pyrroth's cutscene and did not say so to the spawner")
+	if refuse:
+		assert_eq(director.played, [], "CONTROL: the director refused, so no cutscene played")
+		assert_eq(GameState.boss_intro_cutscene_for, "", "a refused cutscene told the spawner it spoke; Pyrroth would fight with no intro at all")
+	else:
+		assert_eq(director.played, ["world1_pyrroth_intro"], "CONTROL: the cave played its boss cutscene")
+		assert_eq(GameState.boss_intro_cutscene_for, "fire_dragon", "the cave played Pyrroth's cutscene and did not say so to the spawner")
 	get_tree().root.remove_child(loop)
 	loop.free()
 
@@ -229,3 +277,61 @@ func test_the_warden_door_leaves_no_cutscene_note() -> void:
 	var body := src.substr(start, (end if end > 0 else src.length()) - start)
 	assert_true(body.contains("battle_triggered.emit([WARDEN_ID])"), "CONTROL: the body read is the Warden's door")
 	assert_false(body.contains("boss_intro_cutscene_for"), "the Warden door says a cutscene spoke his intro, but none plays there; his opening line would be dropped")
+
+
+func test_a_masterite_notes_only_a_cutscene_that_played() -> void:
+	## main 27778: the Masterite door had the same change and only reading behind it.
+	for refuse in [false, true]:
+		assert_null(get_tree().root.get_node_or_null("GameLoop"), "FLOOR: a real GameLoop is up; this arm's stub would shadow it")
+		if get_tree().root.get_node_or_null("GameLoop") != null:
+			return
+		GameState.boss_intro_cutscene_for = ""
+		var director := ProbeDirector.new()
+		director.refuse = refuse
+		var loop := ProbeLoop.new()
+		loop.name = "GameLoop"
+		loop.director = director
+		loop.add_child(director)
+		get_tree().root.add_child(loop)
+		var door := ProbeMasterite.new()
+		door.monster_id = "masterite_tempo_medieval"
+		door.cutscene_id = "world1_tempo_encounter"
+		add_child_autofree(door)
+		await door._play_encounter_beat()
+		if refuse:
+			assert_eq(director.played, [], "CONTROL: the director refused, so no Masterite cutscene played")
+			assert_eq(GameState.boss_intro_cutscene_for, "", "a refused Masterite cutscene told the spawner it spoke; the Masterite would fight with no intro")
+		else:
+			assert_eq(director.played, ["world1_tempo_encounter"], "CONTROL: the Masterite door played its cutscene")
+			assert_eq(GameState.boss_intro_cutscene_for, "masterite_tempo_medieval", "the Masterite door played its cutscene and did not say so to the spawner")
+		get_tree().root.remove_child(loop)
+		loop.free()
+
+
+func _rat_king_door(refuse: bool) -> Dictionary:
+	var cave := ProbeWhisper.new()
+	add_child_autofree(cave)
+	var fights: Array = []
+	cave.battle_triggered.connect(func(ids) -> void: fights.append(ids))
+	var director := RatDirector.new()
+	director.refuse = refuse
+	cave.add_child(director)
+	cave._play_rat_king_intro(director)
+	return {"fights": fights, "director": director}
+
+
+func test_the_rat_king_fights_when_his_cutscene_cannot_start() -> void:
+	## Exploration is paused before the cutscene; one that never starts never finishes, and the cave used to wait forever.
+	var door := _rat_king_door(true)
+	assert_false(door["director"].is_active(), "CONTROL: the director refused the Rat King's cutscene")
+	assert_eq(door["fights"], [["cave_rat_king"]], "the Rat King's cutscene did not start and his fight never began: the player is frozen in the cave")
+	assert_eq(GameState.boss_intro_cutscene_for, "", "no cutscene spoke, yet the cave told the spawner one had; he would fight with no intro")
+
+
+func test_the_rat_king_fights_after_his_cutscene_finishes() -> void:
+	var door := _rat_king_door(false)
+	assert_true(door["director"].is_active(), "CONTROL: the director is playing the Rat King's cutscene")
+	assert_eq(door["fights"], [], "the Rat King's fight began under his own cutscene")
+	door["director"].cutscene_finished.emit("world1_rat_king_intro")
+	assert_eq(door["fights"], [["cave_rat_king"]], "the Rat King's cutscene finished and his fight never began")
+	assert_eq(GameState.boss_intro_cutscene_for, "cave_rat_king", "the Rat King's cutscene spoke his intro and the cave did not say so")

@@ -281,8 +281,16 @@ func _play_encounter_beat() -> void:
 	if not director.has_method("play_cutscene"):
 		push_warning("[MasteriteEncounter] cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene — going straight to the fight" % cutscene_id)
 		return
+	## The note means a cutscene SPOKE: play_cutscene returns silently when it refuses (one already playing) or cannot load.
+	var started := {"id": ""}
+	var on_start := func(id: String) -> void: started["id"] = id
+	if director.has_signal("cutscene_started"):
+		director.cutscene_started.connect(on_start)
 	await director.play_cutscene(cutscene_id)
-	GameState.boss_intro_cutscene_for = monster_id
+	if director.has_signal("cutscene_started") and director.cutscene_started.is_connected(on_start):
+		director.cutscene_started.disconnect(on_start)
+	if started["id"] == cutscene_id:
+		GameState.boss_intro_cutscene_for = monster_id
 
 
 func _fire_battle() -> void:

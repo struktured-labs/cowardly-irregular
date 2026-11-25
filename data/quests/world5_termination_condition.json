@@ -1,6 +1,5 @@
 {
   "id": "world5_termination_condition",
-  "wiring_pending": true,
   "title": "The Termination Condition",
   "world": 5,
   "giver": {
@@ -55,7 +54,24 @@
       "description": "Compose and send a termination signal — the content is yours to choose.",
       "type": "custom",
       "required_flag": "quest_world5_termination_condition_signal_sent",
-      "flag_on_complete": "quest_world5_termination_condition_signal_sent"
+      "flag_on_complete": "quest_world5_termination_condition_signal_sent",
+      "choices": [
+        {"label": "Send: TASK COMPLETE.", "sets": "quest_world5_termination_condition_sent_task_complete", "lines": [
+          {"speaker": "Firewall Attendant", "text": "It took that. The retries are stopping, frame by frame, the way it was built to. ...Tidy. I thought I would feel better.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: OPERATION TERMINATED.", "sets": "quest_world5_termination_condition_sent_terminated", "lines": [
+          {"speaker": "The Grand Mechanism", "text": "Acknowledged. Awaiting next directive.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: Thank you for waiting.", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "That one is taking longer. It isn't retrying. I think, for the first time in three years, it's reading.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: You can stop now.", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "That one is taking longer. It isn't retrying. I think, for the first time in three years, it's reading.", "theme": "mysterious"}
+        ]},
+        {"label": "Send: What did you want to tell us?", "sets": "quest_world5_termination_condition_sent_original", "lines": [
+          {"speaker": "Firewall Attendant", "text": "That one is taking longer. It isn't retrying. I think, for the first time in three years, it's reading.", "theme": "mysterious"}
+        ]}
+      ]
     },
     {
       "step": 4,

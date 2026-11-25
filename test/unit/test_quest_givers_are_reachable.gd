@@ -18,7 +18,6 @@ const AUTHORED_AHEAD := {
 	"race_condition_pair": "W5 — no village placement yet",
 	"traveler_w6": "W6 — no village placement yet",
 	"madame_orrery_w6": "W6 — no village placement yet",
-	"last_shopkeeper_w6": "W6 — no village placement yet",
 }
 
 ## One NAMED member per resolution path — a count control passes on a sweep that resolved nothing.
@@ -265,7 +264,6 @@ func test_a_placed_giver_implies_every_talk_target_is_placed() -> void:
 const DEAD_END_CUSTOM_STEPS := {
 	"world4_form_exception_alpha": "step 3 (submitted) = the legacy message tube in rivet_row_tunnels, which exists as NO SCRIPT under src/maps. Step 2 IS buildable — madame_orrery_w4 counter-signs and is placed in RivetRowVillage — but building step 2 alone moves the stall from obj 1 to obj 2. The map is the blocker, not the emitter.",
 	"world4_the_watercolors": "step 3 (archive_reached) = entering the LEGACY ARCHIVE, same absent rivet_row_tunnels. Tunnel ACCESS is itself gated on redundant_blueprint (Chain B W3) or cogsworth_calibration_key (Orrery W3), enforced at the door per the quest's notes. Step 2 is dorrit_w4 rumor dialogue and buildable; alone it only moves the stall.",
-	"world5_termination_condition": "step 3 (signal_sent) = an authored THREE-WAY content choice, one branch being a player-authored message. No choice mechanism a QuestExaminePoint can drive. Step 2 IS buildable as an examine point — wiring it ALONE moves the stall from obj 1 to obj 2, so do not.",
 }
 
 

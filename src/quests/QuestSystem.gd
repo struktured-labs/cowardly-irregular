@@ -349,6 +349,18 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	],
 }
 
+## Choice emitters: the current custom objective authors `choices` (label, optional requires_item, lines, optional sets); the player
+## picks one at this NPC, its lines play, its `sets` variant flag and the step's flag are set. Cancel leaves the step open.
+const CHOICE_EMITTERS: Dictionary = {
+	"last_shopkeeper_w6": [
+		{"quest": "world6_the_last_thing", "flag": "quest_world6_the_last_thing_items_recalled"},
+	],
+	"firewall_attendant_w5": [
+		{"quest": "world5_termination_condition", "flag": "quest_world5_termination_condition_signal_sent"},
+	],
+}
+
+
 ## Talk-tally emitters: a custom objective satisfied by talking to ALL NPCs in
 ## a set (any order) — the conversational sibling of the chicken 7-catch.
 ## Per-NPC progress persists as story flags "talked_<group_flag>_<npc_id>".
@@ -528,7 +540,8 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 		await _play_lines(npc, dlg.get("locked", []))
 		return
 
-	# Active: is the current objective a talk targeting this giver?
+	# Active: a choice this NPC answers comes first, so the talk that follows it can complete the next step.
+	await _run_choice_emitter(npc_id, npc)
 	var completed_qid := notify_talk(npc_id)
 	if completed_qid == qid:
 		await _play_lines(npc, dlg.get("ready_to_turn_in", []))
@@ -588,6 +601,44 @@ func _play_lines(npc: Node, lines: Array) -> void:
 ## Accept/Decline via the shared DialogueChoiceMenu (same UI the LLM
 ## conversations use). Cancel (B) counts as decline.
 func _prompt_accept(npc: Node, q: Dictionary) -> bool:
+	var accept_label: String = "Accept \"%s\"" % q.get("title", "the quest")
+	return await _present_choices(npc, "QuestOfferChoice", [accept_label, "Not now"]) == accept_label
+
+
+## Offers the current objective's authored choices; true when one was taken and its flag set.
+func _run_choice_emitter(npc_id: String, npc: Node) -> bool:
+	for emitter in CHOICE_EMITTERS.get(npc_id, []):
+		var qid: String = emitter["quest"]
+		var flag: String = emitter["flag"]
+		if get_state(qid) != "active" or _flag(flag):
+			continue
+		var obj: Dictionary = _objective(get_quest(qid), get_objective_index(qid))
+		if obj.get("type", "") != "custom" or obj.get("required_flag", "") != flag:
+			continue
+		var offered: Array = []
+		var labels: Array = []
+		for c in obj.get("choices", []):
+			var need: String = str(c.get("requires_item", ""))
+			if need == "" or _holds_item(need):
+				offered.append(c)
+				labels.append(str(c.get("label", "")))
+		if offered.is_empty():
+			push_warning("[QuestSystem] %s: no authored choice is open to this party, so %s cannot be set" % [qid, flag])
+			continue
+		var i: int = labels.find(await _present_choices(npc, "QuestChoice", labels))
+		if i < 0:
+			return false
+		await _play_lines(npc, offered[i].get("lines", []))
+		var variant: String = str(offered[i].get("sets", ""))
+		if variant != "":
+			GameState.set_story_flag(variant)
+		GameState.set_story_flag(flag)
+		notify_flag(flag)
+		return true
+	return false
+
+
+func _present_choices(npc: Node, menu_name: String, labels: Array) -> String:
 	var ui_layer := CanvasLayer.new()
 	ui_layer.layer = 60
 	var root_attach: Node = get_tree().current_scene
@@ -595,15 +646,22 @@ func _prompt_accept(npc: Node, q: Dictionary) -> bool:
 		root_attach = npc
 	root_attach.add_child(ui_layer)
 	var menu := DialogueChoiceMenu.new()
-	menu.name = "QuestOfferChoice"
+	menu.name = menu_name
 	ui_layer.add_child(menu)
-	var accept_label: String = "Accept \"%s\"" % q.get("title", "the quest")
-	var chosen: String = await menu.present([accept_label, "Not now"])
+	var chosen: String = await menu.present(labels)
 	if is_instance_valid(menu):
 		menu.queue_free()
 	if is_instance_valid(ui_layer):
 		ui_layer.queue_free()
-	return chosen == accept_label
+	return chosen
+
+
+func _holds_item(iid: String) -> bool:
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop == null or not ("party" in game_loop) or game_loop.party.is_empty():
+		return false
+	var member = game_loop.party[0]
+	return "inventory" in member and int(member.inventory.get(iid, 0)) > 0
 
 
 ## ── Internals ──
