@@ -4,7 +4,8 @@ class_name MenuChrome
 ## Header and footer placement for menus whose fonts follow TextScale.
 ## A Label will not stay in a 24px row: its box grows to the font's line height,
 ## so a fixed y puts the title under the next panel and the footer off the screen.
-## The words are unchanged. A footer that does not fit shrinks, then wraps.
+## The words are unchanged, and so is their size: a title, counter or footer that does not fit WRAPS at its own px
+## (text grows, wraps or scrolls; it never shrinks). The old 65%-of-authored floor is gone.
 
 
 ## Lock the label to the size Godot will actually draw.
@@ -63,7 +64,7 @@ static func place_counter(counter: Label, width: float, top: float = 16.0, margi
 	return top + sz.y
 
 
-## Pin the footer inside `bounds`. The label's current font size is the start; it may shrink or wrap.
+## Pin the footer inside `bounds` at the label's own font size; it wraps, never shrinks.
 static func place_footer(label: Label, bounds: Vector2, margin: float = 16.0) -> Rect2:
 	var start_px := _authored_px(label)
 	if not label.has_meta(&"footer_font"):
@@ -82,27 +83,21 @@ static func place_footer(label: Label, bounds: Vector2, margin: float = 16.0) ->
 	return Rect2(label.position, label.size)
 
 
-## Keep `slot` (so the panels above do not move) and fit new words into it.
+## Fit new words into `slot` at the footer's own px (wrapping); if they need more height the footer grows UP from
+## the slot's bottom instead of shrinking or clipping.
 static func fit_footer_text(label: Label, slot: Rect2) -> void:
-	var start_px := int(label.get_meta(&"footer_font", label.get_theme_font_size(&"font_size")))
-	var floor_px := maxi(8, int(round(float(start_px) * 0.65)))
-	var px := start_px
-	var height := slot.size.y
-	while px >= floor_px:
-		label.add_theme_font_size_override(&"font_size", px)
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.custom_minimum_size = Vector2.ZERO
-		label.size = Vector2(slot.size.x, 4.0)
-		height = label.get_minimum_size().y
-		if height <= slot.size.y + 1.0 or px == floor_px:
-			break
-		px -= 1
+	var px := int(label.get_meta(&"footer_font", label.get_theme_font_size(&"font_size")))
+	label.add_theme_font_size_override(&"font_size", px)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2.ZERO
+	label.update_minimum_size()
+	label.size = Vector2(slot.size.x, 4.0)
+	var height := maxf(slot.size.y, label.get_minimum_size().y)
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.clip_text = height > slot.size.y + 1.0
-	label.custom_minimum_size = slot.size
-	label.size = slot.size
-	label.position = slot.position
-
+	label.clip_text = false
+	label.custom_minimum_size = Vector2(slot.size.x, height)
+	label.size = Vector2(slot.size.x, height)
+	label.position = Vector2(slot.position.x, slot.end.y - height)  # a taller footer grows UP from the slot's bottom
 
 static func _authored_px(label: Label) -> int:
 	if not label.has_meta(&"chrome_font"):
@@ -111,24 +106,19 @@ static func _authored_px(label: Label) -> int:
 
 
 static func _fit_width(label: Label, max_w: float) -> Vector2:
-	var start := _authored_px(label)
-	var floor_px := maxi(8, int(round(float(start) * 0.65)))
-	var px := start
-	while px > floor_px:
-		label.add_theme_font_size_override(&"font_size", px)
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.clip_text = false
-		label.custom_minimum_size = Vector2.ZERO
-		var sz := label.get_minimum_size()
-		if sz.x <= max_w + 0.5 and sz.y >= 1.0:
-			label.custom_minimum_size = sz
-			label.size = sz
-			return sz
-		px -= 1
-	label.add_theme_font_size_override(&"font_size", floor_px)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var px := _authored_px(label)
+	label.add_theme_font_size_override(&"font_size", px)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.clip_text = false
 	label.custom_minimum_size = Vector2.ZERO
+	label.update_minimum_size()
+	var sz := label.get_minimum_size()
+	if sz.x <= max_w + 0.5 and sz.y >= 1.0:
+		label.custom_minimum_size = sz
+		label.size = sz
+		return sz
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.update_minimum_size()
 	label.size = Vector2(max_w, 4.0)
 	var wrapped := Vector2(max_w, maxf(label.get_minimum_size().y, label.get_line_height()))
 	if wrapped.y < 1.0:
@@ -137,28 +127,18 @@ static func _fit_width(label: Label, max_w: float) -> Vector2:
 	label.size = wrapped
 	return wrapped
 
-
 static func _footer_height(label: Label, width: float, start_px: int, max_h: float) -> float:
-	var floor_px := maxi(8, int(round(float(start_px) * 0.65)))
-	var px := start_px
-	var height := 0.0
-	while px >= floor_px:
-		label.add_theme_font_size_override(&"font_size", px)
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.custom_minimum_size = Vector2.ZERO
-		label.size = Vector2(width, 4.0)
-		height = label.get_minimum_size().y
-		var line := maxf(1.0, label.get_line_height())
-		var fits := height <= line * 2.25 + 1.0 and height <= max_h + 1.0
-		if fits or px == floor_px:
-			break
-		px -= 1
+	label.add_theme_font_size_override(&"font_size", start_px)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2.ZERO
+	label.update_minimum_size()
+	label.size = Vector2(width, 4.0)
+	var height := label.get_minimum_size().y
 	if height < 1.0:
 		height = _fallback_size(label, width).y
 	if height > max_h:
 		height = max_h
 	return height
-
 
 static func _fallback_size(label: Label, width: float) -> Vector2:
 	var font: Font = label.get_theme_font(&"font")
