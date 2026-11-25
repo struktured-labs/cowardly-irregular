@@ -144,17 +144,10 @@ func test_a_longer_binding_regrows_its_row() -> void:
 		return
 	var before_h: float = float(m._row_hgt[first])
 	var next_top: float = float(m._row_top[first + 1])
-	l.text = "Left Shoulder / Left Bumper / L1 (held, then released)"
-	var fnt: Font = l.get_theme_font("font")
-	var fs: int = l.get_theme_font_size("font_size")
-	gut.p("REGROW probe: meta=%s col_w=%s fs=%d line=%.1f multi=%s fit=%.1f row_h_of=%.1f same_parent=%s" % [
-		l.has_meta("col_w"), l.get_meta("col_w", -1), fs, fnt.get_height(fs),
-		fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, float(l.get_meta("col_w", 160.0)), fs, -1,
-			TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE),
-		m._fit_column_label(l, float(l.get_meta("col_w", 160.0))), m._row_h_of(m._highlight_refs[first]),
-		l.get_parent() == m._highlight_refs[first]])
+	## Long enough to need a third line at 1.0 (two 12 px lines fit the authored 32 px row exactly, which the first version used).
+	l.text = "Left Shoulder / Left Bumper / L1 (Left Trigger Button), held then released, then pressed again"
+	assert_gt(m._fit_column_label(l, float(l.get_meta("col_w", 0.0))) + 8.0, before_h, "CONTROL: this text needs more than the authored row")
 	m._relayout_rows()
-	gut.p("REGROW after relayout: row_hgt=%s top_next=%s" % [m._row_hgt[first], m._row_top[first + 1]])
 	assert_gt(float(m._row_hgt[first]), before_h, "the row grows to hold the longer binding")
 	assert_almost_eq(float(m._row_top[first + 1]), next_top + float(m._row_hgt[first]) - before_h, 0.5, "and the next row moves down by exactly that")
 	await get_tree().process_frame
