@@ -1,6 +1,5 @@
 {
   "id": "world6_the_last_thing",
-  "wiring_pending": true,
   "title": "The Last Thing",
   "world": 6,
   "giver": {
@@ -49,7 +48,15 @@
       "description": "Remember what you bought that mattered — up to three things.",
       "type": "custom",
       "required_flag": "quest_world6_the_last_thing_items_recalled",
-      "flag_on_complete": "quest_world6_the_last_thing_items_recalled"
+      "flag_on_complete": "quest_world6_the_last_thing_items_recalled",
+      "choices": [
+        {"label": "The sword that came back", "requires_item": "returned_sword", "lines": [
+          {"speaker": "Shopkeeper", "text": "That sword. Yes. That was me, then. Every version of me. The sword that came back was mine.", "theme": "mysterious"}
+        ]},
+        {"label": "Nothing", "lines": [
+          {"speaker": "Shopkeeper", "text": "Nothing. That's fine too. Some people pass through without taking anything. Sometimes that's the right choice.", "theme": "mysterious"}
+        ]}
+      ]
     },
     {
       "step": 3,
