@@ -61,6 +61,28 @@ class ProbeMasterite:
 		pass
 
 
+class ProbeWhisper:
+	extends "res://src/maps/dungeons/WhisperingCave.gd"
+
+	func _ready() -> void:
+		pass
+
+
+class RatDirector:
+	extends Node
+	signal cutscene_finished(cutscene_id: String)
+	var refuse: bool = false
+	var active: bool = false
+
+	func play_cutscene(_cutscene_id: String) -> void:
+		if refuse:
+			return
+		active = true
+
+	func is_active() -> bool:
+		return active
+
+
 class ProbeDirector:
 	extends Node
 	signal cutscene_started(cutscene_id: String)
@@ -284,3 +306,32 @@ func test_a_masterite_notes_only_a_cutscene_that_played() -> void:
 			assert_eq(GameState.boss_intro_cutscene_for, "masterite_tempo_medieval", "the Masterite door played its cutscene and did not say so to the spawner")
 		get_tree().root.remove_child(loop)
 		loop.free()
+
+
+func _rat_king_door(refuse: bool) -> Dictionary:
+	var cave := ProbeWhisper.new()
+	add_child_autofree(cave)
+	var fights: Array = []
+	cave.battle_triggered.connect(func(ids) -> void: fights.append(ids))
+	var director := RatDirector.new()
+	director.refuse = refuse
+	cave.add_child(director)
+	cave._play_rat_king_intro(director)
+	return {"fights": fights, "director": director}
+
+
+func test_the_rat_king_fights_when_his_cutscene_cannot_start() -> void:
+	## Exploration is paused before the cutscene; one that never starts never finishes, and the cave used to wait forever.
+	var door := _rat_king_door(true)
+	assert_false(door["director"].is_active(), "CONTROL: the director refused the Rat King's cutscene")
+	assert_eq(door["fights"], [["cave_rat_king"]], "the Rat King's cutscene did not start and his fight never began: the player is frozen in the cave")
+	assert_eq(GameState.boss_intro_cutscene_for, "", "no cutscene spoke, yet the cave told the spawner one had; he would fight with no intro")
+
+
+func test_the_rat_king_fights_after_his_cutscene_finishes() -> void:
+	var door := _rat_king_door(false)
+	assert_true(door["director"].is_active(), "CONTROL: the director is playing the Rat King's cutscene")
+	assert_eq(door["fights"], [], "the Rat King's fight began under his own cutscene")
+	door["director"].cutscene_finished.emit("world1_rat_king_intro")
+	assert_eq(door["fights"], [["cave_rat_king"]], "the Rat King's cutscene finished and his fight never began")
+	assert_eq(GameState.boss_intro_cutscene_for, "cave_rat_king", "the Rat King's cutscene spoke his intro and the cave did not say so")
