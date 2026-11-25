@@ -24,9 +24,9 @@ const ShotGuard = preload("res://tools/shot_guard.gd")
 
 const ALERT_RADIUS := 150.0   ## RoamingMonster.ALERT_RADIUS — the tell's trigger distance
 const VOID_BYTES := 20000
-## Shifts the view down so the elite, which the ground plane's projection pushes well below
-## the player, lands in frame. Measured against the rendered result, not derived.
-const CAM_OFFSET := Vector2(20.0, 150.0)
+## Shifts the view so the elite and its tell land in frame. Measured against the rendered result, not derived.
+## 150 framed an elite placed from the player's BODY; it is now placed from the drawn player, 140.6 px higher (6d0e68475 clipped the tell 19 px off the top at 150).
+const CAM_OFFSET := Vector2(20.0, 150.0 - 140.6)
 ## Camera magnification. 1.0 reproduces every shot taken before 2026-09-10 exactly, so this
 ## argument cannot silently change an existing capture — it has to be asked for.
 ##
@@ -154,7 +154,10 @@ func _init() -> void:
 		print("[SHOT] zoom %s is not positive — falling back to %s" % [str(zoom_f), str(DEFAULT_ZOOM)])
 		zoom_f = DEFAULT_ZOOM
 	print("[SHOT] camera zoom: %sx" % str(zoom_f))
-	var target: Vector2 = ow.player.global_position + off
+	# Mode 7 draws the player 140.6 px above their body and the elite measures from the DRAWN player, so place it from there (from the body it sat at 150.5 > 150).
+	var seen: Vector2 = elite._player_seen_pos() if elite.has_method("_player_seen_pos") and elite.get("_player_ref") != null else ow.player.global_position
+	var target: Vector2 = seen + off
+	print("[SHOT] seen offset %s (Mode 7 draws the player there); elite will sit %.1f from the drawn player" % [str(seen - ow.player.global_position), off.length()])
 	# Screen position is what matters and the overworld does not map world->screen linearly
 	# (the ground is drawn on a skewed plane), so report both and let the offset be tuned
 	# against the measurement rather than against a guess.
@@ -188,7 +191,7 @@ func _init() -> void:
 		print("[SHOT] ⚠ no MoodTell node — capturing anyway, but the prompt will be absent")
 	elif not tell.visible:
 		print("[SHOT] ⚠ MoodTell is HIDDEN (dist=%.1f, ALERT_RADIUS=%.1f) — the shot will not show the prompt"
-			% [elite.global_position.distance_to(ow.player.global_position), ALERT_RADIUS])
+			% [elite.global_position.distance_to(seen), ALERT_RADIUS])
 	else:
 		# `tell.visible` is a NODE PROPERTY. It says the distance gate fired, NOT that the
 		# label lands inside the captured frame — and the old line printed "tell visible"
@@ -196,8 +199,9 @@ func _init() -> void:
 		# image with no tell in it at all. The reader takes that line as "the prompt is in
 		# the shot", which is the one thing it never measured.
 		print("[SHOT] tell node visible (distance gate fired): \"%s\"" % str(tell.text))
-	_report_framing("tell", tell, root)
-	_report_framing("elite", elite, root)
+	if not ShotGuard.frame_report("tell", tell, root) or not ShotGuard.frame_report("elite", elite, root):
+		_die("a subject of the shot is not drawn, so the picture cannot show it")
+		return
 
 	var img := root.get_texture().get_image()
 	var path := "res://tmp/marketing/field_elite_%s.png" % world
@@ -254,7 +258,9 @@ func _init() -> void:
 	if row == null:
 		_die("no Label containing \"%s\" under the prompt layer — the menu opened but did not render its choices. Labels present: %s" % [ELITE_FIGHT_TEXT, str(_label_texts(menu_layer, []))])
 		return
-	_report_framing("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root)
+	if not ShotGuard.frame_report("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root):
+		_die("the choice row is not drawn, so the picture cannot show it")
+		return
 
 	var img2 := root.get_texture().get_image()
 	var path2 := "res://tmp/marketing/field_elite_prompt_%s.png" % world
@@ -312,23 +318,6 @@ func _label_texts(n: Node, acc: Array) -> Array:
 			acc.append(str((c as Label).text))
 		_label_texts(c, acc)
 	return acc
-
-
-## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
-## rect" is the property that matters and node.visible is not it. Reports rather than dies:
-## a badly framed shot is still worth writing to disk so a human can look at it — but the log
-## must not call it good.
-func _report_framing(label: String, node: Node, tree_root: Window) -> void:
-	if node == null or not (node is CanvasItem):
-		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
-		return
-	var ci := node as CanvasItem
-	var pos: Vector2 = ci.get_global_transform_with_canvas().origin
-	var size: Vector2 = Vector2(tree_root.get_texture().get_width(), tree_root.get_texture().get_height())
-	var inside := pos.x >= 0.0 and pos.y >= 0.0 and pos.x <= size.x and pos.y <= size.y
-	print("[SHOT] %s framing: screen=(%.0f, %.0f) frame=%dx%d -> %s" % [
-		label, pos.x, pos.y, int(size.x), int(size.y),
-		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
 
 
 func _die(msg: String) -> void:

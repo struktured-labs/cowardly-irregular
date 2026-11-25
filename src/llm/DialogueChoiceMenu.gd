@@ -78,9 +78,7 @@ const PADDING_SIDE:   int   = 16
 const PADDING_BOTTOM: int   = 12
 const ROW_FONT_SIZE:  int   = 18
 const HINT_FONT_SIZE: int   = 13
-## The hint names the player's own keys, so it shrinks rather than trims when even a widened panel
-## cannot hold it: a cut-off control reminder is worse than a small one.
-const HINT_FONT_MIN:  int   = 10
+## The hint names the player's own keys, so it wraps rather than trims or shrinks when even a widened panel cannot hold it.
 ## The hint row and the gaps around it at 100%, kept so the derived panel is identical there.
 const HINT_ROW_H:      int  = 24
 const HINT_GAP_TOP:    int  = 8
@@ -269,7 +267,11 @@ func _build_ui() -> void:
 
 	# Height derived from where the hint actually ends, not from a magic tail.
 	var hint_y: int = PADDING_TOP + _choices.size() * row_h() + HINT_GAP_TOP
-	var panel_h: int = hint_y + hint_h() + HINT_GAP_BOTTOM
+	_hint_label = Label.new()
+	_hint_label.text = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
+	_hint_label.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT_SIZE))
+	var hint_box_h: int = _hint_box_h(_hint_label.text)
+	var panel_h: int = hint_y + hint_box_h + HINT_GAP_BOTTOM
 
 	_panel = RetroPanel.create_panel(
 		_panel_w,
@@ -327,29 +329,30 @@ func _build_ui() -> void:
 	_panel.add_child(div)
 
 	# Hint row.
-	_hint_label = Label.new()
-	_hint_label.text = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
 	_hint_label.position = Vector2(PADDING_SIDE, float(hint_y))
-	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, hint_h())
-	_hint_label.add_theme_font_size_override("font_size", _fit_hint_px(_hint_label.text))
 	_hint_label.add_theme_color_override("font_color", COL_HINT)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
 	_hint_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_panel.add_child(_hint_label)
+	# Wrap after joining the tree, then drop the stale one-line minimum before sizing (adhoc 27540/27483).
+	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_hint_label.update_minimum_size()
+	var hint_size := Vector2(_panel_w - PADDING_SIDE * 2, hint_box_h)
+	_hint_label.size = hint_size
+	_hint_label.set_deferred("size", hint_size)
 
 
 # ── Input handling ────────────────────────────────────────────────────────────
 
-## The hint has NO trimming, so a size that does not fit draws straight off the panel. The panel
-## widens first; this only engages when the viewport itself cannot hold the grown hint.
-func _fit_hint_px(text: String) -> int:
+## The hint row's height: one shipped row, plus a line for each extra line the hint wraps to in the panel's room.
+func _hint_box_h(text: String) -> int:
 	var px: int = TextScale.scaled(HINT_FONT_SIZE)
 	var room: float = float(_panel_w - PADDING_SIDE * 2)
 	var font: Font = UiFont.of(_hint_label)
-	while px > HINT_FONT_MIN and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
-		px -= 1
-	return px
+	var line_h: float = font.get_height(px)
+	var n: int = maxi(1, int(round(font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, room, px).y / line_h)))
+	return hint_h() + (int(ceil(line_h)) + get_theme_constant(&"line_spacing", &"Label")) * (n - 1)
 
 
 func _input(event: InputEvent) -> void:
