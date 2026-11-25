@@ -2316,5 +2316,12 @@
     "defeat_lines": [
       "Optimization Itself: 'Four processes, terminated. One remains. You see? It was always going to be one.'"
     ]
+  },
+  "meta_knight": {
+    "display_name": "Meta Knight",
+    "_comment": "Wipe line (cowir-story 2026-11-25): it is boss-flagged in the steampunk pool and Castle Harmonia F3, so it fights as a boss; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "Meta Knight: Game over. Not mine. I don't get one. I just go back in the table."
+    ]
   }
 }

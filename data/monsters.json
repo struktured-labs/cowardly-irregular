@@ -1821,7 +1821,20 @@
     "counter_abilities": [
       "counter"
     ],
-    "spectrum_ratio": 3.185714
+    "spectrum_ratio": 3.185714,
+    "dialogue": {
+      "intro": [
+        "Meta Knight: A random encounter. Me. Do you know how many rolls it took to land on me?",
+        "Meta Knight: Neither do I. I'm not allowed to see the table."
+      ],
+      "low_hp": [
+        "Meta Knight: Below a quarter. I can see my own HP bar, you know. It is not a comfort."
+      ],
+      "defeat": [
+        "Meta Knight: Fine. Take the EXP. I'll be back in the pool before you've saved.",
+        "*The knight bows to somewhere just past the screen, and is gone.*"
+      ]
+    }
   },
   "permadeath_reaper": {
     "id": "permadeath_reaper",
