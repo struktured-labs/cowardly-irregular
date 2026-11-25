@@ -3817,38 +3817,49 @@ func _build_share_picker(files: Array) -> void:
 	# Right-click anywhere cancels the picker (mouse parity with the rest of the editor)
 	MenuMouseHelper.add_right_click_cancel(backdrop, func() -> void: _close_share_picker())
 
-	# Panel
-	var panel_w := 460.0
-	var panel_h := minf(80.0 + files.size() * 26.0, size.y - 80.0)
+	# Panel. Every measure scales with Text Size (100% is the authored 460 x 34/26/46); rows past its room scroll.
+	var k: float = float(TextScale.scaled(100)) / 100.0
+	var panel_w := minf(460.0 * k, size.x - 40.0)
+	var head: float = 34.0 * k
+	var foot: float = 46.0 * k
+	var step: float = 26.0 * k
+	var panel_h := minf(head + foot + files.size() * step, size.y - 80.0)
+	var visible: int = maxi(1, floori((panel_h - head - foot) / step))
+	var offset: int = MenuScroll.window_offset(selected, visible, files.size(), int(_share_picker.get_meta("offset", 0)))
+	_share_picker.set_meta("offset", offset)
 	var panel := ColorRect.new()
 	panel.color = style.bg
 	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
 	panel.size = Vector2(panel_w, panel_h)
+	panel.set_meta("share_panel", true)
 	_share_picker.add_child(panel)
 	_add_pixel_border(panel, panel_w, panel_h)
 
 	var title := Label.new()
 	title.text = "IMPORT SCRIPT  -  apply to %s" % character_name
+	if files.size() > visible:
+		title.text += "   (%d/%d)" % [selected + 1, files.size()]
 	title.position = panel.position + Vector2(12, 8)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 	_share_picker.add_child(title)
 
-	var list_y := panel.position.y + 34.0
-	for i in range(files.size()):
+	var list_y := panel.position.y + head
+	for i in range(offset, mini(files.size(), offset + visible)):
 		var filename: String = files[i]
 		var is_sel := i == selected
 
 		var row_bg := ColorRect.new()
 		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
-		row_bg.size = Vector2(panel_w - 16, 24)
+		row_bg.size = Vector2(panel_w - 16, step - 2.0)
 		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
 		_share_picker.add_child(row_bg)
 
 		var row := Label.new()
 		row.text = "%s %s" % ["▶" if is_sel else "  ", ScriptShareManager.get_export_summary(filename)]
 		row.position = Vector2(panel.position.x + 12, list_y)
-		row.size = Vector2(panel_w - 24, 22)
+		row.size = Vector2(panel_w - 24, step - 4.0)
+		row.set_meta("share_row", i)
 		row.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
 		row.clip_text = true
@@ -3856,7 +3867,7 @@ func _build_share_picker(files: Array) -> void:
 
 		# Mouse: click a row to import it immediately
 		var idx := i
-		MenuMouseHelper.make_clickable(row_bg, idx, panel_w - 16, 24,
+		MenuMouseHelper.make_clickable(row_bg, idx, panel_w - 16, step - 2.0,
 			func() -> void:
 				_share_picker.set_meta("selected", idx)
 				_apply_share_selection(),
@@ -3864,11 +3875,11 @@ func _build_share_picker(files: Array) -> void:
 				_share_picker.set_meta("selected", idx)
 				_build_share_picker(_share_picker.get_meta("files")))
 
-		list_y += 26.0
+		list_y += step
 
 	var help := Label.new()
 	help.text = "\u2191\u2193/D-pad:Select   %s:Import   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22.0 * k)
 	help.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_share_picker.add_child(help)
