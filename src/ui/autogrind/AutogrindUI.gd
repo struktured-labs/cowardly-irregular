@@ -2746,9 +2746,16 @@ func _adopt_applied_rules(before: Array, what: String) -> void:
 	rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
 	cursor_row = clampi(cursor_row, 0, maxi(0, rules.size() - 1))
 	cursor_col = 0
-	if rules != before:
-		_undo_snapshot = {"rules": before.duplicate(true), "after": rules.duplicate(true), "row": cursor_row, "col": 0, "what": what}
+	_arm_replace_undo(before, what)
 	_refresh_grid()
+
+
+## Anything that swaps the whole grid in one press (paste, import, preset) leaves the set it replaced one undo away; true when it armed.
+func _arm_replace_undo(before: Array, what: String) -> bool:
+	if rules == before:
+		return false
+	_undo_snapshot = {"rules": before.duplicate(true), "after": rules.duplicate(true), "row": cursor_row, "col": cursor_col, "what": what}
+	return true
 
 
 ## The pad's undo is the delete button on an EMPTY slot (on a condition it cycles the operator), so the hint says where.
@@ -3015,6 +3022,7 @@ func _apply_preset(preset_id: String) -> void:
 		return
 
 	var preset = GRIND_PRESETS[preset_id]
+	var before: Array = rules.duplicate(true)
 	rules = preset["rules"].duplicate(true)
 	_ludicrous_speed_enabled = preset.get("ludicrous", false)
 	_auto_advance_enabled = preset.get("auto_advance", true)
@@ -3022,7 +3030,8 @@ func _apply_preset(preset_id: String) -> void:
 	## Straight to the enforcer, which is also the readout's source -- the if/else set a copy first.
 	AutogrindSystem.enable_permadeath_staking(bool(preset.get("permadeath", false)))
 
-	_log_message("[color=cyan]Preset: %s — %s[/color]" % [preset["label"], preset["description"]])
+	var preset_undo := "" if not _arm_replace_undo(before, "rules you had before the preset") else " — %s to undo the rules" % _undo_hint(" on an empty slot")
+	_log_message("[color=cyan]Preset: %s — %s%s[/color]" % [preset["label"], preset["description"], preset_undo])
 	TutorialHints.show(self, "autogrind_presets")
 	_build_ui()
 	SoundManager.play_ui("menu_select")
@@ -3866,6 +3875,7 @@ func _apply_custom_preset(index: int) -> void:
 		return
 
 	var preset = _custom_presets[index]
+	var before: Array = rules.duplicate(true)
 	rules = preset["rules"].duplicate(true)
 	_ludicrous_speed_enabled = preset.get("ludicrous", false)
 	_auto_advance_enabled = preset.get("auto_advance", true)
@@ -3873,7 +3883,8 @@ func _apply_custom_preset(index: int) -> void:
 	## Straight to the enforcer, which is also the readout's source -- the if/else set a copy first.
 	AutogrindSystem.enable_permadeath_staking(bool(preset.get("permadeath", false)))
 
-	_log_message("[color=cyan]Loaded preset: %s[/color]" % preset["name"])
+	var preset_undo := "" if not _arm_replace_undo(before, "rules you had before the preset") else " — %s to undo the rules" % _undo_hint(" on an empty slot")
+	_log_message("[color=cyan]Loaded preset: %s%s[/color]" % [preset["name"], preset_undo])
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 

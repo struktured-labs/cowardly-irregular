@@ -430,3 +430,29 @@ func test_fear_is_a_disposition_so_a_world_always_has_both_kinds() -> void:
 				break
 		assert_true(found_bold, "CONTROL: the sweep must actually find a bold monster, or the assert above never ran")
 		gs.player_party = saved
+
+
+## An elite's tell names it above "It is watching you.", centred on it, and grows upward rather than onto the sprite.
+func _watched_tell(species: String) -> Label:
+	var m := _make(true)
+	m.monster_id = species
+	var player := FakePlayer.new()
+	add_child_autofree(player)
+	player.global_position = m.global_position + Vector2(40, 0)
+	m.set_player_ref(player)
+	m._tick_elite_watch()
+	return m._tell
+
+
+func test_an_elite_names_itself_above_its_line() -> void:
+	var db: Dictionary = _read_json("res://data/monsters.json")
+	var shown: String = str(db.get("brass_golem", {}).get("name", ""))
+	assert_ne(shown, "", "CONTROL: brass_golem has a display name in monsters.json")
+	var named: Label = _watched_tell("brass_golem")
+	assert_true(named.visible, "CONTROL: a player in range shows the tell")
+	assert_eq(named.text, "%s\n%s" % [shown, load(RM).ELITE_PROMPT_TEXT], "the elite says what it is before you choose to fight it")
+	assert_almost_eq(named.position.x + named.size.x / 2.0, 0.0, 1.0, "the tell is centred on the elite")
+	var bare: Label = _watched_tell("no_such_species")
+	assert_eq(bare.text, load(RM).ELITE_PROMPT_TEXT, "an unknown species keeps the line alone")
+	assert_gt(named.get_line_count(), bare.get_line_count(), "CONTROL: the named tell is taller")
+	assert_almost_eq(named.position.y + named.size.y, bare.position.y + bare.size.y, 1.0, "a second line grows upward, never down onto the sprite")

@@ -47,10 +47,16 @@
 #                3 STALE: broke an invariant on every one of OT_RETRIES replies (UNKNOWN)
 #        The reason goes to STDERR, prefixed "[LABEL]": every caller runs this inside $(...),
 #        so a global set here would die with the subshell, and stderr is what reaches the log.
-# Env:   OT_GIT (git) · OT_REMOTE (origin) · OT_RETRIES (3)
+# Env:   OT_GIT (git) · OT_REMOTE (origin) · OT_RETRIES (6)
 #        OT_TERMINUS: the ref-order-LAST tag a complete reply must contain. Unset = derived
 #        from this repo's local tags; "-" = off (the selftest's existing arms).
-#        OT_RETRY_DELAY (falls back to PUB_STALE_RETRY_DELAY, then 2s)
+#        OT_RETRY_DELAY (falls back to PUB_STALE_RETRY_DELAY, then 2s): the FIRST wait. Each later
+#        wait doubles, capped at OT_RETRY_CAP (30s), so the default budget is 2+4+8+16+30 = 60s.
+#        ⛔ WHY NOT 3 x 2s: short replies come in BURSTS. .823 (reap, pre-upload) and .824 (store,
+#        post-upload) each got THREE short replies in a row 2s apart (1262/1201/1201 and
+#        1204/1203/1264 lines vs a true ~1386) and went UNKNOWN; sampled after .824, 1 reply in
+#        12 was short (964 lines) and the next, 5s later, was whole. A burst outlasts 6s. The
+#        longer wait costs nothing on a whole reply: it is only spent on a short one.
 #
 # Usage: tools/origin_tags.sh --selftest
 
@@ -61,7 +67,8 @@ _ot_older() {
 
 origin_newest_tag() {
     local label="${1:-tags}" want="${2:-}" floor="${3:-}"
-    local tries="${OT_RETRIES:-3}" delay="${OT_RETRY_DELAY:-${PUB_STALE_RETRY_DELAY:-2}}"
+    local tries="${OT_RETRIES:-6}" delay="${OT_RETRY_DELAY:-${PUB_STALE_RETRY_DELAY:-2}}"
+    local cap="${OT_RETRY_CAP:-30}"
     local raw refs ec t try why term
     # ⛔ TERMINUS — WANT and FLOOR both ask "is a tag I KNOW listed / not undercut", and a
     # truncated reply passes both whenever the cut falls AFTER the known tag. ls-remote prints
@@ -128,7 +135,10 @@ origin_newest_tag() {
             return 0
         fi
         echo "[${label}] origin reply ${try}/${tries} is STALE: $(printf '%s\n' "$raw" | wc -l) line(s), ${why}." >&2
-        [ "$try" -lt "$tries" ] && sleep "$delay"
+        if [ "$try" -lt "$tries" ]; then
+            sleep "$delay"
+            delay=$(( delay * 2 )); [ "$delay" -gt "$cap" ] && delay="$cap"
+        fi
     done
     echo "[${label}] origin never gave a consistent tag list in ${tries} replies -- newest tag UNKNOWN." >&2
     echo "[${label}]   An inconsistent reply is not a newer tag and not an older store; nothing is concluded from it." >&2
@@ -175,9 +185,9 @@ FAKE
         # ARM_PATHGIT: real git with only ls-remote faked (a PATH wrapper), OT_GIT unset — the
         # only honest way to test the derived anchor, which is off whenever OT_GIT is set.
         out="$(cd "${ARM_CWD:-.}" && if [ -n "${ARM_PATHGIT:-}" ]; then
-                   PATH="$dir/pathgit:$PATH" OT_TERMINUS="${ARM_TERM--}" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+                   PATH="$dir/pathgit:$PATH" OT_TERMINUS="${ARM_TERM--}" OT_RETRIES=3 OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
                else
-                   OT_TERMINUS="${ARM_TERM--}" OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+                   OT_TERMINUS="${ARM_TERM--}" OT_GIT="$fake" OT_RETRIES=3 OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
                fi 2>"$dir/err")"; ec=$?
         calls="$(cat "$ctr")"
         [ "$ec" -eq "$wec" ]       || bad="exit $ec (wanted $wec)"
@@ -256,6 +266,27 @@ FAKE
     OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=0 OT_RETRIES=5 origin_newest_tag selftest "$T" "" >/dev/null 2>&1
     if [ "$(cat "$ctr")" -eq 5 ]; then pass=$((pass+1)); printf '  ok    %-46s 5 call(s)\n' "OT_RETRIES=5 is honoured"
     else fail=$((fail+1)); printf '  FAIL  %-46s %s call(s)\n' "OT_RETRIES=5 is honoured" "$(cat "$ctr")"; fi
+
+    # THE BURST (.823/.824): three short replies in a row, then a whole one. Under the old default
+    # budget (3 asks) this was UNKNOWN; the default must now reach the fourth reply and resolve.
+    _mkgit short674 short674 short674 full
+    local bout bec
+    bout="$(OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$T" "" 2>/dev/null)"; bec=$?
+    if [ "$bec" -eq 0 ] && [ "$bout" = "$T" ] && [ "$(cat "$ctr")" -eq 4 ]; then pass=$((pass+1)); printf '  ok    %-46s 4 call(s), %s\n' "default budget outlasts a 3-reply burst" "$bout"
+    else fail=$((fail+1)); printf '  FAIL  %-46s ec %s, out %s, %s call(s)\n' "default budget outlasts a 3-reply burst" "$bec" "$bout" "$(cat "$ctr")"; fi
+    # CONTROL: the default is still finite -- a burst that never ends is UNKNOWN after 6 asks.
+    _mkgit short674
+    OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$T" "" >/dev/null 2>&1; bec=$?
+    if [ "$bec" -eq 3 ] && [ "$(cat "$ctr")" -eq 6 ]; then pass=$((pass+1)); printf '  ok    %-46s 6 call(s), exit 3\n' "default budget is finite: 6 asks"
+    else fail=$((fail+1)); printf '  FAIL  %-46s ec %s, %s call(s)\n' "default budget is finite: 6 asks" "$bec" "$(cat "$ctr")"; fi
+    # BACKOFF: the waits double from OT_RETRY_DELAY and stop at OT_RETRY_CAP. `sleep` is shadowed
+    # by a function that records its argument, so the schedule is read, not slept.
+    _mkgit short674
+    local waits
+    waits="$( sleep() { printf '%s ' "$1"; }
+              OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=2 origin_newest_tag selftest "$T" "" 2>/dev/null )"
+    if [ "$waits" = "2 4 8 16 30 " ]; then pass=$((pass+1)); printf '  ok    %-46s %s\n' "waits double from 2s, capped at 30s" "$waits"
+    else fail=$((fail+1)); printf '  FAIL  %-46s waits were "%s" (wanted "2 4 8 16 30 ")\n' "waits double from 2s, capped at 30s" "$waits"; fi
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
