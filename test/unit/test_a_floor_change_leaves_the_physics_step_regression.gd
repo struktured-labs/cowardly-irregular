@@ -15,7 +15,7 @@ const WHISPERING := preload("res://src/maps/dungeons/WhisperingCave.gd")
 const FIRE_CAVE := preload("res://src/maps/dungeons/FireDragonCave.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const _DIRECTIONS := ["ui_up", "ui_down", "ui_left", "ui_right"]
-const _FLOOR_KEYS := ["whispering_cave_floor", "fire_dragon_cave_floor"]
+const _FLOOR_KEYS := ["whispering_cave_floor", "fire_dragon_cave_floor", "event_flag_dragon_cave_entered"]
 
 var _viewport: SubViewport
 var _held: Dictionary = {}
@@ -152,3 +152,8 @@ func test_a_floor_change_puts_the_encounter_pool_back() -> void:
 	await get_tree().create_timer(1.0).timeout
 	_restore_encounter_pool()
 	assert_eq(_encounter_pool(), before, "the next file's grind draws from the pool it had, not this cave's L14 floor")
+	assert_true(GameState.game_constants.has("event_flag_dragon_cave_entered"), "CONTROL: entering the cave fired its party-chat flag")
+	var had: bool = _held.has("event_flag_dragon_cave_entered")
+	after_each()
+	assert_eq(GameState.game_constants.has("event_flag_dragon_cave_entered"), had, "the cave's entry flag is back to what the file found")
+	before_each()
