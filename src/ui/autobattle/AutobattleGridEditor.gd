@@ -2041,7 +2041,7 @@ func _input(event: InputEvent) -> void:
 
 	# Simulate readout handles its own input (any key closes)
 	if _simulate_panel and is_instance_valid(_simulate_panel) and _simulate_panel.visible:
-		_handle_simulate_input(event)
+		_handle_simulate_input(event, nav)
 		return
 
 	# Rule Composer overlay handles its own input (A/B/R) when open
@@ -3448,6 +3448,7 @@ func _open_simulate() -> void:
 	lines.append_array(_observed_for_open_grid())
 	_simulate_panel = _build_simulate_panel(lines)
 	add_child(_simulate_panel)
+	call_deferred("_note_simulate_scroll")
 
 
 ## Fight counts are keyed by rule index on the script that was actually fought, which is the save.
@@ -3502,10 +3503,19 @@ func _build_simulate_panel(lines: Array[String]) -> Control:
 	dim.color = Color(0, 0, 0, 0.72)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(dim)
+	## Inside a screen-sized scroll: at a large Text Size the readout outgrew the screen and its bottom rows were unreachable.
+	var screen: Vector2 = get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var scroll := ScrollContainer.new()
+	scroll.name = "SimulateScroll"
+	scroll.position = Vector2(80, 90)
+	scroll.size = Vector2(maxf(200.0, screen.x - 160.0), maxf(100.0, screen.y - 90.0 - 40.0))
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(scroll)
 	var box := VBoxContainer.new()
-	box.position = Vector2(80, 90)
+	box.name = "SimulateLines"
+	box.custom_minimum_size.x = scroll.size.x - 16.0
 	box.add_theme_constant_override("separation", 10)
-	root.add_child(box)
+	scroll.add_child(box)
 	var title := Label.new()
 	title.text = "SIMULATE — what this grid does"
 	title.add_theme_font_size_override("font_size", TextScale.scaled(22))
@@ -3518,11 +3528,41 @@ func _build_simulate_panel(lines: Array[String]) -> Control:
 		l.add_theme_color_override("font_color", Color(0.88, 0.92, 1.0))
 		box.add_child(l)
 	var hint := Label.new()
+	hint.name = "SimulateHint"
 	hint.text = "Rules are first-match-wins, top to bottom. Any key closes."
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
 	box.add_child(hint)
+	for l in box.get_children():
+		(l as Label).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return root
+
+
+## Once laid out: a readout taller than the screen takes its hint out of the scroll, pinned under it, and names the scroll keys.
+func _note_simulate_scroll() -> void:
+	if _simulate_panel == null or not is_instance_valid(_simulate_panel) or not _simulate_overflows():
+		return
+	var scroll: ScrollContainer = _simulate_panel.get_node("SimulateScroll")
+	var hint: Label = scroll.get_node("SimulateLines/SimulateHint")
+	hint.get_parent().remove_child(hint)
+	hint.text = "Rules are first-match-wins, top to bottom. Up/Down scrolls; any other key closes."
+	## Measured from the font at the scroll's width: out of its VBox the label's cached size is the container's, not its own.
+	var fs: int = hint.get_theme_font_size("font_size")
+	var hh: float = hint.get_theme_font("font").get_multiline_string_size(hint.text, HORIZONTAL_ALIGNMENT_LEFT, scroll.size.x, fs).y
+	scroll.size.y -= hh + 8.0
+	hint.custom_minimum_size = Vector2(scroll.size.x, hh)
+	hint.position = Vector2(scroll.position.x, scroll.position.y + scroll.size.y + 8.0)
+	hint.size = Vector2(scroll.size.x, hh)
+	_simulate_panel.add_child(hint)
+
+
+## True when the readout is taller than its scroll, so Up/Down have somewhere to go.
+func _simulate_overflows() -> bool:
+	var scroll: ScrollContainer = _simulate_panel.get_node_or_null("SimulateScroll") if _simulate_panel else null
+	if scroll == null:
+		return false
+	var lines: Control = scroll.get_node("SimulateLines")
+	return lines.get_combined_minimum_size().y > scroll.size.y + 0.5
 
 
 ## Sampled states, chosen so a player can see their THRESHOLDS fire rather than one snapshot.
@@ -3664,7 +3704,13 @@ func _simulate_action_summary(actions: Array) -> String:
 	return ", ".join(names)
 
 
-func _handle_simulate_input(event: InputEvent) -> void:
+func _handle_simulate_input(event: InputEvent, nav: String = "") -> void:
+	## A readout taller than the screen scrolls on Up/Down (pad, stick or keys); every other press still closes it.
+	if (nav == "ui_up" or nav == "ui_down") and _simulate_overflows():
+		var scroll: ScrollContainer = _simulate_panel.get_node("SimulateScroll")
+		scroll.scroll_vertical += int(roundf(TextScale.scaled(16) * 3.0)) * (1 if nav == "ui_down" else -1)
+		get_viewport().set_input_as_handled()
+		return
 	if not (event is InputEventKey or event is InputEventJoypadButton):
 		return
 	if not event.is_pressed() or event.is_echo():
