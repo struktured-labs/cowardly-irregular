@@ -4,7 +4,7 @@ extends GutTest
 ## fixed title box). The ruling is that text grows, wraps or scrolls, never shrinks. The pill now keeps the Text Size and
 ## grows LEFT and DOWN to hold its name; the status line steps below it; the title keeps the Text Size and reads
 ## "AUTOGRIND - <name>" when that fits left of the pill, else "AUTOGRIND" (the pill shows the name). With a name that fits,
-## at 1.0, nothing moves.
+## at 1.0, nothing moves. The grid starts below the status line (_top_band_h), so a grown pill never pushes it into row 0.
 ##
 ## ⛔ Widths are judged with the label's theme font measured here, not with the minimum-size query the fix uses.
 
@@ -100,6 +100,20 @@ func test_a_profile_switch_re_lays_the_top() -> void:
 	_judge("after a switch")
 
 
+func test_the_status_line_ends_above_the_grid() -> void:
+	## autogrind 27579: a grown pill pushes the status line down; the grid has to start below it, also after a scroll.
+	for s in [2.0, 2.5]:
+		await _open(s, FROM_SAVE)
+		var st: Label = _ed._status_label
+		var g: Control = _ed._grid_container
+		assert_gt(st.position.y, 28.0, "CONTROL @%s: the status line moved down under the grown pill" % s)
+		assert_lte(st.position.y + st.size.y, g.position.y + 0.5, "@%s: the status line ends above row 0" % s)
+		_ed._scroll_offset = 0.0
+		_ed._update_scroll_offset()
+		assert_almost_eq(g.position.y, float(_ed._top_band_h), 0.5, "@%s: an unscrolled grid starts at the band" % s)
+		assert_lte(g.position.y + g.size.y, _ed.size.y, "@%s: the grid view still ends on screen" % s)
+
+
 func test_at_1x_a_name_that_fits_moves_nothing() -> void:
 	await _open(1.0, "Default")
 	assert_eq(_ed._profile_pill.position, Vector2(_ed.size.x - 200.0, 4.0), "the pill starts where it did")
@@ -107,3 +121,5 @@ func test_at_1x_a_name_that_fits_moves_nothing() -> void:
 	assert_eq(_ed._profile_label.position, Vector2(_ed.size.x - 195.0, 6.0), "the name is where it was")
 	assert_eq(_ed._title_label.position, Vector2(16.0, 8.0), "the title is where it was")
 	assert_eq(_ed._status_label.position.y, 28.0, "the status line is where it was")
+	assert_eq(_ed._grid_container.position, Vector2(130, 50), "the grid starts where it did")
+	assert_eq(_ed._grid_container.size, Vector2(_ed.size.x - 146.0, _ed.size.y - 100.0), "and is the size it was")

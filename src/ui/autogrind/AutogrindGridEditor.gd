@@ -54,6 +54,7 @@ var _status_flash_token: int = 0
 var _grid_container: Control
 var _cursor: Control
 var _profile_label: Label
+var _top_band_h: float = GRID_BASE_POS.y  # where the grid starts: below the status line, which steps below a grown pill
 var _profile_pill: ColorRect = null  # the profile indicator's backing; sized to its label by _lay_out_top
 var _details_panel: Control
 var _keyboard: Control = null
@@ -217,8 +218,8 @@ func _build_ui() -> void:
 
 	# Grid container (shifted right for details panel)
 	_grid_container = Control.new()
-	_grid_container.position = GRID_BASE_POS
-	_grid_container.size = Vector2(size.x - 146, size.y - 100)
+	_grid_container.position = Vector2(GRID_BASE_POS.x, _top_band_h)
+	_grid_container.size = Vector2(size.x - 146, size.y - 100 - (_top_band_h - GRID_BASE_POS.y))
 	# Without this the rows past the viewport were still DRAWN — over the footer and off the
 	# bottom of the screen — because nothing clipped and nothing scrolled.
 	_grid_container.clip_contents = true
@@ -405,6 +406,12 @@ func _lay_out_top() -> void:
 		_title_label.reset_size()
 	if _status_label and is_instance_valid(_status_label):
 		_status_label.position.y = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
+		## The grid starts where the status line ends (50 at 1.0, exactly its old GRID_BASE_POS.y), so a grown pill never
+		## pushes the status line into row 0; _update_scroll_offset reads _top_band_h too.
+		_top_band_h = maxf(GRID_BASE_POS.y, _status_label.position.y + _status_label.size.y)
+		if _grid_container and is_instance_valid(_grid_container):
+			_grid_container.position.y = _top_band_h - _scroll_offset
+			_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -980,7 +987,7 @@ func _update_scroll_offset() -> void:
 		_scroll_offset = cursor_y + _cell_h() - view_h
 	# Never past the top: a negative offset would push row 0 down off its anchor.
 	_scroll_offset = maxf(0.0, _scroll_offset)
-	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
+	_grid_container.position.y = _top_band_h - _scroll_offset
 
 
 func _update_cursor() -> void:
