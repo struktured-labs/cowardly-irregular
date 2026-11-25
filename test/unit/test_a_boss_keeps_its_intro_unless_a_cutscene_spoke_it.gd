@@ -176,3 +176,13 @@ func test_every_door_that_plays_a_boss_cutscene_leaves_the_note() -> void:
 		var src := FileAccess.get_file_as_string(path)
 		assert_true(src.contains("play_cutscene("), "CONTROL: %s plays a cutscene" % path)
 		assert_true(src.contains(doors[path]), "%s plays a boss cutscene and never tells the spawner, so the boss repeats its intro" % path)
+
+
+func test_the_render_smokes_wipe_boss_skips_its_cave_so_leaves_its_note() -> void:
+	## .826 pre-gate: the wipe leg starts Umbraxis as an encounter without his cave, so his kept intro held the battle unstarted.
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var start := src.find('await _start_battle_async(["shadow_dragon"], true)')
+	assert_gt(start, 0, "CONTROL: the smoke's wipe leg still starts Umbraxis through the encounter path")
+	var lead := src.substr(maxi(0, start - 300), 300)
+	assert_true(lead.contains('GameState.boss_intro_cutscene_for = "shadow_dragon"'),
+		"the smoke's wipe leg starts Umbraxis without the note his cave leaves; his intro panel holds the battle and no wipe comes")
