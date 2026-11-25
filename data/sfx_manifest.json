@@ -15966,6 +15966,16 @@
       "whisper_heard": "The ink is running. I can see the blank parts of the page from here.",
       "whisper_score": 1.0,
       "gain_db": 1.0
+    },
+    "elite_notice": {
+      "file": "assets/audio/sfx/elite_notice.ogg",
+      "prompt": "A field elite notices you: a low beating tremolo swell (110/113.5 Hz) under a thin dissonant minor-second glint (880/932 Hz), short reverb tail, no melody. Synthesised with SoX, not ElevenLabs; -13.9 LUFS, peak -4.9 dBFS.",
+      "duration_seconds": 0.95
+    },
+    "monster_spotted": {
+      "file": "assets/audio/sfx/monster_spotted.ogg",
+      "prompt": "An ordinary roaming monster spots you and its yellow \"!\" pops up: a quick rising two-note blip (740 Hz then 1109 Hz, triangle with a soft octave), lowpassed at 4 kHz with a short room tail. Light on purpose, because W2-W6 roamers trigger it often; one cue per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.45 s, RMS -17.7 dBFS, peak -6.6 dBFS.",
+      "duration_seconds": 0.45
     }
   }
 }

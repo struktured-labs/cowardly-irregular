@@ -897,8 +897,16 @@ func _show_boss_intro() -> void:
 			elif not director.has_method("play_cutscene"):
 				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
 			else:
+				## The note means a cutscene SPOKE: play_cutscene returns silently when it refuses (one already playing) or cannot load.
+				var started := {"id": ""}
+				var on_start := func(id: String) -> void: started["id"] = id
+				if director.has_signal("cutscene_started"):
+					director.cutscene_started.connect(on_start)
 				await director.play_cutscene(boss_cutscene_id)
-				GameState.boss_intro_cutscene_for = boss_id
+				if director.has_signal("cutscene_started") and director.cutscene_started.is_connected(on_start):
+					director.cutscene_started.disconnect(on_start)
+				if started["id"] == boss_cutscene_id:
+					GameState.boss_intro_cutscene_for = boss_id
 				return
 
 	# Fallback: console print + brief delay

@@ -365,6 +365,7 @@ func _tick_mood(delta: float) -> void:
 		_dir = Vector2.ZERO
 		_face_player()
 		_show_tell()
+		_announce_spotted()
 	elif _mood != Mood.CALM and dist > ALERT_RADIUS * 1.6:
 		_mood = Mood.CALM
 		_show_tell()
@@ -716,9 +717,48 @@ func _tick_elite_watch() -> void:
 		## Centred on the elite, and grown upward so a second line never sinks onto the sprite.
 		var extra: float = float(_tell.get_line_count() - 1) * float(_tell.get_line_height())
 		_tell.position = Vector2(-_tell.size.x / 2.0, -44.0 - extra)
+		if not _tell.visible:
+			_announce_notice()
 		_tell.visible = true
 	elif not _prompt_open:
 		_tell.visible = false
+
+
+## The "!" rose in silence; it now sounds once per spotting, and a pack that spots you in the same moment shares one cue.
+const SPOTTED_SFX := "monster_spotted"
+const SPOTTED_SHARED_GAP_MS := 600
+static var _last_spotted_ms: int = -SPOTTED_SHARED_GAP_MS
+
+
+## Test hook: the gap is script-wide, so it survives between test files unless a file resets it.
+static func _reset_spotted_gap() -> void:
+	_last_spotted_ms = -SPOTTED_SHARED_GAP_MS
+
+
+func _announce_spotted() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_spotted_ms < SPOTTED_SHARED_GAP_MS:
+		return
+	_last_spotted_ms = now
+	var sm: Node = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui(SPOTTED_SFX)
+
+
+## The tell rose in silence; it now sounds once as it appears, at most once per NOTICE_COOLDOWN_MS so the edge of the radius cannot chatter.
+const NOTICE_SFX := "elite_notice"
+const NOTICE_COOLDOWN_MS := 4000
+var _last_notice_ms: int = -NOTICE_COOLDOWN_MS
+
+
+func _announce_notice() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_notice_ms < NOTICE_COOLDOWN_MS:
+		return
+	_last_notice_ms = now
+	var sm: Node = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm != null and sm.has_method("play_alert"):
+		sm.play_alert(NOTICE_SFX)
 
 
 const ELITE_FIGHT := "Fight"

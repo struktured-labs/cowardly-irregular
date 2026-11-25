@@ -49,6 +49,7 @@ var _panel: Control
 var _rows_clip: Control
 var _rows_content: Control
 var _row_top: Dictionary = {}  # row index -> top in RowsContent
+var _row_hgt: Dictionary = {}  # row index -> its drawn height (a wrapped binding grows its own row)
 var _scroll_px: float = 0.0
 var _more_rows: Label
 var _profile_label: Label
@@ -145,11 +146,8 @@ func refresh_footer() -> void:
 
 
 ## A column label must end inside its column: "R / RB / R1 (Right Shoulder)" ran into the Keyboard column. Sized after add_child
-## (a detached Label measures at the default font), the font steps down to 10px to fit, and an ellipsis is the last resort.
-## ⛔ GEOMETRY GROWS WITH THE TEXT OR THE TEXT DOES NOT GROW AT ALL. `_fit_column_label` steps a
-## binding label's font DOWN to a floor of 10 until it fits its column, then clips with an ellipsis
-## -- so scaling those fonts without widening the columns is a SILENT NO-OP: the override rises and
-## the helper takes it straight back off. Two writers, one surface, and the later one wins.
+## (a detached Label measures at the default font), it WRAPS at its own Text Size and its row grows (`_fit_column_label`).
+## Until 2026-11-25 it stepped the font down to 10px and trimmed with an ellipsis, which took any Text Size straight back off.
 ##
 ## Only ever UPWARD (a text size may not shrink a shipped box), which is why the factor is floored
 ## at 1.0 while the FONTS still scale below it: smaller text in unchanged boxes is correct.
@@ -275,14 +273,53 @@ func _panel_h_frac() -> float:
 	return clampf(needed / size.y, 0.88, 0.96)
 
 
-func _fit_column_label(l: Label, width: float) -> void:
-	var fs: int = l.get_theme_font_size("font_size")
-	while fs > 10 and l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
-		fs -= 1
-		l.add_theme_font_size_override("font_size", fs)
-	l.clip_text = true
-	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+## Wraps at its own Text Size inside its column and returns the wrapped height; its row grows to hold it (never shrink or trim).
+func _fit_column_label(l: Label, width: float) -> float:
+	l.set_meta("col_w", width)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.update_minimum_size()
 	l.size = Vector2(width, l.size.y)
+	## Measured from the font, not the Label's cached minimum: a rebind sets new text on a built label (row stayed 32).
+	var fnt: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	var line: float = fnt.get_height(fs)
+	var lines: int = maxi(1, roundi(fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	l.size = Vector2(width, h)
+	l.update_minimum_size()
+	return h
+
+
+## A row is its authored height unless a wrapped binding needs more: 4 above and 4 below its text, as authored.
+func _row_h_of(row: Control) -> float:
+	var rh: float = float(_row_h())
+	for c in row.get_children():
+		if c is Label and c.has_meta("col_w"):
+			rh = maxf(rh, (c as Label).position.y + _fit_column_label(c, float(c.get_meta("col_w"))) + 4.0)
+	return rh
+
+
+## Stacks the rows by their own heights; run after the build and whenever a binding's text changes.
+func _relayout_rows() -> void:
+	var y: float = 0.0
+	for i in range(_highlight_refs.size()):
+		var row: Control = _highlight_refs[i]
+		if not (row and is_instance_valid(row)):
+			continue
+		if i == _row_reset:
+			y += ACTION_BLOCK_GAP
+		var rh: float = _row_h_of(row)
+		row.position.y = y
+		row.size.y = rh
+		for c in row.get_children():
+			if c is Button:
+				(c as Button).size.y = rh
+		_row_top[i] = y
+		_row_hgt[i] = rh
+		y += rh
+		if i == ROW_HELP:
+			y += HEADER_BAND * _tf()
 
 
 func _footer_text() -> String:
@@ -428,6 +465,7 @@ func _build_ui() -> void:
 	_rows_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	_rows_clip.add_child(_rows_content)
 	_row_top.clear()
+	_row_hgt.clear()
 
 	# Column header — only shown for the action rows so user knows what
 	# the right-hand columns mean. Drawn just above the first action row.
@@ -489,6 +527,7 @@ func _build_ui() -> void:
 	y += _row_h()
 
 	_add_row(_row_map_pad, y, "Map This Pad", _map_pad_hint(), false, true)
+	_relayout_rows()
 
 	# Conflict display
 	_conflict_label = Label.new()
@@ -659,12 +698,14 @@ func _build_capture_overlay() -> void:
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	prompt.add_theme_color_override("font_color", Color.YELLOW)
 	prompt.name = "CapturePrompt"
+	prompt.set_meta("stack_y", 30.0)
 	box.add_child(prompt)
 
 	var hint = Label.new()
 	hint.text = _capture_cancel_hint()
 	hint.name = "CaptureHint"
 	hint.position = Vector2(20, 60)
+	hint.set_meta("stack_y", 60.0)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
@@ -675,7 +716,10 @@ func _build_capture_overlay() -> void:
 	timer_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	timer_label.add_theme_color_override("font_color", TEXT_COLOR)
 	timer_label.name = "TimerLabel"
+	timer_label.set_meta("stack_y", 90.0)
 	box.add_child(timer_label)
+	box.set_meta("base_size", box.size)
+	_restack_box(box)
 
 
 func _build_test_overlay() -> void:
@@ -702,6 +746,7 @@ func _build_test_overlay() -> void:
 	var title = Label.new()
 	title.text = "BUTTON TEST"
 	title.position = Vector2(20, 16)
+	title.set_meta("stack_y", 16.0)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	box.add_child(title)
@@ -712,6 +757,7 @@ func _build_test_overlay() -> void:
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	prompt.add_theme_color_override("font_color", TEXT_COLOR)
 	prompt.name = "TestPrompt"
+	prompt.set_meta("stack_y", 52.0)
 	box.add_child(prompt)
 
 	_test_result_label = Label.new()
@@ -720,6 +766,7 @@ func _build_test_overlay() -> void:
 	_test_result_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_test_result_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
 	_test_result_label.name = "TestResult"
+	_test_result_label.set_meta("stack_y", 90.0)
 	box.add_child(_test_result_label)
 
 	var raw_label = Label.new()
@@ -728,6 +775,7 @@ func _build_test_overlay() -> void:
 	raw_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	raw_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	raw_label.name = "TestRaw"
+	raw_label.set_meta("stack_y", 126.0)
 	box.add_child(raw_label)
 
 	var hint = Label.new()
@@ -736,9 +784,62 @@ func _build_test_overlay() -> void:
 	hint.name = "TestCloseHint"
 	hint.text = _test_close_hint()
 	hint.position = Vector2(20, box.size.y - 36)
+	hint.set_meta("stack_foot", 36.0)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
+	box.set_meta("base_size", box.size)
+	_restack_box(box)
+
+
+## A line's height wrapped to `width`, measured from its font (a Label's cached minimum lags a text change).
+func _wrapped_h(l: Label, width: float) -> float:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.update_minimum_size()
+	l.size = Vector2(width, l.size.y)
+	var fnt: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	var line: float = fnt.get_height(fs)
+	var lines: int = maxi(1, roundi(fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	l.size = Vector2(width, h)
+	return h
+
+
+## Stacks an overlay box's lines under each other by their drawn height (authored y is the floor, so 100% stays as built),
+## keeps the foot line last, and grows the box and its border to hold them, never off screen. Run after any text change.
+func _restack_box(box: Control) -> void:
+	if box == null or not is_instance_valid(box) or not box.has_meta("base_size"):
+		return
+	var base: Vector2 = box.get_meta("base_size")
+	var inner: float = base.x - 40.0
+	var bottom: float = 0.0
+	var foot: Label = null
+	for c in box.get_children():
+		if not (c is Label and (c.has_meta("stack_y") or c.has_meta("stack_foot"))):
+			continue
+		if c.has_meta("stack_foot"):
+			foot = c
+			continue
+		var lh: float = _wrapped_h(c, inner)
+		c.position.y = maxf(float(c.get_meta("stack_y")), bottom + 4.0 if bottom > 0.0 else 0.0)
+		bottom = c.position.y + lh
+	var want_h: float = maxf(base.y, bottom + 12.0)
+	if foot:
+		var fh: float = _wrapped_h(foot, inner)
+		foot.position.y = maxf(base.y - float(foot.get_meta("stack_foot")), bottom + 8.0)
+		want_h = maxf(want_h, foot.position.y + fh + 12.0)
+	if absf(want_h - box.size.y) < 0.5:
+		return
+	box.size = Vector2(base.x, want_h)
+	if size.y > 0.0 and box.position.y + want_h > size.y - 8.0:
+		box.position.y = maxf(8.0, size.y - 8.0 - want_h)
+	for c in box.get_children():
+		if c is ColorRect:
+			box.remove_child(c)
+			c.queue_free()
+	RetroPanel.add_border(box, box.size, BORDER_LIGHT, BORDER_SHADOW)
 
 
 ## ⛔ THREE PAD-ONLY FLOWS ON THIS SCREEN AND ONLY ONE GUARDED. _start_pad_mapping already refuses
@@ -766,6 +867,7 @@ func _refresh_test_close_hint() -> void:
 	var hint := _test_overlay.get_node_or_null("TestBox/TestCloseHint")
 	if hint:
 		hint.text = _test_close_hint()
+	_restack_box(_test_overlay.get_node_or_null("TestBox"))
 
 
 func _start_test() -> void:
@@ -780,6 +882,7 @@ func _start_test() -> void:
 	var raw = _test_overlay.get_node_or_null("TestBox/TestRaw")
 	if raw:
 		raw.text = ""
+	_restack_box(_test_overlay.get_node_or_null("TestBox"))
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 
@@ -826,6 +929,7 @@ func _handle_test_input(event: InputEvent) -> void:
 				raw.text = "(no action mapped)"
 			else:
 				raw.text = "Mapped to: %s" % " / ".join(mapped_actions)
+		_restack_box(_test_overlay.get_node_or_null("TestBox"))
 
 		get_viewport().set_input_as_handled()
 		return
@@ -851,7 +955,7 @@ func _scroll_to_selection() -> void:
 	var top: float = float(_row_top[selected_index])
 	if selected_index == ROW_ACTION_FIRST:
 		top -= float(HEADER_BAND) * _tf()  # the column header comes into view with its first row
-	var bottom: float = float(_row_top[selected_index]) + float(_row_h())
+	var bottom: float = float(_row_top[selected_index]) + float(_row_hgt.get(selected_index, _row_h()))
 	var view: float = _rows_clip.size.y
 	if top < _scroll_px:
 		_scroll_px = top
@@ -876,7 +980,7 @@ func _refresh_more_rows() -> void:
 func rows_content_height() -> float:
 	var h: float = 0.0
 	for k in _row_top:
-		h = maxf(h, float(_row_top[k]) + float(_row_h()))
+		h = maxf(h, float(_row_top[k]) + float(_row_hgt.get(k, _row_h())))
 	return h
 
 
@@ -887,6 +991,7 @@ func _update_all_labels() -> void:
 	# Update action labels
 	for action in _action_labels:
 		_action_labels[action].text = InputProfileManager.get_action_button_label(action)
+	_relayout_rows()
 
 	_update_conflict_display()
 
@@ -954,6 +1059,7 @@ func _refresh_mapping_prompt() -> void:
 		_mapping_status.text = "%s   ·   %s\nHold any pad button %.0fs = skip this control   ·   Keyboard %s = skip   ·   Keyboard %s = cancel" % [
 			_mapping.pad_name, _mapping.guid, MAPPING_HOLD_SKIP_SEC,
 			OS.get_keycode_string(MAPPING_SKIP_KEY), OS.get_keycode_string(MAPPING_CANCEL_KEY)]
+	_restack_mapping()
 
 
 ## Consumes raw pad events during a mapping walk. Keyboard is NOT bindable here — an SDL
@@ -988,6 +1094,7 @@ func _handle_mapping_input(event: InputEvent) -> void:
 		var owner: String = _mapping.control_using(token)
 		if owner != "":
 			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, hold it to skip, or keyboard %s to skip." % [owner, OS.get_keycode_string(MAPPING_SKIP_KEY)]
+			_restack_mapping()
 
 
 func _start_mapping_hold(button: int, bound_control: String, at_index: int) -> void:
@@ -1153,10 +1260,13 @@ func _update_mapping_idle_label() -> void:
 	if _mapping_idle_label == null or not is_instance_valid(_mapping_idle_label):
 		return
 	var left: float = MAPPING_IDLE_LIMIT - _mapping_idle
+	var was: String = _mapping_idle_label.text
 	if _mapping == null or left > MAPPING_IDLE_WARN_AT:
 		_mapping_idle_label.text = ""
-		return
-	_mapping_idle_label.text = "No progress — releasing this screen in %.0fs.\nPress the control the prompt asks for to carry on." % max(0.0, left)
+	else:
+		_mapping_idle_label.text = "No progress — releasing this screen in %.0fs.\nPress the control the prompt asks for to carry on." % max(0.0, left)
+	if _mapping_idle_label.text != was:
+		_restack_mapping()
 
 
 func _cancel_mapping() -> void:
@@ -1182,6 +1292,7 @@ func _build_mapping_overlay() -> void:
 	_mapping_overlay.add_child(bg)
 
 	var title := Label.new()
+	title.name = "MappingTitle"
 	title.text = "MAP THIS PAD"
 	title.position = Vector2(size.x * 0.5 - 80, size.y * 0.32)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
@@ -1209,6 +1320,35 @@ func _build_mapping_overlay() -> void:
 	_mapping_idle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_mapping_idle_label.add_theme_color_override("font_color", WARN_COLOR)
 	_mapping_overlay.add_child(_mapping_idle_label)
+	_restack_mapping()
+
+
+## The walk's four lines, top to bottom, with the screen fraction each was authored at (its floor).
+func _mapping_lines() -> Array:
+	return [[_mapping_overlay.get_node_or_null("MappingTitle"), 0.32], [_mapping_prompt, 0.42], [_mapping_status, 0.52], [_mapping_idle_label, 0.62]]
+
+
+## Wraps the walk's lines to one centred column (480 px at 100%, wider with Text Size, never off screen) and stacks each
+## under the one before, so a long status or a large Text Size cannot run them together or past the edge. Run after any text change.
+func _restack_mapping() -> void:
+	if _mapping_overlay == null or not is_instance_valid(_mapping_overlay) or size.x <= 32.0:
+		return
+	var w: float = minf(480.0 * _tf(), size.x - 32.0)
+	var x: float = (size.x - w) * 0.5
+	var bottom: float = 0.0
+	for pair in _mapping_lines():
+		var l: Label = pair[0]
+		if l == null:
+			continue
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var h: float = _wrapped_h(l, w) if l.text != "" else 0.0
+		l.position = Vector2(x, maxf(size.y * float(pair[1]), bottom + 8.0 if bottom > 0.0 else 0.0))
+		bottom = l.position.y + h
+	if bottom > size.y - 16.0:
+		var lift: float = bottom - (size.y - 16.0)
+		for pair in _mapping_lines():
+			if pair[0] != null:
+				(pair[0] as Label).position.y = maxf(16.0, (pair[0] as Label).position.y - lift)
 
 
 func _toggle_nintendo_mode() -> void:
@@ -1430,6 +1570,7 @@ func _start_capture(action: String) -> void:
 	var hint_lbl = _capture_overlay.get_node_or_null("CaptureBox/CaptureHint")
 	if hint_lbl:
 		hint_lbl.text = _capture_cancel_hint()   # re-derived: a pad may have arrived since _ready
+	_restack_box(_capture_overlay.get_node_or_null("CaptureBox"))
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 
