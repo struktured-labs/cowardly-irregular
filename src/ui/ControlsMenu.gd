@@ -279,9 +279,15 @@ func _fit_column_label(l: Label, width: float) -> float:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.update_minimum_size()
 	l.size = Vector2(width, l.size.y)
-	l.update_minimum_size()
-	var h: float = l.get_minimum_size().y
+	## Measured from the font, not the Label's cached minimum: a rebind sets new text on a built label (row stayed 32).
+	var fnt: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	var line: float = fnt.get_height(fs)
+	var lines: int = maxi(1, roundi(fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
 	l.size = Vector2(width, h)
+	l.update_minimum_size()
 	return h
 
 

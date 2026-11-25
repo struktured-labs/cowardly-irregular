@@ -148,3 +148,6 @@ func test_a_longer_binding_regrows_its_row() -> void:
 	m._relayout_rows()
 	assert_gt(float(m._row_hgt[first]), before_h, "the row grows to hold the longer binding")
 	assert_almost_eq(float(m._row_top[first + 1]), next_top + float(m._row_hgt[first]) - before_h, 0.5, "and the next row moves down by exactly that")
+	await get_tree().process_frame
+	assert_gt(l.get_line_count(), 1, "the label itself wraps the longer binding")
+	assert_lte(l.position.y + l.get_minimum_size().y, float(m._row_hgt[first]) + 0.5, "and the label's own wrapped height ends inside the grown row")
