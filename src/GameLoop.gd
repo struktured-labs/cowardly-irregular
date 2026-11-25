@@ -749,6 +749,8 @@ func _maybe_run_battle_smoke() -> void:
 		# saturated box advances more game time per rendered frame instead of fewer rounds.
 		var _speed_was: int = BattleSceneScript._battle_speed_index
 		BattleSceneScript._battle_speed_index = BattleSceneScript.BATTLE_SPEEDS.size() - 1
+		## Umbraxis arrives here without his cave, so leave the note his cutscene leaves: this leg measures the wipe, not an intro panel.
+		GameState.boss_intro_cutscene_for = "shadow_dragon"
 		await _start_battle_async(["shadow_dragon"], true)
 		var game_over_node: Node = await _smoke_await_wipe()
 		BattleSceneScript._battle_speed_index = _speed_was
