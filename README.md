@@ -1,238 +1,87 @@
-# Cowardly Irregular - Game Engine
+# Cowardly Irregular
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Status: Prototype v0.1
+## Status: Advanced Prototype (v3.33-alpha track)
 
-The core game engine is now functional! This includes:
+The canonical version string is `src/meta/Version.gd` (`Version.SEMVER`); the
+living, detailed status list is the top of [`CLAUDE.md`](CLAUDE.md). This README
+is a quick orientation only — when it disagrees with the code, the code wins.
 
-✅ Brave/Default turn-based combat system
-✅ AP (Action Points) mechanics (-4 to +4 range)
-✅ Job system with starter and meta jobs
-✅ Battle state management
-✅ Save/load system with corruption mechanics
-✅ Game constant modification (Scriptweaver powers)
-✅ Basic battle UI
-✅ Data-driven jobs, abilities, and monsters
+Shipped systems include:
+
+- CTB battle system with AP and **Advance / Defer** (5-member party, group attacks, formation specials)
+- AP range **-4 to +4** (`Combatant.AP_FLOOR` / `AP_CEILING`)
+- 14 jobs (5 starter, 4 advanced, 5 meta), data-driven from `data/jobs.json`, with per-world job names (`data/job_world_names.json`)
+- Autobattle rule scripting (`src/autobattle/`) and Autogrind (`src/autogrind/`)
+- Six worlds (Medieval, Suburban, Steampunk, Industrial, Futuristic/Digital, Abstract) with overworlds, villages and dungeons
+- Save system with corruption mechanics, Scriptweaver game-constant edits
+- Optional LLM-driven dialogue (`src/llm/`, off by default; scripted fallback)
 
 ## Quick Start
 
 ### Requirements
-- [Godot 4.3+](https://godotengine.org/download)
+- [Godot 4.4+](https://godotengine.org/download) (`project.godot` declares feature `4.4`, Forward Plus)
 
-### Running the Game
+### Running
+- Open `project.godot` in Godot and press F5 (main scene: `src/GameLoop.tscn`), or run `./launch.sh`.
+- Headless tests: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gexit` (see `test/README.md`).
 
-1. **Clone the repository** (or you already have it)
-   ```bash
-   cd cowardly-irregular
-   ```
+## Battle Controls (keyboard)
 
-2. **Open in Godot**
-   - Launch Godot 4
-   - Click "Import"
-   - Navigate to this directory and select `project.godot`
-   - Click "Import & Edit"
+| Action | Key | Pad |
+|---|---|---|
+| Advance (queue an action, costs 1 AP) | W | R shoulder |
+| Defer (skip, +1 AP, reduced damage) | Q | L shoulder |
+| Battle speed (tap faster / hold slower) | ` (backtick) | top face button |
 
-3. **Run the game**
-   - Press F5 or click the Play button in Godot
-   - You'll see a test battle with the core combat system
+Full table and the in-battle hint bar rules: `CLAUDE.md` (Controls section).
 
-## Project Structure
+### Battle speed
+Ladder: **1x / 1.5x / 2x / 4x / 8x / 16x / 32x / 64x**, default **1.5x**
+(`BattleScene.BATTLE_SPEED_LABELS`, `DEFAULT_BATTLE_SPEED_INDEX`).
 
-```
-cowardly-irregular/
-├── project.godot          # Godot project configuration
-├── CLAUDE.md             # Design document
-├── README.md             # This file
-│
-├── src/                  # Source code
-│   ├── battle/          # Combat system, AP mechanics
-│   │   ├── BattleManager.gd    # Singleton managing battle flow
-│   │   ├── Combatant.gd        # Base class for all fighters
-│   │   ├── BattleScene.gd      # Battle UI controller
-│   │   └── BattleScene.tscn    # Battle UI layout
-│   │
-│   ├── jobs/            # Job system
-│   │   └── JobSystem.gd        # Job/ability management singleton
-│   │
-│   ├── meta/            # Meta-game systems
-│   │   └── GameState.gd        # Save/load, corruption, constants
-│   │
-│   ├── autobattle/      # Autobattle scripting (TODO)
-│   ├── autogrind/       # Autogrind system (TODO)
-│   └── ui/              # UI components (TODO)
-│
-├── data/                # Game data (JSON)
-│   ├── jobs.json        # Job definitions
-│   ├── abilities.json   # Ability definitions
-│   └── monsters.json    # Monster definitions
-│
-└── assets/              # Art, audio, fonts
-    ├── sprites/
-    ├── audio/
-    └── fonts/
-```
+## Jobs
 
-## Core Systems
+| Type | Jobs |
+|---|---|
+| Starter | Fighter, Cleric, Mage, Rogue, Bard |
+| Advanced | Guardian, Ninja, Summoner, Speculator |
+| Meta | Scriptweaver, Time Mage, Necromancer, Bossbinder, Skiptrotter |
 
-### 1. Brave/Default Combat
+Old IDs `white_mage` / `black_mage` / `thief` alias to `cleric` / `mage` / `rogue`
+via `data/job_aliases.json`. Per-world names: `docs/job_evolutions_by_world.md`.
 
-The battle system is inspired by *Bravely Default*:
-
-- **Attack**: Basic physical attack
-- **Abilities**: Job-specific skills (costs MP)
-- **Items**: Use consumables (TODO)
-- **Default**: Skip turn, gain +1 AP, reduce damage by 50%
-- **Brave**: Spend AP to take multiple actions in one turn
-
-**AP (Action Points)**:
-- Range: -4 to +4
-- Start each battle at 0
-- Default gives +1 AP
-- Brave spends AP (can go into debt)
-- If AP is negative, you skip turns to pay it back
-
-### 2. Job System
-
-Jobs define a character's stats and abilities:
-
-**Starter Jobs**:
-- **Fighter**: High HP/Attack, physical damage dealer
-- **White Mage**: Healer, support magic
-- **Black Mage**: Offensive magic damage
-- **Thief**: Fast, can steal items/gold
-
-**Meta Jobs** (the unique twist):
-- **Scriptweaver**: Edit damage formulas, EXP rates, game constants
-- **Time Mage**: Save manipulation, rewind, undo permadeath
-- **Necromancer**: Powerful dark magic, can corrupt/wipe saves
-
-### 3. Meta-Mechanics
-
-**Save Corruption**:
-- Using meta abilities increases corruption (0.0 to 1.0)
-- High corruption causes random effects when saving/loading
-- Effects: stat drain, HP corruption, AP instability, etc.
-
-**Game Constants** (modifiable by Scriptweaver):
-- `exp_multiplier`: Change experience gain rate
-- `damage_multiplier`: Modify all damage
-- `gold_multiplier`: Adjust gold drops
-- `encounter_rate`: Control random encounters
-- And more!
-
-**Time Mage Powers** (when unlocked):
-- Autosave functionality
-- Rewind to previous saves
-- Create restore points
-- Undo permadeath
-
-### 4. Battle Manager
-
-The `BattleManager` singleton (`src/battle/BattleManager.gd`) handles:
-- Turn order calculation (based on Speed stat)
-- Action execution and resolution
-- Victory/defeat conditions
-- AI for enemies
-- Autobattle mode (TODO)
-
-### 5. Combat Flow
+## Project Structure (top level)
 
 ```
-Battle Start
-  ↓
-Calculate Turn Order (by Speed)
-  ↓
-Round Start
-  ↓
-For each combatant in turn order:
-  - If AP < 0: skip turn, gain +1 AP
-  - If Player: show action menu
-  - If Enemy/Autobattle: execute AI
-  - Execute action
-  - Check victory/defeat
-  ↓
-Round End → Next Round
+project.godot        Godot project (main scene src/GameLoop.tscn)
+CLAUDE.md            Living design + status document (authoritative for agents)
+src/                 battle/, jobs/, autobattle/, autogrind/, exploration/, maps/,
+                     meta/ (GameState, Version), save/, llm/, ui/, audio/, cutscene/, quests/ ...
+data/                JSON data: jobs, abilities, monsters, items, equipment, locations,
+                     music_manifest, job_world_names, cutscenes/, quests/, maps/ ...
+assets/              sprites, audio, fonts
+docs/                design canon, story bible, specs, design proposals
+test/                headless test runner (unit/, smoke/, isolated/)
+tools/, scripts/     build, screenshot and asset tooling
 ```
-
-## Current Test Battle
-
-When you run the game, you'll see a test battle:
-- **Hero** (Fighter) vs **Slime** (Enemy)
-- Try the different action buttons:
-  - **Attack**: Basic attack
-  - **Default**: Gain AP and defend
-  - **Brave (x2 Attack)**: Attack twice, spend 1 AP
-
-Watch the battle log and character stats update in real-time!
-
-## What's Next?
-
-### Phase 1 (Current)
-- [x] Core battle system
-- [x] AP mechanics
-- [x] Job system foundation
-- [x] Basic UI
-- [ ] **Ability system** (expand beyond basic attack)
-- [ ] Item system
-- [ ] Enemy AI improvements
-
-### Phase 2 (Next)
-- [ ] Autobattle scripting UI
-- [ ] Conditional logic (`if HP < 25%`, etc.)
-- [ ] Save/load autobattle scripts
-- [ ] Job-specific scripting verbs
-
-### Phase 3
-- [ ] Autogrind system
-- [ ] Risk/reward mechanics
-- [ ] Adaptive enemies
-- [ ] Meta-bosses from corruption
-
-### Phase 4
-- [ ] World map
-- [ ] Town → Dungeon progression
-- [ ] Character progression
-- [ ] Story integration
-
-## Development Notes
-
-### Adding a New Job
-
-1. Edit `data/jobs.json`
-2. Define stat modifiers and abilities
-3. Restart the game to reload data
-
-### Adding a New Ability
-
-1. Edit `data/abilities.json`
-2. Define type, MP cost, effects
-3. Add execution logic in `BattleManager._execute_ability()` if needed
-
-### Adding a New Monster
-
-1. Edit `data/monsters.json`
-2. Define stats, abilities, rewards
-3. Create an instance in battle setup
 
 ## Design Philosophy
-
-From `CLAUDE.md`:
 
 1. **Automation is core gameplay** - Not a shortcut, but the point
 2. **Exploitation is rewarded** - Clever abuse is celebrated
 3. **Stakes must be real** - Consequences make choices meaningful
 4. **Meta is diegetic** - Fourth-wall breaks are in-universe mechanics
-5. **Prototype fast, validate early** - Prove fun before polish
 
 ## Contributing
 
-This is currently a solo project by Carmelo Piccione (struktured), but the design is documented in `CLAUDE.md` for reference.
+Solo project by Carmelo Piccione (struktured). Design lives in `CLAUDE.md` and `docs/`.
 
 ## License
 
-Not yet determined. Currently in prototype phase.
+Not yet determined.
 
 ---
 
-**Struktured Labs - 2025**
+**Struktured Labs**
