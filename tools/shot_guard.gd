@@ -94,10 +94,8 @@ static func pin_conditions(root: Node, where: String) -> bool:
 
 
 ## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
-## rect" is the property that matters and node.visible is not it. Reports rather than dies:
-## a badly framed shot is still worth writing to disk so a human can look at it — but the log
-## must not call it good.
-## Returns false when the subject is not drawn at all: a hidden node has a position, so "IN FRAME" off it was a reading of nothing.
+## rect" is the property that matters and node.visible is not it. A caller dies on false, before it saves, so a cut or hidden subject never reaches the gallery as a fresh frame.
+## Returns false when the subject is not drawn at all (a hidden node still has a position) or is not wholly inside the frame: either way the picture cannot show it.
 static func frame_report(label: String, node: Node, tree_root: Window) -> bool:
 	if node == null or not (node is CanvasItem):
 		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
@@ -114,5 +112,5 @@ static func frame_report(label: String, node: Node, tree_root: Window) -> bool:
 	var inside := pos.x >= 0.0 and pos.y >= 0.0 and end.x <= size.x and end.y <= size.y
 	print("[SHOT] %s framing: screen=(%.0f, %.0f)-(%.0f, %.0f) frame=%dx%d -> %s" % [
 		label, pos.x, pos.y, end.x, end.y, int(size.x), int(size.y),
-		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
-	return true
+		"IN FRAME" if inside else "⛔ OUT OF FRAME — the subject is not wholly in the picture"])
+	return inside

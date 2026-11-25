@@ -24,9 +24,9 @@ const ShotGuard = preload("res://tools/shot_guard.gd")
 
 const ALERT_RADIUS := 150.0   ## RoamingMonster.ALERT_RADIUS — the tell's trigger distance
 const VOID_BYTES := 20000
-## Shifts the view down so the elite, which the ground plane's projection pushes well below
-## the player, lands in frame. Measured against the rendered result, not derived.
-const CAM_OFFSET := Vector2(20.0, 150.0)
+## Shifts the view so the elite and its tell land in frame. Measured against the rendered result, not derived.
+## 150 framed an elite placed from the player's BODY; it is now placed from the drawn player, 140.6 px higher (6d0e68475 clipped the tell 19 px off the top at 150).
+const CAM_OFFSET := Vector2(20.0, 150.0 - 140.6)
 ## Camera magnification. 1.0 reproduces every shot taken before 2026-09-10 exactly, so this
 ## argument cannot silently change an existing capture — it has to be asked for.
 ##
