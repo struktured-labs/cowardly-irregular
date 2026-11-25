@@ -64,7 +64,7 @@ func _key(kc: Key) -> InputEventKey:
 	return e
 
 
-func _pad(b: JoyButton) -> InputEventJoypadButton:
+func _pad(b: int) -> InputEventJoypadButton:
 	var e := InputEventJoypadButton.new()
 	e.button_index = b
 	e.pressed = true
