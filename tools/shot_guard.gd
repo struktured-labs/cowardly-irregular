@@ -91,3 +91,28 @@ static func pin_conditions(root: Node, where: String) -> bool:
 			gs.weather_changed.emit("clear")
 	print("[SHOT] conditions (%s): weather=%s day_phase=%.2f paused=%s" % [where, gs.weather_condition, float(gs.day_phase), str(gs.playtime_paused)])
 	return true
+
+
+## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
+## rect" is the property that matters and node.visible is not it. Reports rather than dies:
+## a badly framed shot is still worth writing to disk so a human can look at it — but the log
+## must not call it good.
+## Returns false when the subject is not drawn at all: a hidden node has a position, so "IN FRAME" off it was a reading of nothing.
+static func frame_report(label: String, node: Node, tree_root: Window) -> bool:
+	if node == null or not (node is CanvasItem):
+		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
+		return false
+	var ci := node as CanvasItem
+	if not ci.is_visible_in_tree():
+		print("[SHOT] %s framing: ⛔ HIDDEN — the node is not drawn, so it is not in the picture wherever it sits" % label)
+		return false
+	var pos: Vector2 = ci.get_global_transform_with_canvas().origin
+	var end: Vector2 = pos
+	if ci is Control:
+		end = pos + (ci as Control).size * ci.get_global_transform_with_canvas().get_scale()
+	var size: Vector2 = Vector2(tree_root.get_texture().get_width(), tree_root.get_texture().get_height())
+	var inside := pos.x >= 0.0 and pos.y >= 0.0 and end.x <= size.x and end.y <= size.y
+	print("[SHOT] %s framing: screen=(%.0f, %.0f)-(%.0f, %.0f) frame=%dx%d -> %s" % [
+		label, pos.x, pos.y, end.x, end.y, int(size.x), int(size.y),
+		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
+	return true

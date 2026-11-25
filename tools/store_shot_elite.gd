@@ -200,7 +200,7 @@ func _init() -> void:
 		# image with no tell in it at all. The reader takes that line as "the prompt is in
 		# the shot", which is the one thing it never measured.
 		print("[SHOT] tell node visible (distance gate fired): \"%s\"" % str(tell.text))
-	if not _report_framing("tell", tell, root) or not _report_framing("elite", elite, root):
+	if not ShotGuard.frame_report("tell", tell, root) or not ShotGuard.frame_report("elite", elite, root):
 		_die("a subject of the shot is not drawn, so the picture cannot show it")
 		return
 
@@ -259,7 +259,7 @@ func _init() -> void:
 	if row == null:
 		_die("no Label containing \"%s\" under the prompt layer — the menu opened but did not render its choices. Labels present: %s" % [ELITE_FIGHT_TEXT, str(_label_texts(menu_layer, []))])
 		return
-	if not _report_framing("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root):
+	if not ShotGuard.frame_report("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root):
 		_die("the choice row is not drawn, so the picture cannot show it")
 		return
 
@@ -319,31 +319,6 @@ func _label_texts(n: Node, acc: Array) -> Array:
 			acc.append(str((c as Label).text))
 		_label_texts(c, acc)
 	return acc
-
-
-## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
-## rect" is the property that matters and node.visible is not it. Reports rather than dies:
-## a badly framed shot is still worth writing to disk so a human can look at it — but the log
-## must not call it good.
-## Returns false when the subject is not drawn at all: a hidden node has a position, so "IN FRAME" off it was a reading of nothing.
-func _report_framing(label: String, node: Node, tree_root: Window) -> bool:
-	if node == null or not (node is CanvasItem):
-		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
-		return false
-	var ci := node as CanvasItem
-	if not ci.is_visible_in_tree():
-		print("[SHOT] %s framing: ⛔ HIDDEN — the node is not drawn, so it is not in the picture wherever it sits" % label)
-		return false
-	var pos: Vector2 = ci.get_global_transform_with_canvas().origin
-	var end: Vector2 = pos
-	if ci is Control:
-		end = pos + (ci as Control).size * ci.get_global_transform_with_canvas().get_scale()
-	var size: Vector2 = Vector2(tree_root.get_texture().get_width(), tree_root.get_texture().get_height())
-	var inside := pos.x >= 0.0 and pos.y >= 0.0 and end.x <= size.x and end.y <= size.y
-	print("[SHOT] %s framing: screen=(%.0f, %.0f)-(%.0f, %.0f) frame=%dx%d -> %s" % [
-		label, pos.x, pos.y, end.x, end.y, int(size.x), int(size.y),
-		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
-	return true
 
 
 func _die(msg: String) -> void:
