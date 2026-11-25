@@ -365,6 +365,7 @@ func _tick_mood(delta: float) -> void:
 		_dir = Vector2.ZERO
 		_face_player()
 		_show_tell()
+		_announce_spotted()
 	elif _mood != Mood.CALM and dist > ALERT_RADIUS * 1.6:
 		_mood = Mood.CALM
 		_show_tell()
@@ -721,6 +722,27 @@ func _tick_elite_watch() -> void:
 		_tell.visible = true
 	elif not _prompt_open:
 		_tell.visible = false
+
+
+## The "!" rose in silence; it now sounds once per spotting, and a pack that spots you in the same moment shares one cue.
+const SPOTTED_SFX := "monster_spotted"
+const SPOTTED_SHARED_GAP_MS := 600
+static var _last_spotted_ms: int = -SPOTTED_SHARED_GAP_MS
+
+
+## Test hook: the gap is script-wide, so it survives between test files unless a file resets it.
+static func _reset_spotted_gap() -> void:
+	_last_spotted_ms = -SPOTTED_SHARED_GAP_MS
+
+
+func _announce_spotted() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_spotted_ms < SPOTTED_SHARED_GAP_MS:
+		return
+	_last_spotted_ms = now
+	var sm: Node = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui(SPOTTED_SFX)
 
 
 ## The tell rose in silence; it now sounds once as it appears, at most once per NOTICE_COOLDOWN_MS so the edge of the radius cannot chatter.
