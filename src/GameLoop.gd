@@ -1561,7 +1561,8 @@ func _input(event: InputEvent) -> void:
 
 	# L shoulder / L key = open Party Chat menu (exploration only, opt-in flavor cutscenes)
 	if event.is_action_pressed("party_chat"):
-		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu:
+		## The field editor (and its ring, which reads keys in _unhandled_input) is up: never Party Chat over it.
+		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu and not _field_editor_open():
 			if InputLockManager and InputLockManager.is_locked():
 				get_viewport().set_input_as_handled()
 				return
