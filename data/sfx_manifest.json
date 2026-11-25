@@ -15966,6 +15966,11 @@
       "whisper_heard": "The ink is running. I can see the blank parts of the page from here.",
       "whisper_score": 1.0,
       "gain_db": 1.0
+    },
+    "elite_notice": {
+      "file": "assets/audio/sfx/elite_notice.ogg",
+      "prompt": "A field elite notices you: a low beating tremolo swell (110/113.5 Hz) under a thin dissonant minor-second glint (880/932 Hz), short reverb tail, no melody. Synthesised with SoX, not ElevenLabs; -13.9 LUFS, peak -4.9 dBFS.",
+      "duration_seconds": 0.95
     }
   }
 }
