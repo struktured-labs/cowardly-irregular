@@ -18,7 +18,6 @@ const AUTHORED_AHEAD := {
 	"race_condition_pair": "W5 — no village placement yet",
 	"traveler_w6": "W6 — no village placement yet",
 	"madame_orrery_w6": "W6 — no village placement yet",
-	"last_shopkeeper_w6": "W6 — no village placement yet",
 }
 
 ## One NAMED member per resolution path — a count control passes on a sweep that resolved nothing.
