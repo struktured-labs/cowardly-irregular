@@ -178,3 +178,17 @@ func test_a_boss_that_speaks_when_it_loses_speaks_when_it_wins() -> void:
 			mute.append("%s: %s" % [id, _silent_end(monsters, dialogue, str(id))])
 	assert_gt(judged, 15, "CONTROL: the bosses with a losing line were found")
 	assert_eq(mute, [], "bosses that speak when they lose but are silent when they win")
+
+
+## 2026-11-25 (cowir-story): no cutscene introduces a Vertex trial (battle 27612), so with the intro kept for doors that play no cutscene,
+## a trial boss opens on its monsters.json intro, and all three had none. Each must open its own fight.
+func test_every_trial_boss_opens_its_own_fight() -> void:
+	var trials: Dictionary = load("res://src/battle/TrialRouting.gd").get_script_constant_map().get("TRIAL_MONSTERS", {})
+	assert_eq(trials.size(), 3, "CONTROL: the three trials were read")
+	var monsters := _json("res://data/monsters.json")
+	var silent: Array = []
+	for t in trials:
+		var row: Variant = monsters.get(str(trials[t]), {})
+		if not _has_lines((row as Dictionary).get("dialogue", {}) if row is Dictionary else {}, "intro"):
+			silent.append("%s (%s)" % [trials[t], t])
+	assert_eq(silent, [], "trial bosses that open their fight in silence")

@@ -5931,6 +5931,9 @@
     "id": "the_operator",
     "name": "The Operator",
     "dialogue": {
+      "intro": [
+        "The Operator: 'You automated everything. So did I. I automated you. Shall we see whose script finishes first?'"
+      ],
       "low_hp": [
         "The Operator: 'Variance. In MY run. Somebody logged a manual input.'"
       ]
@@ -5994,6 +5997,9 @@
     "id": "the_examiner",
     "name": "The Examiner",
     "dialogue": {
+      "intro": [
+        "The Examiner: 'Sit. Turn the paper over when you are ready. There is no time limit. There is only the mark.'"
+      ],
       "low_hp": [
         "The Examiner: 'Five minutes remaining. I find I am the one checking the clock.'"
       ]
@@ -6059,6 +6065,9 @@
     "id": "the_margin",
     "name": "The Margin",
     "dialogue": {
+      "intro": [
+        "The Margin: 'One hit, and everything left over is me. Go on. Show me how little remains.'"
+      ],
       "low_hp": [
         "The Margin: 'You're rounding me down. Nobody rounds me down.'"
       ]
