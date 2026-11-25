@@ -282,6 +282,7 @@ func _play_encounter_beat() -> void:
 		push_warning("[MasteriteEncounter] cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene — going straight to the fight" % cutscene_id)
 		return
 	await director.play_cutscene(cutscene_id)
+	GameState.boss_intro_cutscene_for = monster_id
 
 
 func _fire_battle() -> void:

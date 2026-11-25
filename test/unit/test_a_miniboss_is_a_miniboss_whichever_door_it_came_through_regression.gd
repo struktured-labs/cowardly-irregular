@@ -22,6 +22,7 @@ var enemy_positions: Array = [Vector2(100, 100)]
 var test_enemies: Array = []
 var party_members: Array = []
 var lines: Array = []
+var _boss_dialogue_data: Dictionary = {}
 func log_message(t): lines.append(t)
 func _update_ui(): pass
 func _on_enemy_died(_e): pass
