@@ -627,10 +627,12 @@ func spawn_encounter_enemies() -> void:
 		var enemy_id: String = str(valid_ids[i])
 		var base_id := _encounter_base_id(enemy_id, monsters_data)
 		var elite_data: Dictionary = {}
+		var is_field_elite := false
 		if base_id != "" and EncounterSystem.spawn_level_of(enemy_id) > 0:
 			elite_data = EncounterSystem._create_enemy_data(enemy_id)   # a floor's re-levelled spawn
 		elif base_id != "":
 			elite_data = _scaled_field_elite_data(base_id)
+			is_field_elite = true
 		else:
 			base_id = enemy_id
 		var monster_data: Dictionary = monsters_data[base_id]
@@ -704,6 +706,12 @@ func spawn_encounter_enemies() -> void:
 				var dlg: Dictionary = (monster_data["dialogue"] as Dictionary).duplicate(true)
 				dlg.erase("intro")
 				_scene._boss_dialogue_data = dlg
+		elif is_field_elite and not encounter_has_boss and EncounterSystem.has_method("field_elite_lines"):
+			## No cutscene precedes an elite, so its intro stays; it speaks without becoming a boss (no banner, no boss music).
+			var elite_lines: Dictionary = EncounterSystem.field_elite_lines(base_id)
+			if not elite_lines.is_empty():
+				enemy.set_meta("field_elite_speaker", true)
+				_scene._boss_dialogue_data = elite_lines
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
