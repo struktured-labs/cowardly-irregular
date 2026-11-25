@@ -1019,6 +1019,7 @@ func _refresh_mapping_prompt() -> void:
 		_mapping_status.text = "%s   ·   %s\nHold any pad button %.0fs = skip this control   ·   Keyboard %s = skip   ·   Keyboard %s = cancel" % [
 			_mapping.pad_name, _mapping.guid, MAPPING_HOLD_SKIP_SEC,
 			OS.get_keycode_string(MAPPING_SKIP_KEY), OS.get_keycode_string(MAPPING_CANCEL_KEY)]
+	_restack_mapping()
 
 
 ## Consumes raw pad events during a mapping walk. Keyboard is NOT bindable here — an SDL
@@ -1053,6 +1054,7 @@ func _handle_mapping_input(event: InputEvent) -> void:
 		var owner: String = _mapping.control_using(token)
 		if owner != "":
 			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, hold it to skip, or keyboard %s to skip." % [owner, OS.get_keycode_string(MAPPING_SKIP_KEY)]
+			_restack_mapping()
 
 
 func _start_mapping_hold(button: int, bound_control: String, at_index: int) -> void:
@@ -1218,10 +1220,13 @@ func _update_mapping_idle_label() -> void:
 	if _mapping_idle_label == null or not is_instance_valid(_mapping_idle_label):
 		return
 	var left: float = MAPPING_IDLE_LIMIT - _mapping_idle
+	var was: String = _mapping_idle_label.text
 	if _mapping == null or left > MAPPING_IDLE_WARN_AT:
 		_mapping_idle_label.text = ""
-		return
-	_mapping_idle_label.text = "No progress — releasing this screen in %.0fs.\nPress the control the prompt asks for to carry on." % max(0.0, left)
+	else:
+		_mapping_idle_label.text = "No progress — releasing this screen in %.0fs.\nPress the control the prompt asks for to carry on." % max(0.0, left)
+	if _mapping_idle_label.text != was:
+		_restack_mapping()
 
 
 func _cancel_mapping() -> void:
@@ -1247,6 +1252,7 @@ func _build_mapping_overlay() -> void:
 	_mapping_overlay.add_child(bg)
 
 	var title := Label.new()
+	title.name = "MappingTitle"
 	title.text = "MAP THIS PAD"
 	title.position = Vector2(size.x * 0.5 - 80, size.y * 0.32)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
@@ -1274,6 +1280,35 @@ func _build_mapping_overlay() -> void:
 	_mapping_idle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_mapping_idle_label.add_theme_color_override("font_color", WARN_COLOR)
 	_mapping_overlay.add_child(_mapping_idle_label)
+	_restack_mapping()
+
+
+## The walk's four lines, top to bottom, with the screen fraction each was authored at (its floor).
+func _mapping_lines() -> Array:
+	return [[_mapping_overlay.get_node_or_null("MappingTitle"), 0.32], [_mapping_prompt, 0.42], [_mapping_status, 0.52], [_mapping_idle_label, 0.62]]
+
+
+## Wraps the walk's lines to one centred column (480 px at 100%, wider with Text Size, never off screen) and stacks each
+## under the one before, so a long status or a large Text Size cannot run them together or past the edge. Run after any text change.
+func _restack_mapping() -> void:
+	if _mapping_overlay == null or not is_instance_valid(_mapping_overlay) or size.x <= 32.0:
+		return
+	var w: float = minf(480.0 * _tf(), size.x - 32.0)
+	var x: float = (size.x - w) * 0.5
+	var bottom: float = 0.0
+	for pair in _mapping_lines():
+		var l: Label = pair[0]
+		if l == null:
+			continue
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var h: float = _wrapped_h(l, w) if l.text != "" else 0.0
+		l.position = Vector2(x, maxf(size.y * float(pair[1]), bottom + 8.0 if bottom > 0.0 else 0.0))
+		bottom = l.position.y + h
+	if bottom > size.y - 16.0:
+		var lift: float = bottom - (size.y - 16.0)
+		for pair in _mapping_lines():
+			if pair[0] != null:
+				(pair[0] as Label).position.y = maxf(16.0, (pair[0] as Label).position.y - lift)
 
 
 func _toggle_nintendo_mode() -> void:
