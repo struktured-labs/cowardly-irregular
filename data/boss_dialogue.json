@@ -2316,5 +2316,68 @@
     "defeat_lines": [
       "Optimization Itself: 'Four processes, terminated. One remains. You see? It was always going to be one.'"
     ]
+  },
+  "cave_troll": {
+    "display_name": "Cave Troll",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*The Cave Troll sits back down in the dark. It did not even need to stand all the way up.*"
+    ]
+  },
+  "shadow_knight": {
+    "display_name": "Shadow Knight",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "Shadow Knight: Now you know the road. Lie down on it a while."
+    ]
+  },
+  "treasure_mimic": {
+    "display_name": "Treasure Mimic",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*The mimic closes its lid with a satisfied click. It is a treasure chest again. It is very patient.*"
+    ]
+  },
+  "ironback_beetle": {
+    "display_name": "Ironback Beetle",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*The beetle wanders off, not one scratch deeper than before.*"
+    ]
+  },
+  "cursed_armor": {
+    "display_name": "Cursed Armor",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "Cursed Armor: Not strong enough... to wear me. No one ever is."
+    ]
+  },
+  "blood_wolf_alpha": {
+    "display_name": "Blood Wolf Alpha",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*The alpha howls once. The pack comes out of the trees to see what it caught.*"
+    ]
+  },
+  "crystal_golem": {
+    "display_name": "Crystal Golem",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*In every face of the crystal, a reflection of your party lies still.*"
+    ]
+  },
+  "rogue_automaton": {
+    "display_name": "Rogue Automaton",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*KILL_ALL_HUMANS.EXE: 4 OF 4 TARGETS COMPLETE. AWAITING NEXT DIRECTIVE.*"
+    ]
+  },
+  "elder_mushroom": {
+    "display_name": "Elder Mushroom",
+    "_comment": "Miniboss wipe line (cowir-story 2026-11-25): plays when it wipes the party; its intro/low_hp/defeat live in monsters.json.",
+    "defeat_lines": [
+      "*The spores settle over the party like a blanket. The forest will take its time with you.*"
+    ]
   }
 }
