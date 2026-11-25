@@ -2685,6 +2685,7 @@ func _step_battle(step: Dictionary) -> void:
 	if game_loop == null or not game_loop.has_method("start_solo_battle"):
 		push_warning("CutsceneDirector: GameLoop.start_solo_battle unavailable — cutscene battle step skipped")
 		return
+	var attempts := 0
 	while true:
 		# CutsceneDirector (layer 95) + CutsceneDialogue (96) render OVER the BattleScene (layer 0) —
 		# without hiding, the spotlight battle plays under the cutscene UI and the player can't see it.
@@ -2693,8 +2694,14 @@ func _step_battle(step: Dictionary) -> void:
 		if _dialogue != null and is_instance_valid(_dialogue):
 			_dialogue.visible = false
 		_battle_in_flight = true
+		## Spec 2026-06-30: the intro plays on the first attempt only; a retry drops straight to battle.
+		if attempts > 0 and GameState:
+			GameState.boss_intro_cutscene_for = str(enemies[0])
+		attempts += 1
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
 		_battle_in_flight = false
+		if GameState and GameState.boss_intro_cutscene_for == str(enemies[0]):
+			GameState.boss_intro_cutscene_for = ""
 		visible = true
 		# Restore what was found: all five duel scenes narrate before they fight, so a hardcoded true re-opened the closed box over the win and over the retry sting.
 		if _dialogue != null and is_instance_valid(_dialogue):
