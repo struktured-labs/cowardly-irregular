@@ -90,6 +90,7 @@ const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full
 ## Raising the number is the cheap move if a real bound is ever needed; a clamp is not.
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
+const STATUS_RIGHT_MARGIN := 8.0  # "AUTO: ON/OFF" ends at least this far inside the right edge
 const LEGEND_H := 48.0  # the legend strip at Text Size 1.0; _legend_h is what it is now (it grows up when its lines wrap)
 const GRID_BOTTOM_GAP := 24.0  # F12 2026-09-20: 2px of air left the selected card truncated into the help strip
 
@@ -602,6 +603,19 @@ func _update_status_label() -> void:
 	var enabled = AutobattleSystem.is_autobattle_enabled(character_id)
 	_status_label.text = "AUTO: %s" % ("ON" if enabled else "OFF")
 	_status_label.add_theme_color_override("font_color", Color.LIME if enabled else Color.GRAY)
+	_place_status_label()
+
+
+## "AUTO: ON/OFF" keeps its old spot (size.x - 120) while it fits there; at Text Size 2.0+ the face's 3x step made
+## "AUTO: OFF" wider than those 120 px and it ran off the right edge ("AUTO: OF"), so it moves left just enough to end
+## STATUS_RIGHT_MARGIN px inside the screen. Measured in the tree after the text is set (the minimum is stale otherwise).
+func _place_status_label() -> void:
+	if _status_label == null or not _status_label.is_inside_tree():
+		return
+	_status_label.update_minimum_size()
+	_status_label.reset_size()
+	var w: float = _status_label.get_minimum_size().x
+	_status_label.position.x = minf(size.x - 120.0, size.x - STATUS_RIGHT_MARGIN - w)
 
 
 func _refresh_grid() -> void:
