@@ -8,6 +8,8 @@ extends GutTest
 const GE := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const LONGEST := "Nothing can follow Stop Grinding -- it ends the session."
+## Rules of its own: an empty profile opens the composer over the grid instead, which is a different screen.
+const RULES := [{"enabled": true, "conditions": [{"type": "battles_done", "op": ">=", "value": 50}], "actions": [{"type": "stop_grinding"}]}]
 
 var _ag: Dictionary
 var _saved: float = 1.0
@@ -18,6 +20,7 @@ func before_each() -> void:
 	AutogrindSystem._test_disable_persistence = true
 	AutobattleSystem._test_disable_persistence = true
 	_saved = float(GameState.text_size_scale)
+	AutogrindSystem.set_autogrind_rules(RULES.duplicate(true))
 
 
 func after_each() -> void:
@@ -45,6 +48,8 @@ func _editor_at(scale: float) -> Control:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(ed.get_viewport().get_visible_rect().size, Vector2(1280, 720), "CONTROL: the editor is laid out on a 1280x720 screen")
+	assert_false(ed.rules.is_empty(), "CONTROL: the editor loaded rules, so it shows the grid and not the composer")
+	assert_null(ed._rule_composer_overlay, "CONTROL: the composer is not open over the frame")
 	return ed
 
 
