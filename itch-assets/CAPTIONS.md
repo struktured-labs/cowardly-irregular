@@ -4,7 +4,7 @@
 
 | captured at | shots | section |
 |---|---|---|
-| `v3.33.750-alpha` | `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` (`battle_storm` · `grimhollow_spiral` re-shot at `.807`; the three dungeon frames at `.809`) | commit `1df31b2fb` |
+| `v3.33.750-alpha` | (none left: the three `field_elite_*` re-shot at `.827`; `battle_storm` · `grimhollow_spiral` re-shot at `.807`; the three dungeon frames at `.809`) | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
 | `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
 | `v3.33.770-alpha` | `tavern_interior` (`whispering_cave` re-shot at `.809`; `inn_interior` re-shot at `.802`; `ironhaven_village` · `eldertree_village` · `shop_interior` at `.807`) | "re-shot at `v3.33.770-alpha`, door labels hidden" |
@@ -17,11 +17,22 @@
 | `v3.33.810-alpha` | `ironhaven_village` | "re-shot at `v3.33.810-alpha`, who walks there now" |
 | `v3.33.813-alpha` | `battle` · `battle_storm` · `grimhollow_spiral` · `harmonia_village` · `frosthold_village` · `sandrift_village` | "re-shot at `v3.33.813-alpha`, the frames follow the doors" |
 | `v3.33.814-alpha` | `grimhollow_village` | "re-shot at `v3.33.814-alpha`, framed inside its walls" |
+| `v3.33.827-alpha` | `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` | "re-shoot the three elite frames at v3.33.827-alpha, the tell in frame" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-25: re-shot at `v3.33.827-alpha`, the tell in frame.** From `.826` the elite shot tool places the elite from
+the player's SEEN position (Mode 7 draws the player 140.6 px above the body; the old placement sat 0.48 px outside the
+150 px alert radius, so the tell never showed) and refuses a frame whose subject is hidden or cut off. All three
+frames replaced, each run A of the `.827` publish's own store recheck, read by eye at `.826` and again at `.827`.
+Moved vs the shipped `.750` frame / run A vs run B: `field_elite_medieval` 37.30% / 0.03% · `field_elite_prompt_medieval`
+21.84% / 0.09% · `field_elite_steampunk` 20.72% / 0.34%. Read: "Dark Knight / It is watching you." in purple above the
+knight, wholly in frame; the prompt frame shows the same tell under Fight / Leave it; "Brass Golem / It is watching
+you." is in frame but LOW CONTRAST (measured 1.33:1 against the brick, medieval 1.36:1; an outline is struktured's
+call). Nothing is HELD any more.
 
 **2026-11-20: re-shot at `v3.33.814-alpha`, framed inside its walls.** The frame held at `.813`. From `.814` the shot
 tool keeps a village's view inside the map (`[SHOT] view held inside the map: centre (260, 244) -> (320, 244)` in this

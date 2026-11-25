@@ -1,5 +1,5 @@
 itch-assets/.gdignore 4294967295 0
-itch-assets/CAPTIONS.md 689855542 57974
+itch-assets/CAPTIONS.md 2196604783 59101
 itch-assets/PROVENANCE.md 3230051840 17021
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
@@ -224,9 +224,9 @@ itch-assets/eldertree_tile_bug_crop.png 2897233908 32412
 itch-assets/screenshots/battle.png 2899098383 96418
 itch-assets/screenshots/battle_storm.png 3585875528 98388
 itch-assets/screenshots/eldertree_village.png 2012652301 154810
-itch-assets/screenshots/field_elite_medieval.png 4060120550 1131562
-itch-assets/screenshots/field_elite_prompt_medieval.png 1503115347 851339
-itch-assets/screenshots/field_elite_steampunk.png 1748496739 758636
+itch-assets/screenshots/field_elite_medieval.png 1844508982 1154763
+itch-assets/screenshots/field_elite_prompt_medieval.png 679288122 860757
+itch-assets/screenshots/field_elite_steampunk.png 761473714 638404
 itch-assets/screenshots/frosthold_village.png 895421756 175853
 itch-assets/screenshots/grimhollow_spiral.png 154513396 154750
 itch-assets/screenshots/grimhollow_village.png 1759859577 173251
