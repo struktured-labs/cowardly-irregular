@@ -54,6 +54,7 @@ var _status_flash_token: int = 0
 var _grid_container: Control
 var _cursor: Control
 var _profile_label: Label
+var _profile_pill: ColorRect = null  # the profile indicator's backing; sized to its label by _lay_out_top
 var _details_panel: Control
 var _keyboard: Control = null
 var _reset_confirm: Control = null
@@ -192,7 +193,7 @@ func _build_ui() -> void:
 	var profile_name = AutogrindSystem.get_active_autogrind_profile_name()
 	_title_label.text = "AUTOGRIND - %s" % profile_name
 	_title_label.position = Vector2(16, 8)
-	_title_label.add_theme_font_size_override("font_size", _fit_px(_title_label.text, 14, Vector2(size.x - 200 - 16 - 8, 40)))
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(14))  # never shrunk; _lay_out_top drops the name instead
 	_title_label.add_theme_color_override("font_color", style.text)
 	add_child(_title_label)
 
@@ -212,6 +213,7 @@ func _build_ui() -> void:
 	_status_label.add_theme_color_override("font_color", style.highlight_text)
 	_status_label.text = STATUS_DEFAULT_TEXT
 	add_child(_status_label)
+	_lay_out_top()
 
 	# Grid container (shifted right for details panel)
 	_grid_container = Control.new()
@@ -284,6 +286,7 @@ func _build_profile_panel() -> void:
 	panel.position = Vector2(size.x - 200, 4)
 	panel.size = Vector2(190, 22)
 	add_child(panel)
+	_profile_pill = panel
 
 	var profile_idx = AutogrindSystem.get_active_autogrind_profile_index()
 	var profiles = AutogrindSystem.get_autogrind_profiles()
@@ -294,7 +297,7 @@ func _build_profile_panel() -> void:
 	_profile_label = Label.new()
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
 	_profile_label.position = Vector2(size.x - 195, 6)
-	_profile_label.add_theme_font_size_override("font_size", _fit_px(_profile_label.text, 11, Vector2(185, 20)))
+	_profile_label.add_theme_font_size_override("font_size", TextScale.scaled(11))  # never shrunk; the pill grows (_lay_out_top)
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
 
@@ -375,6 +378,33 @@ func _update_profile_indicator() -> void:
 		profile_name = profiles[profile_idx].get("name", "Default")
 
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
+	_lay_out_top()
+
+
+## The top band: text grows, never shrinks (it used to be _fit_px'd down to fit fixed boxes). The profile pill keeps
+## its old 190 x 22 while its name fits, else grows LEFT and DOWN to hold the label; the status line steps below it.
+## The title reads "AUTOGRIND - <name>" when that fits left of the pill, else "AUTOGRIND" (the pill shows the name).
+## Measured in the tree after the text is set.
+func _lay_out_top() -> void:
+	if _profile_pill == null or _profile_label == null or not _profile_label.is_inside_tree():
+		return
+	_profile_label.update_minimum_size()
+	_profile_label.reset_size()
+	var m: Vector2 = _profile_label.get_minimum_size()
+	var w: float = maxf(190.0, m.x + 10.0)
+	_profile_pill.position = Vector2(size.x - 10.0 - w, 4.0)
+	_profile_pill.size = Vector2(w, maxf(22.0, m.y + 4.0))
+	_profile_label.position = Vector2(_profile_pill.position.x + 5.0, 6.0)
+	if _title_label and is_instance_valid(_title_label):
+		var full: String = "AUTOGRIND - %s" % AutogrindSystem.get_active_autogrind_profile_name()
+		var fnt: Font = _title_label.get_theme_font("font")
+		var px: int = _title_label.get_theme_font_size("font_size")
+		var room: float = _profile_pill.position.x - 8.0 - _title_label.position.x
+		_title_label.text = full if fnt == null or fnt.get_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= room else "AUTOGRIND"
+		_title_label.update_minimum_size()
+		_title_label.reset_size()
+	if _status_label and is_instance_valid(_status_label):
+		_status_label.position.y = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
