@@ -2383,13 +2383,6 @@
     "resistances": [
       "dark"
     ],
-    "dialogue": {
-      "intro": [
-        "*A dog trots up to the party*",
-        "*It looks... normal?*",
-        "*Something about its eyes says otherwise.*"
-      ]
-    },
     "spectrum_ratio": 4.758622
   },
   "cranky_lady": {

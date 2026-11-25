@@ -26,6 +26,11 @@ const BASE_VILLAGE := "res://src/maps/villages/BaseVillage.gd"
 const BASE_INTERIOR := "res://src/maps/interiors/BaseInterior.gd"
 
 
+## Its last room left SoundManager in that room's world, so the next sound file inherited a w6_ prefix (2026-11-24 seat log).
+func after_each() -> void:
+	SoundState.restore()
+
+
 func _code(path: String) -> String:
 	return FileAccess.get_file_as_string(path)
 

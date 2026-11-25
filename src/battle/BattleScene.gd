@@ -952,6 +952,9 @@ func _boss_combatant() -> Node:
 	for enemy in test_enemies:
 		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
 			return enemy
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy) and enemy.has_meta("field_elite_speaker"):
+			return enemy
 	if test_enemies.size() > 0 and is_instance_valid(test_enemies[0]):
 		return test_enemies[0]
 	return null
@@ -7652,7 +7655,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	## feels symmetric.
 	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
 		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
-			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and target.has_meta("is_boss"):
+			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and (target.has_meta("is_boss") or target.has_meta("field_elite_speaker")):
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
@@ -8320,11 +8323,8 @@ func _stage_defeat_scene(victory: bool) -> void:
 	if not (victory and not _boss_defeat_spoken and _boss_dialogue_data.has("defeat") and _boss_dialogue_data["defeat"].size() > 0):
 		return
 	_boss_defeat_spoken = true
-	var boss_name: String = "Boss"
-	for enemy in test_enemies:
-		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
-			boss_name = enemy.combatant_name
-			break
+	var speaker: Node = _boss_combatant()
+	var boss_name: String = speaker.combatant_name if speaker else "Boss"
 	if _boss_beat_expected():
 		_deferred_defeat_scene = {"speaker": boss_name, "lines": _boss_dialogue_data["defeat"]}
 		return

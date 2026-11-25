@@ -872,6 +872,12 @@ func _load_field_elite_cfg() -> Dictionary:
 	return _field_elite_cfg
 
 
+## A field elite's own lines, keyed by species; {} for a species with none (a boss speaks from monsters.json).
+func field_elite_lines(species: String) -> Dictionary:
+	var lines = _load_field_elite_cfg().get("elite_lines", {}).get(species, {})
+	return (lines as Dictionary).duplicate(true) if lines is Dictionary else {}
+
+
 ## The party average at the moment the fight starts, not the monster's authored level.
 ## Live roster when GameLoop has one — player_party is only refreshed on menu open and save,
 ## so a level earned since then must still pin the elite. Returns -1 when there is no party
