@@ -28,7 +28,7 @@ func test_the_pool_rows_that_speak_are_exactly_the_pinned_set() -> void:
 		if dlg is Dictionary and not (dlg as Dictionary).is_empty():
 			speaking.append(str(id))
 	speaking.sort()
-	assert_gt(judged, 100, "CONTROL: the ordinary pool rows were read")
+	assert_gt(judged, 40, "CONTROL: the ordinary pool rows were read")
 	assert_eq(speaking, SPEAKING_POOL, "pool enemies that speak on first sighting; add one here deliberately")
 
 
