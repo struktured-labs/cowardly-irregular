@@ -3545,10 +3545,14 @@ func _note_simulate_scroll() -> void:
 	var scroll: ScrollContainer = _simulate_panel.get_node("SimulateScroll")
 	var hint: Label = scroll.get_node("SimulateLines/SimulateHint")
 	hint.get_parent().remove_child(hint)
-	scroll.size.y -= hint.get_combined_minimum_size().y + 8.0
 	hint.text = "Rules are first-match-wins, top to bottom. Up/Down scrolls; any other key closes."
+	## Measured from the font at the scroll's width: out of its VBox the label's cached size is the container's, not its own.
+	var fs: int = hint.get_theme_font_size("font_size")
+	var hh: float = hint.get_theme_font("font").get_multiline_string_size(hint.text, HORIZONTAL_ALIGNMENT_LEFT, scroll.size.x, fs).y
+	scroll.size.y -= hh + 8.0
+	hint.custom_minimum_size = Vector2(scroll.size.x, hh)
 	hint.position = Vector2(scroll.position.x, scroll.position.y + scroll.size.y + 8.0)
-	hint.size.x = scroll.size.x
+	hint.size = Vector2(scroll.size.x, hh)
 	_simulate_panel.add_child(hint)
 
 
