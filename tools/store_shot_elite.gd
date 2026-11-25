@@ -154,7 +154,9 @@ func _init() -> void:
 		print("[SHOT] zoom %s is not positive — falling back to %s" % [str(zoom_f), str(DEFAULT_ZOOM)])
 		zoom_f = DEFAULT_ZOOM
 	print("[SHOT] camera zoom: %sx" % str(zoom_f))
-	var target: Vector2 = ow.player.global_position + off
+	# Mode 7 draws the player 140.6 px above their body and the elite measures from the DRAWN player, so place it from there (from the body it sat at 150.5 > 150).
+	var seen: Vector2 = elite._player_seen_pos() if elite.has_method("_player_seen_pos") and elite.get("_player_ref") != null else ow.player.global_position
+	var target: Vector2 = seen + off
 	# Screen position is what matters and the overworld does not map world->screen linearly
 	# (the ground is drawn on a skewed plane), so report both and let the offset be tuned
 	# against the measurement rather than against a guess.
@@ -169,11 +171,8 @@ func _init() -> void:
 	# elite is then centre-frame by construction whatever the projection does, and the player
 	# stays in shot because the tell is distance-gated and they must be close anyway.
 	var cam2: Camera2D = ow.get_viewport().get_camera_2d()
-	# The elite's own _process skips its watch while the player "cannot step", which a shot harness reports; tick it as live play would.
-	print("[SHOT] elite _process watch gated off by _cannot_step: %s" % str(elite._cannot_step(elite.get("_player_ref"))))
 	for i in range(30):
 		elite.global_position = target
-		elite._tick_elite_watch()
 		# Camera2D.offset, NOT global_position: the camera follows the player (it is driven
 		# every frame), so an assigned position is overwritten before the next draw — measured,
 		# the frame did not move. offset is not recomputed by the follow logic, so it sticks.
@@ -182,7 +181,6 @@ func _init() -> void:
 			cam2.zoom = Vector2(zoom_f, zoom_f)
 		await process_frame
 	elite.global_position = target
-	elite._tick_elite_watch()
 	if cam2:
 		cam2.offset = CAM_OFFSET
 		cam2.zoom = Vector2(zoom_f, zoom_f)
@@ -192,7 +190,7 @@ func _init() -> void:
 		print("[SHOT] ⚠ no MoodTell node — capturing anyway, but the prompt will be absent")
 	elif not tell.visible:
 		print("[SHOT] ⚠ MoodTell is HIDDEN (dist=%.1f, ALERT_RADIUS=%.1f) — the shot will not show the prompt"
-			% [elite.global_position.distance_to(ow.player.global_position), ALERT_RADIUS])
+			% [elite.global_position.distance_to(seen), ALERT_RADIUS])
 	else:
 		# `tell.visible` is a NODE PROPERTY. It says the distance gate fired, NOT that the
 		# label lands inside the captured frame — and the old line printed "tell visible"
