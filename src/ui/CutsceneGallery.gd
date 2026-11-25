@@ -507,6 +507,8 @@ func _try_replay_selected() -> void:
 	## play_cutscene returns silently when it cannot load or is refused; hiding first left the gallery invisible and deaf (_playing drops input).
 	if not _cutscene_director.can_play(entry.id):
 		push_warning("[GALLERY] '%s' cannot play; the gallery stays open" % entry.id)
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
 		return
 	if SoundManager:
 		SoundManager.play_ui("menu_select")

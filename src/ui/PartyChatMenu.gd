@@ -298,6 +298,8 @@ func _play_selected() -> void:
 	## play_cutscene returns silently when it cannot load or is refused; hiding first left the menu invisible and deaf (_playing drops input).
 	if not _cutscene_director.can_play(cutscene_id):
 		push_warning("[PARTY CHAT] '%s' cannot play; the menu stays open and the chat stays unviewed" % cutscene_id)
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
 		return
 	_playing = true
 	# Hide panel while cutscene plays so it doesn't overlay the scene
