@@ -32,8 +32,11 @@ func test_the_pool_rows_that_speak_are_exactly_the_pinned_set() -> void:
 	assert_eq(speaking, SPEAKING_POOL, "pool enemies that speak on first sighting; add one here deliberately")
 
 
-func test_every_pinned_pool_enemy_has_an_intro() -> void:
+## 2026-11-25 (cowir-story): the first-sighting fight carries intro AND low_hp (battle 5525639f2), and three of four had no low_hp.
+func test_every_pinned_pool_enemy_has_an_intro_and_a_wounded_line() -> void:
 	var monsters := _json("res://data/monsters.json")
 	for id in SPEAKING_POOL:
-		var intro: Variant = ((monsters.get(id, {}) as Dictionary).get("dialogue", {}) as Dictionary).get("intro", [])
-		assert_true(intro is Array and (intro as Array).size() > 0, "%s opens its first sighting" % id)
+		var dlg: Dictionary = (monsters.get(id, {}) as Dictionary).get("dialogue", {})
+		for t in ["intro", "low_hp"]:
+			var lines: Variant = dlg.get(t, [])
+			assert_true(lines is Array and (lines as Array).size() > 0, "%s speaks its %s in its first-sighting fight" % [id, t])

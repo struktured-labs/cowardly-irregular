@@ -3245,6 +3245,9 @@
         "*The air shimmers where something should be*",
         "*It's not invisible. It's ABSENT.*",
         "Hero: How do you fight something that isn't there?"
+      ],
+      "low_hp": [
+        "*For a moment it is almost there: an outline, a name on the tip of the world's tongue. Then not.*"
       ]
     },
     "spectrum_ratio": 5.794722
@@ -3302,6 +3305,9 @@
         "*It keeps changing. 42. 'hello'. NaN. true. undefined.*",
         "Hero: What... what ARE you?",
         "Forgotten Variable: I used to be important. I think."
+      ],
+      "low_hp": [
+        "Forgotten Variable: Wait. Wait. I was a counter. I was counting something. What was I counting?"
       ]
     },
     "spectrum_ratio": 5.874054
@@ -3368,6 +3374,9 @@
         "*Inside it: the symbol {} *",
         "Hero: It's empty.",
         "Empty Set: That's the point."
+      ],
+      "low_hp": [
+        "Empty Set: You're taking things out of me. There was nothing in me. How are you doing that?"
       ]
     },
     "spectrum_ratio": 5.719474
