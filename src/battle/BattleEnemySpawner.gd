@@ -462,6 +462,9 @@ func spawn_forced_enemies() -> void:
 
 	var enemy_names: Array = []
 	var is_boss_battle = false
+	var intro_spoken_by: String = GameState.boss_intro_cutscene_for if GameState else ""
+	if GameState:
+		GameState.boss_intro_cutscene_for = ""
 
 	for i in range(_scene.forced_enemies.size()):
 		var enemy_id = _scene.forced_enemies[i]
@@ -498,6 +501,11 @@ func spawn_forced_enemies() -> void:
 			# Store dialogue data for this boss
 			if monster_data.has("dialogue"):
 				_scene._boss_dialogue_data = monster_data["dialogue"]
+				## A duel retry already heard this intro (spec 2026-06-30: retry drops straight to battle); copy, the row is the cached database.
+				if intro_spoken_by == enemy_id:
+					var dlg: Dictionary = (monster_data["dialogue"] as Dictionary).duplicate(true)
+					dlg.erase("intro")
+					_scene._boss_dialogue_data = dlg
 
 		# Set abilities from monster data so AI can use them
 		if monster_data.has("abilities"):
