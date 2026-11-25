@@ -178,6 +178,28 @@ func test_every_door_that_plays_a_boss_cutscene_leaves_the_note() -> void:
 		assert_true(src.contains(doors[path]), "%s plays a boss cutscene and never tells the spawner, so the boss repeats its intro" % path)
 
 
+func test_every_vertex_trial_boss_opens_on_its_own_line() -> void:
+	## Story 27655/27657: no cutscene introduces a trial, so each occupant's intro must survive the encounter spawn.
+	var trials: Dictionary = TrialRouting.TRIAL_MONSTERS
+	assert_eq(trials.size(), 3, "CONTROL: the three Vertex trials")
+	for trial in trials:
+		var species := str(trials[trial])
+		var intro: Array = _row(species).get("dialogue", {}).get("intro", [])
+		assert_false(intro.is_empty(), "CONTROL: %s authors an intro" % species)
+		var host := _spawn([species])
+		assert_eq(_lines(host, "intro"), intro, "the %s trial's %s lost its opening line" % [trial, species])
+
+
+func test_the_antechamber_plays_no_cutscene_so_leaves_no_note() -> void:
+	var room = autofree(load("res://src/maps/dungeons/VertexAntechamber.gd").new())
+	assert_eq(str(room.boss_cutscene_id), "", "the Antechamber gained a boss cutscene; its trial intro would now be dropped after it")
+	var cave := ProbeCave.new()
+	cave.boss_id = "the_operator"
+	add_child_autofree(cave)
+	await cave._show_boss_intro()
+	assert_eq(GameState.boss_intro_cutscene_for, "", "a door with no cutscene told the spawner one had spoken")
+
+
 func test_the_render_smokes_wipe_boss_skips_its_cave_so_leaves_its_note() -> void:
 	## .826 pre-gate: the wipe leg starts Umbraxis as an encounter without his cave, so his kept intro held the battle unstarted.
 	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
@@ -186,3 +208,24 @@ func test_the_render_smokes_wipe_boss_skips_its_cave_so_leaves_its_note() -> voi
 	var lead := src.substr(maxi(0, start - 300), 300)
 	assert_true(lead.contains('GameState.boss_intro_cutscene_for = "shadow_dragon"'),
 		"the smoke's wipe leg starts Umbraxis without the note his cave leaves; his intro panel holds the battle and no wipe comes")
+
+
+func test_the_castle_warden_opens_on_his_own_lines() -> void:
+	## battle 27612 inferred this: the F3 Warden fires from the stairs with no cutscene, so his row's lines must reach the fight.
+	var row := _row("castle_warden")
+	for key in ["intro", "low_hp", "defeat"]:
+		assert_false((row["dialogue"][key] as Array).is_empty(), "CONTROL: castle_warden authors a %s" % key)
+	var host := _spawn(["castle_warden"])
+	assert_eq(host.test_enemies.size(), 1, "CONTROL: the Castle Warden spawns")
+	for key in ["intro", "low_hp", "defeat"]:
+		assert_eq(_lines(host, key), row["dialogue"][key], "the Castle Warden fought without his %s" % key)
+
+
+func test_the_warden_door_leaves_no_cutscene_note() -> void:
+	var src := FileAccess.get_file_as_string("res://src/maps/dungeons/CastleHarmonia.gd")
+	var start := src.find("func _trigger_warden_battle()")
+	assert_gt(start, 0, "CONTROL: CastleHarmonia still opens the Warden fight in _trigger_warden_battle")
+	var end := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (end if end > 0 else src.length()) - start)
+	assert_true(body.contains("battle_triggered.emit([WARDEN_ID])"), "CONTROL: the body read is the Warden's door")
+	assert_false(body.contains("boss_intro_cutscene_for"), "the Warden door says a cutscene spoke his intro, but none plays there; his opening line would be dropped")
