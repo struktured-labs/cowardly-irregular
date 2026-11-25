@@ -1683,8 +1683,8 @@ func _input(event: InputEvent) -> void:
 		_save_current_as_preset()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode >= KEY_4 and event.keycode < KEY_4 + MAX_CUSTOM_PRESETS:
-		_apply_custom_preset(event.keycode - KEY_4)
+	elif event is InputEventKey and event.pressed and not event.is_echo() and _custom_slot_for_key(event.keycode) >= 0:
+		_apply_custom_preset(_custom_slot_for_key(event.keycode))
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_D and not event.is_echo():
@@ -1761,6 +1761,17 @@ func _options_ring_spec() -> Dictionary:
 
 
 ## Slots 1-3 always (an empty one says so), plus a row for every further slot that holds a preset.
+## The saved slot a number key loads ([4]..[9]), or -1; each key is spelled out so the binding guards can read it.
+func _custom_slot_for_key(keycode: int) -> int:
+	if keycode == KEY_4: return 0
+	if keycode == KEY_5: return 1
+	if keycode == KEY_6: return 2
+	if keycode == KEY_7: return 3
+	if keycode == KEY_8: return 4
+	if keycode == KEY_9: return 5
+	return -1
+
+
 func _custom_slot_rows() -> Array:
 	var out: Array = []
 	for i in range(clampi(_custom_presets.size(), 3, MAX_CUSTOM_PRESETS)):
@@ -1770,10 +1781,13 @@ func _custom_slot_rows() -> Array:
 
 ## Every arm calls the SAME handler its key binding calls — the pad gains a route, not a behaviour.
 func _commit_autogrind_option(chosen_id: String) -> void:
-	if chosen_id.begins_with("custom_") and chosen_id.substr(7).is_valid_int():
-		_apply_custom_preset(int(chosen_id.substr(7)) - 1)
-		return
 	match chosen_id:
+		"custom_1": _apply_custom_preset(0)
+		"custom_2": _apply_custom_preset(1)
+		"custom_3": _apply_custom_preset(2)
+		"custom_4": _apply_custom_preset(3)
+		"custom_5": _apply_custom_preset(4)
+		"custom_6": _apply_custom_preset(5)
 		"safety_hp":
 			_cycle_safety("hp")
 		"safety_battles":
