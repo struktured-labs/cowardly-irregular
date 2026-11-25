@@ -157,6 +157,7 @@ func _init() -> void:
 	# Mode 7 draws the player 140.6 px above their body and the elite measures from the DRAWN player, so place it from there (from the body it sat at 150.5 > 150).
 	var seen: Vector2 = elite._player_seen_pos() if elite.has_method("_player_seen_pos") and elite.get("_player_ref") != null else ow.player.global_position
 	var target: Vector2 = seen + off
+	print("[SHOT] seen offset %s (Mode 7 draws the player there); elite will sit %.1f from the drawn player" % [str(seen - ow.player.global_position), off.length()])
 	# Screen position is what matters and the overworld does not map world->screen linearly
 	# (the ground is drawn on a skewed plane), so report both and let the offset be tuned
 	# against the measurement rather than against a guess.
