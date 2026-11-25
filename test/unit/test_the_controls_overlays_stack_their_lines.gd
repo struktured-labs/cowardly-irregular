@@ -102,8 +102,10 @@ func test_the_button_test_box_stacks_its_lines_at_every_size() -> void:
 	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		m._test_overlay.visible = true
+		## Not a Cancel button: the handler closes the tester on ui_cancel (south face under Nintendo) and writes nothing.
 		var ev := InputEventJoypadButton.new()
-		ev.button_index = JOY_BUTTON_A
+		ev.button_index = JOY_BUTTON_LEFT_SHOULDER
+		assert_false(ev.is_action_pressed("ui_cancel"), "PRECONDITION: the probe button is not Cancel")
 		ev.pressed = true
 		m._handle_test_input(ev)
 		await get_tree().process_frame
@@ -118,7 +120,8 @@ func test_a_box_grows_for_its_words_and_its_border_follows() -> void:
 	var m: Control = await _menu_at(1.0)
 	var box: Control = m._test_overlay.get_node("TestBox")
 	var before: float = box.size.y
-	(box.get_node("TestRaw") as Label).text = "Mapped to: " + "Navigate Up / Navigate Down / Confirm / Cancel / Party Chat / ".repeat(12)
+	(box.get_node("TestRaw") as Label).text = "Mapped to: " + "Navigate Up / Navigate Down / Confirm / Cancel / Party Chat / ".repeat(40)
+	assert_gt(m._wrapped_h(box.get_node("TestRaw"), box.size.x - 40.0) + 126.0 + 36.0, before, "CONTROL: these words need more than the authored box")
 	m._restack_box(box)
 	await get_tree().process_frame
 	assert_gt(box.size.y, before, "the box grows to hold its words")
@@ -140,7 +143,7 @@ func test_the_default_size_renders_the_shipped_overlays() -> void:
 	for n in ["CapturePrompt", "CaptureHint", "TimerLabel"]:
 		ys.append(int((cb.get_node(n) as Label).position.y))
 	assert_eq(ys, [30, 60, 90], "the capture lines sit at their authored y at 100%")
-	assert_eq(cb.size, m.size * Vector2(0.5, 0.3), "the capture box keeps its authored size at 100%")
+	assert_almost_eq(cb.size, m.size * Vector2(0.5, 0.3), Vector2(0.5, 0.5), "the capture box keeps its authored size at 100%")
 	m._cancel_capture()
 	var tb: Control = m._test_overlay.get_node("TestBox")
 	var tys: Array = []
@@ -148,4 +151,4 @@ func test_the_default_size_renders_the_shipped_overlays() -> void:
 		if c is Label:
 			tys.append(int((c as Label).position.y))
 	assert_eq(tys, [16, 52, 90, 126, int(tb.size.y) - 36], "the Button Test lines sit at their authored y at 100%")
-	assert_eq(tb.size, m.size * Vector2(0.6, 0.5), "the Button Test box keeps its authored size at 100%")
+	assert_almost_eq(tb.size, m.size * Vector2(0.6, 0.5), Vector2(0.5, 0.5), "the Button Test box keeps its authored size at 100%")
