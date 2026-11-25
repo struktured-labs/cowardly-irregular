@@ -56,10 +56,15 @@ class ProbeCave:
 
 class ProbeDirector:
 	extends Node
+	signal cutscene_started(cutscene_id: String)
 	var played: Array = []
+	var refuse: bool = false
 
 	func play_cutscene(cutscene_id: String) -> void:
+		if refuse:
+			return
 		played.append(cutscene_id)
+		cutscene_started.emit(cutscene_id)
 
 
 class ProbeLoop:
@@ -146,10 +151,20 @@ func test_the_forced_miniboss_door_carries_its_row_dialogue() -> void:
 
 
 func test_a_dungeon_notes_the_boss_its_cutscene_introduced() -> void:
+	await _cave_door(false)
+
+
+func test_a_refused_boss_cutscene_leaves_no_note() -> void:
+	## The director refuses silently when another cutscene is playing or the file will not load; nothing spoke, so the intro stays.
+	await _cave_door(true)
+
+
+func _cave_door(refuse: bool) -> void:
 	assert_null(get_tree().root.get_node_or_null("GameLoop"), "FLOOR: a real GameLoop is up; this arm's stub would shadow it")
 	if get_tree().root.get_node_or_null("GameLoop") != null:
 		return
 	var director := ProbeDirector.new()
+	director.refuse = refuse
 	var loop := ProbeLoop.new()
 	loop.name = "GameLoop"
 	loop.director = director
@@ -160,8 +175,12 @@ func test_a_dungeon_notes_the_boss_its_cutscene_introduced() -> void:
 	cave.boss_cutscene_id = "world1_pyrroth_intro"
 	add_child_autofree(cave)
 	await cave._show_boss_intro()
-	assert_eq(director.played, ["world1_pyrroth_intro"], "CONTROL: the cave played its boss cutscene")
-	assert_eq(GameState.boss_intro_cutscene_for, "fire_dragon", "the cave played Pyrroth's cutscene and did not say so to the spawner")
+	if refuse:
+		assert_eq(director.played, [], "CONTROL: the director refused, so no cutscene played")
+		assert_eq(GameState.boss_intro_cutscene_for, "", "a refused cutscene told the spawner it spoke; Pyrroth would fight with no intro at all")
+	else:
+		assert_eq(director.played, ["world1_pyrroth_intro"], "CONTROL: the cave played its boss cutscene")
+		assert_eq(GameState.boss_intro_cutscene_for, "fire_dragon", "the cave played Pyrroth's cutscene and did not say so to the spawner")
 	get_tree().root.remove_child(loop)
 	loop.free()
 
