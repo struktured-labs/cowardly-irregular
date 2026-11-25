@@ -15,13 +15,14 @@ const WHISPERING := preload("res://src/maps/dungeons/WhisperingCave.gd")
 const FIRE_CAVE := preload("res://src/maps/dungeons/FireDragonCave.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const _DIRECTIONS := ["ui_up", "ui_down", "ui_left", "ui_right"]
-const _FLOOR_KEYS := ["whispering_cave_floor", "fire_dragon_cave_floor"]
+const _FLOOR_KEYS := ["whispering_cave_floor", "fire_dragon_cave_floor", "event_flag_dragon_cave_entered"]
 
 var _viewport: SubViewport
 var _held: Dictionary = {}
 var _cave: Node = null
 var _added_in_step: Array[String] = []
 var _added_total: int = 0
+var _held_pool: Array = []
 
 
 func before_each() -> void:
@@ -38,6 +39,7 @@ func before_each() -> void:
 			GameState.game_constants.erase(key)
 	_added_in_step = []
 	_added_total = 0
+	_held_pool = _encounter_pool()
 	get_tree().node_added.connect(_on_node_added)
 
 
@@ -49,11 +51,28 @@ func after_each() -> void:
 			GameState.game_constants.erase(key)
 			if _held.has(key):
 				GameState.game_constants[key] = _held[key]
+	_restore_encounter_pool()
 	if _viewport and is_instance_valid(_viewport):
 		_viewport.queue_free()
 	_cave = null
 	for a in _DIRECTIONS:
 		Input.action_release(a)
+
+
+## A floor change pushes its pool into EncounterSystem; left behind, the next file's grind fights L14 cave spawns.
+func _encounter_pool() -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	return [] if es == null else Array(es.current_enemy_pool).duplicate()
+
+
+func _restore_encounter_pool() -> void:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null:
+		return
+	var typed: Array[String] = []
+	for id in _held_pool:
+		typed.append(str(id))
+	es.current_enemy_pool = typed
 
 
 func after_all() -> void:
@@ -120,3 +139,25 @@ func test_a_portal_warp_rebuilds_outside_the_physics_step() -> void:
 	assert_eq(_added_in_step, [] as Array[String],
 		"these areas entered the tree inside the physics step — the engine refuses their setup there")
 	await get_tree().create_timer(1.0).timeout
+
+
+func test_a_floor_change_puts_the_encounter_pool_back() -> void:
+	var planted: Array[String] = ["slime", "bat"]
+	EncounterSystem.set_enemy_pool(planted)
+	var before: Array = _encounter_pool()
+	assert_eq(before, ["slime", "bat"], "CONTROL: this arm's own pool is in place, whatever an earlier file left")
+	var cave = FIRE_CAVE.new()
+	await _settle(cave)
+	cave.puzzle_warp_to(2, cave.player.global_position)
+	await _wait_for_floor(cave, 1)
+	assert_ne(_encounter_pool(), before, "CONTROL: the floor change pushed its own pool, so there was something to leak")
+	await get_tree().create_timer(1.0).timeout
+	var cave_pool: Array = _encounter_pool()
+	_restore_encounter_pool()
+	assert_ne(_held_pool, cave_pool, "CONTROL: the pool this file found is not the cave's, so a restore is visible")
+	assert_eq(_encounter_pool(), _held_pool, "the next file's grind draws from the pool this file found, not this cave's L14 floor")
+	assert_true(GameState.game_constants.has("event_flag_dragon_cave_entered"), "CONTROL: entering the cave fired its party-chat flag")
+	var had: bool = _held.has("event_flag_dragon_cave_entered")
+	after_each()
+	assert_eq(GameState.game_constants.has("event_flag_dragon_cave_entered"), had, "the cave's entry flag is back to what the file found")
+	before_each()

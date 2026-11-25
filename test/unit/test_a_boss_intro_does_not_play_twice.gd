@@ -102,12 +102,18 @@ func _spawn(route: String, id: String) -> SpawnHost:
 	var h := _host()
 	var s := BattleEnemySpawner.new(h)
 	if route == "encounter":
+		## Every arm's "encounter" is a dungeon boss after its cutscene; that door now says so explicitly.
+		GameState.boss_intro_cutscene_for = id
 		h.encounter_enemies = [id]
 		s.spawn_encounter_enemies()
 	else:
 		h.forced_enemies = [id]
 		s.spawn_forced_enemies()
 	return h
+
+
+func after_each() -> void:
+	GameState.boss_intro_cutscene_for = ""
 
 
 func test_the_symbols_this_file_drives_exist() -> void:

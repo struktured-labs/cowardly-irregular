@@ -85,7 +85,7 @@ func test_the_shape_that_was_being_lost_is_still_a_failure() -> void:
 
 func test_the_rest_of_the_output_spec_is_intact() -> void:
 	var p: String = DP.build_rule_composition("autobattle", "burn things", [], _kit())
-	for required in ["name: short (3-6 words)", "description: 1 sentence",
+	for required in ["name: at most ", "description: 1 sentence",
 			"conditions and actions must use only the verbs listed above",
 			"There is no 'weakest_enemy'"]:
 		assert_true(p.find(required) != -1, "the output spec must still carry: %s" % required)

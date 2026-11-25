@@ -264,6 +264,8 @@ var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true
 ##   "defeat_cutscene": String (optional, played by dungeon when scene re-instantiates)
 ## }
 var pending_boss_defeat: Dictionary = {}
+## The boss whose intro a dungeon cutscene just played; the spawner drops that row's in-battle intro once, then clears it. Not saved.
+var boss_intro_cutscene_for: String = ""
 
 var playtime_paused: bool = false
 
@@ -308,6 +310,19 @@ var event_log: EventLog = null
 ## Story flag helpers
 func set_story_flag(flag_name: String, value: bool = true) -> void:
 	story_flags[flag_name] = value
+
+## A pool monster's first-sighting intro plays once per save; set only when its panel shows in a live battle.
+func pool_intro_heard(species: String) -> bool:
+	var heard = game_constants.get("pool_intro_heard", {})
+	return heard is Dictionary and bool((heard as Dictionary).get(species, false))
+
+
+func mark_pool_intro_heard(species: String) -> void:
+	var prior = game_constants.get("pool_intro_heard", {})
+	var heard: Dictionary = (prior as Dictionary).duplicate() if prior is Dictionary else {}
+	heard[species] = true
+	game_constants["pool_intro_heard"] = heard
+
 
 func get_story_flag(flag_name: String) -> bool:
 	return story_flags.get(flag_name, false)
@@ -1343,6 +1358,7 @@ func reset_game_state() -> void:
 	party_leader_index = 0
 	_write_party_formation(0)
 	pending_boss_defeat = {}
+	boss_intro_cutscene_for = ""
 	# QuestSystem v1 + fast travel (2026-07-01): without these clears a
 	# second New Game starts with prior-run quests already complete and
 	# every crystal lit — same leak class as the 2026-04-30 fix above.

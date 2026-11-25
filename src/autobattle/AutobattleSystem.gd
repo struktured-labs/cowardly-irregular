@@ -31,6 +31,7 @@ var cancel_all_next_turn: bool = false
 
 ## Max profiles per character (GBA-like limit)
 const MAX_PROFILES_PER_CHARACTER: int = 8
+const PROFILE_NAME_MAX := 16  # the rename keyboard's cap; every profile-name writer applies it via cap_profile_name
 
 ## character_id → job_id for the named starter party. Item 13: used to seed
 ## real Defensive/Aggressive preset profiles from AutobattleRuleTemplates
@@ -1328,7 +1329,7 @@ func create_new_profile(character_id: String, name: String = "") -> int:
 		name = "Custom %d" % (profiles.size() + 1)
 
 	profiles.append({
-		"name": name,
+		"name": cap_profile_name(name),
 		"script": _create_empty_script(character_id)
 	})
 
@@ -1344,9 +1345,19 @@ func rename_profile(character_id: String, index: int, new_name: String) -> bool:
 	if index < 0 or index >= profiles.size() or new_name.is_empty():
 		return false
 
-	profiles[index]["name"] = new_name
+	profiles[index]["name"] = cap_profile_name(new_name)
 	_save_character_profiles()
 	return true
+
+
+
+## Every profile-name writer goes through this (create, rename, an installed composition), so a name can never be
+## longer than the rename keyboard allows: an LLM-composed title used to become the profile name uncapped and run off
+## the editor's profile pill. Over the cap it is cut with "…" INSIDE the cap. Names already in a save are not touched.
+static func cap_profile_name(n: String) -> String:
+	if n.length() <= PROFILE_NAME_MAX:
+		return n
+	return n.substr(0, PROFILE_NAME_MAX - 1).strip_edges() + "…"
 
 
 func install_composition_as_new_profile(character_id: String, composition: Dictionary) -> int:
@@ -1363,7 +1374,7 @@ func install_composition_as_new_profile(character_id: String, composition: Dicti
 	var raw_rules = composition.get("rules", [])
 	var rules: Array = raw_rules if raw_rules is Array else []
 	profiles.append({
-		"name": comp_name,
+		"name": cap_profile_name(comp_name),  # the full title stays in script.name, and the editor's install line shows it
 		"script": {
 			"character_id": character_id,
 			"name": comp_name,

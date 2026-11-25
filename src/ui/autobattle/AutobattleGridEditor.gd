@@ -52,6 +52,7 @@ var _keyboard: Control = null  # VirtualKeyboard type
 const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 var _profile_label: Label
+var _profile_pill: ColorRect = null  # the profile indicator's backing; sized to its label by _place_profile_pill
 var _stats_panel: Control
 var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
 var _option_picker: Control = null # Generic option-picker overlay (condition/action/item/target)
@@ -447,6 +448,7 @@ func _build_profile_panel() -> void:
 	panel.position = Vector2(size.x - 180, 4)
 	panel.size = Vector2(170, 22)
 	add_child(panel)
+	_profile_pill = panel
 
 	var profile_idx = AutobattleSystem.get_active_profile_index(character_id)
 	var profiles = AutobattleSystem.get_character_profiles(character_id)
@@ -460,6 +462,7 @@ func _build_profile_panel() -> void:
 	_profile_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
+	_place_profile_pill()
 
 
 func _update_profile_indicator() -> void:
@@ -474,6 +477,24 @@ func _update_profile_indicator() -> void:
 		profile_name = profiles[profile_idx].get("name", "Default")
 
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
+	_place_profile_pill()
+
+
+## The profile pill keeps its old 170 x 22 at the right edge while its name fits; a long name (the rename keyboard
+## takes 16 characters) or a larger Text Size grows it LEFT and DOWN to hold the whole label, and "AUTO: ON/OFF"
+## steps down below it. Measured in the tree after the text is set.
+func _place_profile_pill() -> void:
+	if _profile_pill == null or _profile_label == null or not _profile_label.is_inside_tree():
+		return
+	_profile_label.update_minimum_size()
+	_profile_label.reset_size()
+	var m: Vector2 = _profile_label.get_minimum_size()
+	var w: float = maxf(170.0, m.x + 10.0)
+	_profile_pill.position = Vector2(size.x - 10.0 - w, 4.0)
+	_profile_pill.size = Vector2(w, maxf(22.0, m.y + 4.0))
+	_profile_label.position = Vector2(_profile_pill.position.x + 5.0, 6.0)
+	if _status_label and is_instance_valid(_status_label):
+		_status_label.position.y = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
 
 
 func _build_stats_panel() -> void:
@@ -616,6 +637,8 @@ func _place_status_label() -> void:
 	_status_label.reset_size()
 	var w: float = _status_label.get_minimum_size().x
 	_status_label.position.x = minf(size.x - 120.0, size.x - STATUS_RIGHT_MARGIN - w)
+	if _profile_pill and is_instance_valid(_profile_pill):  # below the profile pill, which grows down at 2.0+
+		_status_label.position.y = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
 
 
 func _refresh_grid() -> void:
@@ -3664,7 +3687,7 @@ func _open_rename_profile() -> void:
 	_keyboard = VirtualKeyboardClass.new()
 	_keyboard.size = size
 	add_child(_keyboard)
-	_keyboard.setup("Rename Profile", current_name, 16)
+	_keyboard.setup("Rename Profile", current_name, AutobattleSystem.PROFILE_NAME_MAX)
 
 	# Connect signals
 	_keyboard.text_submitted.connect(_on_profile_renamed)
@@ -4008,6 +4031,7 @@ func _open_rule_composer_overlay() -> void:
 
 func _on_composer_installed(profile_index: int) -> void:
 	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile."""
+	var full_title: String = _composed_title()
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
 		_rule_composer_overlay.queue_free()
 	_rule_composer_overlay = null
@@ -4022,10 +4046,21 @@ func _on_composer_installed(profile_index: int) -> void:
 	_scroll_offset = 0.0
 	_build_ui()
 	_refresh_grid()
-	if profile_index >= 0:
+	if profile_index >= 0 and not full_title.is_empty():
+		_flash_status("Composed profile \"%s\" installed (slot %d)" % [full_title, profile_index])
+	elif profile_index >= 0:
 		_flash_status("Composed profile installed (slot %d)" % profile_index)
 	else:
 		_flash_status("Composed rules applied to current profile")
+
+
+## The composition's full title, read before the overlay is freed. A profile name is capped (PROFILE_NAME_MAX), so the
+## install line is where the player reads the whole title the composer gave it.
+func _composed_title() -> String:
+	if _rule_composer_overlay == null or not is_instance_valid(_rule_composer_overlay):
+		return ""
+	var comp = _rule_composer_overlay.get("_last_composition")
+	return str((comp as Dictionary).get("name", "")) if comp is Dictionary else ""
 
 
 func _on_composer_cancelled() -> void:

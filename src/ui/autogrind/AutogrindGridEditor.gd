@@ -54,6 +54,8 @@ var _status_flash_token: int = 0
 var _grid_container: Control
 var _cursor: Control
 var _profile_label: Label
+var _top_band_h: float = GRID_BASE_POS.y  # where the grid starts: below the status line, which steps below a grown pill
+var _profile_pill: ColorRect = null  # the profile indicator's backing; sized to its label by _lay_out_top
 var _details_panel: Control
 var _keyboard: Control = null
 var _reset_confirm: Control = null
@@ -192,7 +194,7 @@ func _build_ui() -> void:
 	var profile_name = AutogrindSystem.get_active_autogrind_profile_name()
 	_title_label.text = "AUTOGRIND - %s" % profile_name
 	_title_label.position = Vector2(16, 8)
-	_title_label.add_theme_font_size_override("font_size", _fit_px(_title_label.text, 14, Vector2(size.x - 200 - 16 - 8, 40)))
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(14))  # never shrunk; _lay_out_top drops the name instead
 	_title_label.add_theme_color_override("font_color", style.text)
 	add_child(_title_label)
 
@@ -212,11 +214,12 @@ func _build_ui() -> void:
 	_status_label.add_theme_color_override("font_color", style.highlight_text)
 	_status_label.text = STATUS_DEFAULT_TEXT
 	add_child(_status_label)
+	_lay_out_top()
 
 	# Grid container (shifted right for details panel)
 	_grid_container = Control.new()
-	_grid_container.position = GRID_BASE_POS
-	_grid_container.size = Vector2(size.x - 146, size.y - 100)
+	_grid_container.position = Vector2(GRID_BASE_POS.x, _top_band_h)
+	_grid_container.size = Vector2(size.x - 146, size.y - 100 - (_top_band_h - GRID_BASE_POS.y))
 	# Without this the rows past the viewport were still DRAWN — over the footer and off the
 	# bottom of the screen — because nothing clipped and nothing scrolled.
 	_grid_container.clip_contents = true
@@ -284,6 +287,7 @@ func _build_profile_panel() -> void:
 	panel.position = Vector2(size.x - 200, 4)
 	panel.size = Vector2(190, 22)
 	add_child(panel)
+	_profile_pill = panel
 
 	var profile_idx = AutogrindSystem.get_active_autogrind_profile_index()
 	var profiles = AutogrindSystem.get_autogrind_profiles()
@@ -294,7 +298,7 @@ func _build_profile_panel() -> void:
 	_profile_label = Label.new()
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
 	_profile_label.position = Vector2(size.x - 195, 6)
-	_profile_label.add_theme_font_size_override("font_size", _fit_px(_profile_label.text, 11, Vector2(185, 20)))
+	_profile_label.add_theme_font_size_override("font_size", TextScale.scaled(11))  # never shrunk; the pill grows (_lay_out_top)
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
 
@@ -375,6 +379,57 @@ func _update_profile_indicator() -> void:
 		profile_name = profiles[profile_idx].get("name", "Default")
 
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
+	_lay_out_top()
+
+
+## The top band: text grows, never shrinks (it used to be _fit_px'd down to fit fixed boxes). The profile pill keeps
+## its old 190 x 22 while its name fits, else grows LEFT and DOWN to hold the label; the status line steps below it.
+## The title reads "AUTOGRIND - <name>" when that fits left of the pill, else "AUTOGRIND" (the pill shows the name).
+## Measured in the tree after the text is set.
+## The 1.0 px of the title and status line, the sizes the top band was laid out for.
+const TOP_TITLE_PX := 14
+const TOP_STATUS_PX := 12
+
+
+## How much taller a label's line is now than at `base_px` (0 at Text Size 1.0).
+func _line_growth(l: Label, base_px: int) -> float:
+	var f: Font = l.get_theme_font("font")
+	if f == null:
+		return 0.0
+	return maxf(0.0, f.get_height(l.get_theme_font_size("font_size")) - f.get_height(base_px))
+
+
+func _lay_out_top() -> void:
+	if _profile_pill == null or _profile_label == null or not _profile_label.is_inside_tree():
+		return
+	_profile_label.update_minimum_size()
+	_profile_label.reset_size()
+	var m: Vector2 = _profile_label.get_minimum_size()
+	var w: float = maxf(190.0, m.x + 10.0)
+	_profile_pill.position = Vector2(size.x - 10.0 - w, 4.0)
+	_profile_pill.size = Vector2(w, maxf(22.0, m.y + 4.0))
+	_profile_label.position = Vector2(_profile_pill.position.x + 5.0, 6.0)
+	if _title_label and is_instance_valid(_title_label):
+		var full: String = "AUTOGRIND - %s" % AutogrindSystem.get_active_autogrind_profile_name()
+		var fnt: Font = _title_label.get_theme_font("font")
+		var px: int = _title_label.get_theme_font_size("font_size")
+		var room: float = _profile_pill.position.x - 8.0 - _title_label.position.x
+		_title_label.text = full if fnt == null or fnt.get_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= room else "AUTOGRIND"
+		_title_label.update_minimum_size()
+		_title_label.reset_size()
+	if _status_label and is_instance_valid(_status_label):
+		## Each step moves by GROWTH over the 1.0 layout (a line's extra height at the Text Size), so 1.0 is unchanged.
+		var below: float = maxf(28.0, _profile_pill.position.y + _profile_pill.size.y + 2.0)
+		## autogrind 27592: at 2.0 the title (28 px at y 8) reaches past x 130 and down over the status line's start.
+		if _title_label and is_instance_valid(_title_label) and _title_label.position.x + _title_label.get_minimum_size().x > _status_label.position.x:
+			below = maxf(below, 28.0 + _line_growth(_title_label, TOP_TITLE_PX))
+		_status_label.position.y = below
+		## The grid starts below the status line, by the same gap as at 1.0 (status at 28, grid at 50), so a grown pill
+		## never pushes the status line into row 0; _update_scroll_offset reads _top_band_h too.
+		_top_band_h = maxf(GRID_BASE_POS.y, GRID_BASE_POS.y + (below - 28.0) + _line_growth(_status_label, TOP_STATUS_PX))
+		if _grid_container and is_instance_valid(_grid_container):
+			_grid_container.position.y = _top_band_h - _scroll_offset
+			_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -866,7 +921,7 @@ func _update_scroll_offset() -> void:
 		_scroll_offset = cursor_y + _cell_h() - view_h
 	# Never past the top: a negative offset would push row 0 down off its anchor.
 	_scroll_offset = maxf(0.0, _scroll_offset)
-	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
+	_grid_container.position.y = _top_band_h - _scroll_offset
 
 
 func _update_cursor() -> void:
@@ -1809,6 +1864,7 @@ func _open_rule_composer_overlay() -> void:
 
 func _on_composer_installed(profile_index: int) -> void:
 	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile"""
+	var full_title: String = _composed_title()
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
 		_rule_composer_overlay.queue_free()
 	_rule_composer_overlay = null
@@ -1822,7 +1878,16 @@ func _on_composer_installed(profile_index: int) -> void:
 	_build_ui()
 	_refresh_grid()
 	if _status_label and is_instance_valid(_status_label):
-		_status_label.text = "Composed autogrind rules installed"
+		_status_label.text = "Composed autogrind rules installed" + ((": \"%s\"" % full_title) if not full_title.is_empty() else "")
+
+
+## The composition's full title, read before the overlay is freed. A profile name is capped (PROFILE_NAME_MAX), so the
+## install line is where the player reads the whole title the composer gave it.
+func _composed_title() -> String:
+	if _rule_composer_overlay == null or not is_instance_valid(_rule_composer_overlay):
+		return ""
+	var comp = _rule_composer_overlay.get("_last_composition")
+	return str((comp as Dictionary).get("name", "")) if comp is Dictionary else ""
 
 
 func _show_empty_grid_splash() -> void:
@@ -1926,7 +1991,7 @@ func _open_rename_profile() -> void:
 	_keyboard = VirtualKeyboardClass.new()
 	_keyboard.size = size
 	add_child(_keyboard)
-	_keyboard.setup("Rename Autogrind Profile", current_name, 20)
+	_keyboard.setup("Rename Autogrind Profile", current_name, AutogrindSystem.PROFILE_NAME_MAX)
 
 	_keyboard.text_submitted.connect(_on_profile_renamed)
 	_keyboard.cancelled.connect(_on_rename_cancelled)

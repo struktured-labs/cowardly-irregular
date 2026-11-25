@@ -235,28 +235,49 @@ func test_the_panel_widens_so_bigger_text_shows_no_less_of_a_choice() -> void:
 		"at 200%% the panel is still the shipped %dpx, so the bigger font just trims more of the choice" % DialogueChoiceMenu.PANEL_W_TARGET)
 
 
-## The step-down exists for a viewport too small to hold the grown hint. On a normal screen it must
-## not engage, or raising Text Size is silently taken straight back off (@cowir-controller's shape).
-func test_the_hint_shrink_is_a_last_resort_not_the_rule() -> void:
+## The hint never steps down: a smaller font takes back the Text Size the player chose (never-shrink, main 27587).
+func test_the_hint_is_drawn_at_the_text_size_at_every_preset() -> void:
 	for scale in PRESETS:
 		var m = await _menu(scale)
 		_set_scale(scale)
 		assert_eq(m._hint_label.get_theme_font_size("font_size"), TextScale.scaled(DialogueChoiceMenu.HINT_FONT_SIZE),
-			"at %.2fx on a %.0fpx screen the hint draws at %d where the setting asks for %d: either it was never scaled, or it was stepped down where the panel should have widened"
-				% [scale, get_viewport().get_visible_rect().size.x, m._hint_label.get_theme_font_size("font_size"), TextScale.scaled(DialogueChoiceMenu.HINT_FONT_SIZE)])
-		assert_gte(m._hint_label.get_theme_font_size("font_size"), DialogueChoiceMenu.HINT_FONT_MIN,
-			"the step-down went below its own floor")
+			"at %.2fx the hint draws at %d where the setting asks for %d" % [scale, m._hint_label.get_theme_font_size("font_size"), TextScale.scaled(DialogueChoiceMenu.HINT_FONT_SIZE)])
+
+
+## A screen too narrow for the grown hint WRAPS it onto more lines, inside a panel that grows to hold them.
+func test_a_narrow_screen_wraps_the_hint_and_grows_the_panel() -> void:
+	var vp := SubViewport.new()
+	vp.size = Vector2i(360, 720)
+	add_child_autofree(vp)
+	for scale in [2.0, 2.5]:
+		_set_scale(scale)
+		var m := DialogueChoiceMenu.new()
+		vp.add_child(m)
+		m._choices.assign(CHOICES)
+		m._build_ui()
+		await _settle()
+		var h: Label = m._hint_label
+		var px: int = TextScale.scaled(DialogueChoiceMenu.HINT_FONT_SIZE)
+		var room: float = float(m._panel_w - DialogueChoiceMenu.PADDING_SIDE * 2)
+		assert_gt(_ink(str(h.text), px), room, "CONTROL: at %.2fx the hint is wider than a 360px screen's panel, so it must wrap" % scale)
+		assert_eq(h.get_theme_font_size("font_size"), px, "at %.2fx a narrow screen shrank the hint instead of wrapping it" % scale)
+		gut.p("    narrow %.2fx  hint rect %s  min %s  lines %d  panel %s" % [scale, str(h.size), str(h.get_minimum_size()), h.get_line_count(), str(m._panel.size)])
+		assert_gt(h.get_line_count(), 1, "at %.2fx the hint did not wrap" % scale)
+		assert_lte(h.position.y + h.get_minimum_size().y, m._panel.size.y + 0.5,
+			"at %.2fx the wrapped hint ends at %.0f, below the %.0fpx panel" % [scale, h.position.y + h.get_minimum_size().y, m._panel.size.y])
+		assert_lte(h.position.x + h.size.x, m._panel.size.x + 0.5, "at %.2fx the hint is wider than its panel" % scale)
+		m.free()
 
 
 # ---------------------------------------------------------------- the floor
 
 
-## Every member this file drives. row_h/hint_h/panel_width/_fit_hint_px have no other consumer, so a
+## Every member this file drives. row_h/hint_h/panel_width/_hint_box_h have no other consumer, so a
 ## rename would otherwise abort an arm into a vacuous pass rather than red.
 func test_the_menu_still_has_what_this_file_drives() -> void:
 	var m := DialogueChoiceMenu.new()
 	add_child_autofree(m)
-	for f in ["_build_ui", "_highlight", "_fit_hint_px", "present", "dismiss"]:
+	for f in ["_build_ui", "_highlight", "_hint_box_h", "present", "dismiss"]:
 		assert_true(m.has_method(f), "DialogueChoiceMenu has no %s(), so the arms that drive it pass without running" % f)
 	for v in ["_choices", "_row_nodes", "_hint_label", "_panel", "_panel_w"]:
 		assert_true(v in m, "DialogueChoiceMenu has no %s, so this file's fixture is stale" % v)
