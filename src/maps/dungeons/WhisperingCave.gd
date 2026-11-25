@@ -727,12 +727,21 @@ func _trigger_boss_battle() -> void:
 	# Play boss intro cutscene, then trigger battle
 	var director = CutsceneDirector.new()
 	add_child(director)
+	_play_rat_king_intro(director)
+
+
+## Exploration is already paused: a cutscene that never starts (refused, or its JSON will not load) never finishes, so fight now.
+func _play_rat_king_intro(director: Node) -> void:
 	director.cutscene_finished.connect(func(_id: String):
 		director.queue_free()
 		GameState.boss_intro_cutscene_for = "cave_rat_king"
 		battle_triggered.emit(["cave_rat_king"])
 	, CONNECT_ONE_SHOT)
 	director.play_cutscene("world1_rat_king_intro")
+	if not director.is_active():
+		push_warning("[CAVE] the Rat King's intro cutscene did not start; going straight to the fight, which speaks his intro instead")
+		director.queue_free()
+		battle_triggered.emit(["cave_rat_king"])
 
 
 func _place_floor_treasure(floor_num: int) -> void:
