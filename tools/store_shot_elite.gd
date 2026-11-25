@@ -169,8 +169,11 @@ func _init() -> void:
 	# elite is then centre-frame by construction whatever the projection does, and the player
 	# stays in shot because the tell is distance-gated and they must be close anyway.
 	var cam2: Camera2D = ow.get_viewport().get_camera_2d()
+	# The elite's own _process skips its watch while the player "cannot step", which a shot harness reports; tick it as live play would.
+	print("[SHOT] elite _process watch gated off by _cannot_step: %s" % str(elite._cannot_step(elite.get("_player_ref"))))
 	for i in range(30):
 		elite.global_position = target
+		elite._tick_elite_watch()
 		# Camera2D.offset, NOT global_position: the camera follows the player (it is driven
 		# every frame), so an assigned position is overwritten before the next draw — measured,
 		# the frame did not move. offset is not recomputed by the follow logic, so it sticks.
@@ -179,6 +182,7 @@ func _init() -> void:
 			cam2.zoom = Vector2(zoom_f, zoom_f)
 		await process_frame
 	elite.global_position = target
+	elite._tick_elite_watch()
 	if cam2:
 		cam2.offset = CAM_OFFSET
 		cam2.zoom = Vector2(zoom_f, zoom_f)
@@ -196,8 +200,9 @@ func _init() -> void:
 		# image with no tell in it at all. The reader takes that line as "the prompt is in
 		# the shot", which is the one thing it never measured.
 		print("[SHOT] tell node visible (distance gate fired): \"%s\"" % str(tell.text))
-	_report_framing("tell", tell, root)
-	_report_framing("elite", elite, root)
+	if not _report_framing("tell", tell, root) or not _report_framing("elite", elite, root):
+		_die("a subject of the shot is not drawn, so the picture cannot show it")
+		return
 
 	var img := root.get_texture().get_image()
 	var path := "res://tmp/marketing/field_elite_%s.png" % world
@@ -254,7 +259,9 @@ func _init() -> void:
 	if row == null:
 		_die("no Label containing \"%s\" under the prompt layer — the menu opened but did not render its choices. Labels present: %s" % [ELITE_FIGHT_TEXT, str(_label_texts(menu_layer, []))])
 		return
-	_report_framing("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root)
+	if not _report_framing("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root):
+		_die("the choice row is not drawn, so the picture cannot show it")
+		return
 
 	var img2 := root.get_texture().get_image()
 	var path2 := "res://tmp/marketing/field_elite_prompt_%s.png" % world
@@ -318,17 +325,25 @@ func _label_texts(n: Node, acc: Array) -> Array:
 ## rect" is the property that matters and node.visible is not it. Reports rather than dies:
 ## a badly framed shot is still worth writing to disk so a human can look at it — but the log
 ## must not call it good.
-func _report_framing(label: String, node: Node, tree_root: Window) -> void:
+## Returns false when the subject is not drawn at all: a hidden node has a position, so "IN FRAME" off it was a reading of nothing.
+func _report_framing(label: String, node: Node, tree_root: Window) -> bool:
 	if node == null or not (node is CanvasItem):
 		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
-		return
+		return false
 	var ci := node as CanvasItem
+	if not ci.is_visible_in_tree():
+		print("[SHOT] %s framing: ⛔ HIDDEN — the node is not drawn, so it is not in the picture wherever it sits" % label)
+		return false
 	var pos: Vector2 = ci.get_global_transform_with_canvas().origin
+	var end: Vector2 = pos
+	if ci is Control:
+		end = pos + (ci as Control).size * ci.get_global_transform_with_canvas().get_scale()
 	var size: Vector2 = Vector2(tree_root.get_texture().get_width(), tree_root.get_texture().get_height())
-	var inside := pos.x >= 0.0 and pos.y >= 0.0 and pos.x <= size.x and pos.y <= size.y
-	print("[SHOT] %s framing: screen=(%.0f, %.0f) frame=%dx%d -> %s" % [
-		label, pos.x, pos.y, int(size.x), int(size.y),
+	var inside := pos.x >= 0.0 and pos.y >= 0.0 and end.x <= size.x and end.y <= size.y
+	print("[SHOT] %s framing: screen=(%.0f, %.0f)-(%.0f, %.0f) frame=%dx%d -> %s" % [
+		label, pos.x, pos.y, end.x, end.y, int(size.x), int(size.y),
 		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
+	return true
 
 
 func _die(msg: String) -> void:
