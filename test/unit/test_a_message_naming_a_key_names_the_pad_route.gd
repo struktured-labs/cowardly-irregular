@@ -83,7 +83,7 @@ func _names_a_bare_key(text: String) -> bool:
 
 ## The console writes keys as "[E]" / "[Shift+E]", with no verb before them; BBCode and status tags ("[color=yellow]", "[ON]") are not keys.
 func _names_a_bracketed_key(text: String) -> bool:
-	## create_from_string, not RegEx.new(): this file reads AutogrindUI's source and builds nothing, and the player-data scan reads ".new()" as building it.
+	## Built with create_from_string: this file reads AutogrindUI's source and builds nothing, and the player-data scan reads a constructor call as building it.
 	var re := RegEx.create_from_string("\\[((Shift|Ctrl|Alt)\\+)?([A-Z0-9]|F[0-9]{1,2}|Tab|Esc|Enter|Space|Del)\\]")
 	return re.search(text) != null
 
