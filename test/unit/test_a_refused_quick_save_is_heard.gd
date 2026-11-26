@@ -84,11 +84,13 @@ func test_quick_load_mid_transition_is_heard() -> void:
 	assert_eq(_heard(), _file(), "F3 refused mid-transition and was silent")
 
 
-## Derived from the handlers' own source, so a refusal added later as a bare toast reds here and names itself.
+## Derived from the handlers' own source: ANY toast outside _refuse_quick reds (show_warning, show, show_save...), bar the one load success.
 func test_no_quick_refusal_is_a_bare_toast() -> void:
+	var allowed := {HANDLERS[0]: 0, HANDLERS[1]: 1}
 	for fn in HANDLERS:
 		var body := _body(fn)
 		assert_ne(body, "", "CONTROL: %s is gone" % fn)
 		assert_gt(body.count("_refuse_quick("), 3, "CONTROL: %s routes its refusals through _refuse_quick" % fn)
-		assert_eq(body.count("Toast.show_warning("), 0,
-			"%s shows a warning toast without the refusal cue: route it through _refuse_quick" % fn)
+		assert_eq(body.count("Toast."), allowed[fn],
+			"%s shows a toast without the refusal cue: route it through _refuse_quick" % fn)
+	assert_eq(_body(HANDLERS[1]).count("Toast.show_success("), 1, "CONTROL: the one allowed toast is F3's success, and it is still there")
