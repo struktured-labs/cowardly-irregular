@@ -68,3 +68,28 @@ func test_a_cutscene_flag_still_steers_its_branch() -> void:
 	assert_false(CutsceneDirector.branch_flag_is_set("theron_spar_pick_bard"), "CONTROL: unset reads false")
 	GameState.game_constants["cutscene_flag_theron_spar_pick_bard"] = true
 	assert_true(CutsceneDirector.branch_flag_is_set("theron_spar_pick_bard"), "a cutscene_flag_ still reads true")
+
+
+## The real branch step, with only the sub-step runner recorded, so the arm measures which line the scene actually plays (main 27923).
+class RecordingDirector extends "res://src/cutscene/CutsceneDirector.gd":
+	var played: Array = []
+
+	func _execute_step(step: Dictionary) -> void:
+		played.append(step)
+
+
+func _played_by_the_branch() -> Array:
+	var d := RecordingDirector.new()
+	autofree(d)
+	await d._step_branch(_branch())
+	return d.played
+
+
+func test_the_scene_plays_the_line_its_flag_picks() -> void:
+	assert_false(_branch().is_empty(), "CONTROL: the branch step was found")
+	var before: Array = await _played_by_the_branch()
+	assert_true(_says(before, "behind the stack overflow"), "CONTROL: overflow unresolved, the authored line plays")
+	GameState.set_story_flag(FLAG)
+	var after: Array = await _played_by_the_branch()
+	assert_true(_says(after, "seventeen processes used to shelter"), "overflow resolved: the scene plays the vacated-shelter line")
+	assert_false(_says(after, "behind the stack overflow"), "and not the old filing line")
