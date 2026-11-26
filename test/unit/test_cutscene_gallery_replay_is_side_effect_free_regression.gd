@@ -189,6 +189,11 @@ class RecorderDirector extends CanvasLayer:
 	var last_id := ""
 	var last_replay := false
 	var calls := 0
+	## The gallery asks can_play before hiding and is_active after the call; this stand-in finishes synchronously.
+	func can_play(_id: String) -> bool:
+		return true
+	func is_active() -> bool:
+		return false
 	func play_cutscene(id: String, replay: bool = false) -> void:
 		calls += 1
 		last_id = id
