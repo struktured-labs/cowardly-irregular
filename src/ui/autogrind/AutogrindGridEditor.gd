@@ -1189,14 +1189,14 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
-	# Reset confirmation takes priority over everything below it
+	# Reset confirmation takes priority over everything below it; Confirm/Back by action, so keyboard X/Z and a pad answer it too
 	if _reset_confirm and is_instance_valid(_reset_confirm):
-		if event is InputEventKey and event.pressed:
-			if event.keycode == KEY_ENTER:
-				_do_reset_to_defaults()
-			elif event.keycode == KEY_ESCAPE:
-				_dismiss_reset_confirm()
-				SoundManager.play_ui("menu_cancel")
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			_do_reset_to_defaults()
+		elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_dismiss_reset_confirm()
+			SoundManager.play_ui("menu_cancel")
+		if event.is_pressed():
 			get_viewport().set_input_as_handled()
 		return
 
@@ -1980,7 +1980,7 @@ func _show_reset_confirmation() -> void:
 	msg.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_reset_confirm.add_child(msg)
 	var hint = Label.new()
-	hint.text = "Enter: restore   Esc: cancel"
+	hint.text = _reset_confirm_hint()
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_reset_confirm.add_child(hint)
 
@@ -1995,6 +1995,11 @@ func _show_reset_confirmation() -> void:
 	hint.position = Vector2(box.position.x + 20, box.position.y + hint_y)
 
 	SoundManager.play_ui("menu_select")
+
+
+## The restore prompt's hint, naming the keys or buttons that answer it on this device.
+func _reset_confirm_hint() -> String:
+	return "%s: restore   %s: cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 
 
 func _dismiss_reset_confirm() -> void:
