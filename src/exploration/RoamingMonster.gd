@@ -350,6 +350,8 @@ func _tick_mood(delta: float) -> void:
 			return
 		_mood = Mood.AFRAID if _is_outmatched() else Mood.ANGRY
 		_show_tell()
+		if _mood == Mood.AFRAID:
+			_announce_afraid()
 		return
 
 	if not _player_ref or not is_instance_valid(_player_ref):
@@ -740,9 +742,31 @@ func _announce_spotted() -> void:
 	if now - _last_spotted_ms < SPOTTED_SHARED_GAP_MS:
 		return
 	_last_spotted_ms = now
+	_play_roamer_cue(SPOTTED_SFX)
+
+
+## The "~" turned tail in silence; a frightened roamer now squeaks as it bolts, on the same shared-gap rule as the "!".
+const AFRAID_SFX := "monster_afraid"
+static var _last_afraid_ms: int = -SPOTTED_SHARED_GAP_MS
+
+
+## Test hook: script-wide like the spotted gap, so a test file resets it rather than inheriting another file's squeak.
+static func _reset_afraid_gap() -> void:
+	_last_afraid_ms = -SPOTTED_SHARED_GAP_MS
+
+
+func _announce_afraid() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_afraid_ms < SPOTTED_SHARED_GAP_MS:
+		return
+	_last_afraid_ms = now
+	_play_roamer_cue(AFRAID_SFX)
+
+
+func _play_roamer_cue(key: String) -> void:
 	var sm: Node = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm != null and sm.has_method("play_ui"):
-		sm.play_ui(SPOTTED_SFX)
+		sm.play_ui(key)
 
 
 ## The tell rose in silence; it now sounds once as it appears, at most once per NOTICE_COOLDOWN_MS so the edge of the radius cannot chatter.
