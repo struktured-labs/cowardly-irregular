@@ -143,3 +143,30 @@ func test_a_short_list_at_100_percent_is_unchanged() -> void:
 	for r in _rows(ed):
 		ys.append(snappedf((r as Label).position.y - panel.position.y, 0.1))
 	assert_eq(ys, [34.0, 56.0, 78.0], "the rows sit where they always did")
+
+
+## Every preset: the cursor bar behind each drawn row is as tall as that row's text, so the highlight never cuts a line in half.
+## (A row step that ignores Text Size keeps rows apart yet leaves the bar shorter than its text: this is the arm that sees it.)
+func test_the_cursor_bar_covers_its_row_at_every_size() -> void:
+	var bad: Array = []
+	var seen: int = 0
+	for scale in _presets():
+		var ed: Node = await _picker_at(float(scale), 30)
+		var panel: ColorRect = _panel(ed)
+		for r in _rows(ed):
+			var l := r as Label
+			var h: float = l.get_theme_font("font").get_height(l.get_theme_font_size("font_size"))
+			var bar: ColorRect = null
+			for c in ed._option_picker.get_children():
+				if c is ColorRect and not c.has_meta("option_panel") and not c.is_queued_for_deletion() \
+						and absf((c as ColorRect).position.x - (panel.position.x + 8.0)) < 0.5 \
+						and absf((c as ColorRect).position.y - (l.position.y - 2.0)) < 0.5:
+					bar = c
+			if bar == null:
+				bad.append("%.2fx row %d has no bar behind it" % [scale, l.get_meta("option_row")])
+				continue
+			seen += 1
+			if bar.position.y + bar.size.y < l.position.y + h - 0.5:
+				bad.append("%.2fx row %d: bar ends %.0f, its text %.0f" % [scale, l.get_meta("option_row"), bar.position.y + bar.size.y, l.position.y + h])
+	assert_gt(seen, 0, "PRECONDITION: the arm found the rows' bars")
+	assert_eq(bad, [], "each row's cursor bar is as tall as its text: %s" % [bad])

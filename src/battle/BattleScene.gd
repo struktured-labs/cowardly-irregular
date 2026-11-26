@@ -1086,13 +1086,24 @@ func _repeat_previous_actions() -> void:
 	## The bar advertises Repeat at all times, so every refusal must reach the LOG, not just stdout.
 	if not is_in_selection:
 		log_message("[color=gray]Repeat only works while you are choosing actions.[/color]")
+		_repeat_cue(false)
 		return
 	if BattleManager.repeat_previous_actions():
 		_close_win98_menu()
 		log_message("[color=yellow]>>> Repeating previous actions![/color]")
+		_repeat_cue(true)
 	else:
 		var why: String = str(BattleManager.last_repeat_refusal)
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
+		_repeat_cue(false)
+
+
+## Repeat answered only in the log; a press is now heard too: the replay figure when it queues, "can't do that" when it declines.
+const REPEAT_SFX := "repeat_turn"
+
+
+func _repeat_cue(accepted: bool) -> void:
+	SoundManager.play_ui(REPEAT_SFX if accepted else "menu_error")
 
 
 ## Two ranks spaced by the members' measured widths, so a wide sheet pushes its neighbours apart ("rogue/bard stacked", 2026-11-01).
@@ -6487,8 +6498,12 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
+		## Resume only the sprite's CURRENT lunge: a replaced one may be killed this frame (valid, dead) and play() errors on it.
 		if held_lunge and lunge.is_valid():
-			lunge.play()
+			if is_instance_valid(attacker_sprite) and attacker_sprite.has_meta("attack_tween") and attacker_sprite.get_meta("attack_tween") == lunge:
+				lunge.play()
+			else:
+				lunge.kill()
 	, CONNECT_ONE_SHOT)
 
 
