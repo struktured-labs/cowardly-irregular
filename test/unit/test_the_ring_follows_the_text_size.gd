@@ -2,9 +2,10 @@ extends GutTest
 
 ## The ring picker (autobattle ability/item rings, the autogrind OPTIONS ring) drew every string at a fixed 10 / 13 / 15 px,
 ## and its selected label sat in the middle on one line: measured (9d493ba09) at 278 px on the autogrind ring against the 212 px
-## gap between the 3 and 9 o'clock nodes, so at 100% a long name ran into the side nodes. Every string now follows Text Size,
-## and the middle lines stack by drawn height and wrap (two lines at most, then "…") inside a circle that clears every node.
-## Every rect judged here comes from label_rect / centre_layout, the functions _draw itself draws from.
+## gap between the 3 and 9 o'clock nodes, so at 100% a long name ran into the side nodes. Every string now follows Text Size;
+## the middle lines keep their authored baselines while they fit, else stack and wrap inside a circle that clears every node
+## (the selection may end in "…" beside its whole outer label), and the title moves above the ring when the middle cannot hold it.
+## Every rect judged here comes from label_rect / centre_layout, the functions _draw itself draws from, in ring_font().
 
 const RP := "res://src/ui/RadialPicker.gd"
 const VP := Vector2(1280, 720)
@@ -78,11 +79,19 @@ func _ring(scale: float, spec: Dictionary, selected: int) -> Control:
 	r.setup(s)
 	vp.add_child(r)
 	r.size = VP
+	_ring_font = r.call("ring_font")
 	return r
 
 
+var _ring_font: Font = null
+
+
 func _font() -> Font:
-	return ThemeDB.fallback_font
+	return _ring_font
+
+
+func _squash(t: String) -> String:
+	return " ".join(t.split(" ", false))
 
 
 ## Every way a ring at this size breaks: outer labels at the wrong px, overlapping or off screen; middle lines at the wrong px,
@@ -108,8 +117,18 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 	var lines: Array = r.call("centre_layout")
 	var prev := -INF
 	var sel_text := ""
+	var title_text := ""
+	var page_text := ""
 	for l in lines:
 		var rr: Rect2 = l["rect"]
+		if l["where"] == "above":
+			title_text += ("" if title_text == "" else " ") + str(l["text"])
+			if not Rect2(Vector2.ZERO, VP).encloses(rr):
+				bad.append("%s the title line '%s' above the ring runs off the screen" % [tag, l["text"]])
+			for o in rects:
+				if (o as Rect2).intersects(rr):
+					bad.append("%s the title line '%s' above the ring overlaps a ring label" % [tag, l["text"]])
+			continue
 		if rr.position.y < prev - 0.5:
 			bad.append("%s middle line '%s' starts at %.0f inside the line above (ends %.0f)" % [tag, str(l["text"]).left(20), rr.position.y, prev])
 		prev = rr.end.y
@@ -119,15 +138,27 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 				break
 		if int(l["px"]) == TextScale.scaled(15):
 			sel_text += ("" if sel_text == "" else " ") + str(l["text"])
-		elif not int(l["px"]) in [TextScale.scaled(13), TextScale.scaled(10)]:
+		elif int(l["px"]) == TextScale.scaled(13):
+			title_text += ("" if title_text == "" else " ") + str(l["text"])
+		elif int(l["px"]) == TextScale.scaled(10):
+			page_text += ("" if page_text == "" else " ") + str(l["text"])
+		else:
 			bad.append("%s middle line '%s' drawn at %d px" % [tag, l["text"], l["px"]])
-	var want := str(r.call("_label_of", r.get("_options")[int(r.get("_selected"))]))
+	## The title and page line have no other copy on screen, so they are never cut (main 28184).
+	if _squash(title_text) != _squash(str(r.get("spec").get("title", ""))):
+		bad.append("%s the title reads '%s'" % [tag, title_text])
+	if int(r.call("_page_count")) > 1 and not _squash(page_text).begins_with("%d / %d" % [int(r.get("_page")) + 1, int(r.call("_page_count"))]):
+		bad.append("%s the page line reads '%s'" % [tag, page_text])
+	if page_text.contains("…"):
+		bad.append("%s the page line is cut: '%s'" % [tag, page_text])
+	var want := _squash(str(r.call("_label_of", r.get("_options")[int(r.get("_selected"))])))
+	sel_text = _squash(sel_text)
 	if sel_text != want:
 		if sel_text.ends_with("…") and want.begins_with(sel_text.trim_suffix("…").strip_edges().split(" ")[0]):
 			truncs.append("%s '%s' -> '%s'" % [tag, want, sel_text])
 			## A cut middle is allowed only beside a whole copy (adhoc 28183): the selected slot's outer label is the full string.
 			var si: int = int(r.get("_selected")) - int(r.get("_page")) * 10
-			var full_w := _font().get_string_size(want, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(10)).x
+			var full_w := _font().get_string_size(str(r.call("_label_of", r.get("_options")[int(r.get("_selected"))])), HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(10)).x
 			if absf((rects[si] as Rect2).size.x - full_w) > 0.5:
 				bad.append("%s the middle cuts '%s' and its outer label is not the whole string either" % [tag, want])
 		else:
@@ -138,6 +169,7 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 ## CONTROL: at 100% a selectable label on one line is wider than the circle the middle text must stay inside.
 func test_control_a_long_label_cannot_sit_in_the_middle_on_one_line() -> void:
 	var r := _ring(1.0, _autogrind(), 6)
+	assert_not_null(_font(), "PRECONDITION: the ring names its font")
 	var w := _font().get_string_size("Stop when Out of Items: OFF", HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 	assert_gt(w, 2.0 * float(r.call("centre_radius")), "CONTROL: the longest label is %.0f px at 15 px, wider than the middle" % w)
 

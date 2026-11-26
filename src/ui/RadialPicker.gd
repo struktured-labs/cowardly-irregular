@@ -216,7 +216,7 @@ func _draw() -> void:
 			draw_texture_rect(tex, Rect2(p - Vector2(16, 16), Vector2(32, 32)), false)
 
 		var label := _label_of(slice[i])
-		var font := ThemeDB.fallback_font
+		var font := ring_font()
 		var lr := label_rect(i, n, label)
 		draw_string(font, Vector2(lr.position.x, lr.position.y + font.get_ascent(_px(10))), label,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10), TEXT if is_sel else DIM_TEXT)
@@ -225,27 +225,36 @@ func _draw() -> void:
 
 
 func _draw_center() -> void:
-	var font := ThemeDB.fallback_font
+	var font := ring_font()
 	for line in centre_layout():
 		draw_string(font, Vector2(line["rect"].position.x, line["rect"].position.y + font.get_ascent(line["px"])), line["text"],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, line["px"], line["color"])
 	var hint := "[Dir] Aim   %s Confirm   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	var hw := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10)).x
-	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24.0 * _px(100) / 100.0), hint,
+	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24.0 * _k()), hint,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10), DIM_TEXT)
 
 
 # ── layout (shared by _draw and the Text Size guard) ────────────────
+
+## The face the ring draws and measures with: one font, so a measured rect is the drawn one.
+func ring_font() -> Font:
+	return UiFont.of(self)
+
 
 ## Every ring string follows Text Size; 100% is the authored 10 / 13 / 15 px.
 func _px(base: int) -> int:
 	return TextScale.scaled(base)
 
 
+func _k() -> float:
+	return float(_px(100)) / 100.0
+
+
 ## Where slot i of n draws its label: outside its node, pushed radially, anchored by the side it sits on.
 func label_rect(i: int, n: int, label: String) -> Rect2:
 	_center = size * 0.5
-	var font := ThemeDB.fallback_font
+	var font := ring_font()
 	var fs := _px(10)
 	var p := _slot_pos(i, n)
 	var out := (p - _center).normalized()
@@ -264,76 +273,136 @@ func centre_radius() -> float:
 	return RADIUS - NODE_RADIUS - 6.0
 
 
-## Title, selected label and page line stacked by drawn height from their authored baselines, two lines at most, inside the centre circle.
+## Title, selection and page line on their authored baselines while they fit the centre circle; else stacked and wrapped
+## to it (the selection may end in "…", its outer label stays whole); the title moves above the ring when even that fails.
 func centre_layout() -> Array:
 	_center = size * 0.5
-	var font := ThemeDB.fallback_font
-	var blocks: Array = [{"text": str(spec.get("title", "Select")), "px": _px(13), "base": -18.0, "color": DIM_TEXT}]
+	var blocks := _centre_blocks()
+	var authored := _place_authored(blocks)
+	if _inside(authored):
+		return authored
+	var packed := _pack(blocks)
+	if _inside(packed):
+		return packed
+	return _title_above(blocks[0]) + _pack(blocks.slice(1))
+
+
+func _centre_blocks() -> Array:
+	var font := ring_font()
+	var blocks: Array = [{"text": str(spec.get("title", "Select")), "px": _px(13), "base": -18.0, "color": DIM_TEXT, "cut": false}]
 	if _selected >= 0 and _selected < _options.size():
-		blocks.append({"text": _label_of(_options[_selected]), "px": _px(15), "base": 4.0, "color": ACCENT})
+		blocks.append({"text": _label_of(_options[_selected]), "px": _px(15), "base": 4.0, "color": ACCENT, "cut": true})
 	if _page_count() > 1:
-		blocks.append({"text": "%d / %d   [%s/%s]" % [_page + 1, _page_count(),
-			InputProfileManager.hint_for_action("battle_defer"), InputProfileManager.hint_for_action("battle_advance")],
-			"px": _px(10), "base": 24.0, "color": DIM_TEXT, "one_line": true})
-	var width := 2.0 * centre_radius()
-	var lines: Array = []
-	for _pass in 4:
-		lines = _stack(font, blocks, width)
-		var ext := 0.0
-		for l in lines:
-			ext = maxf(ext, maxf(absf(l["rect"].position.y - _center.y), absf(l["rect"].end.y - _center.y)))
-		var room := sqrt(maxf(0.0, centre_radius() * centre_radius() - ext * ext)) * 2.0
-		if room >= width - 0.5:
-			break
-		width = room
-	return lines
+		var pg := "%d / %d   [%s/%s]" % [_page + 1, _page_count(),
+			InputProfileManager.hint_for_action("battle_defer"),
+			InputProfileManager.hint_for_action("battle_advance")]
+		var pw := font.get_string_size(pg, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10)).x
+		blocks.append({"text": pg, "px": _px(10), "base": 24.0, "color": DIM_TEXT, "cut": false, "w": pw})
+	return blocks
 
 
-func _stack(font: Font, blocks: Array, width: float) -> Array:
+func _line(text: String, px: int, color: Color, top: float, where: String) -> Dictionary:
+	var font := ring_font()
+	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	return {"text": text, "px": px, "color": color, "where": where, "rect": Rect2(_center.x - w * 0.5, top, w, font.get_height(px))}
+
+
+func _place_authored(blocks: Array) -> Array:
 	var out: Array = []
-	var prev_bottom := -INF
 	for b in blocks:
-		var px: int = b["px"]
-		var h := font.get_height(px)
-		var parts: Array = _wrap(font, str(b["text"]), px, width, 1 if b.get("one_line", false) else 2)
-		var top := maxf(_center.y + float(b["base"]) * _px(100) / 100.0 - font.get_ascent(px), prev_bottom)
-		for t in parts:
-			var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-			out.append({"text": t, "px": px, "color": b["color"], "rect": Rect2(_center.x - w * 0.5, top, w, h)})
-			top += h
-		prev_bottom = top
-	## A block that runs past the centre circle's bottom lifts just enough to end inside it (never above its top).
-	if not out.is_empty():
-		var over: float = (out.back()["rect"].end.y - _center.y) - centre_radius()
-		var room_above: float = (out.front()["rect"].position.y - _center.y) + centre_radius()
-		var lift := minf(over, room_above)
-		if lift > 0.0:
-			for l in out:
-				l["rect"].position.y -= lift
+		out.append(_line(str(b["text"]), int(b["px"]), b["color"], _center.y + float(b["base"]) * _k() - ring_font().get_ascent(int(b["px"])), "centre"))
 	return out
 
 
-## Greedy word wrap into at most max_lines lines no wider than width; the last line ends in "…" when words are left over.
-func _wrap(font: Font, text: String, px: int, width: float, max_lines: int) -> Array:
-	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= width:
-		return [text]
-	var words: PackedStringArray = text.strip_edges().split(" ", false)
+## Every centre line inside the centre circle and below the line before it.
+func _inside(lines: Array) -> bool:
+	var prev := -INF
+	var cr := centre_radius() + 0.5
+	for l in lines:
+		if l["where"] != "centre":
+			continue
+		var r: Rect2 = l["rect"]
+		if r.position.y < prev - 0.5:
+			return false
+		prev = r.end.y
+		for c in [r.position, Vector2(r.end.x, r.position.y), Vector2(r.position.x, r.end.y), r.end]:
+			if (c - _center).length() > cr:
+				return false
+	return true
+
+
+## The width the centre circle leaves for a line spanning top..bottom.
+func _chord(top: float, bottom: float) -> float:
+	var cr := centre_radius()
+	var d := maxf(absf(top - _center.y), absf(bottom - _center.y))
+	return 2.0 * sqrt(maxf(0.0, cr * cr - d * d)) if d < cr else 0.0
+
+
+## The blocks stacked as one column centred in the circle, each line wrapped to the chord at its own height.
+func _pack(blocks: Array) -> Array:
+	var font := ring_font()
 	var lines: Array = []
+	var height := 0.0
+	for b in blocks:
+		height += font.get_height(int(b["px"]))
+	for _pass in 6:
+		lines = []
+		var top := _center.y - height * 0.5
+		for b in blocks:
+			var px: int = b["px"]
+			var h := font.get_height(px)
+			var words: PackedStringArray = str(b["text"]).split(" ", false)
+			var used := 0
+			var k := 0
+			while k < words.size():
+				var room := _chord(top, top + h)
+				var cur := words[k]
+				k += 1
+				while k < words.size() and font.get_string_size(cur + " " + words[k], HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= room:
+					cur += " " + words[k]
+					k += 1
+				used += 1
+				if b["cut"] and used == 2 and k < words.size():
+					for rest in range(k, words.size()):
+						cur += " " + words[rest]
+					k = words.size()
+				if b["cut"]:
+					cur = _ellipsize(font, cur, px, room)
+				lines.append(_line(cur, px, b["color"], top, "centre"))
+				top += h
+		var got := 0.0
+		for l in lines:
+			got += (l["rect"] as Rect2).size.y
+		if absf(got - height) < 0.5:
+			break
+		height = got
+	return lines
+
+
+## The title as whole lines above the ring's top label, when the centre cannot hold it beside the selection.
+func _title_above(b: Dictionary) -> Array:
+	var font := ring_font()
+	var px: int = b["px"]
+	var h := font.get_height(px)
+	var words: PackedStringArray = str(b["text"]).split(" ", false)
+	var rows: Array = []
 	var cur := ""
-	var i := 0
-	while i < words.size() and lines.size() < max_lines - 1:
-		var trial := words[i] if cur == "" else cur + " " + words[i]
-		if cur != "" and font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > width:
-			lines.append(cur)
-			cur = ""
+	for wd in words:
+		var trial := wd if cur == "" else cur + " " + wd
+		if cur != "" and font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > size.x - 32.0:
+			rows.append(cur)
+			cur = wd
 		else:
 			cur = trial
-			i += 1
-	var rest := cur
-	for k in range(i, words.size()):
-		rest = words[k] if rest == "" else rest + " " + words[k]
-	lines.append(_ellipsize(font, rest, px, width))
-	return lines
+	rows.append(cur)
+	var slice := _page_slice()
+	var top_label: Rect2 = label_rect(0, slice.size(), _label_of(slice[0])) if not slice.is_empty() else Rect2(_center - Vector2(0, RADIUS + NODE_RADIUS), Vector2.ZERO)
+	var top := top_label.position.y - 6.0 * _k() - h * rows.size()
+	var out: Array = []
+	for r in rows:
+		out.append(_line(r, px, b["color"], top, "above"))
+		top += h
+	return out
 
 
 func _ellipsize(font: Font, text: String, px: int, width: float) -> String:
