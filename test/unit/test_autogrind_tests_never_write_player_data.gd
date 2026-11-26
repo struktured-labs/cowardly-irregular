@@ -252,16 +252,16 @@ func _indirect_reachers() -> Array[String]:
 	return out
 
 
-## A test is exposed when it names a reacher's res:// path AND instantiates something — reading the
-## file as text is how the source-level guards use it and must not count.
+## A test is exposed when it names a reacher's res:// path AND builds a script; reading the file as text must not count.
 func _two_hop_offenders() -> Array[String]:
 	var reachers := _indirect_reachers()
+	var classes := _reacher_class_names(reachers)
 	var out: Array[String] = []
 	for fname in _test_files():
 		var src: String = FileAccess.get_file_as_string(TEST_DIR + "/" + fname)
 		if src == "" or src.contains("_test_disable_persistence"):
 			continue
-		if not (src.contains(".new()") or src.contains(".instantiate()")):
+		if not _builds_a_script(src, classes):
 			continue
 		for r in reachers:
 			if src.contains(r):
@@ -270,19 +270,36 @@ func _two_hop_offenders() -> Array[String]:
 	return out
 
 
+## The class_name each reacher declares, so `AutogrindGridEditor.new()` counts as building one.
+func _reacher_class_names(reachers: Array[String]) -> Array[String]:
+	var out: Array[String] = []
+	var re := RegEx.create_from_string("(?m)^class_name\\s+(\\w+)")
+	for path in reachers:
+		var m := re.search(FileAccess.get_file_as_string(path))
+		if m != null:
+			out.append(m.get_string(1))
+	return out
+
+
+## True when the source constructs a SCRIPT: `load(p).new()`, a const/var alias's `.new()`, or a reacher class's `.new()`; a built-in's (`RegEx.new()`) cannot reach a saver.
+func _builds_a_script(src: String, classes: Array[String]) -> bool:
+	var re := RegEx.create_from_string("(\\)|\\b([A-Za-z_]\\w*))\\s*\\.\\s*(new|instantiate)\\(")
+	for m in re.search_all(src):
+		var receiver := m.get_string(2)
+		if receiver == "" or receiver in classes:
+			return true
+		if RegEx.create_from_string("(?m)^\\s*(static\\s+)?(const|var)\\s+%s\\b" % receiver).search(src) != null:
+			return true
+	return false
+
+
 ## Owned by other lanes, measured 2026-09-17 to write nothing today, reported in-channel. A SUBSET
 ## check, not equality: a new exposure reds, and a lane fixing one of theirs never reds mine.
 const OTHER_LANE_KNOWN: Array[String] = [
-	"test_a_missing_spotlight_flag_reads_false.gd",
 	"test_an_empty_grid_has_no_row_minus_one.gd",
 	"test_autobattle_editor_pad_value_dial_regression.gd",
-	"test_battle_captions_are_not_nintendo_only.gd",
 	"test_dial_reached_by_real_axis_routing_regression.gd",
-	"test_input_handling_regression.gd",
 	"test_input_reaches_the_handler_regression.gd",
-	"test_legend_claims_are_wired_regression.gd",
-	"test_low_hp_threshold_single_source_regression.gd",
-	"test_shift_r_rename_is_reachable_regression.gd",
 	"test_the_stick_steps_once_in_the_rule_editors.gd",
 ]
 
@@ -319,3 +336,15 @@ func test_no_autogrind_test_reaches_a_saver_through_a_ui_node() -> void:
 			unknown.append(f)
 	assert_eq(unknown, [],
 		"New out-of-lane tests reach an autogrind saver through a UI node: %s — report to the owning lane and add to OTHER_LANE_KNOWN with the measurement" % str(unknown))
+
+
+## Known answers for the constructor rule: built-ins read source and pass, every way of building a script offends.
+func test_only_building_a_script_counts_as_reaching_a_saver() -> void:
+	var classes := _reacher_class_names(_indirect_reachers())
+	assert_true("AutogrindGridEditor" in classes, "CONTROL: the reachers' class_names were derived")
+	for built_in in ["var re := RegEx.new()", "var l := Label.new()", "var e := InputEventKey.new()", "var c := Color(1, 0, 0)"]:
+		assert_false(_builds_a_script(built_in, classes), "a built-in cannot reach a saver: %s" % built_in)
+	for script in ['var ui = load(UI).new()', 'const Ed := preload(P)\nvar e = Ed.new()', 'var e := AutogrindGridEditor.new()', 'var scene = load(P)\nvar n = scene.instantiate()', 'var m: Node = load(spec["path"]).new()']:
+		assert_true(_builds_a_script(script, classes), "building a script can reach a saver: %s" % script)
+	assert_true("test_autobattle_editor_pad_value_dial_regression.gd" in _two_hop_offenders(), "CONTROL: a real file building the grid editor with load(ED).new() still offends")
+	assert_false("test_input_handling_regression.gd" in _two_hop_offenders(), "a real file that only builds a RegEx to read AutogrindUI's source does not")
