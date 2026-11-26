@@ -3651,7 +3651,7 @@ func _switch_to_next_profile() -> void:
 		_log_message("[color=yellow]Only one profile, so there is nothing to switch to.[/color]")
 		SoundManager.play_ui("menu_error")
 		return
-	if not rules.is_empty() and not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
 		_log_message("[color=red]Not switched: fix the highlighted rows first, or switching would lose them.[/color]")
 		SoundManager.play_ui("menu_error")
 		return

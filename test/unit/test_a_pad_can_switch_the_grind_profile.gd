@@ -4,7 +4,7 @@ extends GutTest
 ## The console's OPTIONS ring now offers "Switch Profile: <name>", which saves this grid to its own profile first,
 ## then adopts the next profile's rules. A grid the validator refuses stays on screen, and so does a grind in progress.
 ## Arms: CONTROL (the ring offers the row, naming the active profile) · the row moves to the next profile and shows
-## its rules · the grid on screen is saved to the profile it came from · refused rules block the switch · a grind
+## its rules · the grid on screen is saved to the profile it came from, a cleared one included · refused rules block the switch · a grind
 ## blocks the switch · one profile has nothing to switch to.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
@@ -69,6 +69,14 @@ func test_the_grid_on_screen_is_saved_to_the_profile_it_came_from() -> void:
 	_ui._commit_autogrind_option("next_profile")
 	assert_eq(AutogrindSystem.get_active_autogrind_profile_index(), 1, "PRECONDITION: the switch happened")
 	assert_eq(_profile_rules(0), [PLANTED_RULE], "switching dropped the grid that was on screen instead of saving it to its profile")
+
+
+func test_a_cleared_grid_is_saved_too() -> void:
+	assert_false(_profile_rules(0).is_empty(), "CONTROL: the shipped first profile has rules to clear")
+	_ui.rules = []
+	_ui._commit_autogrind_option("next_profile")
+	assert_eq(AutogrindSystem.get_active_autogrind_profile_index(), 1, "PRECONDITION: the switch happened")
+	assert_eq(_profile_rules(0), [], "a grid the player cleared on purpose came back with its old rules after a switch")
 
 
 func test_refused_rules_block_the_switch() -> void:
