@@ -125,6 +125,11 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 	if sel_text != want:
 		if sel_text.ends_with("…") and want.begins_with(sel_text.trim_suffix("…").strip_edges().split(" ")[0]):
 			truncs.append("%s '%s' -> '%s'" % [tag, want, sel_text])
+			## A cut middle is allowed only beside a whole copy (adhoc 28183): the selected slot's outer label is the full string.
+			var si: int = int(r.get("_selected")) - int(r.get("_page")) * 10
+			var full_w := _font().get_string_size(want, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(10)).x
+			if absf((rects[si] as Rect2).size.x - full_w) > 0.5:
+				bad.append("%s the middle cuts '%s' and its outer label is not the whole string either" % [tag, want])
 		else:
 			bad.append("%s the middle says '%s', the selection is '%s'" % [tag, sel_text, want])
 	return bad
