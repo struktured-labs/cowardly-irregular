@@ -369,8 +369,11 @@ func _tick_mood(delta: float) -> void:
 		_show_tell()
 		_announce_spotted()
 	elif _mood != Mood.CALM and dist > ALERT_RADIUS * 1.6:
+		var gave_up: bool = _mood == Mood.ANGRY
 		_mood = Mood.CALM
 		_show_tell()
+		if gave_up:
+			_announce_lost_you()
 
 
 ## Afraid is for monsters much weaker than the party, per the ask. Reads the party's average
@@ -761,6 +764,24 @@ func _announce_afraid() -> void:
 		return
 	_last_afraid_ms = now
 	_play_roamer_cue(AFRAID_SFX)
+
+
+## A chaser that lost you dropped its "!!" in silence; it now sighs a soft falling pair, on the same shared-gap rule as the "!".
+const LOST_SFX := "monster_lost_you"
+static var _last_lost_ms: int = -SPOTTED_SHARED_GAP_MS
+
+
+## Test hook: script-wide like the spotted gap, so a test file resets it rather than inheriting another file's sigh.
+static func _reset_lost_gap() -> void:
+	_last_lost_ms = -SPOTTED_SHARED_GAP_MS
+
+
+func _announce_lost_you() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _last_lost_ms < SPOTTED_SHARED_GAP_MS:
+		return
+	_last_lost_ms = now
+	_play_roamer_cue(LOST_SFX)
 
 
 func _play_roamer_cue(key: String) -> void:
