@@ -1756,6 +1756,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "import", "label": "Import from File        (I)"},
 			{"id": "copy_code", "label": "Copy Share Code   (Shift+E)"},
 			{"id": "paste_code", "label": "Paste Share Code  (Shift+I)"},
+			{"id": "restore_defaults", "label": "Restore Shipped Profiles"},
 		],
 	}
 
@@ -1832,6 +1833,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_copy_rules_share_code()
 		"paste_code":
 			_paste_rules_share_code()
+		"restore_defaults":
+			_restore_shipped_profiles()
 
 
 ## The strip a pad player actually reads. Glyphs come from the live profile, so Nintendo-mode
@@ -3632,6 +3635,12 @@ func open_rules_editor() -> Control:
 		rules = saved_rules.duplicate(true)
 	)
 	return editor
+
+
+## The pad's route to the editor's Shift+D: opens the rules editor with its own restore prompt up, so both routes ask the same question.
+func _restore_shipped_profiles() -> void:
+	var editor: Control = open_rules_editor()
+	editor._show_reset_confirmation()
 
 
 func _on_monitor_exit() -> void:
