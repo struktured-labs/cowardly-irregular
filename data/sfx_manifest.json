@@ -15981,6 +15981,11 @@
       "file": "assets/audio/sfx/monster_afraid.ogg",
       "prompt": "A timid roaming monster that is outmatched by the party turns tail as its blue \"~\" appears: a small falling squeak (sine glide 1500 to 700 Hz with its octave, a fast 22 Hz flutter), lowpassed at 4.5 kHz with a short room tail. Falls where monster_spotted rises, so the two read as a pair: it saw you, then it ran. One per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.42 s, RMS -18.3 dBFS, peak -6.3 dBFS.",
       "duration_seconds": 0.42
+    },
+    "monster_lost_you": {
+      "file": "assets/audio/sfx/monster_lost_you.ogg",
+      "prompt": "A roaming monster that was chasing you (its red \"!!\") gives up as you get clear and wanders off calm: a soft falling pair, E5 then B4 on triangle with a quiet octave, lowpassed at 3.5 kHz with a short room tail. Answers monster_spotted's rising pair, and is the quietest of the three roamer cues (spotted, afraid, lost) because it means the danger has passed. Plays on the ANGRY -> CALM edge only: a frightened roamer running clear, a Repel calming one, or a lost player ref stays quiet. One per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.49 s, RMS -19.8 dBFS, peak -9.9 dBFS.",
+      "duration_seconds": 0.49
     }
   }
 }
