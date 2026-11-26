@@ -15,6 +15,8 @@ const LONG_HIT := "Fighter hits Glacius for 9999 CRIT"
 
 var _ag: Dictionary
 var _scale_was: float = 1.0
+var _players_was: Array[Combatant] = []
+var _enemies_was: Array[Combatant] = []
 
 
 func before_each() -> void:
@@ -22,9 +24,13 @@ func before_each() -> void:
 	AutogrindSystem._test_disable_persistence = true
 	AutobattleSystem._test_disable_persistence = true
 	_scale_was = float(GameState.text_size_scale)
+	_players_was = BattleManager.player_party.duplicate()
+	_enemies_was = BattleManager.enemy_party.duplicate()
 
 
 func after_each() -> void:
+	BattleManager.player_party = _players_was
+	BattleManager.enemy_party = _enemies_was
 	GameState.text_size_scale = _scale_was
 	AutogrindState.restore(_ag)
 
@@ -48,8 +54,24 @@ func _dashboard_at(scale: float) -> Control:
 	return d
 
 
-## The widest round the readout shows: a long cast, a crit, and the party/enemy lines.
+func _fighter(n: String, hp: int) -> Combatant:
+	var c: Combatant = Combatant.new()
+	add_child_autofree(c)
+	c.initialize({"name": n, "max_hp": hp, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	return c
+
+
+## The widest round the readout shows (autogrind 27956): four 9999 HP members and six enemies, so the party line is the
+## producer's real "Party 39996/39996 HP · 4 up"; a cast wider than any "Who → Name"; a crit.
 func _widest_round(d: Control) -> void:
+	var players: Array[Combatant] = []
+	for n in ["Fighter", "Cleric", "Mage", "Rogue"]:
+		players.append(_fighter(n, 9999))
+	var enemies: Array[Combatant] = []
+	for i in 6:
+		enemies.append(_fighter("Glacius %d" % i, 9999))
+	BattleManager.player_party = players
+	BattleManager.enemy_party = enemies
 	d._readout_round = 99
 	d._readout_action = LONG_CAST
 	d._readout_last_hit = LONG_HIT
@@ -74,6 +96,7 @@ func test_the_widest_round_is_wider_than_its_box() -> void:
 	var d: Control = await _dashboard_at(top)
 	await _widest_round(d)
 	var l: Label = d._battle_readout
+	assert_string_contains(l.text, "Party 39996/39996 HP · 4 up", "CONTROL: the readout shows the real four-member party line")
 	assert_gt(_longest_line_w(l), d._readout_box.x, "CONTROL @%sx: on one line the widest round is wider than its %s box, so a fit has to happen" % [top, d._readout_box])
 
 
