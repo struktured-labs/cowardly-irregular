@@ -61,7 +61,7 @@ func check_for_encounter() -> bool:
 		return false
 
 	if repel_steps_remaining > 0:
-		repel_steps_remaining -= 1
+		_spend_repel_step()
 		encounter_check_passed.emit()
 		return false
 
@@ -603,7 +603,20 @@ func use_repel(steps: int) -> void:
 ## One field step against a Repel charge. The world map does not roll step encounters, so this is the tick that path can call without starting a fight.
 func consume_repel_step() -> void:
 	if repel_steps_remaining > 0:
-		repel_steps_remaining -= 1
+		_spend_repel_step()
+
+
+## A Repel ran out in silence and the next roamer simply charged; the step that spends the last charge now says so.
+const REPEL_WORN_OFF_SFX := "repel_wears_off"
+
+
+func _spend_repel_step() -> void:
+	repel_steps_remaining -= 1
+	if repel_steps_remaining != 0:
+		return
+	var sm: Node = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm != null and sm.has_method("play_ui"):
+		sm.play_ui(REPEL_WORN_OFF_SFX)
 
 
 ## Enemy pool loading
