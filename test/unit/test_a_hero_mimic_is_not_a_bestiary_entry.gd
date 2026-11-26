@@ -34,6 +34,12 @@ class SpawnHost:
 	func _on_status_tick_heal(_amount, _source, _target) -> void:
 		pass
 
+	func log_message(_message: String) -> void:
+		pass
+
+	func _update_ui() -> void:
+		pass
+
 
 class QuipScene:
 	extends "res://src/battle/BattleScene.gd"
