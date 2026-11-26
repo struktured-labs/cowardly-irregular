@@ -26,11 +26,12 @@ const SURFACES := [
 ]
 
 ## Functions whose String argument a player reads.
+## `_log_message(` is the autogrind console's: it was scanned as a SURFACE but never as a call, so "Export first with [E]" passed (.835).
 const MESSAGE_CALLS := ["_flash_status(", "Toast.show(", "Toast.show_warning(",
-	"Toast.show_success(", "Toast.show_danger("]
+	"Toast.show_success(", "Toast.show_danger(", "_log_message("]
 
 ## Naming any of these means a pad player has a way in.
-const ROUTE_WORDS := ["more actions", "menu", "d-pad", "pad", "row"]
+const ROUTE_WORDS := ["more actions", "menu", "options ▸", "d-pad", "pad", "row"]
 
 
 func _literals_passed_to_messages(src: String) -> Array:
@@ -55,6 +56,8 @@ func _literals_passed_to_messages(src: String) -> Array:
 
 
 func _names_a_bare_key(text: String) -> bool:
+	if _names_a_bracketed_key(text):
+		return true
 	var low := text.to_lower()
 	for verb in ["press ", "hit ", "hold "]:
 		var at := low.find(verb)
@@ -78,6 +81,13 @@ func _names_a_bare_key(text: String) -> bool:
 	return false
 
 
+## The console writes keys as "[E]" / "[Shift+E]", with no verb before them; BBCode and status tags ("[color=yellow]", "[ON]") are not keys.
+func _names_a_bracketed_key(text: String) -> bool:
+	## Built with create_from_string: this file reads AutogrindUI's source and builds nothing, and the player-data scan reads a constructor call as building it.
+	var re := RegEx.create_from_string("\\[((Shift|Ctrl|Alt)\\+)?([A-Z0-9]|F[0-9]{1,2}|Tab|Esc|Enter|Space|Del)\\]")
+	return re.search(text) != null
+
+
 func _names_a_route(text: String) -> bool:
 	var low := text.to_lower()
 	for w in ROUTE_WORDS:
@@ -95,6 +105,12 @@ func test_control_the_detector_fires_on_the_shape_it_is_for() -> void:
 		"CONTROL: and must not count that string as naming a route")
 	assert_true(_names_a_route("export one first (E, or More Actions ▸ Export)"),
 		"CONTROL: naming More Actions must count as a route")
+	assert_true(_names_a_bare_key("[color=yellow]No export files found. Export first with [E].[/color]"),
+		"CONTROL: a bracketed key with no verb before it is a key")
+	assert_false(_names_a_bare_key("[color=yellow]Imported 3 autobattle scripts[/color]"),
+		"CONTROL: BBCode tags are not keys")
+	assert_false(_names_a_bare_key("Permadeath [ON] at 40% HP"), "CONTROL: a status tag is not a key")
+	assert_false(_names_a_route("No options available"), "CONTROL: the word options alone names no route")
 
 
 func test_control_the_surfaces_are_readable_and_carry_messages() -> void:
