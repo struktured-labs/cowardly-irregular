@@ -122,6 +122,11 @@ static func is_seen(monster_id: String) -> bool:
 	return seen.has(monster_id)
 
 
+## A Hero Mimic is a copy of the party with no monsters.json row; its per-copy id would only pollute the save.
+static func records(combatant: Object) -> bool:
+	return combatant != null and combatant.has_meta("monster_type") and not bool(combatant.get_meta("is_mimic", false))
+
+
 static func mark_seen(monster_id: String, location_id: String = "") -> void:
 	# Tick 245: loud-fail on empty / unknown ids so a Combatant with a
 	# missing monster_id (Summoner internal, save-side drift, typo'd
