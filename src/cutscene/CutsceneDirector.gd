@@ -2085,6 +2085,11 @@ func _step_roll_credits(step: Dictionary) -> void:
 	credits.queue_free()
 
 
+## A flag branch reads every flag namespace (cutscene_flag_*, story_flags, quest mirrors), so a scene can branch on a quest's answer.
+static func branch_flag_is_set(flag: String) -> bool:
+	return GameState != null and GameState.is_story_flag_set(flag)
+
+
 func _step_branch(step: Dictionary) -> void:
 	"""Execute different sub-steps based on a condition.
 	Usage: {"type": "branch", "condition": "playstyle", "cases": {
@@ -2095,9 +2100,7 @@ func _step_branch(step: Dictionary) -> void:
 	if step.has("flag"):
 		# Flag-based branching
 		var flag = step.get("flag", "")
-		var flag_value = false
-		if GameState and GameState.game_constants.has("cutscene_flag_" + flag):
-			flag_value = GameState.game_constants["cutscene_flag_" + flag]
+		var flag_value: bool = branch_flag_is_set(str(flag))
 		branch_steps = step.get("if_true", []) if flag_value else step.get("if_false", [])
 	elif step.get("condition", "") == "playstyle":
 		## ⚠️ STEP-level `condition` is the only one read. Five dialogue LINE objects in
