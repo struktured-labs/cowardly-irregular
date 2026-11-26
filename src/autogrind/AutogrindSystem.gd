@@ -1489,7 +1489,8 @@ func build_meta_boss_enemy_data(is_collapse_boss: bool = false) -> Dictionary:
 		"is_meta_boss": true,
 		"is_collapse_boss": is_collapse_boss,
 		"can_cause_permadeath": chosen.get("can_cause_permadeath", false),
-		"drop_table": chosen.get("drop_table", [])
+		"drop_table": chosen.get("drop_table", []),
+		"dialogue": chosen.get("dialogue", {})
 	}
 
 	# Scale by corruption level (collapse bosses get extra scaling)
