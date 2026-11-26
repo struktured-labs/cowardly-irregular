@@ -44,10 +44,14 @@ func _picker_at(scale: float, n: int) -> Node:
 	var vp := SubViewport.new()
 	vp.size = Vector2i(1280, 720)
 	add_child_autofree(vp)
-	var ed: Node = load(EDITOR).new()
+	var ed: Control = load(EDITOR).new()
 	ed.character_id = CID
 	vp.add_child(ed)
+	## Sized as the game shows it: full screen (a bare .new() is 0x0, and the picker is laid out from the editor's size).
+	ed.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ed.size = Vector2(1280, 720)
 	await get_tree().process_frame
+	assert_eq(ed.size, Vector2(1280, 720), "PRECONDITION: the editor fills the 1280x720 screen")
 	var files: Array = []
 	for i in n:
 		files.append("zz_layout_probe_%02d.json" % i)
