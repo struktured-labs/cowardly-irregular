@@ -767,6 +767,11 @@ func _play_defer_sound() -> void:
 	SoundManager.play_ui("defer")
 
 
+## Back on the first menu of a round had nowhere to go and was silent; it now says "can't do that".
+func _refuse_go_back() -> void:
+	SoundManager.play_ui("menu_error")
+
+
 func _play_cancel_sound() -> void:
 	"""Play sound when canceling"""
 	SoundManager.play_ui("menu_cancel")
@@ -2747,7 +2752,8 @@ func _input(event: InputEvent) -> void:
 			# Non-battle root menu (shops, etc) - close on cancel
 			_play_cancel_sound()
 			force_close()
-		# In battle mode at root with no queue and can't go back: B is a no-op
+		elif is_root_menu:
+			_refuse_go_back()
 		get_viewport().set_input_as_handled()
 
 	# Left confirms and Right goes back on a left-expanding menu, swapped if it expands right. Off unless opted in; the press is still consumed.
@@ -2794,6 +2800,8 @@ func _input(event: InputEvent) -> void:
 					elif not battle_mode:
 						_play_cancel_sound()
 						force_close()
+					else:
+						_refuse_go_back()
 			else:
 				var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 				if _queue_is_full():

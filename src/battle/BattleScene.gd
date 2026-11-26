@@ -9746,7 +9746,7 @@ func _show_battle_quip() -> void:
 	for enemy in test_enemies:
 		if enemy and is_instance_valid(enemy):
 			var mtype = enemy.get_meta("monster_type", "")
-			if mtype != "" and _is_new_monster(mtype):
+			if mtype != "" and BestiarySystem.records(enemy) and _is_new_monster(mtype):
 				has_new = true
 				_mark_monster_seen(mtype)
 
