@@ -84,6 +84,7 @@ func _ring(scale: float, spec: Dictionary, selected: int) -> Control:
 
 
 var _ring_font: Font = null
+var _closest := INF
 
 
 func _font() -> Font:
@@ -112,6 +113,9 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 		for j in range(i + 1, n):
 			if (rects[i] as Rect2).intersects(rects[j]):
 				bad.append("%s slots %d and %d overlap" % [tag, i, j])
+			var a: Rect2 = rects[i]
+			var b2: Rect2 = rects[j]
+			_closest = minf(_closest, maxf(maxf(a.position.x - b2.end.x, b2.position.x - a.end.x), maxf(a.position.y - b2.end.y, b2.position.y - a.end.y)))
 	var c := VP * 0.5
 	var cr: float = r.call("centre_radius")
 	var lines: Array = r.call("centre_layout")
@@ -199,7 +203,8 @@ func test_every_ring_page_fits_at_every_size() -> void:
 				seen += 1
 				bad.append_array(_judge("%.2fx %s p%d" % [float(scale), spec["title"], start / 10 + 1], r, truncs))
 	assert_gt(seen, 10, "PRECONDITION: every ring page at every preset was judged")
-	gut.p("RING truncations: %s" % [truncs])
+	gut.p("RING truncations (%d): %s" % [truncs.size(), truncs])
+	gut.p("RING closest outer pair: %.1f px apart · ring font is the engine fallback: %s" % [_closest, str(_font() == ThemeDB.fallback_font)])
 	assert_eq(bad, [], "the ring fits at every Text Size: %s" % [bad])
 
 
