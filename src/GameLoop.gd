@@ -7600,7 +7600,7 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 	# Per-character session EXP is recorded where it is paid, so the bar matches each wallet.
 
 	## on_battle_ended clears the meta-boss data, so its last words are read first.
-	var last_words: Array = meta_boss_defeat_lines([_autogrind_controller._current_meta_boss_data]) if victory and _autogrind_controller and is_instance_valid(_autogrind_controller) else []
+	var last_words: Array = meta_boss_defeat_lines([_autogrind_controller.get_current_meta_boss_data()]) if victory and _autogrind_controller and is_instance_valid(_autogrind_controller) else []
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
