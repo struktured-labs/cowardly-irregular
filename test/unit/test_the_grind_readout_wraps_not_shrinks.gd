@@ -83,11 +83,12 @@ func _px(d: Control) -> int:
 	return (d._battle_readout as Label).get_theme_font_size("font_size")
 
 
-func _longest_line_w(l: Label) -> float:
+## Measured at the Text Size's px, NOT the label's: a fix that shrank the label would otherwise shrink the CONTROL with it.
+func _longest_line_w(l: Label, px: int) -> float:
 	var f: Font = l.get_theme_font("font")
 	var w := 0.0
 	for line in l.text.split("\n"):
-		w = maxf(w, f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, l.get_theme_font_size("font_size")).x)
+		w = maxf(w, f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
 	return w
 
 
@@ -97,7 +98,7 @@ func test_the_widest_round_is_wider_than_its_box() -> void:
 	await _widest_round(d)
 	var l: Label = d._battle_readout
 	assert_string_contains(l.text, "Party 39996/39996 HP · 4 up", "CONTROL: the readout shows the real four-member party line")
-	assert_gt(_longest_line_w(l), d._readout_box.x, "CONTROL @%sx: on one line the widest round is wider than its %s box, so a fit has to happen" % [top, d._readout_box])
+	assert_gt(_longest_line_w(l, TextScale.scaled(d.READOUT_BASE_PX)), d._readout_box.x, "CONTROL @%sx: on one line the widest round is wider than its %s box, so a fit has to happen" % [top, d._readout_box])
 
 
 func test_every_preset_keeps_the_text_size_and_wraps_inside_the_box() -> void:
