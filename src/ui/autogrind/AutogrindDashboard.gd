@@ -226,27 +226,16 @@ func _fit_px(sample: String, base: int, box: Vector2) -> int:
 	return px
 
 
-## The readout's text changes every round, so its px is re-fitted to its CURRENT lines: every line must fit the box's width
-## and all of them its height (at 1.5x its widest line was 337 px in a 296 px panel when only the height was budgeted).
+## The readout's text changes every round. It keeps the Text Size and WRAPS inside its authored box (text grows, wraps or
+## scrolls; it never shrinks). Before, it stepped its px back toward 11 whenever one of the round's lines was wider than its
+## box, so its size changed mid-grind with the text. test_the_grind_readout_wraps_not_shrinks measures that the box holds it.
 func _fit_readout() -> void:
 	if not is_instance_valid(_battle_readout):
 		return
-	var lines: PackedStringArray = _battle_readout.text.split("\n")
-	var px: int = TextScale.scaled(READOUT_BASE_PX)
-	var fnt: Font = get_theme_font("font", "Label")
-	if fnt != null:
-		while px > READOUT_BASE_PX and not _readout_fits(fnt, px, lines):
-			px -= 1
-	_battle_readout.add_theme_font_size_override("font_size", px)
-
-
-func _readout_fits(fnt: Font, px: int, lines: PackedStringArray) -> bool:
-	if fnt.get_height(px) * maxi(lines.size(), 1) > _readout_box.y:
-		return false
-	for line in lines:
-		if fnt.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > _readout_box.x:
-			return false
-	return true
+	_battle_readout.add_theme_font_size_override("font_size", TextScale.scaled(READOUT_BASE_PX))
+	_battle_readout.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_battle_readout.size = _readout_box
+	_battle_readout.update_minimum_size()
 
 
 func _build_ui() -> void:
