@@ -898,14 +898,28 @@ func _row_stride() -> int:
 	return _cell_h() + ROW_SPACING
 
 
-## Wraps an in-tree label at `width` and returns its drawn height (line count x line height, plus spacing).
+## The widest of a label's authored lines at its own px, measured from its font.
+func _widest_line(l: Label) -> float:
+	var f: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var w := 0.0
+	for line in l.text.split("\n"):
+		w = maxf(w, f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return w
+
+
+## Wraps a label at `width` and returns its drawn height, measured from its font at that width (the Label's own line
+## count is stale until it is shaped, so it cannot be read in the frame the text is set).
 func _wrap_in(l: Label, width: float) -> float:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.size = Vector2(width, 0)
-	l.update_minimum_size()
-	var lines: int = maxi(1, l.get_line_count())
-	var h: float = l.get_line_height() * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	var f: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var line: float = f.get_height(px)
+	var lines: int = maxi(1, roundi(f.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, width, px, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y / line))
+	var h: float = line * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
 	l.size = Vector2(width, h)
+	l.update_minimum_size()
 	return h
 
 
@@ -1954,28 +1968,29 @@ func _show_reset_confirmation() -> void:
 		vp = Vector2(640, 480)
 	var box = ColorRect.new()
 	box.color = Color(0.12, 0.10, 0.14, 1.0)
-	box.size = Vector2(360, 130)
-	box.position = Vector2((vp.x - 360) / 2, (vp.y - 130) / 2)
 	_reset_confirm.add_child(box)
 
-	## Both lines keep the Text Size and wrap at the box's 320 px; the hint steps below the message and the box grows to
-	## hold them (text grows, wraps or scrolls; it never shrinks). The authored 92 and 130 are floors, so 100% does not move.
+	## Both lines keep the Text Size (text grows, wraps or scrolls; it never shrinks). The panel widens to its widest line
+	## (at 100% the first line is 400 px, which ran 60 px past the authored 360 px panel), capped at the screen; past
+	## that the lines wrap. The hint steps below the message and the panel grows to hold both. Authored floors: 360 wide,
+	## hint at +92, 130 tall. Heights come from the font at the wrap width, not the Label's line count, which is stale
+	## until the label is shaped.
 	var msg = Label.new()
 	msg.text = "Restore the shipped autogrind profiles?\nThis discards all three rule sets."
 	msg.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_reset_confirm.add_child(msg)
-	var msg_h: float = _wrap_in(msg, 320.0)
-
 	var hint = Label.new()
 	hint.text = "Enter: restore   Esc: cancel"
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_reset_confirm.add_child(hint)
-	var hint_h: float = _wrap_in(hint, 320.0)
 
+	var box_w: float = clampf(maxf(_widest_line(msg), _widest_line(hint)) + 40.0, 360.0, maxf(360.0, vp.x - 32.0))
+	var msg_h: float = _wrap_in(msg, box_w - 40.0)
+	var hint_h: float = _wrap_in(hint, box_w - 40.0)
 	var hint_y: float = maxf(92.0, 22.0 + msg_h + 8.0)
 	var box_h: float = maxf(130.0, hint_y + hint_h + 12.0)
-	box.size = Vector2(360, box_h)
-	box.position = Vector2((vp.x - 360) / 2, maxf(8.0, (vp.y - box_h) / 2))
+	box.size = Vector2(box_w, box_h)
+	box.position = Vector2((vp.x - box_w) / 2, maxf(8.0, (vp.y - box_h) / 2))
 	msg.position = Vector2(box.position.x + 20, box.position.y + 22)
 	hint.position = Vector2(box.position.x + 20, box.position.y + hint_y)
 

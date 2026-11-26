@@ -1,11 +1,12 @@
 extends GutTest
 
 ## The grind editor's "Restore the shipped autogrind profiles?" prompt fitted its message and hint by SHRINKING them
-## (_fit_px into a fixed 320 x 30 box inside a fixed 360 x 130 panel). The ruling is that text grows, wraps or scrolls and
-## never shrinks: both lines now keep the Text Size and wrap at 320 px, the hint steps below the message, and the panel
-## grows to hold them. Arms: CONTROL (at the largest preset the message's first line is wider than its 320 px) · every
-## preset keeps the px, shows every line, stacks the hint under the message and keeps both inside the panel, on screen ·
-## 100% keeps the authored panel and positions.
+## (_fit_px into a fixed 320 x 30 box inside a fixed 360 x 130 panel), and never checked at 100%, where its first line is
+## 400 px and ran 60 px past the panel. Ruling (main 28015): the panel widens to its widest line, capped at the screen;
+## both lines keep the Text Size; the hint steps below the message; the panel grows to hold them. Arms: CONTROL (at the
+## largest preset the message is wider than the authored 320 px line) · every preset keeps the px, keeps each line inside
+## the panel, stacks the hint under the message and keeps the panel on screen · 100%: every line sits inside the panel
+## (this arm reds on the shipped prompt), centred, with the authored offsets, heights and px.
 ##
 ## ⛔ Fit is judged from each label's own wrapped layout (line count x line height, visible lines), not a font query.
 
@@ -63,13 +64,13 @@ func _open(scale: float) -> Array:
 	var msg: Label = null
 	var hint: Label = null
 	for ch in c.get_children():
-		if ch is ColorRect and (ch as ColorRect).size.x == 360.0:
+		if ch is ColorRect and (ch as ColorRect).size.x < 1280.0:
 			panel = ch
 		elif ch is Label and (ch as Label).text.begins_with(MSG_HEAD):
 			msg = ch
 		elif ch is Label and (ch as Label).text.begins_with("Enter:"):
 			hint = ch
-	assert_not_null(panel, "PRECONDITION @%sx: the prompt has its 360 px panel" % scale)
+	assert_not_null(panel, "PRECONDITION @%sx: the prompt has its panel" % scale)
 	assert_not_null(msg, "PRECONDITION @%sx: the prompt has its message" % scale)
 	assert_not_null(hint, "PRECONDITION @%sx: the prompt has its hint" % scale)
 	return [panel, msg, hint]
@@ -77,6 +78,16 @@ func _open(scale: float) -> Array:
 
 func _drawn_h(l: Label) -> float:
 	return l.get_line_count() * l.get_line_height()
+
+
+## The widest authored line of a label, from its font at its own px.
+func _widest_drawn(l: Label) -> float:
+	var f: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var w := 0.0
+	for line in l.text.split("\n"):
+		w = maxf(w, f.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return w
 
 
 func test_the_message_is_wider_than_its_line_at_the_largest_preset() -> void:
@@ -103,22 +114,40 @@ func test_every_preset_keeps_the_px_and_holds_the_words() -> void:
 		for l in [msg, hint]:
 			assert_eq(l.get_visible_line_count(), l.get_line_count(), "@%sx: every line of '%s' is shown" % [s, l.text.left(16)])
 			assert_lte(l.position.x + l.size.x, pr.end.x - 20.0 + 0.5, "@%sx: '%s' ends inside the panel" % [s, l.text.left(16)])
+			## An authored line wider than the label must have wrapped (more drawn lines than authored ones).
+			if _widest_drawn(l) > l.size.x + 0.5:
+				assert_gt(l.get_line_count(), l.text.split("\n").size(), "@%sx: '%s' is wider than its %.0f px and did not wrap" % [s, l.text.left(16), l.size.x])
 		assert_lte(msg.position.y + _drawn_h(msg), hint.position.y + 0.5, "@%sx: the message ends above the hint" % s)
 		assert_lte(hint.position.y + _drawn_h(hint), pr.end.y + 0.5, "@%sx: the hint ends inside the panel (%.0f vs %.0f)" % [s, hint.position.y + _drawn_h(hint), pr.end.y])
 		assert_true(Rect2(0, 0, 1280, 720).encloses(pr), "@%sx: the panel %s is on screen" % [s, pr])
 
 
-func test_100_percent_keeps_the_authored_prompt() -> void:
+func test_at_100_percent_every_line_sits_inside_the_panel() -> void:
+	## Reds on the shipped prompt: its 400 px first line ran past the 360 px panel.
 	var r: Array = await _open(1.0)
 	var panel: ColorRect = r[0]
 	var msg: Label = r[1]
 	var hint: Label = r[2]
 	if panel == null or msg == null or hint == null:
 		return
-	assert_eq(panel.size, Vector2(360, 130), "the panel is the authored 360 x 130")
-	assert_eq(panel.position, Vector2(460, 295), "centred where it was")
-	assert_eq(msg.position, Vector2(480, 317), "the message sits where it did")
-	assert_eq(hint.position, Vector2(480, 387), "the hint sits where it did")
+	for l in [msg, hint]:
+		var right: float = l.position.x + _widest_drawn(l)
+		assert_lte(right, panel.position.x + panel.size.x - 20.0 + 0.5, "100%%: '%s' ends at %.0f, inside the panel's right margin %.0f" % [l.text.left(16), right, panel.position.x + panel.size.x - 20.0])
+		assert_eq(l.get_line_count(), l.text.split("\n").size(), "100%%: '%s' fits on its authored lines, no wrap" % l.text.left(16))
+
+
+func test_100_percent_keeps_the_authored_offsets_and_sizes() -> void:
+	var r: Array = await _open(1.0)
+	var panel: ColorRect = r[0]
+	var msg: Label = r[1]
+	var hint: Label = r[2]
+	if panel == null or msg == null or hint == null:
+		return
+	assert_gte(panel.size.x, 360.0, "the panel is never narrower than the authored 360")
+	assert_eq(panel.size.y, 130.0, "the panel is the authored 130 tall")
+	assert_almost_eq(panel.position.x + panel.size.x / 2.0, 640.0, 0.5, "centred across the screen")
+	assert_almost_eq(panel.position.y, (720.0 - 130.0) / 2.0, 0.5, "and down it, where it was")
+	assert_eq(msg.position - panel.position, Vector2(20, 22), "the message sits at its authored offset")
+	assert_eq(hint.position - panel.position, Vector2(20, 92), "the hint sits at its authored offset")
 	assert_eq(msg.get_theme_font_size("font_size"), 16, "the message is 16 px")
 	assert_eq(hint.get_theme_font_size("font_size"), 12, "the hint is 12 px")
-	assert_eq(msg.get_line_count(), 2, "the message is its two authored lines, unwrapped")
