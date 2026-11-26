@@ -217,47 +217,132 @@ func _draw() -> void:
 
 		var label := _label_of(slice[i])
 		var font := ThemeDB.fallback_font
-		var fs := 10
-		# Ring labels sit OUTSIDE their node, pushed radially, so long ability names
-		# never overlap the node art or each other near the top and bottom of the ring.
-		var out := (p - _center).normalized()
-		var lp := p + out * (NODE_RADIUS + 12.0)
-		var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		if out.x < -0.2:
-			lp.x -= w
-		elif absf(out.x) <= 0.2:
-			lp.x -= w * 0.5
-		draw_string(font, lp + Vector2(0, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs,
-			TEXT if is_sel else DIM_TEXT)
+		var lr := label_rect(i, n, label)
+		draw_string(font, Vector2(lr.position.x, lr.position.y + font.get_ascent(_px(10))), label,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10), TEXT if is_sel else DIM_TEXT)
 
 	_draw_center()
 
 
 func _draw_center() -> void:
 	var font := ThemeDB.fallback_font
-	var title := str(spec.get("title", "Select"))
-	var tw := font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-	draw_string(font, _center + Vector2(-tw * 0.5, -18), title,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, DIM_TEXT)
-
-	if _selected >= 0 and _selected < _options.size():
-		var label := _label_of(_options[_selected])
-		var lw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-		draw_string(font, _center + Vector2(-lw * 0.5, 4), label,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, ACCENT)
-
-	if _page_count() > 1:
-		var pg := "%d / %d   [%s/%s]" % [_page + 1, _page_count(),
-			InputProfileManager.hint_for_action("battle_defer"),
-			InputProfileManager.hint_for_action("battle_advance")]
-		var pw := font.get_string_size(pg, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-		draw_string(font, _center + Vector2(-pw * 0.5, 24), pg,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)
-
+	for line in centre_layout():
+		draw_string(font, Vector2(line["rect"].position.x, line["rect"].position.y + font.get_ascent(line["px"])), line["text"],
+			HORIZONTAL_ALIGNMENT_LEFT, -1, line["px"], line["color"])
 	var hint := "[Dir] Aim   %s Confirm   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	var hw := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24), hint,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)
+	var hw := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10)).x
+	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24.0 * _px(100) / 100.0), hint,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, _px(10), DIM_TEXT)
+
+
+# ── layout (shared by _draw and the Text Size guard) ────────────────
+
+## Every ring string follows Text Size; 100% is the authored 10 / 13 / 15 px.
+func _px(base: int) -> int:
+	return TextScale.scaled(base)
+
+
+## Where slot i of n draws its label: outside its node, pushed radially, anchored by the side it sits on.
+func label_rect(i: int, n: int, label: String) -> Rect2:
+	_center = size * 0.5
+	var font := ThemeDB.fallback_font
+	var fs := _px(10)
+	var p := _slot_pos(i, n)
+	var out := (p - _center).normalized()
+	var lp := p + out * (NODE_RADIUS + 12.0)
+	var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	if out.x < -0.2:
+		lp.x -= w
+	elif absf(out.x) <= 0.2:
+		lp.x -= w * 0.5
+	var base := lp.y + 4.0
+	return Rect2(lp.x, base - font.get_ascent(fs), w, font.get_height(fs))
+
+
+## The centre lines' room: a circle that clears every node's inner edge, so no centre text can touch a node.
+func centre_radius() -> float:
+	return RADIUS - NODE_RADIUS - 6.0
+
+
+## Title, selected label and page line stacked by drawn height from their authored baselines, two lines at most, inside the centre circle.
+func centre_layout() -> Array:
+	_center = size * 0.5
+	var font := ThemeDB.fallback_font
+	var blocks: Array = [{"text": str(spec.get("title", "Select")), "px": _px(13), "base": -18.0, "color": DIM_TEXT}]
+	if _selected >= 0 and _selected < _options.size():
+		blocks.append({"text": _label_of(_options[_selected]), "px": _px(15), "base": 4.0, "color": ACCENT})
+	if _page_count() > 1:
+		blocks.append({"text": "%d / %d   [%s/%s]" % [_page + 1, _page_count(),
+			InputProfileManager.hint_for_action("battle_defer"), InputProfileManager.hint_for_action("battle_advance")],
+			"px": _px(10), "base": 24.0, "color": DIM_TEXT, "one_line": true})
+	var width := 2.0 * centre_radius()
+	var lines: Array = []
+	for _pass in 4:
+		lines = _stack(font, blocks, width)
+		var ext := 0.0
+		for l in lines:
+			ext = maxf(ext, maxf(absf(l["rect"].position.y - _center.y), absf(l["rect"].end.y - _center.y)))
+		var room := sqrt(maxf(0.0, centre_radius() * centre_radius() - ext * ext)) * 2.0
+		if room >= width - 0.5:
+			break
+		width = room
+	return lines
+
+
+func _stack(font: Font, blocks: Array, width: float) -> Array:
+	var out: Array = []
+	var prev_bottom := -INF
+	for b in blocks:
+		var px: int = b["px"]
+		var h := font.get_height(px)
+		var parts: Array = _wrap(font, str(b["text"]), px, width, 1 if b.get("one_line", false) else 2)
+		var top := maxf(_center.y + float(b["base"]) * _px(100) / 100.0 - font.get_ascent(px), prev_bottom)
+		for t in parts:
+			var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			out.append({"text": t, "px": px, "color": b["color"], "rect": Rect2(_center.x - w * 0.5, top, w, h)})
+			top += h
+		prev_bottom = top
+	## A block that runs past the centre circle's bottom lifts just enough to end inside it (never above its top).
+	if not out.is_empty():
+		var over: float = (out.back()["rect"].end.y - _center.y) - centre_radius()
+		var room_above: float = (out.front()["rect"].position.y - _center.y) + centre_radius()
+		var lift := minf(over, room_above)
+		if lift > 0.0:
+			for l in out:
+				l["rect"].position.y -= lift
+	return out
+
+
+## Greedy word wrap into at most max_lines lines no wider than width; the last line ends in "…" when words are left over.
+func _wrap(font: Font, text: String, px: int, width: float, max_lines: int) -> Array:
+	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= width:
+		return [text]
+	var words: PackedStringArray = text.strip_edges().split(" ", false)
+	var lines: Array = []
+	var cur := ""
+	var i := 0
+	while i < words.size() and lines.size() < max_lines - 1:
+		var trial := words[i] if cur == "" else cur + " " + words[i]
+		if cur != "" and font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > width:
+			lines.append(cur)
+			cur = ""
+		else:
+			cur = trial
+			i += 1
+	var rest := cur
+	for k in range(i, words.size()):
+		rest = words[k] if rest == "" else rest + " " + words[k]
+	lines.append(_ellipsize(font, rest, px, width))
+	return lines
+
+
+func _ellipsize(font: Font, text: String, px: int, width: float) -> String:
+	if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= width:
+		return text
+	var t := text
+	while t.length() > 1 and font.get_string_size(t + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > width:
+		t = t.left(t.length() - 1)
+	return t.strip_edges() + "…"
 
 
 ## The icon an option draws inside its node: abilities and items have one, every other ring kind none.
