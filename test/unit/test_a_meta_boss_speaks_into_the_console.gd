@@ -40,10 +40,13 @@ func test_the_built_boss_carries_its_intro_to_the_console() -> void:
 		assert_true(seen.has(id), "CONTROL: %s was built by the real builder" % id)
 		if not seen.has(id):
 			continue
+		var dlg: Variant = bosses[id].get("dialogue", {})
+		var want: Array = (dlg as Dictionary).get("intro", []) if dlg is Dictionary else []
 		var lines: Array = load("res://src/GameLoop.gd").meta_boss_intro_lines([seen[id]])
-		assert_eq(lines.size(), (bosses[id]["dialogue"]["intro"] as Array).size(), "%s: every intro line reaches the console feed" % id)
-		for i in lines.size():
-			assert_true(str(lines[i]).contains(str(bosses[id]["dialogue"]["intro"][i])), "%s line %d is its own words" % [id, i])
+		assert_gt(lines.size(), 0, "%s: its intro reaches the console feed" % id)
+		assert_eq(lines.size(), want.size(), "%s: every intro line reaches the console feed" % id)
+		for i in mini(lines.size(), want.size()):
+			assert_true(str(lines[i]).contains(str(want[i])), "%s line %d is its own words" % [id, i])
 
 
 func test_an_ordinary_grind_enemy_logs_nothing() -> void:
