@@ -277,10 +277,7 @@ func _build_ui() -> void:
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help2)
 
-	## Both lines keep the Text Size (text grows, wraps or scrolls; it never shrinks): each wraps at the band's width and
-	## takes a row of max(16, its height), stacked up from the 1.0 bottom margin, and the band grows UP to hold them. At 1.0
-	## both rows are 16, so help1 is at size.y - 44, help2 at - 28 and the band at - 48, 44 tall, as authored. The grid
-	## ends higher by however far the band grew, so its last row never draws under the legend.
+	## Each line keeps its Text Size and wraps at the band; rows stack up from the 1.0 margin and the band and grid make room.
 	var row2: float = maxf(16.0, _wrap_in(help2, size.x - 32))
 	var row1: float = maxf(16.0, _wrap_in(help1, size.x - 32))
 	help2.position = Vector2(16, size.y - 12 - row2)
