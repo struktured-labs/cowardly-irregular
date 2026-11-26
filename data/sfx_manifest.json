@@ -15981,6 +15981,11 @@
       "file": "assets/audio/sfx/monster_afraid.ogg",
       "prompt": "A timid roaming monster that is outmatched by the party turns tail as its blue \"~\" appears: a small falling squeak (sine glide 1500 to 700 Hz with its octave, a fast 22 Hz flutter), lowpassed at 4.5 kHz with a short room tail. Falls where monster_spotted rises, so the two read as a pair: it saw you, then it ran. One per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.42 s, RMS -18.3 dBFS, peak -6.3 dBFS.",
       "duration_seconds": 0.42
+    },
+    "repel_wears_off": {
+      "file": "assets/audio/sfx/repel_wears_off.ogg",
+      "prompt": "A Repel spends its last step and roamers can charge you again: a soft falling fizzle, two sine partials gliding 1320 to 660 Hz with a slow 9 Hz waver and a thin pink-noise breath, lowpassed at 5 kHz with a short room tail. Played once, on the step that takes repel_steps_remaining to 0, from both the step-encounter path and the world-map path (EncounterSystem._spend_repel_step). Synthesised with SoX, not ElevenLabs; 0.70 s, RMS -19.2 dBFS, peak -6.2 dBFS.",
+      "duration_seconds": 0.7
     }
   }
 }

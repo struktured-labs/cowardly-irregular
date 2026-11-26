@@ -161,19 +161,44 @@
       "text": "Her angular geometry shifted. Something in the way she processed the recognition was slower than her usual speed, in the manner of a calculation encountering a value it hadn't planned for."
     },
     {
-      "type": "dialogue",
-      "lines": [
+      "type": "branch",
+      "flag": "quest_world5_termination_condition_signal_sent",
+      "if_true": [
         {
-          "speaker": "Firewall Attendant",
-          "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
-          "theme": "system",
-          "portrait": "system"
-        },
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Firewall Attendant",
+              "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
+              "theme": "system",
+              "portrait": "system"
+            },
+            {
+              "speaker": "Firewall Attendant",
+              "text": "I'm going to file this where the seventeen processes used to shelter. The overflow is gone, and nobody audits a room that was emptied on purpose. The Calibrant won't look there without reason.",
+              "theme": "system",
+              "portrait": "system"
+            }
+          ]
+        }
+      ],
+      "if_false": [
         {
-          "speaker": "Firewall Attendant",
-          "text": "I'm going to file this behind the stack overflow. It's a maintenance location — legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
-          "theme": "system",
-          "portrait": "system"
+          "type": "dialogue",
+          "lines": [
+            {
+              "speaker": "Firewall Attendant",
+              "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
+              "theme": "system",
+              "portrait": "system"
+            },
+            {
+              "speaker": "Firewall Attendant",
+              "text": "I'm going to file this behind the stack overflow. It's a maintenance location — legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
+              "theme": "system",
+              "portrait": "system"
+            }
+          ]
         }
       ]
     },
