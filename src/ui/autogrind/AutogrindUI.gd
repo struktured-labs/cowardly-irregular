@@ -1858,6 +1858,16 @@ func _hint_strip_text(device_name: String = "") -> String:
 	]
 
 
+## An options-ring row's name without its "(E)" key suffix, read from the ring so a refusal names the row the player will see.
+func _options_row_name(id: String) -> String:
+	for opt in (_options_ring_spec().get("options", []) as Array):
+		if str(opt.get("id", "")) == id:
+			var label := str(opt.get("label", ""))
+			var paren := label.rfind("(")
+			return (label.substr(0, paren) if paren > 0 else label).strip_edges()
+	return ""
+
+
 ## Pad name AND keyboard key when a pad is present; the key alone when it is not.
 func _pad_or_key(pad_name: String, key_name: String) -> String:
 	return "%s / [%s]" % [pad_name, key_name] if pad_name != "" else "[%s]" % key_name
@@ -3178,7 +3188,7 @@ func _import_scripts() -> void:
 
 	var files = ScriptShareManager.list_exports()
 	if files.is_empty():
-		_log_message("[color=yellow]No export files found. Export first with [E].[/color]")
+		_log_message("[color=yellow]No export files found. Export first: [E], or OPTIONS ▸ %s.[/color]" % _options_row_name("export"))
 		return
 
 	## ⛔ EVERY FILE HERE CAME FROM list_exports(), SO NO REFUSAL ON THIS PATH IS A DESIGNED
@@ -3856,7 +3866,7 @@ func _save_current_as_preset() -> void:
 
 	var slot = _custom_presets.size()
 	if slot >= MAX_CUSTOM_PRESETS:
-		_log_message("[color=yellow]Max %d custom presets. Delete one first ([D] key).[/color]" % MAX_CUSTOM_PRESETS)
+		_log_message("[color=yellow]Max %d custom presets. Delete one first: [D], or OPTIONS ▸ %s.[/color]" % [MAX_CUSTOM_PRESETS, _options_row_name("delete_preset")])
 		return
 
 	var preset = {
