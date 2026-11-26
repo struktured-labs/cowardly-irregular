@@ -73,3 +73,20 @@ func test_a_beaten_meta_boss_has_last_words_in_the_console() -> void:
 	assert_gt(read_at, 0, "CONTROL: the battle-end handler reads the boss's last words")
 	assert_lt(read_at, src.find("_autogrind_controller.on_battle_ended(victory", read_at - 1), "read BEFORE on_battle_ended clears the meta-boss data")
 	assert_gt(src.find("for line in last_words:", read_at), read_at, "and they are appended to the console feed")
+
+
+
+## The headless tier never builds a console scene, so both beats are written around its HEADLESS row instead.
+func test_a_headless_meta_boss_fight_speaks_too() -> void:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var start := src.find("func _resolve_headless_battle(")
+	assert_gt(start, 0, "CONTROL: the headless resolver was found")
+	var body := src.substr(start, src.find("\nfunc ", start + 1) - start)
+	var call := body.find("_autogrind_controller.on_battle_ended(victory")
+	assert_gt(call, 0, "CONTROL: the headless resolver forwards to the controller")
+	var intro := body.find("meta_boss_intro_lines(enemy_data)")
+	var last := body.find("meta_boss_defeat_lines(enemy_data)")
+	assert_true(intro > 0 and intro < call, "the headless intro is read before on_battle_ended")
+	assert_true(last > 0 and last < call, "the headless last words are read before on_battle_ended")
+	assert_gt(body.find("append_array(boss_intro)"), call, "the intro is written to the feed")
+	assert_gt(body.find("append_array(last_words)"), call, "the last words are written to the feed")

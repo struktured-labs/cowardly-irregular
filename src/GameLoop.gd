@@ -7337,6 +7337,9 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	# Forward to controller with headless-computed EXP + gold (tick 342:
 	# gold was previously dropped — empty items_gained dict meant the
 	# autogrind player got zero gold despite total_gold display).
+	## A headless fight never builds a console scene, so the meta-boss speaks into the feed around its row; read before on_battle_ended clears the data.
+	var boss_intro: Array = meta_boss_intro_lines(enemy_data)
+	var last_words: Array = meta_boss_defeat_lines(enemy_data) if victory else []
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		var items_gained: Dictionary = {"gold": gold_gained_headless}
 		for item_id in headless_item_drops:
@@ -7359,7 +7362,11 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 				summary_text += " [color=#ffcc44]+%d item%s[/color]" % [drop_count, "s" if drop_count > 1 else ""]
 		else:
 			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append_array(boss_intro)
 		_autogrind_battle_summaries.append(summary_text)
+		_autogrind_battle_summaries.append_array(last_words)
+		while _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
 		if _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
