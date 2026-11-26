@@ -31,7 +31,7 @@ const MESSAGE_CALLS := ["_flash_status(", "Toast.show(", "Toast.show_warning(",
 	"Toast.show_success(", "Toast.show_danger(", "_log_message("]
 
 ## Naming any of these means a pad player has a way in.
-const ROUTE_WORDS := ["more actions", "menu", "options", "d-pad", "pad", "row"]
+const ROUTE_WORDS := ["more actions", "menu", "options ▸", "d-pad", "pad", "row"]
 
 
 func _literals_passed_to_messages(src: String) -> Array:
@@ -81,10 +81,10 @@ func _names_a_bare_key(text: String) -> bool:
 	return false
 
 
-## The console writes keys as "[E]" / "[Shift+E]", with no verb before them; BBCode tags ("[color=yellow]", "[/color]") are not keys.
+## The console writes keys as "[E]" / "[Shift+E]", with no verb before them; BBCode and status tags ("[color=yellow]", "[ON]") are not keys.
 func _names_a_bracketed_key(text: String) -> bool:
 	var re := RegEx.new()
-	re.compile("\\[([A-Z0-9][A-Za-z0-9+]{0,6})\\]")
+	re.compile("\\[((Shift|Ctrl|Alt)\\+)?([A-Z0-9]|F[0-9]{1,2}|Tab|Esc|Enter|Space|Del)\\]")
 	return re.search(text) != null
 
 
@@ -109,6 +109,8 @@ func test_control_the_detector_fires_on_the_shape_it_is_for() -> void:
 		"CONTROL: a bracketed key with no verb before it is a key")
 	assert_false(_names_a_bare_key("[color=yellow]Imported 3 autobattle scripts[/color]"),
 		"CONTROL: BBCode tags are not keys")
+	assert_false(_names_a_bare_key("Permadeath [ON] at 40% HP"), "CONTROL: a status tag is not a key")
+	assert_false(_names_a_route("No options available"), "CONTROL: the word options alone names no route")
 
 
 func test_control_the_surfaces_are_readable_and_carry_messages() -> void:
