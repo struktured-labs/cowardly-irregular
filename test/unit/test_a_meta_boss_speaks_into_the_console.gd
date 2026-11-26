@@ -53,3 +53,23 @@ func test_an_ordinary_grind_enemy_logs_nothing() -> void:
 	## CONTROL for the filter: a pool enemy that carries lines is not a meta-boss and stays out of the feed.
 	var pool := {"id": "slime", "name": "Slime", "dialogue": {"intro": ["hi"]}}
 	assert_eq(load("res://src/GameLoop.gd").meta_boss_intro_lines([pool]), [], "only a meta or collapse boss speaks into the feed")
+
+
+## 2026-11-26 (cowir-story): a beaten meta-boss's `defeat` lines follow its Victory row in the console feed, read before on_battle_ended clears the data.
+func test_a_beaten_meta_boss_has_last_words_in_the_console() -> void:
+	var bosses := _grind_bosses()
+	var gl: Script = load("res://src/GameLoop.gd")
+	for id in bosses:
+		var dlg: Variant = bosses[id].get("dialogue", {})
+		var want: Array = (dlg as Dictionary).get("defeat", []) if dlg is Dictionary else []
+		assert_gt(want.size(), 0, "%s has last words" % id)
+		var data: Dictionary = {"id": id, "name": str(bosses[id].get("name", id)), "is_meta_boss": true, "dialogue": dlg}
+		var lines: Array = gl.meta_boss_defeat_lines([data])
+		assert_eq(lines.size(), want.size(), "%s: every last word reaches the console feed" % id)
+		for i in mini(lines.size(), want.size()):
+			assert_true(str(lines[i]).contains(str(want[i])), "%s last word %d is its own" % [id, i])
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var read_at := src.find("meta_boss_defeat_lines([_autogrind_controller._current_meta_boss_data])")
+	assert_gt(read_at, 0, "CONTROL: the battle-end handler reads the boss's last words")
+	assert_lt(read_at, src.find("_autogrind_controller.on_battle_ended(victory", read_at - 1), "read BEFORE on_battle_ended clears the meta-boss data")
+	assert_gt(src.find("for line in last_words:", read_at), read_at, "and they are appended to the console feed")

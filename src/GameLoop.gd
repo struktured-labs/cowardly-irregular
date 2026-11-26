@@ -7505,12 +7505,21 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 
 ## A meta-boss speaks its intro into the console feed: an unattended grind never opens a panel that waits for a press.
 static func meta_boss_intro_lines(enemy_data: Array) -> Array:
+	return _meta_boss_lines(enemy_data, "intro")
+
+
+## A beaten meta-boss's `defeat` lines, for the console feed after its Victory row.
+static func meta_boss_defeat_lines(enemy_data: Array) -> Array:
+	return _meta_boss_lines(enemy_data, "defeat")
+
+
+static func _meta_boss_lines(enemy_data: Array, key: String) -> Array:
 	var out: Array = []
 	for d in enemy_data:
 		if not (d is Dictionary) or not (bool(d.get("is_meta_boss", false)) or bool(d.get("is_collapse_boss", false))):
 			continue
 		var dlg: Variant = d.get("dialogue", {})
-		for l in ((dlg as Dictionary).get("intro", []) if dlg is Dictionary else []):
+		for l in ((dlg as Dictionary).get(key, []) if dlg is Dictionary else []):
 			out.append("[color=#ff88ff]%s:[/color] %s" % [str(d.get("name", "?")), str(l)])
 	return out
 
@@ -7583,6 +7592,8 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 
 	# Per-character session EXP is recorded where it is paid, so the bar matches each wallet.
 
+	## on_battle_ended clears the meta-boss data, so its last words are read first.
+	var last_words: Array = meta_boss_defeat_lines([_autogrind_controller._current_meta_boss_data]) if victory and _autogrind_controller and is_instance_valid(_autogrind_controller) else []
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
@@ -7603,6 +7614,10 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds)" % [stats.get("battles_won", 0), rounds]
 		_autogrind_battle_summaries.append(summary_text)
 		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+		for line in last_words:
+			_autogrind_battle_summaries.append(line)
+		while _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
 		# Check for new injuries and warn
