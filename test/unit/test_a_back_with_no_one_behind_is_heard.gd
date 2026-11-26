@@ -64,13 +64,18 @@ func _press(m, action: String, echo := false) -> Array:
 	var backs: Array = []
 	m.go_back_requested.connect(func(): backs.append(true))
 	_clear()
-	var ev := InputEventKey.new() if echo else InputEventAction.new()
+	var ev: InputEvent
 	if echo:
-		ev.keycode = KEY_ESCAPE if action == "ui_cancel" else KEY_RIGHT
-		ev.echo = true
+		var key := InputEventKey.new()
+		key.keycode = KEY_ESCAPE if action == "ui_cancel" else KEY_RIGHT
+		key.echo = true
+		key.pressed = true
+		ev = key
 	else:
-		ev.action = action
-	ev.pressed = true
+		var act := InputEventAction.new()
+		act.action = action
+		act.pressed = true
+		ev = act
 	m._input(ev)
 	return [_heard(), not backs.is_empty()]
 
