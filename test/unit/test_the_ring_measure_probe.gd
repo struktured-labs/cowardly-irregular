@@ -118,6 +118,28 @@ func test_measure_every_ring_at_every_preset() -> void:
 				gut.p("RING %.2fx %-9s p%d n=%d | NOW worst=%.0f off=%d sel=%.0f/%.0f %s | SCALED(%d/%d) worst=%.0f off=%d sel=%.0f/%.0f %s" % [
 					float(scale), name, pg + 1, page.size(), now["worst_px2"], now["off_screen"], now["sel_w"], now["inner"], now["pair"],
 					TextScale.scaled(10), TextScale.scaled(15), sc["worst_px2"], sc["off_screen"], sc["sel_w"], sc["inner"], sc["pair"]])
+	## Centre block (adhoc 28163): the 13 px title at y-18, the 15 px selected label at y+4, the 10 px page line at y+24, all centred.
+	for scale in _presets():
+		GameState.text_size_scale = float(scale)
+		for pair in [[10, 13, 15], [TextScale.scaled(10), TextScale.scaled(13), TextScale.scaled(15)]]:
+			var c := VP * 0.5
+			var t_rect := Rect2(c.x, c.y - 18.0 - font.get_ascent(pair[1]), font.get_string_size("Autogrind Options", HORIZONTAL_ALIGNMENT_LEFT, -1, pair[1]).x, font.get_height(pair[1]))
+			var s_rect := Rect2(c.x, c.y + 4.0 - font.get_ascent(pair[2]), 1.0, font.get_height(pair[2]))
+			var p_rect := Rect2(c.x, c.y + 24.0 - font.get_ascent(pair[0]), 1.0, font.get_height(pair[0]))
+			gut.p("RING %.2fx CENTRE px=%s title_w=%.0f/%.0f title_bottom=%.0f sel_top=%.0f (vgap %.0f) sel_bottom=%.0f page_top=%.0f (vgap %.0f) top_node_bottom=%.0f title_top=%.0f" % [
+				float(scale), str(pair), t_rect.size.x, 2.0 * (R - NR), t_rect.end.y, s_rect.position.y, s_rect.position.y - t_rect.end.y,
+				s_rect.end.y, p_rect.position.y, p_rect.position.y - s_rect.end.y, c.y - R + NR, t_rect.position.y])
+	## CONTROL (adhoc 28163): the mirror's node centres are the ring's own _slot_pos, at one preset, for a 10-slot page.
+	var ring: Control = load(RP).new()
+	ring.size = VP
+	ring.set("_center", VP * 0.5)
+	var drift := 0.0
+	for i in 10:
+		var a := -PI / 2.0 + TAU * float(i) / 10.0
+		var mine := VP * 0.5 + Vector2(cos(a), sin(a)) * R
+		drift = maxf(drift, (mine - ring.call("_slot_pos", i, 10)).length())
+	ring.free()
+	assert_lt(drift, 0.01, "CONTROL: the mirror's node centres are RadialPicker._slot_pos's (drift %.3f px)" % drift)
 	var hint := "[Dir] Aim   %s Confirm   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	gut.p("RING hint '%s' w@10=%.0f" % [hint, font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x])
 	assert_true(true, "probe printed")
