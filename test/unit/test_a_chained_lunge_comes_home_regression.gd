@@ -2,7 +2,7 @@ extends GutTest
 
 ## His Rat King fight (2026-11-14, godot.log 3540-3547): one rat's 3-action ADVANCE logged "Can't play finished Tween" twice.
 ## Engine order (4.4.1, adhoc 25634): a lunge killed earlier in the frame its stop's timer fires is valid+dead, and play() errors.
-## Measured home on .803 (battle 25706): the engine logs the error, the next lunge owns the sprite and returns it. Guards that.
+## The stop now resumes only the sprite's CURRENT lunge, so the error is gone; the seat counts it in this file's log (main 27971).
 
 const SCENE := preload("res://src/battle/BattleScene.gd")
 const STOP := 0.18
@@ -74,3 +74,24 @@ func test_a_chain_whose_next_lunge_kills_a_held_one_still_ends_at_home() -> void
 func test_a_chain_that_waits_out_each_stop_ends_at_home() -> void:
 	var r: Array = await _chain(false)
 	assert_lt((r[1] as Vector2).distance_to(r[0]), 1.0, "CONTROL: an unhurried chain ends at home: %s vs %s" % [r[1], r[0]])
+
+
+func test_a_held_lunge_replaced_without_a_kill_is_not_resumed_over_its_successor() -> void:
+	var scene = SCENE.new()
+	add_child_autofree(scene)
+	var attacker := _sprite(400)
+	var target := _sprite(100)
+	scene.add_child(attacker)
+	scene.add_child(target)
+	scene._animate_melee_attack(attacker, target, null, null)
+	var old: Tween = attacker.get_meta("attack_tween")
+	await wait_seconds(scene._last_contact_in + 0.05)
+	scene._hitstop_seconds = STOP
+	scene._apply_hitstop(attacker, target)
+	assert_true(old.is_valid() and not old.is_running(), "CONTROL: the stop held the lunge")
+	var successor := attacker.create_tween()
+	successor.tween_interval(1.0)
+	attacker.set_meta("attack_tween", successor)
+	await wait_seconds(STOP + 0.1)
+	assert_true(successor.is_running(), "CONTROL: the successor still owns the sprite when the stop ends")
+	assert_false(old.is_running(), "the stop resumed a lunge another motion had replaced, so two tweens fight over the sprite")
