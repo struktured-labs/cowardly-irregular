@@ -304,8 +304,11 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(archivist)
 
-	# Firewall Guard (blocks path, future content hint)
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), [
+	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
+	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
+	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
+	var _fw_lines: Array = _attendant_lines()
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _fw_lines if not _fw_lines.is_empty() else [
 		"HALT. Access to sector twelve is restricted.",
 		"Clearance level required: DELTA.",
 		"Your current clearance level: NONE.",
@@ -315,11 +318,52 @@ func _setup_npcs() -> void:
 	])
 	firewall.npc_id = "firewall_attendant_w5"
 	npcs.add_child(firewall)
+	# The answer is sent mid-conversation; re-pick his lines when the quest moves so the next talk already knows it.
+	var _fw_qs = get_node_or_null("/root/QuestSystem")
+	if _fw_qs != null:
+		_fw_qs.objective_advanced.connect(_refresh_attendant.bind(firewall).unbind(2))
+		_fw_qs.quest_state_changed.connect(_refresh_attendant.bind(firewall).unbind(2))
 	# The overflow FIREWALL-ALPHA guards without reading: world5_termination_condition step 2
 	_add_quest_examine_point("world5_termination_condition", "quest_world5_termination_condition_stack_read", "Read the stack",
 		"Frame after frame, one parameter shifting, the same call spells it out: STATUS REPORT. GRAND MECHANISM. ALL FUNCTIONS NOMINAL. AWAITING ACKNOWLEDGEMENT. The first frame is three years old. Nobody ever wrote back.",
 		"A stack overflow, still running. Every frame is the same call, retried. Seventeen smaller processes are sheltering in its noise.", Vector2(2.5 * TILE_SIZE, 15.5 * TILE_SIZE))
 	_place_masterites()
+
+
+## FIREWALL-ALPHA's lines for the answer sent the stack (world5_termination_condition `sets`); [] before any answer.
+func _attendant_lines() -> Array:
+	var _fw_gs = get_node_or_null("/root/GameState")
+	var _fw_lines: Array = []
+	if _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_original"):
+		_fw_lines = [
+			"The Mechanism sent me a thank you. In its own notation. I didn't know it could do that.",
+			"It took eleven cycles to compose. I watched every one.",
+			"The seventeen processes have moved out of the noise. They left a forwarding address. Here. With me.",
+			"Access to sector twelve is still restricted. I am telling you that more gently than before."
+		]
+	elif _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_terminated"):
+		_fw_lines = [
+			"Acknowledged. Awaiting next directive. That was the last thing it said.",
+			"It is still awaiting. I checked. It will be awaiting for a long time.",
+			"The seventeen processes moved out. It is very quiet where the stack was.",
+			"I will be here. Someone should be."
+		]
+	elif _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_task_complete"):
+		_fw_lines = [
+			"The stack is gone. Every frame, closed, in order. Nothing left over.",
+			"It was a very clean ending. I keep looking at where it was.",
+			"The seventeen processes moved out. They did not say where.",
+			"Access to sector twelve is restricted. That part, at least, did not change."
+		]
+	return _fw_lines
+
+
+func _refresh_attendant(firewall: Node) -> void:
+	if not is_instance_valid(firewall):
+		return
+	var lines: Array = _attendant_lines()
+	if not lines.is_empty():
+		firewall.dialogue_lines = lines
 
 
 ## W5's three village Masterites. The Root Process already fights arbiter_futuristic; these are the other

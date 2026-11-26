@@ -15976,6 +15976,11 @@
       "file": "assets/audio/sfx/monster_spotted.ogg",
       "prompt": "An ordinary roaming monster spots you and its yellow \"!\" pops up: a quick rising two-note blip (740 Hz then 1109 Hz, triangle with a soft octave), lowpassed at 4 kHz with a short room tail. Light on purpose, because W2-W6 roamers trigger it often; one cue per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.45 s, RMS -17.7 dBFS, peak -6.6 dBFS.",
       "duration_seconds": 0.45
+    },
+    "monster_afraid": {
+      "file": "assets/audio/sfx/monster_afraid.ogg",
+      "prompt": "A timid roaming monster that is outmatched by the party turns tail as its blue \"~\" appears: a small falling squeak (sine glide 1500 to 700 Hz with its octave, a fast 22 Hz flutter), lowpassed at 4.5 kHz with a short room tail. Falls where monster_spotted rises, so the two read as a pair: it saw you, then it ran. One per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.42 s, RMS -18.3 dBFS, peak -6.3 dBFS.",
+      "duration_seconds": 0.42
     }
   }
 }

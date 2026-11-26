@@ -190,6 +190,11 @@ func _writers() -> Dictionary:
 			for m3 in rx3.search_all(raw):
 				written[m3.get_string(1)] = true
 				quests += 1
+			# A choice's `sets` variant is written by QuestSystem's choice emitter (set_story_flag) when the player picks it.
+			var rx3s := RegEx.new()
+			rx3s.compile("\"sets\"\\s*:\\s*\"([a-z0-9_]+)\"")
+			for m3s in rx3s.search_all(raw):
+				written[m3s.get_string(1)] = true
 	if quests < 20:
 		thin.append("quest flag_on_complete matched %d (floor 20)" % quests)
 
