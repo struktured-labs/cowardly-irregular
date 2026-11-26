@@ -68,7 +68,7 @@ func _open(scale: float) -> Array:
 			panel = ch
 		elif ch is Label and (ch as Label).text.begins_with(MSG_HEAD):
 			msg = ch
-		elif ch is Label and (ch as Label).text.begins_with("Enter:"):
+		elif ch is Label and (ch as Label).text.contains(": restore"):
 			hint = ch
 	assert_not_null(panel, "PRECONDITION @%sx: the prompt has its panel" % scale)
 	assert_not_null(msg, "PRECONDITION @%sx: the prompt has its message" % scale)
