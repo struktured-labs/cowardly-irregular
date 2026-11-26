@@ -6482,13 +6482,13 @@ func _quick_save_with_toast() -> void:
 	if not SaveSystem.has_method("quick_save"):
 		return
 	if current_state == LoopState.AUTOGRIND:
-		Toast.show_warning(self, "Cannot quick-save during autogrind — stop grinding first")
+		_refuse_quick("Cannot quick-save during autogrind — stop grinding first")
 		return
 	if _in_exploration_transition():
-		Toast.show_warning(self, "Cannot quick-save mid-transition — wait for the scene to settle")
+		_refuse_quick("Cannot quick-save mid-transition — wait for the scene to settle")
 		return
 	if not SaveSystem.can_quick_save():
-		Toast.show_warning(self, "Cannot quick-save right now")
+		_refuse_quick("Cannot quick-save right now")
 		return
 	var ok: bool = SaveSystem.quick_save()
 	if ok:
@@ -6496,7 +6496,7 @@ func _quick_save_with_toast() -> void:
 		# to avoid double-toasting. (See _on_any_save_completed connection in _ready.)
 		print("[QUICKSAVE] F2 — quick save committed")
 	else:
-		Toast.show_warning(self, "Quick-save failed")
+		_refuse_quick("Quick-save failed")
 
 
 func _quick_load_with_toast() -> void:
@@ -6513,31 +6513,38 @@ func _quick_load_with_toast() -> void:
 	if not SaveSystem.has_method("load_game"):
 		return
 	if BattleManager and BattleManager.is_battle_active():
-		Toast.show_warning(self, "Cannot quick-load mid-battle")
+		_refuse_quick("Cannot quick-load mid-battle")
 		return
 	if current_state == LoopState.AUTOGRIND:
-		Toast.show_warning(self, "Cannot quick-load during autogrind — stop grinding first")
+		_refuse_quick("Cannot quick-load during autogrind — stop grinding first")
 		return
 	if _in_exploration_transition():
-		Toast.show_warning(self, "Cannot quick-load mid-transition — wait for the scene to settle")
+		_refuse_quick("Cannot quick-load mid-transition — wait for the scene to settle")
 		return
 	var slot: int = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 	if slot < 0:
-		Toast.show_warning(self, "No save to load")
+		_refuse_quick("No save to load")
 		return
 	var ok: bool = SaveSystem.load_game(slot)
 	if not ok:
-		Toast.show_warning(self, "Quick-load failed: %s" % _load_failure_reason(slot))
+		_refuse_quick("Quick-load failed: %s" % _load_failure_reason(slot))
 		return
 	# Rehydrate party + transition into the saved map (mirrors Continue path).
 	if not _restore_party_from_save_data():
-		Toast.show_warning(self, "Save data could not restore party")
+		_refuse_quick("Save data could not restore party")
 		return
 	Toast.show_success(self, "Loaded slot %d" % slot)
 	# Restart exploration to teleport the player to the saved position. AUTOGRIND returns above,
 	# so the state that skips this is BATTLE after VICTORY/DEFEAT — is_battle_active() is false there.
 	if current_state == LoopState.EXPLORATION:
 		_start_exploration()
+
+
+## F2/F3 said no only in a toast; every refusal is now heard as menu_error, the fleet's "can't do that".
+func _refuse_quick(text: String) -> void:
+	Toast.show_warning(self, text)
+	if SoundManager:
+		SoundManager.play_ui("menu_error")
 
 
 ## A scripted boss fights in its own dungeon (cowir-main 2026-11-04): its monsters.json boss_terrain, else the shared "boss".
