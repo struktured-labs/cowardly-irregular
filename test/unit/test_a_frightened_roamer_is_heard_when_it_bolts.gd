@@ -112,6 +112,7 @@ func test_a_bold_roamer_charges_without_a_squeak() -> void:
 	assert_eq(n, 0, "a charging '!!' played the frightened squeak %d times" % n)
 
 
+## Read after EACH goblin with the manifest's own 80 ms cooldown cleared, so only the roamers' shared gap can hold the count at one.
 func test_a_pack_that_bolts_together_squeaks_once() -> void:
 	var pack: Array = [_goblin(true), _goblin(true), _goblin(true)]
 	for g in pack:
@@ -122,12 +123,12 @@ func test_a_pack_that_bolts_together_squeaks_once() -> void:
 	for _i in range(25):
 		for g in pack:
 			g._process(0.05)
-		var s: AudioStream = SoundManager._ui_player.stream
-		SoundManager._ui_player.stream = null
-		SoundManager._sfx_cooldowns.erase(KEY)
-		SoundManager._sfx_cooldowns.erase("monster_spotted")
-		if s != null and s.resource_path.ends_with(_file()):
-			total += 1
+			var s: AudioStream = SoundManager._ui_player.stream
+			SoundManager._ui_player.stream = null
+			SoundManager._sfx_cooldowns.erase(KEY)
+			SoundManager._sfx_cooldowns.erase("monster_spotted")
+			if s != null and s.resource_path.ends_with(_file()):
+				total += 1
 	for g in pack:
 		assert_eq(g._mood, RMS.Mood.AFRAID, "CONTROL: a packmate never bolted")
 	assert_eq(total, 1, "three goblins bolting together squeaked %d times; a pack shares one" % total)
