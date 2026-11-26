@@ -2911,12 +2911,16 @@ func _build_option_picker() -> void:
 	backdrop.color = Color(0.0, 0.0, 0.0, 0.7)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_option_picker.add_child(backdrop)
-	var panel_w := 360.0
-	var panel_h := minf(80.0 + options.size() * 24.0, size.y - 80.0)
+	## Every measure scales with Text Size (100% is the authored 360 wide, rows 22 apart): at 200% the 22 px rows overlapped.
+	var k: float = float(TextScale.scaled(100)) / 100.0
+	var step: float = 22.0 * k
+	var panel_w := minf(360.0 * k, size.x - 40.0)
+	var panel_h := minf((80.0 + options.size() * 24.0) * k, size.y - 80.0)
 	var panel := ColorRect.new()
 	panel.color = style.bg
 	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
 	panel.size = Vector2(panel_w, panel_h)
+	panel.set_meta("option_panel", true)
 	_option_picker.add_child(panel)
 	_add_pixel_border(panel, panel_w, panel_h)
 	var title := Label.new()
@@ -2925,8 +2929,8 @@ func _build_option_picker() -> void:
 	title.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 	_option_picker.add_child(title)
-	var list_y := panel.position.y + 34.0
-	var max_visible := int((panel_h - 50.0) / 22.0)
+	var list_y := panel.position.y + 34.0 * k
+	var max_visible := maxi(1, int((panel_h - 50.0 * k) / step))
 	var scroll_start := 0
 	if options.size() > max_visible:
 		scroll_start = clampi(selected - max_visible / 2, 0, options.size() - max_visible)
@@ -2936,22 +2940,23 @@ func _build_option_picker() -> void:
 		var is_sel := i == selected
 		var row_bg := ColorRect.new()
 		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
-		row_bg.size = Vector2(panel_w - 16, 22)
+		row_bg.size = Vector2(panel_w - 16, step)
 		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
 		_option_picker.add_child(row_bg)
 		var row := Label.new()
 		row.text = "%s %s" % ["▶" if is_sel else "  ", opt.get("label", opt.get("id", ""))]
 		row.position = Vector2(panel.position.x + 12, list_y)
-		row.size = Vector2(panel_w - 24, 20)
+		row.size = Vector2(panel_w - 24, step - 2.0)
+		row.set_meta("option_row", i)
 		row.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
 		row.clip_text = true
 		_option_picker.add_child(row)
-		list_y += 22.0
+		list_y += step
 	var help := Label.new()
 	## A/B are Nintendo names; on a DualSense Confirm is ✕ and Cancel is ○, and on Xbox they swap.
 	help.text = "\u2191\u2193/D-pad:Select   %s:Confirm   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22.0 * k)
 	help.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_option_picker.add_child(help)
