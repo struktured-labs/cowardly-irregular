@@ -82,21 +82,32 @@ func test_an_unreachable_endpoint_answers_once_and_not_ok() -> void:
 	assert_ne(str(got[0][2]), "", "a failure must say why")
 
 
-## A blackhole address: the connection neither completes nor is refused, so the probe stays
-## IN FLIGHT long enough to test what a listing does to it. REFUSED fails instantly and leaves
-## _probe_request null, which made the first version of this arm vacuous — its mutation passed.
-const BLACKHOLE := "http://10.255.255.1:65000"
+## A local listener that never answers keeps the probe IN FLIGHT with no network; a 10.x blackhole failed fast (error 25) when the box had no route.
+var _silent: TCPServer = null
+
+
+func after_each() -> void:
+	if _silent != null:
+		_silent.stop()
+		_silent = null
 
 
 func test_a_listing_never_cancels_an_IN_FLIGHT_reachability_probe() -> void:
 	## They would share one HTTPRequest if _list_request did not exist, and a player opening the
 	## panel would knock the live backend's availability probe over mid-flight.
+	_silent = TCPServer.new()
+	assert_eq(_silent.listen(0, "127.0.0.1"), OK, "PRECONDITION: a local port that accepts and never answers")
 	var b := HTTPBackend.new()
-	b.base_url = BLACKHOLE
+	b.base_url = "http://127.0.0.1:%d" % _silent.get_local_port()
 	add_child_autofree(b)
 	b._start_probe()
-	## PREMISE: without an in-flight probe there is nothing for a listing to disturb.
-	assert_not_null(b._probe_request, "PREMISE: the probe must be in flight for this arm to mean anything")
+	## PREMISE: the request reached the server and waits on it; a refused port never gets here.
+	var t0: int = Time.get_ticks_msec()
+	while _probe_status(b) != HTTPClient.STATUS_REQUESTING and _probe_status(b) != -1 and Time.get_ticks_msec() - t0 < 3000:
+		await get_tree().process_frame
+	assert_eq(_probe_status(b), HTTPClient.STATUS_REQUESTING, "PREMISE: the probe must be in flight for this arm to mean anything")
+	if _probe_status(b) != HTTPClient.STATUS_REQUESTING:
+		return
 	var probe_node: HTTPRequest = b._probe_request
 	b.list_models()
 	## A FRAME IS LOAD-BEARING: sharing the node makes the listing's own _cleanup_list queue_free
@@ -106,8 +117,15 @@ func test_a_listing_never_cancels_an_IN_FLIGHT_reachability_probe() -> void:
 	assert_eq(b._probe_request, probe_node, "the listing replaced the probe's own request node")
 	assert_true(is_instance_valid(probe_node),
 		"the listing FREED the in-flight probe's request node, so availability can never resolve")
-	assert_true(probe_node.request_completed.is_connected(b._on_probe_completed),
+	assert_true(is_instance_valid(probe_node) and probe_node.request_completed.is_connected(b._on_probe_completed),
 		"the listing disconnected the probe's completion handler")
+
+
+## -1 once the probe's node is gone, so a wait on it ends instead of reading a freed object.
+func _probe_status(b: HTTPBackend) -> int:
+	if b._probe_request == null or not is_instance_valid(b._probe_request):
+		return -1
+	return b._probe_request.get_http_client_status()
 
 
 # ── the merge: the field stays authoritative ─────────────────────────────────────────────────────
