@@ -898,6 +898,17 @@ func _row_stride() -> int:
 	return _cell_h() + ROW_SPACING
 
 
+## Wraps an in-tree label at `width` and returns its drawn height (line count x line height, plus spacing).
+func _wrap_in(l: Label, width: float) -> float:
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size = Vector2(width, 0)
+	l.update_minimum_size()
+	var lines: int = maxi(1, l.get_line_count())
+	var h: float = l.get_line_height() * lines + float(l.get_theme_constant("line_spacing")) * (lines - 1)
+	l.size = Vector2(width, h)
+	return h
+
+
 ## A short label in a fixed box: the Text Size px, capped where it still fits; never below its authored px.
 func _fit_px(text: String, base: int, box: Vector2) -> int:
 	var px: int = TextScale.scaled(base)
@@ -1947,17 +1958,26 @@ func _show_reset_confirmation() -> void:
 	box.position = Vector2((vp.x - 360) / 2, (vp.y - 130) / 2)
 	_reset_confirm.add_child(box)
 
+	## Both lines keep the Text Size and wrap at the box's 320 px; the hint steps below the message and the box grows to
+	## hold them (text grows, wraps or scrolls; it never shrinks). The authored 92 and 130 are floors, so 100% does not move.
 	var msg = Label.new()
 	msg.text = "Restore the shipped autogrind profiles?\nThis discards all three rule sets."
-	msg.position = Vector2(box.position.x + 20, box.position.y + 22)
-	msg.add_theme_font_size_override("font_size", _fit_px("Restore the shipped autogrind profiles?", 16, Vector2(320, 30)))
+	msg.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_reset_confirm.add_child(msg)
+	var msg_h: float = _wrap_in(msg, 320.0)
 
 	var hint = Label.new()
 	hint.text = "Enter: restore   Esc: cancel"
-	hint.position = Vector2(box.position.x + 20, box.position.y + 92)
-	hint.add_theme_font_size_override("font_size", _fit_px(hint.text, 12, Vector2(320, 30)))
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_reset_confirm.add_child(hint)
+	var hint_h: float = _wrap_in(hint, 320.0)
+
+	var hint_y: float = maxf(92.0, 22.0 + msg_h + 8.0)
+	var box_h: float = maxf(130.0, hint_y + hint_h + 12.0)
+	box.size = Vector2(360, box_h)
+	box.position = Vector2((vp.x - 360) / 2, maxf(8.0, (vp.y - box_h) / 2))
+	msg.position = Vector2(box.position.x + 20, box.position.y + 22)
+	hint.position = Vector2(box.position.x + 20, box.position.y + hint_y)
 
 	SoundManager.play_ui("menu_select")
 
