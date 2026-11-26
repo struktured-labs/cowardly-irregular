@@ -63,6 +63,8 @@ func _fight(turbo: bool, speed_index: int) -> Dictionary:
 		if is_instance_valid(foe):
 			foe.attack = 1
 			foe.magic = 1
+			## 35% of 2321: about five hits, and no single hit (84-209 measured) can skip past the 25% low_hp line.
+			foe.current_hp = int(foe.max_hp * 0.35)
 	var ids: Array = []
 	for member in scene.party_members:
 		var id: String = member.combatant_name.to_lower().replace(" ", "_")
