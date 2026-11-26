@@ -59,13 +59,17 @@ func _menu(battle: bool, can_go_back: bool):
 	return m
 
 
-## Presses `action` on the menu and returns [heard file, go_back emitted?].
-func _press(m, action: String) -> Array:
+## Presses `action` on the menu (an auto-repeat when echo) and returns [heard file, go_back emitted?].
+func _press(m, action: String, echo := false) -> Array:
 	var backs: Array = []
 	m.go_back_requested.connect(func(): backs.append(true))
 	_clear()
-	var ev := InputEventAction.new()
-	ev.action = action
+	var ev := InputEventKey.new() if echo else InputEventAction.new()
+	if echo:
+		ev.keycode = KEY_ESCAPE if action == "ui_cancel" else KEY_RIGHT
+		ev.echo = true
+	else:
+		ev.action = action
 	ev.pressed = true
 	m._input(ev)
 	return [_heard(), not backs.is_empty()]
@@ -83,6 +87,7 @@ func test_back_with_no_one_behind_says_no() -> void:
 	assert_false(r[1], "CONTROL: Back went back with no earlier character")
 	assert_false(m.is_queued_for_deletion(), "CONTROL: the first character's menu closed on a refused Back")
 	assert_eq(r[0], _file(REFUSAL), "Back on the first menu of a round was silent")
+	assert_eq(_press(m, "ui_cancel", true)[0], "", "a HELD Back repeated the refusal; one press, one cue")
 
 
 func test_back_with_someone_behind_still_cancels() -> void:
@@ -106,3 +111,4 @@ func test_opted_in_right_with_no_one_behind_says_no() -> void:
 	assert_false(r[1], "CONTROL: Right went back with no earlier character")
 	assert_false(m.is_queued_for_deletion(), "CONTROL: the menu closed on a refused Right")
 	assert_eq(r[0], _file(REFUSAL), "the opted-in Right (Back) on the first menu of a round was silent")
+	assert_eq(_press(m, "ui_right", true)[0], "", "a HELD Right repeated the refusal; one press, one cue")
