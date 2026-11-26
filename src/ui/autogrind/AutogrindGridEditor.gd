@@ -211,7 +211,7 @@ func _build_ui() -> void:
 	_status_label.position = Vector2(GRID_BASE_POS.x, 28)
 	_status_label.size = Vector2(size.x - GRID_BASE_POS.x - 16, 22)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_status_label.add_theme_font_size_override("font_size", _fit_px(STATUS_LONGEST_TEXT, 12, _status_label.size))
+	_status_label.add_theme_font_size_override("font_size", TextScale.scaled(12))  # never shrunk; the Label grows to its line and _lay_out_top moves the grid down
 	_status_label.add_theme_color_override("font_color", style.highlight_text)
 	_status_label.text = STATUS_DEFAULT_TEXT
 	add_child(_status_label)

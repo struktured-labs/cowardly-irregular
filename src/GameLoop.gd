@@ -7496,10 +7496,24 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Replay recent battle summaries into the new console
 	for summary_line in _autogrind_battle_summaries:
 		battle_scene.autogrind_console_log(summary_line)
+	for line in meta_boss_intro_lines(enemy_data):
+		battle_scene.autogrind_console_log(line)
 
 	# Show current stats block
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
+
+## A meta-boss speaks its intro into the console feed: an unattended grind never opens a panel that waits for a press.
+static func meta_boss_intro_lines(enemy_data: Array) -> Array:
+	var out: Array = []
+	for d in enemy_data:
+		if not (d is Dictionary) or not (bool(d.get("is_meta_boss", false)) or bool(d.get("is_collapse_boss", false))):
+			continue
+		var dlg: Variant = d.get("dialogue", {})
+		for l in ((dlg as Dictionary).get("intro", []) if dlg is Dictionary else []):
+			out.append("[color=#ff88ff]%s:[/color] %s" % [str(d.get("name", "?")), str(l)])
+	return out
+
 
 func _on_autogrind_battle_ended(victory: bool) -> void:
 	"""Handle battle end during autogrind"""

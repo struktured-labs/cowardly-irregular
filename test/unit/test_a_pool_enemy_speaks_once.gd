@@ -23,6 +23,8 @@ func test_the_pool_rows_that_speak_are_exactly_the_pinned_set() -> void:
 		var r := row as Dictionary
 		if bool(r.get("boss", false)) or bool(r.get("miniboss", false)) or bool(r.get("field_elite", false)) or elites.has(id):
 			continue
+		if bool(r.get("autogrind_spawned", false)):
+			continue  ## a grind meta-boss speaks into the console feed, never on a pool sighting
 		judged += 1
 		var dlg: Variant = r.get("dialogue")
 		if dlg is Dictionary and not (dlg as Dictionary).is_empty():

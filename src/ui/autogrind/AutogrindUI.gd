@@ -1756,6 +1756,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "import", "label": "Import from File        (I)"},
 			{"id": "copy_code", "label": "Copy Share Code   (Shift+E)"},
 			{"id": "paste_code", "label": "Paste Share Code  (Shift+I)"},
+			{"id": "next_profile", "label": "Switch Profile: %s" % AutogrindSystem.get_active_autogrind_profile_name()},
 			{"id": "restore_defaults", "label": "Restore Shipped Profiles"},
 		],
 	}
@@ -1833,6 +1834,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_copy_rules_share_code()
 		"paste_code":
 			_paste_rules_share_code()
+		"next_profile":
+			_switch_to_next_profile()
 		"restore_defaults":
 			_restore_shipped_profiles()
 
@@ -3635,6 +3638,31 @@ func open_rules_editor() -> Control:
 		rules = saved_rules.duplicate(true)
 	)
 	return editor
+
+
+## The pad's route to the editor's Shift+Tab: this grid is saved to its own profile first, and a refusal keeps it on screen.
+func _switch_to_next_profile() -> void:
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot switch profile while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	var count: int = AutogrindSystem.get_autogrind_profiles().size()
+	if count < 2:
+		_log_message("[color=yellow]Only one profile, so there is nothing to switch to.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+		_log_message("[color=red]Not switched: fix the highlighted rows first, or switching would lose them.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	AutogrindSystem.set_active_autogrind_profile((AutogrindSystem.get_active_autogrind_profile_index() + 1) % count)
+	rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+	_undo_snapshot = {}
+	cursor_row = 0
+	cursor_col = 0
+	_log_message("[color=cyan]Profile: %s[/color]" % AutogrindSystem.get_active_autogrind_profile_name())
+	_build_ui()
+	SoundManager.play_ui("menu_select")
 
 
 ## The pad's route to the editor's Shift+D: opens the rules editor with its own restore prompt up, so both routes ask the same question.
