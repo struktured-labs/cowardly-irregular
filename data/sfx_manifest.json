@@ -15986,6 +15986,16 @@
       "file": "assets/audio/sfx/repel_wears_off.ogg",
       "prompt": "A Repel spends its last step and roamers can charge you again: a soft falling fizzle, two sine partials gliding 1320 to 660 Hz with a slow 9 Hz waver and a thin pink-noise breath, lowpassed at 5 kHz with a short room tail. Played once, on the step that takes repel_steps_remaining to 0, from both the step-encounter path and the world-map path (EncounterSystem._spend_repel_step). Synthesised with SoX, not ElevenLabs; 0.70 s, RMS -19.2 dBFS, peak -6.2 dBFS.",
       "duration_seconds": 0.7
+    },
+    "monster_lost_you": {
+      "file": "assets/audio/sfx/monster_lost_you.ogg",
+      "prompt": "A roaming monster that was chasing you (its red \"!!\") gives up as you get clear and wanders off calm: a soft falling pair, E5 then B4 on triangle with a quiet octave, lowpassed at 3.5 kHz with a short room tail. Answers monster_spotted's rising pair, and is the quietest of the three roamer cues (spotted, afraid, lost) because it means the danger has passed. Plays on the ANGRY -> CALM edge only: a frightened roamer running clear, a Repel calming one, or a lost player ref stays quiet. One per pack (RoamingMonster.SPOTTED_SHARED_GAP_MS). Synthesised with SoX, not ElevenLabs; 0.49 s, RMS -19.8 dBFS, peak -9.9 dBFS.",
+      "duration_seconds": 0.49
+    },
+    "repeat_turn": {
+      "file": "assets/audio/sfx/repeat_turn.ogg",
+      "prompt": "Repeat (the pad's west face, keyboard Y) refilled the party's remembered actions from last round: a quick rising replay figure, G5 B5 D6 then a held G6, triangle with a quiet octave, 55 ms per step, lowpassed at 6 kHz with a short room tail. It answers a SUCCESSFUL Repeat only; a declined one plays menu_error, the fleet's 'can't do that'. BattleScene._repeat_cue. Synthesised with SoX, not ElevenLabs; 0.43 s, RMS -19.0 dBFS (the level of menu_select and advance_queue), peak -9.4 dBFS.",
+      "duration_seconds": 0.43
     }
   }
 }

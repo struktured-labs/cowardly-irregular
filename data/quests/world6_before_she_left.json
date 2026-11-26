@@ -49,7 +49,23 @@
       "description": "Gather the fragments of somewhere.",
       "type": "custom",
       "required_flag": "quest_world6_before_she_left_fragments_gathered",
-      "flag_on_complete": "quest_world6_before_she_left_fragments_gathered"
+      "flag_on_complete": "quest_world6_before_she_left_fragments_gathered",
+      "beats": [
+        {"id": "vowels", "label": "Ask what it sounded like.", "lines": [
+          {"speaker": "Traveler", "text": "Vowels. Rounder than anything in the six. Every word sounded like it was being said to someone close.", "theme": "mysterious"},
+          {"speaker": "Traveler", "text": "No one shouted there. I don't think there was anything far enough away to shout at.", "theme": "mysterious"}
+        ]},
+        {"id": "light", "label": "Ask what the light was like.", "lines": [
+          {"speaker": "Traveler", "text": "Warm, but it came from nowhere. No sun. No lamps. It was just the colour the air agreed to be.", "theme": "mysterious"},
+          {"speaker": "Traveler", "text": "Medieval is too orange. Suburban is too blue. The light I mean is the one they were both trying to remember.", "theme": "mysterious"}
+        ]},
+        {"id": "weather", "label": "Ask about the weather-word.", "lines": [
+          {"speaker": "Traveler", "text": "There was one word for the weather. Only one, because the weather only did one thing.", "theme": "mysterious"},
+          {"speaker": "Traveler", "text": "I've tried it in every world. It doesn't fit in any of their mouths. The closest is 'still'. It isn't 'still'.", "theme": "mysterious"},
+          {"speaker": "Traveler", "text": "It meant: nothing is happening yet, and that is not a problem.", "theme": "mysterious"}
+        ]}
+      ],
+      "_beats_note": "Authored by cowir-story 2026-11-26 for the 3-beat recall chain in _wiring_notes: one interact per beat, any order; the step flag is set after all three. No emitter reads `beats` yet."
     },
     {
       "step": 3,
