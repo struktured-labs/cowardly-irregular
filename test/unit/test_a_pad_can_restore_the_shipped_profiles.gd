@@ -27,8 +27,10 @@ func before_each() -> void:
 	_vp.add_child(_ui)
 	await get_tree().process_frame
 	_ui._is_grinding = false
+	AutogrindSystem.get_active_autogrind_profile_name()  # seeds the shipped profiles when a fresh state has none
 	var profiles: Array = AutogrindSystem.autogrind_profiles.get("profiles", [])
 	var active: int = int(AutogrindSystem.autogrind_profiles.get("active", 0))
+	assert_lt(active, profiles.size(), "PRECONDITION: there is an active profile to rename")
 	if active < profiles.size():
 		profiles[active]["name"] = PLANTED
 
