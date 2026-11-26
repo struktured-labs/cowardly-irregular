@@ -64,8 +64,19 @@ func test_three_step_handlers_share_prefix() -> void:
 	var br_idx: int = src.find("func _step_branch")
 	var br_next: int = src.find("\nfunc ", br_idx + 1)
 	var br_body: String = src.substr(br_idx, br_next - br_idx) if br_next > 0 else src.substr(br_idx)
-	assert_true(br_body.contains("\"cutscene_flag_\" + flag"),
-		"_step_branch must read cutscene_flag_ prefix (existing convention)")
+	# Since 2026-11-26 the branch reads through branch_flag_is_set -> GameState.is_story_flag_set, which tries the prefix first.
+	assert_true(br_body.contains("branch_flag_is_set("),
+		"_step_branch must read its flag through branch_flag_is_set")
+	var hf_idx: int = src.find("static func branch_flag_is_set")
+	var hf_next: int = src.find("\nfunc ", hf_idx + 1)
+	var hf_body: String = src.substr(hf_idx, hf_next - hf_idx) if hf_next > 0 else src.substr(hf_idx)
+	assert_true(hf_idx >= 0 and hf_body.contains("is_story_flag_set("), "branch_flag_is_set must read through GameState.is_story_flag_set")
+	var gs := _read("res://src/meta/GameState.gd")
+	var gi: int = gs.find("func is_story_flag_set")
+	var gn: int = gs.find("\nfunc ", gi + 1)
+	var g_body: String = gs.substr(gi, gn - gi) if gn > 0 else gs.substr(gi)
+	assert_true(g_body.contains("\"cutscene_flag_\" + flag_name"),
+		"is_story_flag_set must read the cutscene_flag_ prefix (existing convention)")
 
 
 # ── Behavioral: choice → branch loop closes correctly ───────────────
