@@ -1775,19 +1775,32 @@ static func skip_answer(presented: Array[Dictionary]) -> Dictionary:
 	return presented[0]
 
 
-## An option with "unless_flag" (one name or a list) is left off the menu once any of those cutscene flags is set: a trial already won is not offered again.
-static func choice_option_hidden_by(option: Dictionary, flags: Dictionary) -> bool:
+## An option's "unless_flag" names (one name or a list), blanks dropped.
+static func unless_flag_names(option: Dictionary) -> Array[String]:
 	var names: Variant = option.get("unless_flag", [])
 	if names is String:
 		names = [names]
-	for f in (names as Array):
-		if str(f) != "" and bool(flags.get("cutscene_flag_" + str(f), false)):
+	var out: Array[String] = []
+	for f in (names as Array if names is Array else []):
+		if str(f) != "":
+			out.append(str(f))
+	return out
+
+
+## An option with "unless_flag" is left off the menu once any of those cutscene flags is set in `flags`: a trial already won is not offered again.
+static func choice_option_hidden_by(option: Dictionary, flags: Dictionary) -> bool:
+	for f in unless_flag_names(option):
+		if bool(flags.get("cutscene_flag_" + f, false)):
 			return true
 	return false
 
 
+## The live menu reads every flag namespace, as a flag branch does, so a quest's answer can hide an option.
 func _choice_option_hidden(option: Dictionary) -> bool:
-	return GameState != null and choice_option_hidden_by(option, GameState.game_constants)
+	for f in unless_flag_names(option):
+		if branch_flag_is_set(f):
+			return true
+	return false
 
 
 ## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT
