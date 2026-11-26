@@ -4,7 +4,7 @@ extends GutTest
 ## ([D] key)". A pad has neither key; its route to both verbs is the options ring. Each refusal now names the key AND the
 ## ring row, read from the ring itself, so a renamed row cannot leave the message pointing at a row that is not there.
 ## Arms: CONTROL (the ring offers both rows) · the row name drops the "(D)" suffix and is a ring label's start · a full
-## preset list's refusal names the key and the row · the import refusal's source names the export row.
+## preset list's refusal names the key and the row · an import with no export files names the key and the export row.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const UI := "res://src/ui/autogrind/AutogrindUI.gd"
@@ -13,6 +13,7 @@ var _ag: Dictionary
 var _vp: SubViewport
 var _ui: Control
 var _saved_presets: Array = []
+var _export_dir_was: String = ""
 
 
 func before_each() -> void:
@@ -27,10 +28,12 @@ func before_each() -> void:
 	_vp.add_child(_ui)
 	await get_tree().process_frame
 	_saved_presets = _ui._custom_presets.duplicate(true)
+	_export_dir_was = ScriptShareManager.EXPORT_DIR
 	_ui._is_grinding = false
 
 
 func after_each() -> void:
+	ScriptShareManager.EXPORT_DIR = _export_dir_was
 	if _ui and is_instance_valid(_ui):
 		_ui._custom_presets = _saved_presets
 		_ui.queue_free()
@@ -75,10 +78,14 @@ func test_a_full_preset_list_names_the_key_and_the_row() -> void:
 	assert_true(line.contains("OPTIONS ▸ %s" % _ui._options_row_name("delete_preset")), "and the ring row a pad can take: %s" % line)
 
 
-func test_the_import_refusal_names_the_export_row() -> void:
-	var src := FileAccess.get_file_as_string(UI)
-	var at := src.find("No export files found.")
-	assert_gt(at, -1, "CONTROL: the import refusal exists")
-	var line := src.substr(at, src.find("\n", at) - at)
-	assert_true(line.contains("[E]"), "the import refusal still names the key: %s" % line)
-	assert_true(line.contains('OPTIONS ▸ %s') and line.contains('_options_row_name("export")'), "and the export row a pad can take: %s" % line)
+func test_an_import_with_no_exports_names_the_key_and_the_row() -> void:
+	## A directory no run creates, so the refusal is reached whatever an earlier file exported.
+	ScriptShareManager.EXPORT_DIR = "user://zz_no_exports_%d/" % Time.get_ticks_usec()
+	assert_eq(ScriptShareManager.list_exports().size(), 0, "CONTROL: there is nothing to import, so this reads the refusal")
+	var before: int = _ui._battle_log_lines.size()
+	_ui._import_scripts()
+	assert_gt(_ui._battle_log_lines.size(), before, "CONTROL: the import logged a line")
+	var line: String = str(_ui._battle_log_lines[-1])
+	assert_true(line.contains("No export files found"), "CONTROL: that line is the empty-list refusal: %s" % line)
+	assert_true(line.contains("[E]"), "the refusal still names the key: %s" % line)
+	assert_true(line.contains("OPTIONS ▸ %s" % _ui._options_row_name("export")), "and the export row a pad can take: %s" % line)
