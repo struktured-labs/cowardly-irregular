@@ -25,6 +25,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	get_tree().paused = false
 	GameState.boss_intro_cutscene_for = ""
 	GameState.game_constants = _saved_constants
 	Engine.time_scale = _saved_scale
