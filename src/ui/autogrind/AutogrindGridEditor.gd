@@ -55,6 +55,7 @@ var _grid_container: Control
 var _cursor: Control
 var _profile_label: Label
 var _top_band_h: float = GRID_BASE_POS.y  # where the grid starts: below the status line, which steps below a grown pill
+var _bottom_band_extra: float = 0.0  # how far the key legend grew UP past its 1.0 band; the grid ends that much higher
 var _profile_pill: ColorRect = null  # the profile indicator's backing; sized to its label by _lay_out_top
 var _details_panel: Control
 var _keyboard: Control = null
@@ -233,8 +234,7 @@ func _build_ui() -> void:
 	# Button legend
 	var legend_bg = ColorRect.new()
 	legend_bg.color = Color(0.0, 0.0, 0.0, 0.5)
-	legend_bg.position = Vector2(8, size.y - 48)
-	legend_bg.size = Vector2(size.x - 16, 44)
+	## Placed after both lines are measured, below.
 	add_child(legend_bg)
 
 	var help1 = Label.new()
@@ -263,8 +263,7 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
 	]
-	help1.position = Vector2(16, size.y - 44)
-	help1.add_theme_font_size_override("font_size", _fit_px(help1.text, 10, Vector2(size.x - 32, 16)))
+	help1.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help1)
 
@@ -274,10 +273,20 @@ func _build_ui() -> void:
 	## GOES with no pad rather than borrowing someone else's key. help1 already names Esc for Back,
 	## and ui_cancel's arm is what saves here (it calls _save_rules), so no way to save is lost.
 	help2.text = "C:Cycle  -/= or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
-	help2.position = Vector2(16, size.y - 28)
-	help2.add_theme_font_size_override("font_size", _fit_px(help2.text, 10, Vector2(size.x - 32, 16)))
+	help2.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help2)
+
+	## Each line keeps its Text Size and wraps at the band; rows stack up from the 1.0 margin and the band and grid make room.
+	var row2: float = maxf(16.0, _wrap_in(help2, size.x - 32))
+	var row1: float = maxf(16.0, _wrap_in(help1, size.x - 32))
+	help2.position = Vector2(16, size.y - 12 - row2)
+	help1.position = Vector2(16, help2.position.y - row1)
+	legend_bg.position = Vector2(8, help1.position.y - 4)
+	legend_bg.size = Vector2(size.x - 16, size.y - 4 - legend_bg.position.y)
+	_bottom_band_extra = maxf(0.0, (size.y - 48.0) - legend_bg.position.y)
+	if _grid_container and is_instance_valid(_grid_container):
+		_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y) - _bottom_band_extra
 
 
 func _build_profile_panel() -> void:
@@ -429,7 +438,7 @@ func _lay_out_top() -> void:
 		_top_band_h = maxf(GRID_BASE_POS.y, GRID_BASE_POS.y + (below - 28.0) + _line_growth(_status_label, TOP_STATUS_PX))
 		if _grid_container and is_instance_valid(_grid_container):
 			_grid_container.position.y = _top_band_h - _scroll_offset
-			_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y)
+			_grid_container.size.y = size.y - 100 - (_top_band_h - GRID_BASE_POS.y) - _bottom_band_extra
 
 
 ## ═══════════════════════════════════════════════════════════════════════
