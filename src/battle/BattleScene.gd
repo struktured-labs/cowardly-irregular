@@ -6487,8 +6487,12 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
+		## Resume only the sprite's CURRENT lunge: a replaced one may be killed this frame (valid, dead) and play() errors on it.
 		if held_lunge and lunge.is_valid():
-			lunge.play()
+			if is_instance_valid(attacker_sprite) and attacker_sprite.has_meta("attack_tween") and attacker_sprite.get_meta("attack_tween") == lunge:
+				lunge.play()
+			else:
+				lunge.kill()
 	, CONNECT_ONE_SHOT)
 
 
