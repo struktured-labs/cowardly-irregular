@@ -2302,8 +2302,8 @@ func _edit_current_cell() -> void:
 		var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 		var conditions = rule.get("conditions", [])
 		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
-			_add_and_condition()
-			SoundManager.play_ui("menu_select")
+			if _add_and_condition():
+				SoundManager.play_ui("menu_select")
 		return
 
 	var cell_type = cell.get_meta("cell_type")
@@ -2315,7 +2315,8 @@ func _edit_current_cell() -> void:
 	elif cell_type == "empty_action":
 		_add_action()
 	elif cell_type == "empty_condition":
-		_add_and_condition()
+		if not _add_and_condition():
+			return
 	elif cell_type == "row_insert":
 		_insert_row_after(cursor_row)
 	elif cell_type == "row_toggle":
@@ -3195,23 +3196,34 @@ func _add_condition() -> void:
 	_add_or_row()
 
 
-func _add_and_condition() -> void:
+## True when a condition was added; a refusal (ALWAYS row, or full) was silent and is now heard and explained.
+func _add_and_condition() -> bool:
 	"""Add an AND condition to the current row (L+Right or when navigating past last condition)"""
+	if cursor_row < 0 or cursor_row >= rules.size():
+		return false
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
+	var why := and_condition_refusal(conditions, MAX_CONDITIONS)
+	if why != "":
+		SoundManager.play_ui("menu_error")
+		_flash_status(why, Color.YELLOW)
+		return false
+	conditions.append({"type": "hp_percent", "op": "<", "value": 50})
+	rule["conditions"] = conditions
+	cursor_col = conditions.size() - 1
+	_refresh_grid()
+	SoundManager.play_ui("menu_expand")
+	return true
 
-	# Can't add AND to a row with ALWAYS (ALWAYS is already unconditional)
+
+## Why a rule cannot take another AND condition, or "" when it can. Shared with the autogrind editor.
+static func and_condition_refusal(conditions: Array, max_conditions: int) -> String:
 	for cond in conditions:
-		if cond.get("type", "") == "always":
-			return
-
-	if conditions.size() < MAX_CONDITIONS:
-		# Add AND condition
-		conditions.append({"type": "hp_percent", "op": "<", "value": 50})
-		rule["conditions"] = conditions
-		cursor_col = conditions.size() - 1
-		_refresh_grid()
-		SoundManager.play_ui("menu_expand")
+		if cond is Dictionary and str(cond.get("type", "")) == "always":
+			return "An Always rule already fires every time; change Always to add a condition."
+	if conditions.size() >= max_conditions:
+		return "A rule holds %d conditions at most." % max_conditions
+	return ""
 
 
 func _add_or_row() -> void:
