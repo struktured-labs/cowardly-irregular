@@ -49,6 +49,13 @@ func _built(id: String) -> Dictionary:
 	return _seen.get(id, {})
 
 
+## Measured 2026-11-27 (story 28465): an arm here held one 3.6 s frame (GameLoop's first load + boss builds), and a timer
+## the NEXT file started in the frame after expired on that frame's delta. Two frames here leave no long delta behind.
+func after_all() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
 func test_every_grind_meta_boss_has_a_wipe_line() -> void:
 	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
 	var judged := 0

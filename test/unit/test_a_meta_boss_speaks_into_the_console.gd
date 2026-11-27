@@ -17,6 +17,13 @@ func _grind_bosses() -> Dictionary:
 	return out
 
 
+## Measured 2026-11-27 (story 28465): an arm here held one 3.6 s frame (GameLoop's first load + boss builds), and a timer
+## the NEXT file started in the frame after expired on that frame's delta. Two frames here leave no long delta behind.
+func after_all() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
 func test_every_grind_meta_boss_has_an_intro() -> void:
 	var bosses := _grind_bosses()
 	assert_gt(bosses.size(), 1, "CONTROL: the autogrind roster was read")
