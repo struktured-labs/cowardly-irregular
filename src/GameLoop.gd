@@ -6458,6 +6458,15 @@ static func write_screenshot(img: Image, out_dir: String = SCREENSHOT_DIR) -> Di
 	return {"path": ProjectSettings.globalize_path(path), "reason": ""}
 
 
+const SCREENSHOT_SFX := "screenshot_taken"
+
+
+## F12 flashed in silence and failed in silence; a shot that landed now clicks a shutter, one that did not plays menu_error.
+func _screenshot_cue(landed: bool) -> void:
+	if SoundManager:
+		SoundManager.play_ui(SCREENSHOT_SFX if landed else "menu_error")
+
+
 func _take_screenshot() -> void:
 	"""Save a screenshot to user://screenshots/ with timestamp"""
 	var tex: ViewportTexture = get_viewport().get_texture() if get_viewport() else null
@@ -6466,6 +6475,7 @@ func _take_screenshot() -> void:
 		print("[SCREENSHOT] Failed to capture viewport")
 		if Toast:
 			Toast.show_warning(self, "Screenshot failed — there was nothing on screen to capture")
+		_screenshot_cue(false)
 		return
 	## The write was unchecked and the flash below fired regardless, so a screenshot that never
 	## landed looked exactly like one that did — and the log line claimed a path that held no file.
@@ -6475,8 +6485,10 @@ func _take_screenshot() -> void:
 		push_warning("[SCREENSHOT] FAILED: %s" % why)
 		if Toast:
 			Toast.show_warning(self, "Screenshot failed — %s" % why)
+		_screenshot_cue(false)
 		return
 	print("[SCREENSHOT] Saved: %s" % wrote["path"])
+	_screenshot_cue(true)
 	# Flash feedback
 	var flash = ColorRect.new()
 	flash.color = Color(1, 1, 1, 0.5)
