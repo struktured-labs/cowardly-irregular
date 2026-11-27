@@ -34,7 +34,7 @@ func _pc() -> Combatant:
 	return pc
 
 
-## Arms a window: {ms: wall ms to close (-1 never), span: deadline minus arming ms, left: time left one frame later}.
+## Arms a window: {ms: wall ms to close (-1 never), span: deadline minus arming, left: time left a frame later, ref: when a 1 s SceneTreeTimer armed beside it fired}.
 func _window(after_long_frame: bool, frame_between: bool) -> Dictionary:
 	var bm = BattleManager
 	var pc := _pc()
@@ -44,13 +44,14 @@ func _window(after_long_frame: bool, frame_between: bool) -> Dictionary:
 		if who == pc:
 			closed.append(Time.get_ticks_msec())
 	bm.trust_interrupt_window_closed.connect(on_close)
-	var out := {"ms": -1, "span": -1, "left": -1.0, "delta": 0.0}
+	var out := {"ms": -1, "span": -1, "left": -1.0, "ref": -1}
 	if after_long_frame:
 		OS.delay_msec(LONG_FRAME_MS)
 		if frame_between:
 			await get_tree().process_frame
-			out["delta"] = get_process_delta_time()
 	var t0 := Time.get_ticks_msec()
+	## The reference is the old clock: if it fires early, the long frame really reached this point.
+	get_tree().create_timer(1.0, true, false, true).timeout.connect(func() -> void: out["ref"] = Time.get_ticks_msec() - t0)
 	bm._run_trust_interrupt_window(pc)
 	out["span"] = bm._trust_window_deadline_ms - t0
 	await get_tree().process_frame
@@ -66,6 +67,7 @@ func _window(after_long_frame: bool, frame_between: bool) -> Dictionary:
 func test_a_long_frame_in_the_arming_frame_leaves_the_full_second() -> void:
 	var r: Dictionary = await _window(true, false)
 	gut.p("same frame: %s" % r)
+	assert_between(int(r["ref"]), 0, 500, "CONTROL: a SceneTreeTimer armed in that frame fired early, so the hazard was present (%d ms)" % r["ref"])
 	assert_gt(float(r["left"]), 0.8, "THE DEFECT: the frame that armed the window ran %d ms, and the offer emptied on its first tick" % LONG_FRAME_MS)
 	assert_gte(int(r["ms"]), 950, "the window stayed open for its wall second after a long arming frame (%d ms)" % r["ms"])
 
@@ -73,7 +75,7 @@ func test_a_long_frame_in_the_arming_frame_leaves_the_full_second() -> void:
 func test_a_long_frame_just_before_arming_leaves_the_full_second() -> void:
 	var r: Dictionary = await _window(true, true)
 	gut.p("frame between: %s" % r)
-	assert_gt(float(r["delta"]), 1.0, "CONTROL: the frame before arming really carried the long delta, so the hazard was present")
+	assert_between(int(r["ref"]), 0, 500, "CONTROL: a SceneTreeTimer armed right after the long frame fired early, so the hazard was present (%d ms)" % r["ref"])
 	assert_gt(float(r["left"]), 0.8, "THE DEFECT: the window armed right after a %d ms frame and its offer emptied at once" % LONG_FRAME_MS)
 	assert_gte(int(r["ms"]), 950, "the window stayed open for its wall second after a long frame (%d ms)" % r["ms"])
 
