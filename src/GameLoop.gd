@@ -6415,20 +6415,22 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 
 ## F8. Best-effort by design: a bundle missing a piece still helps, so nothing here may abort
 ## the write. The toast prints the ABSOLUTE path because a tester cannot act on "user://".
-func _write_feedback_bundle() -> void:
+func _write_feedback_bundle(out_dir: String = FeedbackBundle.DEFAULT_DIR) -> void:
 	var shot: Image = null
 	var vp := get_viewport()
 	if vp and vp.get_texture():
 		shot = vp.get_texture().get_image()
-	var path: String = FeedbackBundle.write_bundle(FeedbackBundle.collect_state(), shot)
+	var path: String = FeedbackBundle.write_bundle(FeedbackBundle.collect_state(), shot, out_dir)
 	if path == "":
 		push_warning("[FEEDBACK] bundle FAILED to write")
 		if Toast:
 			Toast.show(self, "Bug report FAILED — see the log", Toast.WARNING_COLOR)
+		_screenshot_cue(false)
 		return
 	print("[FEEDBACK] wrote %s" % path)
 	if Toast:
 		Toast.show(self, "Bug report saved to %s" % path)
+	_screenshot_cue(true)
 
 
 const SCREENSHOT_DIR := "user://screenshots"
@@ -6461,7 +6463,7 @@ static func write_screenshot(img: Image, out_dir: String = SCREENSHOT_DIR) -> Di
 const SCREENSHOT_SFX := "screenshot_taken"
 
 
-## F12 flashed in silence and failed in silence; a shot that landed now clicks a shutter, one that did not plays menu_error.
+## F12 and F8 both capture the screen and were silent either way; a capture that landed clicks a shutter, one that did not plays menu_error.
 func _screenshot_cue(landed: bool) -> void:
 	if SoundManager:
 		SoundManager.play_ui(SCREENSHOT_SFX if landed else "menu_error")

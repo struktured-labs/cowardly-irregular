@@ -148,7 +148,8 @@ func test_a_second_push_still_moves_after_the_stick_centres() -> void:
 func test_the_option_picker_still_navigates_through_the_threaded_read() -> void:
 	var ed: Node = await _open(EDITORS[0])
 	var picker := Control.new()
-	picker.set_meta("spec", {"options": ["alpha", "beta", "gamma"], "selected": 0})
+	## {id,label}, the shape every real caller passes: bare strings aborted each rebuild at its first row.
+	picker.set_meta("spec", {"options": [{"id": "a", "label": "alpha"}, {"id": "b", "label": "beta"}, {"id": "g", "label": "gamma"}], "selected": 0})
 	ed.add_child(picker)
 	picker.visible = true
 	ed.set("_option_picker", picker)
@@ -162,3 +163,8 @@ func test_the_option_picker_still_navigates_through_the_threaded_read() -> void:
 	assert_eq(int(spec_after.get("selected", -1)), 1,
 		"the option picker did not advance on a stick push — `_input` reads MenuNav.step once and "
 		+ "passes it down; if that argument goes missing the picker silently stops navigating")
+	var drawn := ""
+	for c in picker.get_children():
+		if c is Label and c.has_meta("option_row") and int(c.get_meta("option_row")) == 1 and not c.is_queued_for_deletion():
+			drawn = (c as Label).text
+	assert_string_contains(drawn, "beta", "and the rebuilt picker drew the row it moved to")
