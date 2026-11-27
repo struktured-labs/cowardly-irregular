@@ -9,7 +9,8 @@ extends GutTest
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const UI := "res://src/ui/autogrind/AutogrindUI.gd"
-const NEVER_RULE := {"enabled": true, "conditions": [{"type": "battles_done", "op": ">=", "value": 9999}], "actions": [{"type": "stop_grinding"}]}
+## A PARTY condition that cannot match: a session condition (battles_done) is reported "not shown here" and never reaches the no-match line.
+const NEVER_RULE := {"enabled": true, "conditions": [{"type": "party_hp_avg", "op": "<", "value": -1}], "actions": [{"type": "stop_grinding"}]}
 
 var _ag: Dictionary
 var _ui: Control
@@ -46,6 +47,7 @@ func test_a_death_stop_is_named() -> void:
 
 func test_switched_off_the_grind_continues() -> void:
 	var line := _line("one member down")
+	assert_true(line.contains("no rule matches"), "PRECONDITION: the planted rule reaches the no-match line rather than a blocked reason: %s" % line)
 	assert_true(line.contains("the grind continues"), "with the death stop off nothing ends it: %s" % line)
 
 
