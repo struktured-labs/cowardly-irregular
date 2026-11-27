@@ -98,6 +98,8 @@ func test_the_basic_attack_survives() -> void:
 	_bm.enemy_party.append(target)
 	c.add_status("silence", 1)
 	for _i in 6:
+		## Each swing starts at AP 0, so swings 5 and 6 are paid, not free at the AP floor.
+		c.current_ap = 0
 		_bm._execute_attack(c, target)
 	assert_lt(target.current_hp, target.max_hp, "a silenced character can still swing")
 
