@@ -97,3 +97,44 @@ func test_the_mouse_on_a_rows_right_half_selects_it() -> void:
 		assert_eq(m.selected_index, target, "%.0f%%: the mouse at %s on row %d's right half, low in the row, selects it" % [s * 100.0, at, target])
 		vp.queue_free()
 		await get_tree().process_frame
+
+
+func _hover(vp: SubViewport, p: Vector2) -> void:
+	for q in [p + Vector2(-6, -2), p]:
+		var ev := InputEventMouseMotion.new()
+		ev.position = q
+		ev.global_position = q
+		vp.push_input(ev)
+		await get_tree().process_frame
+
+
+## Battle Speed's last chips sit past the old 400 px target, where a click did nothing (main 28705). The mouse on the
+## LAST chip's centre now reaches the row exactly as blank space beside it does: both select Battle Speed.
+func test_battle_speeds_far_chip_reaches_its_row_like_blank_space() -> void:
+	var m := await _menu_at(1.0)
+	var vp: SubViewport = m.get_parent()
+	var idx := -1
+	for i in m._settings_items.size():
+		if str(m._settings_items[i].get("id", "")) == "battle_speed":
+			idx = i
+	assert_gt(idx, -1, "PRECONDITION: Settings has a battle_speed row")
+	if idx < 0:
+		return
+	var row: Control = m._settings_items[idx]["control"]
+	var chips: Array = row.find_children("OptionBG_*", "ColorRect", true, false)
+	assert_gt(chips.size(), 1, "PRECONDITION: the battle speed row has chips")
+	if chips.size() < 2:
+		return
+	var last: Control = chips.back()
+	var chip_c: Vector2 = last.get_global_rect().get_center()
+	assert_gt(chip_c.x - row.get_global_rect().position.x, 400.0, "CONTROL: the last chip sits past the old 400 px target")
+	var blank := Vector2(row.get_global_rect().end.x - 24.0, chip_c.y)
+	var outcomes: Array = []
+	for p in [chip_c, blank]:
+		m.selected_index = 0 if idx != 0 else 1
+		m._update_selection()
+		await get_tree().process_frame
+		await _hover(vp, Vector2(4, 4))
+		await _hover(vp, p)
+		outcomes.append(m.selected_index)
+	assert_eq(outcomes, [idx, idx], "the mouse on the far chip's centre and on blank row space both select Battle Speed (row %d)" % idx)
