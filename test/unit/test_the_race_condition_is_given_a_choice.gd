@@ -128,6 +128,8 @@ func test_the_real_quest_is_offered_and_answered_by_the_pair() -> void:
 
 
 func test_the_pair_stands_in_node_prime() -> void:
+	var held_ch2: Variant = GameState.game_constants.get("cutscene_flag_world5_chapter2_complete", null)
+	GameState.game_constants["cutscene_flag_world5_chapter2_complete"] = true
 	var vp := SubViewport.new()
 	vp.world_2d = World2D.new()
 	add_child_autofree(vp)
@@ -143,3 +145,7 @@ func test_the_pair_stands_in_node_prime() -> void:
 		var cell := Vector2i(floori(found.position.x / 32.0), floori(found.position.y / 32.0))
 		assert_true(v._is_cell_walkable(cell + Vector2i(0, 1)) or v._is_cell_walkable(cell + Vector2i(-1, 0)),
 			"a cell beside the pair can be stood on, so they can be talked to")
+	if held_ch2 == null:
+		GameState.game_constants.erase("cutscene_flag_world5_chapter2_complete")
+	else:
+		GameState.game_constants["cutscene_flag_world5_chapter2_complete"] = held_ch2
