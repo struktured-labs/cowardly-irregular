@@ -59,9 +59,11 @@ esac
 
 check_templates
 cd "$REPO"
-AUTHORED="$(find test/unit -name 'test_*.gd' | wc -l)"
-if [ "$AUTHORED" -lt 1000 ]; then
-  echo "make.sh: only $AUTHORED test files under test/unit — wrong directory or a broken checkout" >&2
+AUTHORED_FILES="$(find test/unit -name 'test_*.gd' -type f | wc -l)"
+AUTHORED_EXPLAIN="$(tools/authored_scripts.sh test/unit --explain)"
+AUTHORED="${AUTHORED_EXPLAIN%% *}"
+if [ "$AUTHORED_FILES" -lt 1000 ]; then
+  echo "make.sh: only $AUTHORED_FILES test files under test/unit — wrong directory or a broken checkout" >&2
   exit 1
 fi
 mkdir -p tmp
@@ -70,4 +72,4 @@ for f in chain gate rungate wedgewatch; do
   chmod +x "tmp/$f$ARG.sh"
   bash -n "tmp/$f$ARG.sh"
 done
-echo "make.sh: wrote tmp/chain$ARG.sh tmp/gate$ARG.sh tmp/rungate$ARG.sh tmp/wedgewatch$ARG.sh (authored: $AUTHORED)"
+echo "make.sh: wrote tmp/chain$ARG.sh tmp/gate$ARG.sh tmp/rungate$ARG.sh tmp/wedgewatch$ARG.sh (authored: $AUTHORED_EXPLAIN)"

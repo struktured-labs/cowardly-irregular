@@ -1,6 +1,5 @@
 {
   "id": "world5_mutual_exclusion",
-  "wiring_pending": true,
   "title": "Mutual Exclusion",
   "world": 5,
   "prereq_flag": "cutscene_flag_world5_chapter2_complete",
@@ -30,6 +29,12 @@
     ],
     "ready_to_turn_in": [
       {"speaker": "Race Condition (First)", "text": "Something has changed. Ask us — ask us anything, and watch which of us answers.", "theme": "mysterious"}
+    ],
+    "complete_protocol": [
+      {"speaker": "Race Condition (First)", "text": "Oh. You came back. I go first: hello.", "theme": "mysterious"},
+      {"speaker": "Race Condition (Second)", "text": "And I go second, forty milliseconds later, and I get to say it properly: hello. Thank you for the schedule.", "theme": "mysterious"},
+      {"speaker": "Race Condition (First)", "text": "We have not corrupted anything in —", "theme": "mysterious"},
+      {"speaker": "Race Condition (Second)", "text": "— nineteen days. You finish your sentences now. I finish mine. Sometimes I finish yours. It is allowed.", "theme": "mysterious"}
     ],
     "complete": [
       {"speaker": "Race Condition (Both)", "text": "Oh. That was inefficient.", "theme": "mysterious"},
@@ -74,5 +79,6 @@
   },
   "flag_on_complete": "quest_world5_mutual_exclusion_complete",
   "cross_world_connection": "The merged process's parting thought is one of the game's quietest theses: 'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'",
+  "idle_after_resolved": {"quest_world5_mutual_exclusion_protocol": ["First: My turn. The junction is quiet. That is the whole report.", "Second: My turn. The junction is quiet, and I checked it twice, and it is still quiet. That is a longer report."], "quest_world5_mutual_exclusion_merged": ["We used to reach for the junction at the same instant. Now there is only one hand.", "It is very quiet in here. We think that is what one sounds like."]},
   "_wiring_notes": "Step 2 is a VALUE CHOICE with two emitters, either sets _resolved plus a path flag: (a) quest_world5_mutual_exclusion_protocol — Mage/Compiler writes a lightweight cooperative synchronization protocol (dialogue interact); the two remain separate, establish a schedule; on later visits the first acknowledges the party, the second takes forty milliseconds longer but responds more thoroughly, (b) quest_world5_mutual_exclusion_merged — Rogue/Exploit-flavored discovery that both processes run the SAME underlying code — one entity instantiated twice without coordination; they merge back into one process. COMPLETE dialogue above is the MERGED variant (the unison lines); PROTOCOL variant complete: the two speak alternately, in schedule order, finishing each other's clauses — wire as dialogue branch on path flags. synchronization_protocol item granted either way; its intended mechanics differ by path (documented on the item — protocol: +10% when two members act same round; merged: occasional cooperative-flag defensive-negate) — engine promotion later picks whichever path flag is set. Giver is the pair as a single NPC entity (they speak as First/Second — display names inline in the speaker field)."
 }

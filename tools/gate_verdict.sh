@@ -21,7 +21,7 @@ RISKY_MAX="${3:-0}"
 _num() { command grep -aE "$1" "$LOG" | tail -1 | command grep -aoE '[0-9]+' | tail -1; }
 SCRIPTS=$(_num '^Scripts'); TESTS=$(_num '^Tests'); PASSING=$(_num '^  Passing')
 FAILING=$(_num '^  Failing'); RISKY=$(_num '^  Risky'); ASSERTS=$(_num '^Asserts')
-AUTHORED=$(ls test/unit/test_*.gd | wc -l)
+AUTHORED=$("$(dirname "${BASH_SOURCE[0]}")"/authored_scripts.sh test/unit)
 : "${FAILING:=0}" "${RISKY:=0}"
 
 # A Totals block that never printed is the vacuity case the wrapper exits 3 for; if the numbers

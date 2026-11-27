@@ -37,7 +37,7 @@ const UNWIRED_BY_DESIGN := [
 	# A and B wired 2026-09-11: explicit .npc_id now matches the quest ids; the get_npc_id()
 	# name-slug fallback had been resolving them to shift_foreman_grix etc. instead.
 	# C -- no candidate NPC exists yet
-	"rat_patrol_junction", "memory_leak_district", "race_condition_pair",
+	"rat_patrol_junction", "memory_leak_district",
 	"madame_orrery_w5", "madame_orrery_w6",
 ]
 
