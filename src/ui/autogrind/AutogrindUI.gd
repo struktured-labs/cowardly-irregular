@@ -3667,8 +3667,18 @@ func _switch_to_next_profile() -> void:
 
 ## The pad's route to the editor's Shift+D: opens the rules editor with its own restore prompt up, so both routes ask the same question.
 func _restore_shipped_profiles() -> void:
-	var editor: Control = open_rules_editor()
-	editor._show_reset_confirmation()
+	var editor: Control = _open_rules_editor_from_console()
+	if editor:
+		editor._show_reset_confirmation()
+
+
+## The editor reads the SAVED profile and the console adopts it on close, so an unsaved grid is saved first or Back would erase it.
+func _open_rules_editor_from_console() -> Control:
+	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+		_log_message("[color=red]Not opened: fix the highlighted rows first, or the editor would lose them.[/color]")
+		SoundManager.play_ui("menu_error")
+		return null
+	return open_rules_editor()
 
 
 func _on_monitor_exit() -> void:
