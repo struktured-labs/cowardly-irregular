@@ -769,14 +769,17 @@ func _desc_bottom(description: String) -> float:
 
 ## The row's subtitle, wrapping at the row's width instead of running past its edge.
 func _make_desc(description: String) -> Label:
+	## ORDER IS LOAD-BEARING: a Label's size only clamps UP, so font and wrap come before the text and the width, or the
+	## no-wrap minimum (the whole line, 968 px at 150%) is what the width gets clamped to (adhoc 28658).
 	var desc := Label.new()
 	desc.name = "Description"
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.size = Vector2(_desc_w, _desc_bottom(description) - desc.position.y)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.text = description
+	desc.position = Vector2(8, 22.0 * _row_k())
+	desc.custom_minimum_size = Vector2(_desc_w, 0)
+	desc.size = Vector2(_desc_w, _desc_bottom(description) - desc.position.y)
 	return desc
 
 
