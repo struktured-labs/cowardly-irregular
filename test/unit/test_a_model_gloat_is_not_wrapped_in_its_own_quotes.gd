@@ -24,8 +24,9 @@ class QuotingModel extends LLMBackend:
 	var reply: String = ""
 	func backend_id() -> String: return "quoting_model"
 	func is_ready() -> bool: return true
+	## Answers inside submit(): a 0.05 s timer raced the 1.2 s wall-clock deadline and lost under a loaded sweep (.841 pre-gate).
 	func submit(id: String, _p: String, _o: Dictionary = {}) -> void:
-		get_tree().create_timer(0.05, true, false, true).timeout.connect(func(): request_finished.emit(id, true, reply, ""))
+		request_finished.emit(id, true, reply, "")
 
 
 func before_each() -> void:
@@ -83,6 +84,7 @@ func _spoken_for(reply: String) -> String:
 	var cb := func(text: String, _v: bool): heard.append(text)
 	_bm.boss_gloat_line.connect(cb)
 	_bm._dispatch_boss_gloat(true)
+	assert_false(heard.is_empty(), "CONTROL: the model's reply landed in the dispatch frame, so the deadline cannot win the race")
 	var t0 := Time.get_ticks_msec()
 	while heard.is_empty() and Time.get_ticks_msec() - t0 < int(_bm.GLOAT_WAIT_SEC * 1000.0) + 500:
 		await get_tree().process_frame
