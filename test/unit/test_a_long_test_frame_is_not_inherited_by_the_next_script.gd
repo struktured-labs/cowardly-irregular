@@ -1,7 +1,7 @@
 extends GutTest
 
 ## .841 pre-gate: a meta-boss arm spent 3.6 s in one frame, and the next script's 1.2 s gloat timer expired on its first tick.
-## The runner now yields two frames between scripts; each inner class below is a separate script in GUT's loop.
+## The runner now yields one frame between scripts; each inner class below is a separate script in GUT's loop.
 
 const LONG_FRAME_MSEC := 1500
 const WINDOW_SEC := 1.0
@@ -14,8 +14,8 @@ func test_the_runner_yields_between_scripts() -> void:
 	var at := src.find("\t\tend_script.emit()\n\t\t# cowir: spend a long last frame's delta here")
 	assert_gt(at, -1, "gut.gd carries the cowir yield after end_script: re-apply it after a GUT upgrade")
 	var after := src.substr(at, 400)
-	assert_eq(after.count("\t\tawait get_tree().process_frame\n"), 2,
-		"the yield after end_script awaits two frames: re-apply it after a GUT upgrade")
+	assert_eq(after.count("\t\tawait get_tree().process_frame\n"), 1,
+		"the yield after end_script awaits one frame: re-apply it after a GUT upgrade")
 
 
 class TestAEndsOnALongFrame extends GutTest:
