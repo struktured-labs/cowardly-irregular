@@ -358,6 +358,10 @@ const CHOICE_EMITTERS: Dictionary = {
 	"firewall_attendant_w5": [
 		{"quest": "world5_termination_condition", "flag": "quest_world5_termination_condition_signal_sent"},
 	],
+	## `beats` instead of `choices`: one unheard beat per talk, any order, and the step flag waits for all of them.
+	"traveler_w6": [
+		{"quest": "world6_before_she_left", "flag": "quest_world6_before_she_left_fragments_gathered"},
+	],
 }
 
 
@@ -615,6 +619,8 @@ func _run_choice_emitter(npc_id: String, npc: Node) -> bool:
 		var obj: Dictionary = _objective(get_quest(qid), get_objective_index(qid))
 		if obj.get("type", "") != "custom" or obj.get("required_flag", "") != flag:
 			continue
+		if obj.has("beats"):
+			return await _run_beats(qid, flag, obj, npc)
 		var offered: Array = []
 		var labels: Array = []
 		for c in obj.get("choices", []):
@@ -636,6 +642,32 @@ func _run_choice_emitter(npc_id: String, npc: Node) -> bool:
 		notify_flag(flag)
 		return true
 	return false
+
+
+## The flag a heard beat leaves, so a beat is offered once and survives a save.
+static func beat_flag(quest_id: String, beat_id: String) -> String:
+	return "quest_%s_beat_%s" % [quest_id, beat_id]
+
+
+## Offers the beats not yet heard; the one picked plays and is remembered. Cancel keeps every beat already heard.
+func _run_beats(qid: String, flag: String, obj: Dictionary, npc: Node) -> bool:
+	var unheard: Array = []
+	var labels: Array = []
+	for b in obj.get("beats", []):
+		if not _flag(beat_flag(qid, str(b.get("id", "")))):
+			unheard.append(b)
+			labels.append(str(b.get("label", "")))
+	if not unheard.is_empty():
+		var i: int = labels.find(await _present_choices(npc, "QuestChoice", labels))
+		if i < 0:
+			return false
+		await _play_lines(npc, unheard[i].get("lines", []))
+		GameState.set_story_flag(beat_flag(qid, str(unheard[i].get("id", ""))))
+		if unheard.size() > 1:
+			return true
+	GameState.set_story_flag(flag)
+	notify_flag(flag)
+	return true
 
 
 func _present_choices(npc: Node, menu_name: String, labels: Array) -> String:

@@ -1867,6 +1867,26 @@ func _create_default_rule() -> Dictionary:
 ## RULE COMPOSER
 ## ═══════════════════════════════════════════════════════════════════════
 
+## Closing the composer without installing: the cancel and the reset prompt share it, so the drawn grid and `rules` cannot disagree after either.
+func _dismiss_composer() -> void:
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_rule_composer_overlay.queue_free()
+	_rule_composer_overlay = null
+	## Cancelling performs no action, so nothing else would rebuild and the legend would stay
+	## stale for the rest of the session. The install path reloads on its own.
+	if rules.is_empty():
+		# The empty-profile splash opened the composer before any grid existed; cancelling must leave one to edit.
+		rules.append(_create_default_rule())
+		cursor_row = 0
+		cursor_col = 0
+		_pad_change_pending = false
+		_build_ui()
+		_refresh_grid()
+	elif _pad_change_pending:
+		_pad_change_pending = false
+		_build_ui()
+
+
 func _open_rule_composer_overlay() -> void:
 	"""Open the Rule Composer overlay for the party-level autogrind rules"""
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
@@ -1874,24 +1894,7 @@ func _open_rule_composer_overlay() -> void:
 	_rule_composer_overlay = _RuleComposerOverlayScene.instantiate()
 	add_child(_rule_composer_overlay)
 	_rule_composer_overlay.installed.connect(_on_composer_installed)
-	_rule_composer_overlay.cancelled.connect(func() -> void:
-		if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
-			_rule_composer_overlay.queue_free()
-		_rule_composer_overlay = null
-		## Cancelling performs no action, so nothing else would rebuild and the legend would stay
-		## stale for the rest of the session. The install path reloads on its own.
-		if rules.is_empty():
-			# The empty-profile splash opened the composer before any grid existed; cancelling must leave one to edit.
-			rules.append(_create_default_rule())
-			cursor_row = 0
-			cursor_col = 0
-			_pad_change_pending = false
-			_build_ui()
-			_refresh_grid()
-		elif _pad_change_pending:
-			_pad_change_pending = false
-			_build_ui()
-	)
+	_rule_composer_overlay.cancelled.connect(_dismiss_composer)
 	_rule_composer_overlay.open("autogrind", "", rules.duplicate(true))
 	SoundManager.play_ui("menu_select")
 
@@ -1963,6 +1966,9 @@ func _cycle_profile() -> void:
 func _show_reset_confirmation() -> void:
 	if _reset_confirm and is_instance_valid(_reset_confirm):
 		return
+	## Only setup's empty-profile splash can be up here (Shift+D cannot reach past an open composer), and its gate would swallow this prompt's input.
+	if _splash_shown and _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_dismiss_composer()
 	_reset_confirm = Control.new()
 	_reset_confirm.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_reset_confirm)

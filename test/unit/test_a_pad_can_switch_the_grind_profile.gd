@@ -30,7 +30,7 @@ func before_each() -> void:
 	_ui._is_grinding = false
 	assert_gt(AutogrindSystem.get_autogrind_profiles().size(), 1, "PRECONDITION: the shipped set has a second profile to switch to")
 	AutogrindSystem.set_active_autogrind_profile(0)
-	_ui.rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+	_ui._load_rules()  # as setup() does in play: an unloaded console saves nothing
 
 
 func after_each() -> void:
