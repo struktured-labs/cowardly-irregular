@@ -110,8 +110,17 @@ func test_an_emptied_grid_answers_back_and_stays_empty() -> void:
 		return
 	ed._input(_pad(JOY_BUTTON_A))
 	assert_null(ed._reset_confirm, "on an emptied grid the restore prompt ignored Back")
+	assert_eq(_drawn_rows(ed), ed.rules.size(), "the editor's drawn grid disagrees with its rules after the splash was dismissed")
 	ed.closed.emit()
-	assert_eq(AutogrindSystem.get_autogrind_rules(), [], "Back keeps the grid the player emptied")
+	assert_eq(AutogrindSystem.get_autogrind_rules(), [], "Back keeps the SAVED profile the player emptied")
+
+
+func _drawn_rows(ed: Control) -> int:
+	var n := 0
+	for c in ed._grid_container.get_children():
+		if not c.is_queued_for_deletion() and str(c.get_meta("cell_type", "")) == "toggle":
+			n += 1
+	return n
 
 
 func test_the_shipped_path_clear_switch_back_restore() -> void:
