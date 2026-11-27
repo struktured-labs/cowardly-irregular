@@ -725,6 +725,15 @@ func _build_ui() -> void:
 	scroll.size = Vector2(panel.size.x, maxf(40.0, footer_rect.position.y - 6.0 - scroll.position.y))
 
 	_update_selection()
+	## A rebuild in place (Test connection, the rebalance review closing) makes a fresh scroll at the top whose rows have
+	## no size yet, so the follow above is a no-op and the cursor sat off screen. Follow it again once they are laid out.
+	if is_inside_tree() and not get_tree().process_frame.is_connected(_follow_selection_after_layout):
+		get_tree().process_frame.connect(_follow_selection_after_layout, CONNECT_ONE_SHOT)
+
+
+func _follow_selection_after_layout() -> void:
+	if is_inside_tree():
+		_update_selection()
 
 
 ## Padding inside an option chip, around the widest option string.
