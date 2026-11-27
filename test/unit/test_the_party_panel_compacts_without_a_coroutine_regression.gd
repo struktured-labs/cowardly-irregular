@@ -30,12 +30,13 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
-func _tree_holds_a_dead_compaction() -> bool:
+## Frame-signal connections held for the scene with this instance id: names no method, so it reads the same on any build.
+func _frame_links_to(id: int) -> int:
+	var n := 0
 	for c in get_tree().process_frame.get_connections():
-		var cb: Callable = c["callable"]
-		if cb.get_method() == "_compact_party_panel_tick" and not is_instance_valid(cb.get_object()):
-			return true
-	return false
+		if (c["callable"] as Callable).get_object_id() == id:
+			n += 1
+	return n
 
 
 func test_control_an_overrunning_panel_drops_every_tier_and_stops() -> void:
@@ -45,7 +46,7 @@ func test_control_an_overrunning_panel_drops_every_tier_and_stops() -> void:
 	await _frames(12)
 	assert_eq(scene._ui_manager.party_compact_tier, UIManager.PARTY_COMPACT_TIERS.size(), "an overrun panel drops one tier per settled layout until none is left")
 	assert_false(scene._party_compacting, "and compaction ends when nothing is left to drop")
-	assert_false(get_tree().process_frame.is_connected(scene._compact_party_panel_tick), "and lets go of the frame signal")
+	assert_eq(_frame_links_to(scene.get_instance_id()), 0, "and lets go of the frame signal")
 	scene.free()
 
 
@@ -60,12 +61,15 @@ func test_control_a_panel_that_fits_drops_nothing() -> void:
 
 func test_a_scene_freed_mid_compaction_leaves_nothing_to_resume() -> void:
 	var scene := _scene(get_viewport().get_visible_rect().size.y + 200.0)
+	var id := scene.get_instance_id()
 	scene._compact_party_panel()
 	await _frames(1)
 	assert_true(scene._party_compacting, "CONTROL: the scene is freed while a step is still waiting")
-	scene.free()
+	## queue_free, as GUT's autofree does at a test's end: that is the shape every gate line followed.
+	scene.queue_free()
 	await _frames(6)
-	assert_false(_tree_holds_a_dead_compaction(), "a freed scene must leave no compaction step on the tree's frame signal")
+	assert_false(is_instance_valid(instance_from_id(id)), "CONTROL: the scene is gone")
+	assert_eq(_frame_links_to(id), 0, "a freed scene must leave no compaction step on the tree's frame signal")
 
 
 func test_a_scene_leaving_the_tree_mid_compaction_stops_it() -> void:
@@ -74,5 +78,5 @@ func test_a_scene_leaving_the_tree_mid_compaction_stops_it() -> void:
 	remove_child(scene)
 	await _frames(4)
 	assert_false(scene._party_compacting, "a scene taken out of the tree ends its compaction")
-	assert_false(get_tree().process_frame.is_connected(scene._compact_party_panel_tick), "and lets go of the frame signal")
+	assert_eq(_frame_links_to(scene.get_instance_id()), 0, "and lets go of the frame signal")
 	scene.free()
