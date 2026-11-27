@@ -100,6 +100,9 @@ var equipment_pool: Dictionary = {
 ## Autobattle editor overlay
 var _autobattle_editor: Control = null
 var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
+## The member whose battle turn was open when the editor opened, and whether their autobattle was already on.
+var _editor_turn_owner: Combatant = null
+var _editor_turn_was_auto: bool = false
 
 ## F1 controls reference — global, any state, drawn above every other overlay
 var _help_overlay: Control = null
@@ -1682,6 +1685,8 @@ func _toggle_autobattle_editor() -> void:
 			combatant = current
 			char_id = current.combatant_name.to_lower().replace(" ", "_")
 			char_name = current.combatant_name
+			_editor_turn_owner = current
+			_editor_turn_was_auto = AutobattleSystem.is_autobattle_enabled(char_id)
 	elif party.size() > 0:
 		combatant = party[0]
 		char_id = party[0].combatant_name.to_lower().replace(" ", "_")
@@ -1799,9 +1804,23 @@ func _on_autobattle_editor_closed() -> void:
 	_set_field_hud_hidden(false)
 	# Show battle menu again
 	_set_battle_menu_visible(true)
+	_run_the_open_turn_the_editor_turned_on()
 	# Resume exploration if we were in exploration mode
 	if current_state == LoopState.EXPLORATION and _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
+
+
+## Select in the editor can turn the open turn's member to autobattle; F6 runs such a turn at once, so closing does too.
+func _run_the_open_turn_the_editor_turned_on() -> void:
+	var who: Combatant = _editor_turn_owner
+	var was_auto: bool = _editor_turn_was_auto
+	_editor_turn_owner = null
+	if who == null or not is_instance_valid(who) or was_auto or current_state != LoopState.BATTLE:
+		return
+	if BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING or BattleManager.current_combatant != who:
+		return
+	if AutobattleSystem.is_autobattle_enabled(who.combatant_name.to_lower().replace(" ", "_")):
+		BattleManager.execute_autobattle_for_current()
 
 
 func _sync_party_to_game_state() -> void:
