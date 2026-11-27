@@ -2516,8 +2516,8 @@ func _rule_needs_session_state(rule: Dictionary) -> bool:
 func explain_rules_report() -> Array:
 	var out: Array = []
 	if rules.is_empty():
-		out.append("No rules — the grind runs until you stop it.")
-		return out
+		## Not "runs until you stop it": with no rule matching, pre_battle_check's safety stops still decide every state below.
+		out.append("No rules — only your safety stops below, or you, end the grind.")
 	var winners: Dictionary = {}
 	for state in _explain_states():
 		var probe: Array = _explain_probe_party(state)
@@ -2539,7 +2539,11 @@ func explain_rules_report() -> Array:
 		if blocked >= 0:
 			out.append("%s  ->  rule %d %s" % [str(state["label"]), blocked + 1, blocked_reason])
 		elif matched < 0:
-			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
+			var safety: Dictionary = AutogrindSystem._party_interrupt(probe, probe)
+			if safety.is_empty():
+				out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
+			else:
+				out.append("%s  ->  no rule matches — your safety stop ends the grind: %s" % [str(state["label"]), _explain_safety_reason(safety)])
 		else:
 			out.append("%s  ->  rule %d fires: %s" % [str(state["label"]), matched + 1, _explain_actions(rules[matched])])
 		if matched >= 0:
@@ -2570,6 +2574,15 @@ func explain_rules_report() -> Array:
 				out.append("  rule %d fires but its action %s" % [i + 1, refusal])
 	out.append_array(_observed_rules_report(winners))
 	return out
+
+
+## The stop's reason without the scratch party's "ProbeN" name, which means nothing to a player.
+func _explain_safety_reason(stop: Dictionary) -> String:
+	var reason := str(stop.get("reason", ""))
+	var who := str(stop.get("member", ""))
+	if who == "":
+		return reason
+	return reason.replace(" — %s" % who, "").replace(who, "a member")
 
 
 ## Distinct items across the live party, which is what inventory_items compares against.

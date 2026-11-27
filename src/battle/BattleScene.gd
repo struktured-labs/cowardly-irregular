@@ -1183,19 +1183,37 @@ const PARTY_COMPACT_SETTLE_FRAMES := 2
 
 ## Drops one compaction tier per SETTLED layout while the panel overruns its floor; measuring the frame a row changed read the old height.
 func _compact_party_panel() -> void:
-	if _party_compacting or _ui_manager == null:
+	if _party_compacting or _ui_manager == null or not is_inside_tree():
 		return
 	_party_compacting = true
-	while is_inside_tree():
-		for f in PARTY_COMPACT_SETTLE_FRAMES:
-			await get_tree().process_frame
-			if not is_inside_tree():
-				break
-		var panel := get_node_or_null("UI/PartyStatusPanel") as Control
-		if panel == null or not is_inside_tree():
-			break
-		if not _ui_manager.compact_party_panel_step(panel.get_global_rect().end.y, party_panel_floor_y()):
-			break
+	_party_compact_wait = PARTY_COMPACT_SETTLE_FRAMES
+	_party_compact_tree = get_tree()
+	_party_compact_tree.process_frame.connect(_compact_party_panel_tick)
+
+
+var _party_compact_wait := 0
+var _party_compact_tree: SceneTree = null
+
+
+## One settled frame of compaction; Godot drops this connection when the scene is freed, so nothing resumes on a dead scene.
+func _compact_party_panel_tick() -> void:
+	if not is_inside_tree():
+		_stop_party_compaction()
+		return
+	_party_compact_wait -= 1
+	if _party_compact_wait > 0:
+		return
+	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+	if panel == null or _ui_manager == null or not _ui_manager.compact_party_panel_step(panel.get_global_rect().end.y, party_panel_floor_y()):
+		_stop_party_compaction()
+		return
+	_party_compact_wait = PARTY_COMPACT_SETTLE_FRAMES
+
+
+func _stop_party_compaction() -> void:
+	if _party_compact_tree != null and _party_compact_tree.process_frame.is_connected(_compact_party_panel_tick):
+		_party_compact_tree.process_frame.disconnect(_compact_party_panel_tick)
+	_party_compact_tree = null
 	_party_compacting = false
 
 

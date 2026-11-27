@@ -552,7 +552,7 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 	var completed_qid := notify_talk(npc_id)
 	if completed_qid == qid:
 		await _play_lines(npc, dlg.get("ready_to_turn_in", []))
-		await _play_lines(npc, dlg.get("complete", []))
+		await _play_lines(npc, completion_lines(qid))
 		await _play_site_job_beat(qid, npc)
 		await _announce_rewards(npc)
 		await _flush_completion_cutscene()
@@ -565,13 +565,23 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 	await _play_lines(npc, dlg.get("in_progress", []))
 
 
+## A path's own ending: dialogue "complete_<path>" plays when quest_<id>_<path> is set, else "complete".
+func completion_lines(quest_id: String) -> Array:
+	var dlg: Dictionary = get_quest(quest_id).get("dialogue", {})
+	for key in dlg.keys():
+		var k: String = str(key)
+		if k.begins_with("complete_") and _flag("quest_%s_%s" % [quest_id, k.trim_prefix("complete_")]):
+			return dlg[key]
+	return dlg.get("complete", [])
+
+
 ## Completion presentation for non-giver final NPCs (notify_talk returned
 ## a quest the plumbing wants narrated by the current NPC).
 func run_completion_dialogue(quest_id: String, npc: Node) -> void:
 	var q: Dictionary = get_quest(quest_id)
 	var dlg: Dictionary = q.get("dialogue", {})
 	await _play_lines(npc, dlg.get("ready_to_turn_in", []))
-	await _play_lines(npc, dlg.get("complete", []))
+	await _play_lines(npc, completion_lines(quest_id))
 	await _play_site_job_beat(quest_id, npc)
 	await _announce_rewards(npc)
 	await _flush_completion_cutscene()
