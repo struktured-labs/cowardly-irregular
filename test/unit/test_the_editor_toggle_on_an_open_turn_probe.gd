@@ -86,7 +86,7 @@ func _run(run_open_turn_on_close: bool) -> Dictionary:
 	add_child(layer)
 	await _frames(2)
 	assert_eq(str(ed.get("character_id")), id, "PRECONDITION: the editor opened on the member whose turn is open")
-	var menu_hidden := not (is_instance_valid(scene.active_win98_menu) and scene.active_win98_menu.visible)
+	var menu_hidden: bool = not (is_instance_valid(scene.active_win98_menu) and scene.active_win98_menu.visible)
 	var ev := _toggle_event()
 	assert_not_null(ev, "FLOOR: battle_toggle_auto has a pad binding")
 	ed._input(ev)
