@@ -36,36 +36,32 @@ func _pc() -> Combatant:
 	return pc
 
 
-## Runs one window at `scale` beside a wall-clock reference of the window's length; frames from reference to close.
-func _close_vs_wall(scale: float) -> int:
+## Runs one window at `scale`; wall milliseconds from arming to close, or -1 if it never closed.
+func _close_ms(scale: float) -> int:
 	var bm = BattleManager
 	var pc := _pc()
 	bm.current_combatant = null  # the window then closes without handing the turn to the AI
 	var closed: Array = []
-	var ref: Array = []
 	var on_close := func(who, _taken) -> void:
 		if who == pc:
-			closed.append(Engine.get_process_frames())
+			closed.append(Time.get_ticks_msec())
 	bm.trust_interrupt_window_closed.connect(on_close)
 	Engine.time_scale = scale
-	get_tree().create_timer(bm.TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true).timeout.connect(func() -> void: ref.append(Engine.get_process_frames()))
+	var t0 := Time.get_ticks_msec()
 	bm._run_trust_interrupt_window(pc)
-	var deadline := Time.get_ticks_msec() + int(bm.TRUST_INTERRUPT_WINDOW_SECONDS / minf(scale, 1.0) * 1000.0) + 2000
-	while (closed.is_empty() or ref.is_empty()) and Time.get_ticks_msec() < deadline:
+	while closed.is_empty() and Time.get_ticks_msec() - t0 < 6000:
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
 	bm.trust_interrupt_window_closed.disconnect(on_close)
-	assert_false(ref.is_empty(), "CONTROL: the wall-clock reference fired")
-	if closed.is_empty() or ref.is_empty():
-		return -9999
-	return int(closed[0]) - int(ref[0])
+	return int(closed[0]) - t0 if not closed.is_empty() else -1
 
 
+## Measured on the wall clock itself: a SceneTreeTimer reference drifts from real time in a headless sweep.
 func test_the_window_closes_after_the_same_wall_time_at_1x_and_4x() -> void:
 	for scale in [0.25, 1.0]:
-		var d: int = await _close_vs_wall(scale)
-		assert_ne(d, -9999, "the window closed at engine %.2f" % scale)
-		assert_between(d, -2, 2, "at engine %.2f the window lasts its wall second (%d frames off the wall clock)" % [scale, d])
+		var ms: int = await _close_ms(scale)
+		assert_ne(ms, -1, "the window closed at engine %.2f" % scale)
+		assert_between(ms, 950, 1800, "at engine %.2f the window lasts its wall second (%d ms)" % [scale, ms])
 
 
 func test_the_offer_stands_up_to_4x_and_not_above_or_in_turbo() -> void:
@@ -99,4 +95,4 @@ func test_the_trusted_turn_route_asks_before_it_opens_the_window() -> void:
 	assert_gt(at, -1, "CONTROL: the route into the window exists")
 	var guard := src.substr(maxi(at - 400, 0), 400)
 	assert_string_contains(guard, "and trust_window_offered():", "the route checks the offer before opening the window")
-	assert_string_contains(src, "create_timer(TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true)", "and the window waits on the wall clock")
+	assert_string_contains(src, "Time.get_ticks_msec() + int(TRUST_INTERRUPT_WINDOW_SECONDS * 1000.0)", "and the window waits on the wall clock")
