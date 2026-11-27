@@ -34,7 +34,7 @@ func _opts(labels: Array) -> Array:
 	return out
 
 
-## The autogrind OPTIONS ring's rows as _options_ring_spec writes them, each state at its longest (26 rows: three pages).
+## The autogrind OPTIONS ring's rows as _options_ring_spec writes them, each state at its longest (27 rows: three pages).
 func _autogrind() -> Dictionary:
 	return {"title": "Autogrind Options", "kind": "autogrind_options", "options": _opts([
 		"Ludicrous: OFF        (H)", "Permadeath: OFF       (P)", "Auto-Advance: OFF     (W)",
@@ -44,7 +44,14 @@ func _autogrind() -> Dictionary:
 		"Save as Preset          (S)", "Delete Last Preset      (D)", "Resume Saved Grind      (R)",
 		"Custom Slot 1           (4)", "Custom Slot 2           (5)", "Custom Slot 3           (6)",
 		"Export to File          (E)", "Import from File        (I)", "Copy Share Code   (Shift+E)",
-		"Paste Share Code  (Shift+I)", "Restore Shipped Profiles"])}
+		"Paste Share Code  (Shift+I)", "Switch Profile: " + "W".repeat(_profile_name_max()), "Restore Shipped Profiles"])}
+
+
+## The Switch Profile row (.838) at its longest: a name at AutogrindSystem.PROFILE_NAME_MAX, in W, the widest glyph.
+func _profile_name_max() -> int:
+	var cap: int = int(AutogrindSystem.get_script().get_script_constant_map().get("PROFILE_NAME_MAX", 0))
+	assert_gt(cap, 0, "FLOOR: AutogrindSystem.PROFILE_NAME_MAX must resolve, or the longest profile row is empty")
+	return cap
 
 
 func _longest(names: Array) -> Array:
