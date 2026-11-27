@@ -104,3 +104,34 @@ func test_nothing_on_the_settings_screen_overlaps_at_any_text_size() -> void:
 		lines.append("%s (first at %s)" % [k, found[k]])
 	assert_eq(lines, [], "every overlap on the Settings screen is declared with a reason:\n%s" % "\n".join(PackedStringArray(lines)))
 	assert_eq(OverlapAudit.stale(DECLARED, used), [], "every declared overlap still happens and says why")
+
+
+## The LIVE path (adhoc 28564): the Text Size row only recolours, but Settings rebuilds in place after Test connection
+## (:1804) and when the rebalance review closes (:2017). Opened at 100% with the cursor on the last row, a size picked
+## then lands mid-screen through that rebuild, carrying the old cursor. Driven through `_build_ui`, the body both call.
+func test_a_rebuild_at_a_new_size_overlaps_nothing_and_keeps_the_cursor_on_screen() -> void:
+	var used := {}
+	var found: Array = []
+	for s in _presets():
+		var m := await _menu_at(1.0)
+		var n: int = m._settings_items.size()
+		m.selected_index = n - 1
+		m._update_selection()
+		await get_tree().process_frame
+		GameState.text_size_scale = float(s)
+		m._build_ui()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		assert_gt(m._settings_items.size(), 10, "CONTROL: the rebuild at %.2fx built its rows" % float(s))
+		var pct := int(roundf(float(s) * 100.0))
+		for hit in OverlapAudit.collisions(OverlapAudit.surfaces(m), DECLARED, used):
+			found.append("%s%% after the rebuild: %s" % [pct, hit])
+		var sel: int = clampi(m.selected_index, 0, m._settings_items.size() - 1)
+		var row: Control = m._settings_items[sel]["control"]
+		var view := Rect2(m._scroll.global_position, m._scroll.size)
+		var r := Rect2(row.global_position, row.size)
+		if not view.intersects(r):
+			found.append("%s%% after the rebuild: the cursor's row %d (%s) is outside the list's view %s" % [pct, sel, r, view])
+		m.get_parent().get_parent().queue_free()
+		await get_tree().process_frame
+	assert_eq(found, [], "a rebuild at a newly picked size overlaps nothing and keeps the cursor on screen:\n%s" % "\n".join(PackedStringArray(found)))
