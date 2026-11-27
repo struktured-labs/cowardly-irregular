@@ -15999,7 +15999,7 @@
     },
     "screenshot_taken": {
       "file": "assets/audio/sfx/screenshot_taken.ogg",
-      "prompt": "F12 saved a screenshot: a mechanical camera shutter, two clicks 70 ms apart (the blade, then a softer, darker curtain return), each a bandpassed noise burst over a short low thunk, with a small room tail. It answers a screenshot that LANDED on disk only; one that could not be captured or written plays menu_error, the fleet's 'can't do that', beside its toast. GameLoop._screenshot_cue. Synthesised with SoX, not ElevenLabs; 0.25 s, peak -6.0 dBFS, RMS -20.6 dBFS over the two clicks (-23.3 over the whole file).",
+      "prompt": "F12 saved a screenshot: a mechanical camera shutter, two clicks 70 ms apart (the blade, then a softer, darker curtain return), each a bandpassed noise burst over a short low thunk, with a small room tail. It answers a capture that LANDED on disk only, an F12 screenshot or an F8 bug report (which carries one); one that could not be captured or written plays menu_error, the fleet's 'can't do that', beside its toast. GameLoop._screenshot_cue. Synthesised with SoX, not ElevenLabs; 0.25 s, peak -6.0 dBFS, RMS -20.6 dBFS over the two clicks (-23.3 over the whole file).",
       "duration_seconds": 0.25
     }
   }
