@@ -1816,7 +1816,7 @@
     "spectrum_ratio": 5.801282
   },
   "adaptive_slime": {
-    "dialogue": {"intro": ["Oh. It's you again. And again. And again.", "I've been watching your rules. Top to bottom. First match wins."]},
+    "dialogue": {"intro": ["Oh. It's you again. And again. And again.", "I've been watching your rules. Top to bottom. First match wins."], "defeat": ["Fine. I'll adapt to losing.", "...Same time next session?"]},
     "id": "adaptive_slime",
     "name": "Adaptive Slime",
     "description": "A slime that evolved from autogrind exposure. Learns from your tactics.",
@@ -1932,7 +1932,7 @@
     }
   },
   "permadeath_reaper": {
-    "dialogue": {"intro": ["You put a life on the table. I'm only here to collect what you offered."]},
+    "dialogue": {"intro": ["You put a life on the table. I'm only here to collect what you offered."], "defeat": ["Keep it, then. This time.", "The stake stays on the table. I can wait."]},
     "id": "permadeath_reaper",
     "name": "Permadeath Reaper",
     "description": "Appears during high-risk autogrind with permadeath staking. One mistake = permanent loss.",
