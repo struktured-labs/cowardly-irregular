@@ -1589,10 +1589,7 @@ func _cycle_action_character() -> void:
 
 	var action = actions[action_idx]
 	if action.get("type") != "switch_profile":
-		_refuse_action_cycle("Stop Grinding has no character to change.")
-		return
-	if known_characters.size() <= 1:
-		_refuse_action_cycle("There is only one character to switch.")
+		_refuse_action_cycle(character_refusal(action))
 		return
 
 	var char_id = action.get("character_id", "hero")
@@ -1617,13 +1614,13 @@ func _cycle_action_profile(direction: int) -> bool:
 
 	var action = actions[action_idx]
 	if action.get("type") != "switch_profile":
-		return _refuse_action_cycle("Stop Grinding has no profile to change.")
+		return _refuse_action_cycle(profile_refusal(action))
 
 	var char_id = action.get("character_id", "hero")
 	var profile_idx = action.get("profile_index", 0)
 	var char_profiles = AutobattleSystem.get_character_profiles(char_id)
 	if char_profiles.size() <= 1:
-		return _refuse_action_cycle("%s has only one profile." % str(char_id).capitalize())
+		return _refuse_action_cycle(one_profile_refusal(str(char_id)))
 
 	profile_idx = (profile_idx + direction) % max(char_profiles.size(), 1)
 	if profile_idx < 0:
@@ -1633,6 +1630,25 @@ func _cycle_action_profile(direction: int) -> bool:
 	_refresh_grid()
 	SoundManager.play_ui("menu_move")
 	return true
+
+
+## The action as the grid shows it, on one line: "Use Potions", "Stop Grinding".
+static func action_words(action: Dictionary) -> String:
+	var words := AutogrindSystem.describe_action(action).replace("\n", " ")
+	return words.capitalize() if words == words.to_upper() else words
+
+
+static func profile_refusal(action: Dictionary) -> String:
+	return "%s has no profile to change." % action_words(action)
+
+
+static func character_refusal(action: Dictionary) -> String:
+	return "%s has no character to change." % action_words(action)
+
+
+static func one_profile_refusal(char_id: String) -> String:
+	var who := "The whole party" if char_id == AutogrindSystem.ALL_PARTY else AutogrindSystem.member_display_name(char_id)
+	return "%s has only one profile." % who
 
 
 ## An action-cell press that cannot change anything: heard as menu_error and explained in the status line.
