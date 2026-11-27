@@ -221,12 +221,14 @@ func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 
 const PAD_CONNECTED_SFX := "pad_connected"
 const PAD_DISCONNECTED_SFX := "pad_disconnected"
+## Pads already plugged in at launch report as connects once the joypad thread enumerates them; that is not a pad coming back.
+const PAD_BOOT_GRACE_MS := 2000
 
 
 ## The toast sat in a corner a player watching the fight never looks at; the cue is heard. Same rule as the toast: only the LAST pad leaving.
-static func pad_change_cue(connected: bool, pads_left: int) -> String:
+static func pad_change_cue(connected: bool, pads_left: int, since_boot_ms: int) -> String:
 	if connected:
-		return PAD_CONNECTED_SFX
+		return PAD_CONNECTED_SFX if since_boot_ms >= PAD_BOOT_GRACE_MS else ""
 	return PAD_DISCONNECTED_SFX if pads_left == 0 else ""
 
 
@@ -235,7 +237,7 @@ static func pad_change_cue(connected: bool, pads_left: int) -> String:
 func _announce_pad_change(connected: bool) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	var cue := pad_change_cue(connected, Input.get_connected_joypads().size())
+	var cue := pad_change_cue(connected, Input.get_connected_joypads().size(), Time.get_ticks_msec())
 	if cue != "" and SoundManager:
 		SoundManager.play_ui(cue)
 	if connected:

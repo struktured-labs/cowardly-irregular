@@ -26,9 +26,17 @@ func test_both_cues_are_authored_and_are_three_different_sounds() -> void:
 
 
 func test_the_cue_follows_the_toasts_last_pad_rule() -> void:
-	assert_eq(IPM.pad_change_cue(true, 1), IPM.PAD_CONNECTED_SFX, "a pad connecting was not heard")
-	assert_eq(IPM.pad_change_cue(false, 0), IPM.PAD_DISCONNECTED_SFX, "the LAST pad leaving was not heard")
-	assert_eq(IPM.pad_change_cue(false, 1), "", "unplugging one of two pads is not losing control and must stay quiet")
+	var later := IPM.PAD_BOOT_GRACE_MS + 60000
+	assert_eq(IPM.pad_change_cue(true, 1, later), IPM.PAD_CONNECTED_SFX, "a pad connecting was not heard")
+	assert_eq(IPM.pad_change_cue(false, 0, later), IPM.PAD_DISCONNECTED_SFX, "the LAST pad leaving was not heard")
+	assert_eq(IPM.pad_change_cue(false, 1, later), "", "unplugging one of two pads is not losing control and must stay quiet")
+
+
+func test_a_pad_already_plugged_in_at_launch_does_not_chime() -> void:
+	assert_gt(IPM.PAD_BOOT_GRACE_MS, 0, "CONTROL: there is a boot grace window")
+	assert_eq(IPM.pad_change_cue(true, 1, 0), "", "the launch-time enumeration of a plugged-in pad chimed on the title screen")
+	assert_eq(IPM.pad_change_cue(true, 2, IPM.PAD_BOOT_GRACE_MS - 1), "", "a second pad enumerated at launch chimed")
+	assert_eq(IPM.pad_change_cue(true, 1, IPM.PAD_BOOT_GRACE_MS), IPM.PAD_CONNECTED_SFX, "a pad connecting right after the grace was not heard")
 
 
 ## A WIRING PIN: the announcer returns early headless, so no test run can reach its play call.
@@ -40,7 +48,7 @@ func test_wiring_the_announcer_plays_the_cue_after_its_headless_bail() -> void:
 	var body := code.substr(at, (stop - at) if stop > at else -1)
 	var bail := body.find("\"headless\"")
 	var plays := body.find("SoundManager.play_ui(cue)")
-	var decides := body.find("pad_change_cue(connected, Input.get_connected_joypads().size())")
+	var decides := body.find("pad_change_cue(connected, Input.get_connected_joypads().size(), Time.get_ticks_msec())")
 	assert_gt(bail, -1, "CONTROL: the headless bail is still there")
 	assert_true(decides > bail and plays > decides,
-		"the announcer must decide with pad_change_cue from the pads still connected, then play it, after the headless bail")
+		"the announcer must decide with pad_change_cue from the pads still connected and the real clock, then play it, after the headless bail")
