@@ -801,7 +801,6 @@ func _restore_autobattle_states() -> void:
 	print("[AUTOGRIND] Restored autobattle states")
 
 
-## Get current grind stats for UI update
 ## "<name>: <line>" from a meta-boss's `player_wiped` lines, or "" when it has none.
 static func meta_boss_wipe_line(boss_data: Dictionary) -> String:
 	var dlg: Variant = boss_data.get("dialogue", {})
@@ -811,6 +810,7 @@ static func meta_boss_wipe_line(boss_data: Dictionary) -> String:
 	return "%s: %s" % [str(boss_data.get("name", "?")), str((lines as Array)[0])]
 
 
+## Get current grind stats for UI update
 func get_grind_stats() -> Dictionary:
 	var sys_stats := AutogrindSystem.get_grind_stats()
 	return {
