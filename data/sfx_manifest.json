@@ -1454,6 +1454,16 @@
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
     },
+    "pad_connected": {
+      "file": "assets/audio/sfx/pad_connected.ogg",
+      "prompt": "A controller came back (or was plugged in): two rising square-wave blips, E5 then B5, bright and short, with a small room tail, the 'you're back in control' half of a pair with pad_disconnected. It plays beside the 'Controller connected' toast, which sits in a corner a player watching a fight never looks at. InputProfileManager.pad_change_cue. Synthesised with SoX, not ElevenLabs; 0.29 s, peak -8.2 dBFS, RMS -16.1 dBFS, inside the menu_* range.",
+      "duration_seconds": 0.29
+    },
+    "pad_disconnected": {
+      "file": "assets/audio/sfx/pad_disconnected.ogg",
+      "prompt": "The LAST controller went away (a wireless pad slept or a cable came out): two falling square-wave blips, D5 then G4, darker and longer than pad_connected, so a player mid-fight hears that their input is gone before they notice the corner toast that says the keyboard still works. Unplugging one of two pads plays nothing, the same rule as the toast. InputProfileManager.pad_change_cue. Synthesised with SoX, not ElevenLabs; 0.35 s, peak -8.0 dBFS, RMS -16.7 dBFS.",
+      "duration_seconds": 0.35
+    },
     "menu_expand": {
       "file": "assets/audio/sfx/menu_expand.ogg",
       "prompt": "Crisp window opening whoosh, quick snappy swoosh like a SNES submenu expanding, short airy pop",
