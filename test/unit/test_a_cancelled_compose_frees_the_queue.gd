@@ -97,10 +97,10 @@ func test_the_next_request_runs_when_the_first_is_cancelled() -> void:
 	await _frames_until(func() -> bool: return _svc._inflight_id != "")
 	_ask("b", {})
 	await get_tree().process_frame
-	assert_eq(_be.submit_count, 1, "PRECONDITION: the second request waits behind the first")
+	assert_false(_be.prompt_history.has("prompt b"), "PRECONDITION: the second request waits behind the first")
 	token["cancelled"] = true
-	var waited: int = await _frames_until(func() -> bool: return _be.submit_count == 2)
-	assert_eq(_be.submit_count, 2, "the queued request is sent once the cancelled one lets go")
+	var waited: int = await _frames_until(func() -> bool: return _be.prompt_history.has("prompt b"))
+	assert_true(_be.prompt_history.has("prompt b"), "the queued request is sent once the cancelled one lets go")
 	assert_lt(waited, QUICK_MS, "without waiting out the cancelled one (%d ms)" % waited)
 
 
@@ -113,11 +113,12 @@ func test_a_request_cancelled_while_queued_is_never_sent() -> void:
 	token["cancelled"] = true
 	await _frames_until(func() -> bool: return _results.has("b"))
 	assert_eq(_results.get("b"), FALLBACK, "the queued caller is answered with the fallback")
-	assert_eq(_be.submit_count, 1, "CONTROL: only the first request has reached the backend")
+	assert_eq(_be.prompt_history, ["prompt a"] as Array[String], "CONTROL: only the first request has reached the backend")
 	_be.resume()
 	_svc._on_backend_finished(_svc._inflight_id, true, "{\"line\": \"real\"}", "")
 	await get_tree().process_frame
-	assert_eq(_be.submit_count, 1, "and the cancelled one is not sent when the queue moves")
+	## By prompt, not count: an idle queue lets VoicePool's background fill submit its own request.
+	assert_false(_be.prompt_history.has("prompt b"), "and the cancelled one is not sent when the queue moves")
 
 
 func test_without_a_token_the_request_keeps_the_queue() -> void:

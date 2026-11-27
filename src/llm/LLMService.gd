@@ -585,7 +585,7 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 		while _pending_boxes.has(id) and not _pending_boxes[id][0]:
 			await get_tree().process_frame
 			if _token_cancelled(opts) and _pending_boxes.has(id) and not _pending_boxes[id][0]:
-				_abandon(id, opts, "")
+				_abandon(id, opts, false)
 				return
 		return
 
@@ -599,7 +599,7 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 		await get_tree().process_frame
 		var elapsed: float = float(Time.get_ticks_msec() - t0_msec) / 1000.0
 		if _token_cancelled(opts) and _pending_boxes.has(id) and not _pending_boxes[id][0]:
-			_abandon(id, opts, "")
+			_abandon(id, opts, false)
 			return
 		if elapsed >= timeout and _pending_boxes.has(id) and not _pending_boxes[id][0]:
 			# Client timeout. Resolve the box with null so the awaiting
@@ -613,12 +613,12 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 			#       cleanly without re-resolving the box.
 			# The _pending_boxes entry is erased here so the orphan can't
 			# accidentally resolve into a re-used dict key later.
-			_abandon(id, opts, "client_timeout")
+			_abandon(id, opts, true)
 			return
 
 
-## Shared by the client timeout and a caller's cancel token: resolve the caller with null, free the queue, abort the backend. A cancel passes "" and reports no failure.
-func _abandon(id: String, opts: Dictionary, reason: String) -> void:
+## Shared by the client timeout and a caller's cancel token: resolve the caller with null, free the queue, abort the backend. A cancel reports no failure.
+func _abandon(id: String, opts: Dictionary, timed_out: bool) -> void:
 	_cancelled_ids[id] = true
 	_resolve_box(id, null)
 	_pending_boxes.erase(id)
@@ -640,9 +640,9 @@ func _abandon(id: String, opts: Dictionary, reason: String) -> void:
 	# here, but the stale-id guard alone makes the sync emit harmless.
 	if _active_backend != null and _active_backend.has_method("cancel"):
 		_active_backend.cancel(id)
-	if reason != "":
+	if timed_out:
 		var mode_label: String = MODE_JSON if opts.get("json_mode", false) else MODE_TEXT
-		inference_failed.emit(mode_label, reason)
+		inference_failed.emit(mode_label, "client_timeout")
 	# Kick the queue so any pending request runs immediately.
 	_process_queue()
 
