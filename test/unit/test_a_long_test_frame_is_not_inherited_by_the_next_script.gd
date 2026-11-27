@@ -11,8 +11,11 @@ const MARK := "cowir_long_test_frame_ended"
 
 func test_the_runner_yields_between_scripts() -> void:
 	var src := FileAccess.get_file_as_string("res://addons/gut/gut.gd")
-	assert_string_contains(src, "\t\tend_script.emit()\n\t\t# cowir: spend a long last frame's delta here",
-		"gut.gd still yields after end_script (a GUT upgrade must carry the patch over)")
+	var at := src.find("\t\tend_script.emit()\n\t\t# cowir: spend a long last frame's delta here")
+	assert_gt(at, -1, "gut.gd carries the cowir yield after end_script: re-apply it after a GUT upgrade")
+	var after := src.substr(at, 400)
+	assert_eq(after.count("\t\tawait get_tree().process_frame\n"), 2,
+		"the yield after end_script awaits two frames: re-apply it after a GUT upgrade")
 
 
 class TestAEndsOnALongFrame extends GutTest:
