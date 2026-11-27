@@ -66,6 +66,7 @@ func test_the_editor_still_announces_a_real_save() -> void:
 func test_closing_persists_valid_rules() -> void:
 	## Closing was the console's only unpersisted exit.
 	AutogrindSystem.set_autogrind_rules([])
+	_ui._load_rules()  # as setup() does in play
 	_ui.rules = [_valid_rule()]
 	_ui._persist_rules_on_close()
 	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
@@ -75,6 +76,7 @@ func test_closing_persists_valid_rules() -> void:
 func test_closing_with_invalid_rules_does_not_wipe_the_saved_set() -> void:
 	## No mutation on rejection — a mid-edit rule must not destroy the last good ruleset.
 	AutogrindSystem.set_autogrind_rules([_valid_rule()])
+	_ui._load_rules()  # as setup() does in play
 	_ui.rules = [_invalid_rule()]
 	_ui._persist_rules_on_close()
 	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
@@ -97,6 +99,7 @@ func test_the_seam_teardown_and_the_players_close_share_one_path() -> void:
 	## @cowir-controller's save_and_close and the player's cancel must not grow separate persist
 	## implementations — that is how the two drifted in the first place (reconciled 2026-09-06).
 	AutogrindSystem.set_autogrind_rules([])
+	_ui._load_rules()  # as setup() does in play
 	_ui.rules = [_valid_rule()]
 	_ui.save_and_close()
 	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
@@ -111,7 +114,17 @@ func test_a_console_torn_down_before_its_rules_loaded_does_not_wipe_the_saved_se
 	_ui.rules = []
 	_ui.save_and_close()
 	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
-		"an empty in-memory ruleset must never overwrite the saved one")
+		"a console that never loaded its rules must never overwrite the saved ones")
+
+
+func test_a_grid_the_player_cleared_is_saved_on_close() -> void:
+	## The guard above was `rules.is_empty()`, which also dropped a deliberate clear: the old rules came back on the next open.
+	AutogrindSystem.set_autogrind_rules([_valid_rule()])
+	_ui._load_rules()
+	assert_eq(_ui.rules.size(), 1, "CONTROL: the console loaded the saved rule")
+	_ui.rules = []
+	_ui.save_and_close()
+	assert_eq(AutogrindSystem.get_autogrind_rules(), [], "closing dropped the grid the player cleared, so the old rules return next time")
 
 
 func after_each() -> void:
