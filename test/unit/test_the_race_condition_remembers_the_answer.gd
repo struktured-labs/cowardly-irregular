@@ -23,6 +23,8 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	if _held.has("quest"):
+		_restore_turn_in()
 	GameState.story_flags = _held["story"]
 	GameState.game_constants = _held["consts"]
 
@@ -95,3 +97,67 @@ func test_after_the_merge_a_fresh_village_has_one_voice() -> void:
 	assert_not_null(pair, "CONTROL: the pair stand in Node Prime")
 	if pair != null:
 		assert_eq(pair.dialogue_lines, _qs.get_quest(QID)["idle_after_resolved"][MERGED], "a later visit builds them merged")
+
+
+## The real quest at its last step with rewards stripped, so a turn-in plays its lines and grants nothing.
+func _arm_turn_in() -> Node2D:
+	var q: Dictionary = (_qs.get_quest(QID) as Dictionary).duplicate(true)
+	q["rewards"] = {}
+	_held["quest"] = _qs.get_quest(QID).duplicate(true)
+	_held["state"] = GameState.quests.get(QID, null)
+	_qs._quests[QID] = q
+	GameState.quests[QID] = {"state": "active", "objective_index": 2}
+	GameState.set_story_flag("quest_world5_mutual_exclusion_resolved", true)
+	GameState.set_story_flag(PROTOCOL, true)
+	var npc := Node2D.new()
+	npc.set("npc_name", "The Race Condition")
+	add_child_autofree(npc)
+	return npc
+
+
+func _restore_turn_in() -> void:
+	_qs._quests[QID] = _held["quest"]
+	if _held["state"] == null:
+		GameState.quests.erase(QID)
+	else:
+		GameState.quests[QID] = _held["state"]
+
+
+## Every line any dialogue under the npc queued, advancing each so the turn-in runs to its end.
+func _heard(npc: Node) -> String:
+	var seen: Array = []
+	var idle := 0
+	for _i in range(40):
+		await get_tree().process_frame
+		var n := 0
+		for node in npc.find_children("*", "", true, false):
+			if not node.has_method("skip_all") or not ("_dialogue_queue" in node):
+				continue
+			for line in node._dialogue_queue:
+				var t := str((line as Dictionary).get("text", "")) if line is Dictionary else ""
+				if t != "" and not seen.has(t):
+					seen.append(t)
+					n += 1
+			node.skip_all()
+		idle = idle + 1 if n == 0 else 0
+		if idle >= 6 and not seen.is_empty():
+			break
+	return "\n".join(seen)
+
+
+func test_the_giver_turn_in_plays_the_schedule_ending() -> void:
+	var npc := _arm_turn_in()
+	var protocol_line := _first_text(_dlg["complete_protocol"])
+	_qs.run_giver_dialogue(NPC_ID, npc)
+	var heard: String = await _heard(npc)
+	assert_eq(_qs.get_state(QID), "complete", "CONTROL: talking to the pair at step 3 turns the quest in")
+	assert_true(heard.contains(protocol_line), "the pair's own turn-in plays complete_protocol: %s" % heard)
+	assert_false(heard.contains(_first_text(_dlg["complete"])), "and not the unison ending")
+
+
+func test_run_completion_dialogue_plays_the_schedule_ending() -> void:
+	var npc := _arm_turn_in()
+	_qs.run_completion_dialogue(QID, npc)
+	var heard: String = await _heard(npc)
+	assert_true(heard.contains(_first_text(_dlg["complete_protocol"])), "the non-giver turn-in plays complete_protocol too: %s" % heard)
+	assert_false(heard.contains(_first_text(_dlg["complete"])), "and not the unison ending")
