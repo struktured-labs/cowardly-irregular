@@ -32,10 +32,14 @@ func test_every_grind_meta_boss_has_an_intro() -> void:
 func test_the_built_boss_carries_its_intro_to_the_console() -> void:
 	var bosses := _grind_bosses()
 	var seen := {}
+	## Stop once every boss is built: each build re-parses monsters.json, and 400 of them in one synchronous
+	## arm made a frame long enough to fire the NEXT file's 1.2 s gloat timer (ai 28417).
 	for _i in 200:
 		for collapse in [false, true]:
 			var data: Dictionary = AutogrindSystem.build_meta_boss_enemy_data(collapse)
 			seen[str(data.get("id", ""))] = data
+		if bosses.keys().all(func(k): return seen.has(k)):
+			break
 	for id in bosses:
 		assert_true(seen.has(id), "CONTROL: %s was built by the real builder" % id)
 		if not seen.has(id):
