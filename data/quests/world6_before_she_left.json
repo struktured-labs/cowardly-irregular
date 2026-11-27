@@ -1,6 +1,5 @@
 {
   "id": "world6_before_she_left",
-  "wiring_pending": true,
   "title": "Before She Left",
   "world": 6,
   "prereq_flag": "quest_world6_the_last_thing_complete",
@@ -65,7 +64,7 @@
           {"speaker": "Traveler", "text": "It meant: nothing is happening yet, and that is not a problem.", "theme": "mysterious"}
         ]}
       ],
-      "_beats_note": "Authored by cowir-story 2026-11-26 for the 3-beat recall chain in _wiring_notes: one interact per beat, any order; the step flag is set after all three. No emitter reads `beats` yet."
+      "_beats_note": "Authored by cowir-story 2026-11-26 for the 3-beat recall chain in _wiring_notes: one interact per beat, any order; the step flag is set after all three. Read by QuestSystem._run_beats (CHOICE_EMITTERS traveler_w6)."
     },
     {
       "step": 3,
