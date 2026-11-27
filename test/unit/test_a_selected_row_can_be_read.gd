@@ -48,10 +48,29 @@ func test_each_in_row_label_uses_the_subtitle_colour() -> void:
 		assert_true(src.substr(i, site[1].length() + 20).contains("SUBTITLE_COLOR"), "%s: %s is SUBTITLE_COLOR" % [site[0].get_file(), site[1].get_slice(".", 0)])
 
 
+## Judged on the BUILT rows, not by counting a source line: the count read 6 while six builders each repeated it, and
+## a shared description builder (controller, .845) made a correct screen read 3.
 func test_no_setting_help_text_is_the_disabled_grey() -> void:
-	var src := FileAccess.get_file_as_string("res://src/ui/SettingsMenu.gd")
-	assert_gt(src.count("desc.add_theme_color_override(\"font_color\", SUBTITLE_COLOR)"), 5, "CONTROL: the setting builders colour their help text")
-	assert_eq(src.count("desc.add_theme_color_override(\"font_color\", DISABLED_COLOR)"), 0, "no setting's help text uses the disabled grey")
+	var SM = load("res://src/ui/SettingsMenu.gd")
+	var vp := SubViewport.new()
+	vp.size = Vector2i(1280, 720)
+	add_child_autofree(vp)
+	var m: Control = SM.new()
+	m.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vp.add_child(m)
+	await get_tree().process_frame
+	var judged := 0
+	var bad: Array = []
+	for it in m._settings_items:
+		var labels: Array = (it["control"] as Control).get_children().filter(func(c): return c is Label)
+		if labels.size() < 2:
+			continue
+		judged += 1
+		var c: Color = (labels[1] as Label).get_theme_color("font_color")
+		if c != SM.SUBTITLE_COLOR:
+			bad.append("%s: %s" % [it.get("id", "?"), c])
+	assert_gt(judged, 40, "CONTROL: the setting rows' help text was judged (%d)" % judged)
+	assert_eq(bad, [], "every setting's help text is the subtitle colour, never the disabled grey")
 
 
 func test_a_locked_lens_reads_on_the_highlight_and_takes_the_right_article() -> void:
