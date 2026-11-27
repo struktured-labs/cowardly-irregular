@@ -431,4 +431,30 @@ func _place_race_condition() -> void:
 		"Second: We both reached for the junction at the same instant. We have been reaching ever since."
 	])
 	pair.npc_id = "race_condition_pair"
+	_refresh_race_condition(pair)
 	npcs.add_child(pair)
+	var _pair_qs = get_node_or_null("/root/QuestSystem")
+	if _pair_qs != null:
+		_pair_qs.objective_advanced.connect(_refresh_race_condition.bind(pair).unbind(2))
+		_pair_qs.quest_state_changed.connect(_refresh_race_condition.bind(pair).unbind(2))
+
+
+## After step 2 the pair speak as what the party made them: idle_after_resolved, keyed by the path flag that answer set.
+func _race_condition_lines() -> Array:
+	var gs = get_node_or_null("/root/GameState")
+	var qs = get_node_or_null("/root/QuestSystem")
+	if gs == null or qs == null:
+		return []
+	var by_path: Dictionary = qs.get_quest("world5_mutual_exclusion").get("idle_after_resolved", {})
+	for path in by_path:
+		if gs.is_story_flag_set(str(path)):
+			return by_path[path]
+	return []
+
+
+func _refresh_race_condition(pair: Node) -> void:
+	if not is_instance_valid(pair):
+		return
+	var lines: Array = _race_condition_lines()
+	if not lines.is_empty():
+		pair.dialogue_lines = lines
