@@ -10,7 +10,6 @@ const SM := "res://src/ui/SettingsMenu.gd"
 ## Intended overlaps, {"a|b": "reason"}, each from a census and each proved by an arm below, not by its reason.
 const DECLARED := {
 	"Settings/Label#0|Settings/Description": "a row's title and subtitle LINE BOXES touch by under 2 px at 80-150%; their drawn glyphs never do (test_a_row_title_and_subtitle_ink_never_touches)",
-	"Settings/Label#0|Settings/Label#1": "the same title/subtitle line-box touch on the two action rows, whose subtitle is not wrapped (same arm)",
 }
 
 var _saved = null
