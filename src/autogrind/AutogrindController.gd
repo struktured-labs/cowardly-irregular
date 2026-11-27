@@ -52,6 +52,8 @@ var headless_mode: bool = false
 var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
+## The meta-boss that ended this session gets the summary's last word; start_grind clears it.
+var _meta_boss_last_word: String = ""
 
 var _auto_advance_regions: bool = true  # Auto-advance to next world when region cracked
 var _next_battle_enemy_boost: float = 0.0
@@ -108,6 +110,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	if _state != State.IDLE:
 		print("[AUTOGRIND] Already grinding!")
 		return false
+	_meta_boss_last_word = ""
 
 	# Filter out permadead characters
 	_party = []
@@ -553,6 +556,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 				# Collapse will be handled next _request_next_battle call
 				pass
 			else:
+				_meta_boss_last_word = meta_boss_wipe_line(_current_meta_boss_data)
 				stop_grind("Defeated by meta-boss")
 				return
 		# Reset boss tracking
@@ -798,6 +802,15 @@ func _restore_autobattle_states() -> void:
 
 
 ## Get current grind stats for UI update
+## "<name>: <line>" from a meta-boss's `player_wiped` lines, or "" when it has none.
+static func meta_boss_wipe_line(boss_data: Dictionary) -> String:
+	var dlg: Variant = boss_data.get("dialogue", {})
+	var lines: Variant = (dlg as Dictionary).get("player_wiped", []) if dlg is Dictionary else []
+	if not (lines is Array) or (lines as Array).is_empty():
+		return ""
+	return "%s: %s" % [str(boss_data.get("name", "?")), str((lines as Array)[0])]
+
+
 func get_grind_stats() -> Dictionary:
 	var sys_stats := AutogrindSystem.get_grind_stats()
 	return {
@@ -807,6 +820,7 @@ func get_grind_stats() -> Dictionary:
 		"region_crack": AutogrindSystem.region_crack_levels.get(AutogrindSystem.current_region_id, 0),
 		"meta_boss_chance": AutogrindSystem.meta_boss_spawn_chance,
 		"consecutive_wins": AutogrindSystem.consecutive_wins,
+		"meta_boss_last_word": _meta_boss_last_word,
 		"battles_won": AutogrindSystem.battles_completed,
 		"total_exp": AutogrindSystem.total_exp_gained,
 		"total_gold": sys_stats.get("total_gold", 0),
