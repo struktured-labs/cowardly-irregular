@@ -1963,6 +1963,12 @@ func _cycle_profile() -> void:
 func _show_reset_confirmation() -> void:
 	if _reset_confirm and is_instance_valid(_reset_confirm):
 		return
+	## Only setup's empty-profile splash can be up here (Shift+D cannot reach past an open composer), and its gate would swallow this prompt's input.
+	if _splash_shown and _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_rule_composer_overlay.queue_free()
+		_rule_composer_overlay = null
+		if rules.is_empty():
+			rules.append(_create_default_rule())
 	_reset_confirm = Control.new()
 	_reset_confirm.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_reset_confirm)

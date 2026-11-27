@@ -169,6 +169,8 @@ var _region_name: String = "Current Region"
 
 ## Rules (grid data)
 var rules: Array = []  # Array of {conditions: [], actions: [], enabled: bool}
+## Set by _load_rules: a console that never loaded its grid must not write that grid over a saved profile.
+var _rules_loaded: bool = false
 
 ## Grid navigation
 var cursor_row: int = 0
@@ -284,6 +286,7 @@ func setup(party: Array, region_name: String = "") -> void:
 
 func _load_rules() -> void:
 	"""Load autogrind rules from AutogrindSystem (active profile)"""
+	_rules_loaded = true
 	var system_rules = AutogrindSystem.get_autogrind_rules()
 	if system_rules.size() > 0:
 		rules = system_rules.duplicate(true)
@@ -3651,7 +3654,7 @@ func _switch_to_next_profile() -> void:
 		_log_message("[color=yellow]Only one profile, so there is nothing to switch to.[/color]")
 		SoundManager.play_ui("menu_error")
 		return
-	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+	if _rules_loaded and not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
 		_log_message("[color=red]Not switched: fix the highlighted rows first, or switching would lose them.[/color]")
 		SoundManager.play_ui("menu_error")
 		return
@@ -3674,7 +3677,7 @@ func _restore_shipped_profiles() -> void:
 
 ## The editor reads the SAVED profile and the console adopts it on close, so an unsaved grid is saved first or Back would erase it.
 func _open_rules_editor_from_console() -> Control:
-	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+	if _rules_loaded and not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
 		_log_message("[color=red]Not opened: fix the highlighted rows first, or the editor would lose them.[/color]")
 		SoundManager.play_ui("menu_error")
 		return null
