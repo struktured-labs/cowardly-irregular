@@ -59,7 +59,7 @@ esac
 
 check_templates
 cd "$REPO"
-AUTHORED_FILES="$(find test/unit -maxdepth 1 -name 'test_*.gd' -type f | wc -l)"
+AUTHORED_FILES="$(find test/unit -name 'test_*.gd' -type f | wc -l)"
 AUTHORED_EXPLAIN="$(tools/authored_scripts.sh test/unit --explain)"
 AUTHORED="${AUTHORED_EXPLAIN%% *}"
 if [ "$AUTHORED_FILES" -lt 1000 ]; then
