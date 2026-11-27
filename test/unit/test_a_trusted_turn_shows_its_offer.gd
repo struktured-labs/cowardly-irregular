@@ -36,7 +36,7 @@ func after_each() -> void:
 		GameState.text_size_scale = _saved_text
 	if _saved_speed != null:
 		GameState.default_battle_speed = _saved_speed
-	BattleManager._trust_window_timer = null
+	BattleManager._trust_window_deadline_ms = -1
 	if _bm != null:
 		_bm.restore()
 
@@ -80,7 +80,7 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 		assert_true(pill.has_method(m), "TrustTurnPill.%s must exist" % m)
 	assert_true(BattleManager.has_method("_trust_interrupt_token") and BattleManager.has_method("trust_window_offered"), "BattleManager's token and gate must exist")
 	assert_true(BattleManager.has_method("trust_window_time_left") and BattleManager.has_method("_run_trust_interrupt_window"), "BattleManager's window clock must exist")
-	assert_true("_trust_window_timer" in BattleManager, "BattleManager._trust_window_timer must exist")
+	assert_true("_trust_window_deadline_ms" in BattleManager, "BattleManager._trust_window_deadline_ms must exist")
 
 
 func test_an_opened_window_shows_the_offer_over_the_member_and_sounds_its_cue() -> void:
@@ -112,7 +112,7 @@ func test_the_bar_drains_on_the_wall_clock_at_every_speed() -> void:
 	var s: Node = r[0]
 	for scale in [0.25, 1.0]:
 		Engine.time_scale = scale
-		BattleManager._trust_window_timer = get_tree().create_timer(1.0, true, false, true)
+		BattleManager._trust_window_deadline_ms = Time.get_ticks_msec() + 1000
 		s._on_trust_interrupt_window_opened(r[1], 1.0)
 		var pill = s._trust_pill
 		## Measured on the wall clock ITSELF. A SceneTreeTimer reference fired early late in a long GUT sweep (the runner's
@@ -177,11 +177,11 @@ func test_the_offer_grows_with_the_text_and_still_fits() -> void:
 func test_the_bar_reads_the_windows_own_timer() -> void:
 	var r: Array = await _battle_with_member()
 	var s: Node = r[0]
-	BattleManager._trust_window_timer = get_tree().create_timer(0.6, true, false, true)
+	BattleManager._trust_window_deadline_ms = Time.get_ticks_msec() + 600
 	s._on_trust_interrupt_window_opened(r[1], 1.0)
 	assert_almost_eq(BattleManager.trust_window_time_left(), 0.6, 0.05, "CONTROL: the window's timer reads its own 0.6 s")
 	assert_almost_eq(s._trust_pill.remaining_fraction(), 0.6, 0.05, "the offer must show the WINDOW's time left, not a 1.0 s clock of its own")
-	BattleManager._trust_window_timer = null
+	BattleManager._trust_window_deadline_ms = -1
 	assert_eq(s._trust_pill.remaining_fraction(), 0.0, "and with no window open it reads empty, never full")
 
 

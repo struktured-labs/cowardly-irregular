@@ -17,6 +17,13 @@ func _grind_bosses() -> Dictionary:
 	return out
 
 
+## Measured 2026-11-27 (story 28465): an arm here held one 3.6 s frame (GameLoop's first load + boss builds), and a timer
+## the NEXT file started in the frame after expired on that frame's delta. Two frames here leave no long delta behind.
+func after_all() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
 func test_every_grind_meta_boss_has_an_intro() -> void:
 	var bosses := _grind_bosses()
 	assert_gt(bosses.size(), 1, "CONTROL: the autogrind roster was read")
@@ -32,10 +39,17 @@ func test_every_grind_meta_boss_has_an_intro() -> void:
 func test_the_built_boss_carries_its_intro_to_the_console() -> void:
 	var bosses := _grind_bosses()
 	var seen := {}
+	## Stop once every boss is built: each build re-parses monsters.json, and 400 of them in one synchronous
+	## arm made a frame long enough to fire the NEXT file's 1.2 s gloat timer (ai 28417).
+	var rounds := 0
 	for _i in 200:
+		rounds += 1
 		for collapse in [false, true]:
 			var data: Dictionary = AutogrindSystem.build_meta_boss_enemy_data(collapse)
 			seen[str(data.get("id", ""))] = data
+		if bosses.keys().all(func(k): return seen.has(k)):
+			break
+	assert_lte(rounds, 10 * bosses.size(), "the roster costs a bounded number of monsters.json parses, not 400")
 	for id in bosses:
 		assert_true(seen.has(id), "CONTROL: %s was built by the real builder" % id)
 		if not seen.has(id):

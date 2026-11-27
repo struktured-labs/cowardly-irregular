@@ -49,7 +49,7 @@ RAN=${RAN:-0}
 # the run that exits 0 and means nothing.
 SCRIPTS=$(grep -oE "^Scripts +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 SCRIPTS=${SCRIPTS:-0}
-ONDISK=$(ls "$SUITE_DIR"/test_*.gd 2>/dev/null | wc -l)
+ONDISK=$("$(dirname "$0")"/authored_scripts.sh "$SUITE_DIR")
 LOADFAIL=$(grep -c 'does not extend GutTest\|Failed to load script' "$LOG")
 # RISKY IS A THIRD OUTCOME AND THIS GATE READ TWO (@cowir-cutscenes msg-3685).
 # A test that dies in setup asserts NOTHING and GUT scores it [Risky], not

@@ -304,6 +304,12 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(archivist)
 
+	# The Race Condition, two processes at the coolant junction they share: gives world5_mutual_exclusion after chapter 2
+	var _pair_gs = get_node_or_null("/root/GameState")
+	if _pair_gs and _pair_gs.has_method("is_story_flag_set") and _pair_gs.is_story_flag_set("cutscene_flag_world5_chapter2_complete"):
+		_place_race_condition()
+
+
 	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
 	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
 	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
@@ -416,3 +422,13 @@ func _get_ambient_walkers() -> Array:
 		{"name": "GARBAGE.COLLECTOR", "archetype": "monk", "line": "Sweeping unreferenced objects. You are referenced. For now."},
 		{"name": "CRON_JOB_04", "archetype": "guard", "line": "I walk this path every 60 seconds. I have done so 41,000,000 times. I am fulfilled."},
 	]
+
+
+## The quest giver for world5_mutual_exclusion; its JSON gates it on chapter 2, and the call site repeats that gate.
+func _place_race_condition() -> void:
+	var pair = _create_npc("The Race Condition", "villager", Vector2(17 * TILE_SIZE, 13 * TILE_SIZE), [
+		"First: We both reached for the junction at the same instant.",
+		"Second: We both reached for the junction at the same instant. We have been reaching ever since."
+	])
+	pair.npc_id = "race_condition_pair"
+	npcs.add_child(pair)

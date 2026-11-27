@@ -32,13 +32,28 @@ func _texts(n: Node, acc: Array) -> Array:
 	return acc
 
 
+## Built once per id per file: each build re-parses monsters.json, and a long synchronous run of them
+## made a frame long enough to fire a later file's 1.2 s gloat timer (ai 28417).
+var _seen: Dictionary = {}
+var _builds: int = 0
+
+
 func _built(id: String) -> Dictionary:
 	for _i in 200:
+		if _seen.has(id):
+			break
 		for collapse in [false, true]:
 			var d: Dictionary = AutogrindSystem.build_meta_boss_enemy_data(collapse)
-			if str(d.get("id", "")) == id:
-				return d
-	return {}
+			_builds += 1
+			_seen[str(d.get("id", ""))] = d
+	return _seen.get(id, {})
+
+
+## Measured 2026-11-27 (story 28465): an arm here held one 3.6 s frame (GameLoop's first load + boss builds), and a timer
+## the NEXT file started in the frame after expired on that frame's delta. Two frames here leave no long delta behind.
+func after_all() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 
 func test_every_grind_meta_boss_has_a_wipe_line() -> void:
@@ -141,3 +156,22 @@ func test_every_wipe_line_fits_the_summary_at_every_text_size() -> void:
 					tightest = minf(tightest, o.position.y - r.end.y)
 	gut.p("wipe line: tightest gap to the row below = %.1f px" % tightest)
 	assert_true(tightest < INF, "CONTROL: a row below the wipe line was measured")
+
+
+## ai 28417: the meta-boss fixtures must not hold one long frame, so bound the builds a lookup of every grind boss costs.
+func test_building_the_roster_is_cheap() -> void:
+	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var ids: Array = []
+	for id in monsters:
+		if monsters[id] is Dictionary and bool(monsters[id].get("autogrind_spawned", false)):
+			ids.append(str(id))
+	assert_gt(ids.size(), 1, "CONTROL: the roster was read")
+	_seen = {}
+	_builds = 0
+	var t0 := Time.get_ticks_msec()
+	for id in ids:
+		assert_false(_built(id).is_empty(), "CONTROL: %s was built" % id)
+	gut.p("roster: %d builds, %d ms (information only)" % [_builds, Time.get_ticks_msec() - t0])
+	## A COUNT, not a clock (main 28423): each build is a monsters.json parse. 10 sweeps per boss is slack for the random pick;
+	## without the cache this is 400 per boss.
+	assert_lte(_builds, 2 * 10 * ids.size(), "the roster costs a bounded number of monsters.json parses")
