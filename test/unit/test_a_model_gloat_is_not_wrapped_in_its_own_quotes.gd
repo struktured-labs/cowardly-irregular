@@ -84,7 +84,7 @@ func _spoken_for(reply: String) -> String:
 	var cb := func(text: String, _v: bool): heard.append(text)
 	_bm.boss_gloat_line.connect(cb)
 	_bm._dispatch_boss_gloat(true)
-	assert_false(heard.is_empty(), "CONTROL: the model's reply landed in the dispatch frame, so the deadline cannot win the race")
+	assert_false(heard.is_empty(), "CONTROL: the model's reply landed in the dispatch frame, so the deadline cannot win the race (red: another request held the LLM queue, so look there first)")
 	var t0 := Time.get_ticks_msec()
 	while heard.is_empty() and Time.get_ticks_msec() - t0 < int(_bm.GLOAT_WAIT_SEC * 1000.0) + 500:
 		await get_tree().process_frame
