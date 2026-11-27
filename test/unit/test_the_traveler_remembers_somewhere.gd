@@ -168,6 +168,8 @@ func test_the_real_quest_can_be_finished_with_the_traveler() -> void:
 
 
 func test_the_traveler_stands_in_vertex() -> void:
+	var held_world: int = GameState.current_world
+	GameState.current_world = 6
 	var vp := SubViewport.new()
 	vp.world_2d = World2D.new()
 	add_child_autofree(vp)
@@ -183,3 +185,28 @@ func test_the_traveler_stands_in_vertex() -> void:
 		var cell := Vector2i(floori(found.position.x / 32.0), floori(found.position.y / 32.0))
 		assert_true(v._is_cell_walkable(cell + Vector2i(0, 1)) or v._is_cell_walkable(cell + Vector2i(-1, 0)),
 			"a cell beside the Traveler can be stood on, so they can be talked to")
+		assert_eq(str(found.get("_archetype_id")), "traveler_abstract", "in World 6 the Traveler draws her own W6 sheet, not the hooded figure")
+	GameState.current_world = held_world
+
+
+func test_a_heard_fragment_survives_a_save_and_load() -> void:
+	var npc := _arm()
+	var menu: Node = await _open_menu(npc)
+	assert_not_null(menu, "the fragments are offered")
+	if menu == null:
+		return
+	assert_true(await _pick(menu, "weather"), "CONTROL: the weather-word is on offer")
+	var saved: Variant = JSON.parse_string(JSON.stringify({"story_flags": GameState.story_flags, "quests": GameState.quests}))
+	assert_true(saved is Dictionary, "CONTROL: the save survives a JSON trip")
+	GameState.story_flags.erase(_qs.beat_flag(QID, "weather"))
+	assert_false(_qs._flag(_qs.beat_flag(QID, "weather")), "CONTROL: the fragment is gone before the load")
+	GameState.from_dict(saved)
+	assert_true(_qs._flag(_qs.beat_flag(QID, "weather")), "the heard fragment comes back with the save")
+	assert_eq(_qs.get_objective_index(QID), 1, "and so does the step")
+	menu = await _open_menu(npc)
+	assert_not_null(menu, "the loaded quest still offers the rest")
+	if menu != null:
+		var labels := _labels_by_id()
+		assert_eq(Array(menu._choices), [labels["vowels"], labels["light"]], "only the two not yet heard")
+		menu._cancel()
+		await _settle()

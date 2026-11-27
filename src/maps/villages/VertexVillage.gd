@@ -241,6 +241,7 @@ func _setup_npcs() -> void:
 		"I've walked through every world you have. After you, mostly.",
 		"Walking is always still available. That's been the whole problem."
 	])
+	traveler.sprite_archetype = "traveler"  # draws her own traveler sheet in each world; plain "mysterious" is the hooded figure
 	traveler.npc_id = "traveler_w6"
 	npcs.add_child(traveler)
 	_place_masterites()
