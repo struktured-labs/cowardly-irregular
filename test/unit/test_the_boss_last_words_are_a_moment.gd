@@ -322,9 +322,25 @@ func test_one_press_dismisses_a_fully_typed_line() -> void:
 func _game_loop_with(stub: Node) -> Node:
 	var gl: Node = GameLoopScript.new()
 	add_child_autofree(gl)
+	## _ready opens the title, where this file's ui_accept presses would pick New Game: a reset coroutine that resumes on a freed GameLoop.
+	gl._close_title_screen()
 	add_child_autofree(stub)
 	gl.current_scene = stub
 	return gl
+
+
+func test_the_fixture_game_loop_has_no_title_to_press_new_game_on() -> void:
+	## The arms below press ui_accept for real; with a title up, one would start New Game on a GameLoop the test then frees.
+	var gl: Node = _game_loop_with(HoldStub.new())
+	assert_true("_title_screen" in gl, "GameLoop no longer names _title_screen: re-check what this fixture closes")
+	assert_null(gl._title_screen, "the fixture left GameLoop's title screen up, so a press there picks New Game")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var titles := 0
+	for n in gl.find_children("*", "", true, false):
+		if n is TitleScreen:
+			titles += 1
+	assert_eq(titles, 0, "a TitleScreen is still in the fixture's GameLoop after two frames")
 
 
 func test_the_hold_cap_outlasts_the_scenes_own_worst_case() -> void:
