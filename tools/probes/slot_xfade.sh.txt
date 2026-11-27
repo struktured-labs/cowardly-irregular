@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# cowir-sfx MEASURE-ONLY seat (no commit): crossfade first step after a real village->overworld build, x3. Probe copied in, removed at the end.
+cd "$(dirname "$0")/.." || exit 2
+export XDG_DATA_HOME=$PWD/tmp/xdg
+echo "HEAD $(git rev-parse --short HEAD)"
+P=test/unit/test_zz_probe_crossfade_first_step.gd
+cp tmp/probe/test_zz_probe_crossfade_first_step.gd $P
+godot --headless --audio-driver Dummy --import --quit > tmp/slot_import.log 2>&1; echo "import EC=$? SE=$(command grep -ac 'SCRIPT ERROR' tmp/slot_import.log)"
+for i in 1 2 3; do
+  tools/run_tests.sh zz_probe_crossfade_first_step > tmp/slot_xfade_$i.log 2>&1; echo "run $i EC=$? SE=$(command grep -ac 'SCRIPT ERROR' tmp/slot_xfade_$i.log)"
+  command grep -a '\[PROBE\]' tmp/slot_xfade_$i.log | head -14
+done
+rm -f $P ${P}.uid
+echo "dirty: $(git status --porcelain --untracked-files=all | command grep -v ' tmp/' | tr '\n' ' ')"

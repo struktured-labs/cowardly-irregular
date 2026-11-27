@@ -1,0 +1,38 @@
+extends GutTest
+
+## MEASURE ONLY, never committed: village bed playing, then the real OverworldScene built in one frame as GameLoop does; trace each frame's delta and both music players' volume.
+
+const VillageRes := preload("res://src/maps/villages/HarmoniaVillage.tscn")
+const OverRes := preload("res://src/exploration/OverworldScene.tscn")
+
+
+func _row(tag: String, f0: int) -> void:
+	var sm = SoundManager
+	var a: float = sm._music_player.volume_db if sm._music_player else -999.0
+	var b: float = sm._music_player_b.volume_db if sm._music_player_b else -999.0
+	var xf: bool = sm._crossfade_tween != null and sm._crossfade_tween.is_valid() and sm._crossfade_tween.is_running()
+	var fi: bool = sm._fade_in_tween != null and sm._fade_in_tween.is_valid() and sm._fade_in_tween.is_running()
+	print("[PROBE] %s frame=+%d delta_ms=%.1f A_db=%.1f B_db=%.1f crossfade_running=%s fadein_running=%s track=%s" % [
+		tag, Engine.get_process_frames() - f0, get_process_delta_time() * 1000.0, a, b, xf, fi, str(sm._current_music)])
+
+
+func test_probe_village_to_overworld() -> void:
+	var host := Node.new()
+	add_child_autofree(host)
+	var v := VillageRes.instantiate()
+	host.add_child(v)
+	for _i in range(30):
+		await get_tree().process_frame
+	print("[PROBE] village bed: %s playing=%s" % [str(SoundManager._current_music), SoundManager._music_player.playing])
+	var f0 := Engine.get_process_frames()
+	var t0 := Time.get_ticks_usec()
+	v.free()
+	var o := OverRes.instantiate()
+	host.add_child(o)
+	var build_ms := (Time.get_ticks_usec() - t0) / 1000.0
+	print("[PROBE] overworld build+add in one frame: %.1f ms" % build_ms)
+	_row("arm", f0)
+	for _i in range(40):
+		await get_tree().process_frame
+		_row("tick", f0)
+	assert_true(true)
