@@ -62,6 +62,12 @@ var _state_before_pause: State = State.IDLE
 ## as a pending request, pausing a resumed grind one battle later with nothing asking.
 var _pause_requested: bool = false
 
+
+## Read-only: GameLoop reads a meta-boss's last words before on_battle_ended clears this.
+func get_current_meta_boss_data() -> Dictionary:
+	return _current_meta_boss_data
+
+
 func _get_between_battle_delay() -> float:
 	if headless_mode:
 		return 0.0  # Ludicrous speed: no delay between battles
