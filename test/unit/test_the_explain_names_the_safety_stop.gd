@@ -4,7 +4,8 @@ extends GutTest
 ## and "No rules — the grind runs until you stop it" for an empty grid. Both were false under the safety stops: the
 ## controller evaluates the rules, then pre_battle_check's interrupts, so "one member down" ENDS a default grind.
 ## Arms: a death stop is named · switched off, the grind continues · an HP stop follows its threshold · an empty grid
-## names its safety stops · CONTROL: a healthy party still continues · no scratch "Probe" name reaches the player.
+## names its safety stops · CONTROL: a healthy party still continues · no scratch "Probe" name reaches the player ·
+## FLOOR: the private AutogrindSystem._party_interrupt the preview reaches still exists.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const UI := "res://src/ui/autogrind/AutogrindUI.gd"
@@ -70,3 +71,8 @@ func test_no_scratch_name_reaches_the_player() -> void:
 	var report := "\n".join(PackedStringArray(_ui.explain_rules_report()))
 	assert_true(report.contains("safety stop"), "CONTROL: a safety stop was reported")
 	assert_false(report.contains("Probe"), "the scratch party's member name leaked into the preview: %s" % report)
+
+
+func test_the_preview_reaches_the_grinds_own_stop_check() -> void:
+	## FLOOR: a rename of this private function would abort the preview's state loop instead of failing here by name.
+	assert_true(AutogrindSystem.has_method("_party_interrupt"), "AutogrindSystem._party_interrupt is gone; the Explain preview calls it for every state no rule catches")
