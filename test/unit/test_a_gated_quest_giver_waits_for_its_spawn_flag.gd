@@ -8,6 +8,7 @@ const QUESTS := "res://data/quests"
 const GIVERS := {
 	"madame_orrery_w1": "res://src/exploration/OverworldScene.gd",
 	"casper_kid": "res://src/maps/villages/MapleHeightsVillage.gd",
+	"race_condition_pair": "res://src/maps/villages/NodePrimeVillage.gd",
 }
 
 ## A live quest whose spawn_flag is honoured some other way. The reason is the deliverable, not a skip.
