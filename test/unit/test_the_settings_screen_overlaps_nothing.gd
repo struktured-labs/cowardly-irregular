@@ -7,8 +7,11 @@ extends GutTest
 const OverlapAudit = preload("res://test/unit/helpers/overlap_audit.gd")
 const SM := "res://src/ui/SettingsMenu.gd"
 
-## Intended overlaps, {"a|b": "reason"}, each from a census. Empty until a census says otherwise.
-const DECLARED := {}
+## Intended overlaps, {"a|b": "reason"}, each from a census and each proved by an arm below, not by its reason.
+const DECLARED := {
+	"Settings/Label#0|Settings/Description": "a row's title and subtitle LINE BOXES touch by under 2 px at 80-150%; their drawn glyphs never do (test_a_row_title_and_subtitle_ink_never_touches)",
+	"Settings/Label#0|Settings/Label#1": "the same title/subtitle line-box touch on the two action rows, whose subtitle is not wrapped (same arm)",
+}
 
 var _saved = null
 
@@ -37,6 +40,7 @@ func _menu_at(scale: float) -> Control:
 	var layer := CanvasLayer.new()
 	vp.add_child(layer)
 	var m: Control = load(SM).new()
+	m.name = "Settings"
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(m)
 	await get_tree().process_frame
@@ -135,3 +139,84 @@ func test_a_rebuild_at_a_new_size_overlaps_nothing_and_keeps_the_cursor_on_scree
 		m.get_parent().get_parent().queue_free()
 		await get_tree().process_frame
 	assert_eq(found, [], "a rebuild at a newly picked size overlaps nothing and keeps the cursor on screen:\n%s" % "\n".join(PackedStringArray(found)))
+
+
+## The drawn glyphs' (top, bottom) in the label's own y, from the font's glyph boxes: ink, not the line box.
+func _ink_y(l: Label) -> Vector2:
+	var f: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var ts := TextServerManager.get_primary_interface()
+	var rid := ts.create_shaped_text()
+	ts.shaped_text_add_string(rid, l.text, f.get_rids(), px)
+	var asc: float = ts.shaped_text_get_ascent(rid)
+	var top := INF
+	var bot := -INF
+	for g in ts.shaped_text_get_glyphs(rid):
+		var gs: Vector2 = ts.font_get_glyph_size(g["font_rid"], Vector2i(px, 0), g["index"])
+		if gs.y <= 0.0:
+			continue
+		var off: Vector2 = ts.font_get_glyph_offset(g["font_rid"], Vector2i(px, 0), g["index"])
+		top = minf(top, asc + off.y)
+		bot = maxf(bot, asc + off.y + gs.y)
+	ts.free_rid(rid)
+	return Vector2(top, bot)
+
+
+## What the two DECLARED pairs claim, measured on every row at every size: the title's lowest glyph ends above the
+## subtitle's highest. If a layout change makes the ink meet, this reds even though the census is told to pass.
+func test_a_row_title_and_subtitle_ink_never_touches() -> void:
+	var bad: Array = []
+	var pairs := 0
+	for s in _presets():
+		var m := await _menu_at(float(s))
+		for it in m._settings_items:
+			var labels: Array = (it["control"] as Control).get_children().filter(func(c): return c is Label)
+			if labels.size() < 2:
+				continue
+			var t: Label = labels[0]
+			var d: Label = labels[1]
+			var ti: Vector2 = _ink_y(t)
+			var di: Vector2 = _ink_y(d)
+			assert_true(is_finite(ti.x) and is_finite(di.x) and ti.y > ti.x, "PRECONDITION: glyph boxes measured for '%s'" % t.text)
+			pairs += 1
+			var gap: float = (d.position.y + di.x) - (t.position.y + ti.y)
+			if gap < 1.0:
+				bad.append("%d%% '%s': title ink ends %.1f, subtitle ink starts %.1f" % [int(roundf(float(s) * 100.0)), t.text, t.position.y + ti.y, d.position.y + di.x])
+		m.get_parent().get_parent().queue_free()
+		await get_tree().process_frame
+	assert_gt(pairs, 40, "CONTROL: title/subtitle pairs were measured (%d)" % pairs)
+	assert_eq(bad, [], "a title's ink never touches its subtitle's:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## A subtitle stays inside its own row at every size, derived from every row Settings builds (six ran 200 px past
+## the row's right edge at 150%), and whatever sits below it starts after its last line.
+func test_every_subtitle_stays_inside_its_row_at_every_size() -> void:
+	var bad: Array = []
+	var judged := 0
+	var wrapped := 0
+	for s in _presets():
+		var m := await _menu_at(float(s))
+		for it in m._settings_items:
+			var row: Control = it["control"]
+			var labels: Array = row.get_children().filter(func(c): return c is Label)
+			if labels.size() < 2:
+				continue
+			var d: Label = labels[1]
+			judged += 1
+			if d.get_line_count() > 1:
+				wrapped += 1
+			var f: Font = d.get_theme_font("font")
+			var px: int = d.get_theme_font_size("font_size")
+			var w: float = f.get_string_size(d.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x if d.autowrap_mode == TextServer.AUTOWRAP_OFF else d.size.x
+			var drawn := Rect2(d.position, Vector2(w, d.get_minimum_size().y if d.autowrap_mode != TextServer.AUTOWRAP_OFF else d.size.y))
+			var pct := int(roundf(float(s) * 100.0))
+			if drawn.end.x > row.size.x + 0.5 or drawn.end.y > row.size.y + 0.5:
+				bad.append("%d%% %s: subtitle %s outside its row %s" % [pct, it.get("id", "?"), drawn, row.size])
+			for c in row.get_children():
+				if c is Container and (c as Control).position.y < drawn.end.y - 0.5:
+					bad.append("%d%% %s: %s starts at %.1f inside the subtitle (ends %.1f)" % [pct, it.get("id", "?"), c.name, (c as Control).position.y, drawn.end.y])
+		m.get_parent().get_parent().queue_free()
+		await get_tree().process_frame
+	assert_gt(judged, 40, "CONTROL: subtitles were judged (%d)" % judged)
+	assert_gt(wrapped, 0, "CONTROL: some subtitle needs more than one line at the largest sizes (%d), so the wrap was exercised" % wrapped)
+	assert_eq(bad, [], "every subtitle stays inside its row:\n%s" % "\n".join(PackedStringArray(bad)))
