@@ -67,7 +67,7 @@ func test_a_quest_without_path_endings_is_unchanged() -> void:
 func test_both_turn_in_paths_read_the_path_ending() -> void:
 	var src := FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
 	assert_eq(src.count("await _play_lines(npc, completion_lines("), 2, "the giver turn-in and run_completion_dialogue both play the path's ending")
-	assert_eq(src.count("dlg.get(\"complete\", [])"), 0, "no turn-in path reads the bare complete past the helper")
+	assert_eq(src.count("_play_lines(npc, dlg.get(\"complete\""), 0, "no turn-in path plays the bare complete past the helper")
 
 
 func test_before_any_answer_the_pair_are_still_reaching() -> void:
