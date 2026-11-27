@@ -817,6 +817,9 @@ func _test_the_scripts(indexes=[]):
 			_lgr.log(script_sum, _lgr.fmts.bold)
 
 		end_script.emit()
+		# cowir: spend a long last frame's delta here, or the next script's first SceneTreeTimer expires on its first tick.
+		await get_tree().process_frame
+		await get_tree().process_frame
 		# END TEST SCRIPT LOOP
 
 	_lgr.set_indent_level(0)
