@@ -1358,8 +1358,8 @@ func _edit_current_cell() -> void:
 		var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 		var conditions = rule.get("conditions", [])
 		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
-			_add_and_condition()
-			SoundManager.play_ui("menu_select")
+			if _add_and_condition():
+				SoundManager.play_ui("menu_select")
 		return
 
 	var cell_type = cell.get_meta("cell_type")
@@ -1371,7 +1371,8 @@ func _edit_current_cell() -> void:
 	elif cell_type == "empty_action":
 		_add_action()
 	elif cell_type == "empty_condition":
-		_add_and_condition()
+		if not _add_and_condition():
+			return
 	elif cell_type == "row_insert":
 		_insert_row_after(cursor_row)
 
@@ -1633,23 +1634,24 @@ func _cycle_action_profile(direction: int) -> void:
 ## STRUCTURAL EDITS
 ## ═══════════════════════════════════════════════════════════════════════
 
-func _add_and_condition() -> void:
+## True when a condition was added; a refusal (ALWAYS row, or full) was silent and is now heard and explained.
+func _add_and_condition() -> bool:
 	"""Add an AND condition to current row"""
 	if cursor_row < 0 or cursor_row >= rules.size():
-		return
+		return false
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
-
-	for cond in conditions:
-		if cond.get("type", "") == "always":
-			return
-
-	if conditions.size() < MAX_CONDITIONS:
-		conditions.append({"type": "party_hp_avg", "op": "<", "value": 50})
-		rule["conditions"] = conditions
-		cursor_col = conditions.size() - 1
-		_refresh_grid()
-		SoundManager.play_ui("menu_expand")
+	var why := AutobattleGridEditor.and_condition_refusal(conditions, MAX_CONDITIONS)
+	if why != "":
+		SoundManager.play_ui("menu_error")
+		_flash_status(why)
+		return false
+	conditions.append({"type": "party_hp_avg", "op": "<", "value": 50})
+	rule["conditions"] = conditions
+	cursor_col = conditions.size() - 1
+	_refresh_grid()
+	SoundManager.play_ui("menu_expand")
+	return true
 
 
 func _add_action() -> void:
