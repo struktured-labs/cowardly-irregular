@@ -3220,7 +3220,7 @@ func _add_and_condition() -> bool:
 static func and_condition_refusal(conditions: Array, max_conditions: int) -> String:
 	for cond in conditions:
 		if cond is Dictionary and str(cond.get("type", "")) == "always":
-			return "An Always rule already fires every time; change Always to add a condition."
+			return "Always fires every time; change it to add a condition."
 	if conditions.size() >= max_conditions:
 		return "A rule holds %d conditions at most." % max_conditions
 	return ""

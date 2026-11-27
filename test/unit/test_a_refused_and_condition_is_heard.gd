@@ -12,6 +12,7 @@ const CUES := ["menu_error", "menu_select", "menu_expand"]
 var _abs
 var _profiles_backup: Dictionary = {}
 var _ag: Dictionary
+var _saved_scale = null
 
 
 func before_each() -> void:
@@ -29,6 +30,8 @@ func after_each() -> void:
 	for k in _profiles_backup:
 		live[k] = _profiles_backup[k]
 	AutogrindState.restore(_ag)
+	if _saved_scale != null:
+		GameState.text_size_scale = _saved_scale
 	_clear()
 	SoundManager._sfx_suppressed_by_cooldown = false
 	SfxState.release_streams()
@@ -122,3 +125,82 @@ func test_l_on_a_full_rule_is_refused_out_loud_in_both_editors() -> void:
 		assert_string_contains(_shown(ed), str(cap), "%s: the refusal must name the cap" % path.get_file())
 		_clear()
 
+
+
+# ── the two sentences, measured in each editor's slot at every Text Size ──────
+
+
+
+func _presets() -> Array:
+	var p: Array = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map().get("TEXT_SIZE_PRESETS", [])
+	assert_gt(p.size(), 1, "FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must resolve, got %s" % [p])
+	return p
+
+
+## A 1280x720 editor at this Text Size, set up the way the game opens it, holding one rule of these conditions.
+func _on_screen(path: String, scale: float, conditions: Array) -> Control:
+	GameState.text_size_scale = scale
+	var vp := SubViewport.new()
+	vp.size = Vector2i(1280, 720)
+	add_child_autofree(vp)
+	var ed: Control = load(path).new()
+	ed.size = Vector2(1280, 720)
+	vp.add_child(ed)
+	await get_tree().process_frame
+	if path == AB_EDITOR:
+		ed.setup("hero", "Hero")
+	else:
+		ed.setup([])
+	await get_tree().process_frame
+	var rules: Array = ed.get("rules") as Array
+	rules.clear()
+	rules.append({"conditions": conditions.duplicate(true), "actions": [{"type": "attack"}], "enabled": true})
+	ed.set("cursor_row", 0)
+	ed.set("cursor_col", 0)
+	ed._refresh_grid()
+	return ed
+
+
+func _refusals(path: String) -> Array:
+	var cap: int = int(load(path).get_script_constant_map().get("MAX_CONDITIONS", 0))
+	return [["always", ALWAYS], ["full", _full(cap)]]
+
+
+func test_the_autobattle_flash_holds_each_refusal_at_every_text_size() -> void:
+	_saved_scale = GameState.text_size_scale
+	for s in _presets():
+		for r in _refusals(AB_EDITOR):
+			var ed: Control = await _on_screen(AB_EDITOR, float(s), r[1])
+			var why: String = AutobattleGridEditor.and_condition_refusal(r[1], int(ed.MAX_CONDITIONS))
+			assert_false(ed._add_and_condition(), "CONTROL @%s %s: refused" % [s, r[0]])
+			await get_tree().process_frame
+			var l: Label = ed._flash_label
+			var tag := "@%sx %s" % [s, r[0]]
+			assert_eq(str(l.text), why, "CONTROL %s: the flash shows the refusal" % tag)
+			var lines: int = l.get_line_count()
+			assert_gt(lines, 0, "CONTROL %s: the label laid its text out" % tag)
+			assert_lte(lines * l.get_line_height(), l.size.y + 0.5, "%s: %d line(s) fit the flash's %.0f px height" % [tag, lines, l.size.y])
+			assert_gte(l.position.x, 0.0, "%s: starts on screen" % tag)
+			assert_lte(l.position.x + l.size.x, ed.size.x, "%s: ends on screen" % tag)
+			assert_lte(l.position.y + l.size.y, ed.size.y - float(ed._legend_h), "%s: ends above the legend strip" % tag)
+			ed.queue_free()
+	GameState.text_size_scale = _saved_scale
+
+
+func test_the_grind_status_holds_each_refusal_on_one_line_at_every_text_size() -> void:
+	_saved_scale = GameState.text_size_scale
+	for s in _presets():
+		for r in _refusals(AG_EDITOR):
+			var ed: Control = await _on_screen(AG_EDITOR, float(s), r[1])
+			var why: String = AutobattleGridEditor.and_condition_refusal(r[1], int(ed.MAX_CONDITIONS))
+			assert_false(ed._add_and_condition(), "CONTROL @%s %s: refused" % [s, r[0]])
+			await get_tree().process_frame
+			var l: Label = ed._status_label
+			var tag := "@%sx %s" % [s, r[0]]
+			assert_eq(str(l.text), why, "CONTROL %s: the status shows the refusal" % tag)
+			var px: int = l.get_theme_font_size("font_size")
+			var w: float = l.get_theme_font("font").get_string_size(why, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			assert_lte(w, l.size.x + 0.5, "%s: '%s' (%.0f px) fits the %.0f px status box" % [tag, why, w, l.size.x])
+			assert_lte(l.position.x + l.size.x, 1280.0, "%s: the status box stays on screen" % tag)
+			ed.queue_free()
+	GameState.text_size_scale = _saved_scale
