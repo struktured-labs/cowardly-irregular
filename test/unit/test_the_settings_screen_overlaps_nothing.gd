@@ -220,3 +220,30 @@ func test_every_subtitle_stays_inside_its_row_at_every_size() -> void:
 	assert_gt(judged, 40, "CONTROL: subtitles were judged (%d)" % judged)
 	assert_gt(wrapped, 0, "CONTROL: some subtitle needs more than one line at the largest sizes (%d), so the wrap was exercised" % wrapped)
 	assert_eq(bad, [], "every subtitle stays inside its row:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## At 100% and below the wrap changes nothing (adhoc 28640): every subtitle is still one line and the switches sit at
+## their old 40k, so the 4 px bevel inset is the only thing that moves at 1.0.
+func test_at_100_percent_the_rows_are_laid_out_as_before() -> void:
+	var bad: Array = []
+	var judged := 0
+	for s in _presets():
+		if float(s) > 1.0:
+			continue
+		var m := await _menu_at(float(s))
+		var k: float = m._row_k()
+		for it in m._settings_items:
+			var row: Control = it["control"]
+			var labels: Array = row.get_children().filter(func(c): return c is Label)
+			if labels.size() < 2:
+				continue
+			judged += 1
+			if (labels[1] as Label).get_line_count() != 1:
+				bad.append("%.2fx %s: the subtitle wraps to %d lines" % [float(s), it.get("id", "?"), (labels[1] as Label).get_line_count()])
+			var tc: Node = row.get_node_or_null("ToggleContainer")
+			if tc and not is_equal_approx((tc as Control).position.y, 40.0 * k):
+				bad.append("%.2fx %s: switches at %.1f, were at %.1f" % [float(s), it.get("id", "?"), (tc as Control).position.y, 40.0 * k])
+		m.get_parent().get_parent().queue_free()
+		await get_tree().process_frame
+	assert_gt(judged, 40, "CONTROL: rows judged at 100%% and below (%d)" % judged)
+	assert_eq(bad, [], "at 100%% and below nothing but the inset moves:\n%s" % "\n".join(PackedStringArray(bad)))
