@@ -3472,7 +3472,8 @@ func _on_grid_cell_hover(cell: Control) -> void:
 ## starting a grind were dropped. Rejection must NOT block the close: mid-edit rules are
 ## routinely incomplete, and a console you cannot leave is the worse failure (2026-09-06 wedge).
 func _persist_rules_on_close() -> void:
-	if rules.is_empty():
+	## Not `rules.is_empty()`: that also skipped a grid the player cleared on purpose, which then came back on the next open.
+	if not _rules_loaded:
 		return
 	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
 		push_warning("[AUTOGRIND] rules NOT saved on close — %d rule(s) failed validation; the last valid set is kept" % rules.size())

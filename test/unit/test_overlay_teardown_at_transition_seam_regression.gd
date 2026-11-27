@@ -50,6 +50,7 @@ func _attach_console() -> Node:
 	_gl._autogrind_ui = ui
 	layer.add_child(ui)
 	add_child_autofree(layer)
+	ui._load_rules()  # GameLoop's setup() does this on open; an unloaded console saves nothing
 	return ui
 
 

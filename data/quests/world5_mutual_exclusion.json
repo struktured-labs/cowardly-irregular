@@ -50,7 +50,11 @@
       "description": "Give them something that is not a wall.",
       "type": "custom",
       "required_flag": "quest_world5_mutual_exclusion_resolved",
-      "flag_on_complete": "quest_world5_mutual_exclusion_resolved"
+      "flag_on_complete": "quest_world5_mutual_exclusion_resolved",
+      "choices": [
+        {"label": "Write them a schedule.", "sets": "quest_world5_mutual_exclusion_protocol", "lines": [{"speaker": "Race Condition (First)", "text": "A schedule. I go, then I say I am done, then you go.", "theme": "mysterious"}, {"speaker": "Race Condition (Second)", "text": "And if you forget to say you are done?", "theme": "mysterious"}, {"speaker": "Race Condition (First)", "text": "Then you wait forty milliseconds and ask. Politely.", "theme": "mysterious"}, {"speaker": "Race Condition (Second)", "text": "...I would like to be asked. Write it down.", "theme": "mysterious"}]},
+        {"label": "Show them they are the same code.", "sets": "quest_world5_mutual_exclusion_merged", "lines": [{"speaker": "Race Condition (Second)", "text": "Same hash. Same line numbers. Same comment someone left at the top and never came back to.", "theme": "mysterious"}, {"speaker": "Race Condition (First)", "text": "We were started twice. Nobody told either of us about the other.", "theme": "mysterious"}, {"speaker": "Race Condition (Second)", "text": "So we were never two. We were one thing, arguing with its own echo.", "theme": "mysterious"}, {"speaker": "Race Condition (First)", "text": "Then we can stop. Come here. Or — stay. There is no here.", "theme": "mysterious"}]}
+      ]
     },
     {
       "step": 3,

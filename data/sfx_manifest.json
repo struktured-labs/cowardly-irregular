@@ -15996,6 +15996,11 @@
       "file": "assets/audio/sfx/repeat_turn.ogg",
       "prompt": "Repeat (the pad's west face, keyboard Y) refilled the party's remembered actions from last round: a quick rising replay figure, G5 B5 D6 then a held G6, triangle with a quiet octave, 55 ms per step, lowpassed at 6 kHz with a short room tail. It answers a SUCCESSFUL Repeat only; a declined one plays menu_error, the fleet's 'can't do that'. BattleScene._repeat_cue. Synthesised with SoX, not ElevenLabs; 0.43 s, RMS -19.0 dBFS (the level of menu_select and advance_queue), peak -9.4 dBFS.",
       "duration_seconds": 0.43
+    },
+    "screenshot_taken": {
+      "file": "assets/audio/sfx/screenshot_taken.ogg",
+      "prompt": "F12 saved a screenshot: a mechanical camera shutter, two clicks 70 ms apart (the blade, then a softer, darker curtain return), each a bandpassed noise burst over a short low thunk, with a small room tail. It answers a screenshot that LANDED on disk only; one that could not be captured or written plays menu_error, the fleet's 'can't do that', beside its toast. GameLoop._screenshot_cue. Synthesised with SoX, not ElevenLabs; 0.25 s, peak -6.0 dBFS, RMS -20.6 dBFS over the two clicks (-23.3 over the whole file).",
+      "duration_seconds": 0.25
     }
   }
 }
