@@ -358,10 +358,10 @@ const CHOICE_EMITTERS: Dictionary = {
 	"firewall_attendant_w5": [
 		{"quest": "world5_termination_condition", "flag": "quest_world5_termination_condition_signal_sent"},
 	],
-	## `beats` instead of `choices`: one unheard beat per talk, any order, and the step flag waits for all of them.
 	"race_condition_pair": [
 		{"quest": "world5_mutual_exclusion", "flag": "quest_world5_mutual_exclusion_resolved"},
 	],
+	## `beats` instead of `choices`: one unheard beat per talk, any order, and the step flag waits for all of them.
 	"traveler_w6": [
 		{"quest": "world6_before_she_left", "flag": "quest_world6_before_she_left_fragments_gathered"},
 	],
