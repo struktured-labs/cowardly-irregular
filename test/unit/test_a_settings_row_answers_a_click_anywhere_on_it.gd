@@ -64,3 +64,36 @@ func test_every_click_target_is_its_whole_row_at_every_size() -> void:
 	assert_gt(judged, 100, "CONTROL: click targets were judged (%d)" % judged)
 	assert_gt(wider_than_400, 0, "CONTROL: rows are wider than the literal 400 px, so a 400 px target could be told apart (%d)" % wider_than_400)
 	assert_eq(bad, [], "every Settings row answers a click anywhere on it:\n%s" % "\n".join(PackedStringArray(bad.slice(0, 12))))
+
+
+## Behaviour, not just geometry (adhoc 28702): the mouse moved onto a row's RIGHT half, low in the row, selects that row
+## through the real viewport input path. Hover selects without activating, so no setting is changed by the test.
+func test_the_mouse_on_a_rows_right_half_selects_it() -> void:
+	for s in [1.0, 2.0]:
+		var m := await _menu_at(s)
+		var vp: SubViewport = m.get_parent()
+		var view := Rect2(m._scroll.global_position, m._scroll.size)
+		var target := -1
+		var at := Vector2.ZERO
+		for i in m._settings_items.size():
+			if i == m.selected_index:
+				continue
+			var r: Rect2 = (m._settings_items[i]["control"] as Control).get_global_rect()
+			var p := Vector2(r.end.x - 24.0, r.end.y - 4.0)
+			if r.size.x > 500.0 and view.has_point(p) and p.x > r.position.x + 420.0:
+				target = i
+				at = p
+				break
+		assert_gt(target, -1, "PRECONDITION: a fully visible row at %.0f%% to point at, beyond the old 400 px target" % (s * 100.0))
+		if target < 0:
+			continue
+		assert_ne(m.selected_index, target, "CONTROL: the row is not already selected")
+		for p in [at + Vector2(-6, -2), at]:
+			var ev := InputEventMouseMotion.new()
+			ev.position = p
+			ev.global_position = p
+			vp.push_input(ev)
+			await get_tree().process_frame
+		assert_eq(m.selected_index, target, "%.0f%%: the mouse at %s on row %d's right half, low in the row, selects it" % [s * 100.0, at, target])
+		vp.queue_free()
+		await get_tree().process_frame
