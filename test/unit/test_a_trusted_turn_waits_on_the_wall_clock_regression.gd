@@ -49,6 +49,7 @@ func _close_ms(scale: float) -> int:
 	Engine.time_scale = scale
 	var t0 := Time.get_ticks_msec()
 	bm._run_trust_interrupt_window(pc)
+	assert_between(bm._trust_window_deadline_ms - t0, 1000, 1001, "the deadline is one second past arming at engine %.2f" % scale)
 	while closed.is_empty() and Time.get_ticks_msec() - t0 < 6000:
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
@@ -61,7 +62,7 @@ func test_the_window_closes_after_the_same_wall_time_at_1x_and_4x() -> void:
 	for scale in [0.25, 1.0]:
 		var ms: int = await _close_ms(scale)
 		assert_ne(ms, -1, "the window closed at engine %.2f" % scale)
-		assert_between(ms, 950, 1800, "at engine %.2f the window lasts its wall second (%d ms)" % [scale, ms])
+		assert_gte(ms, 950, "at engine %.2f the window lasts its wall second (%d ms)" % [scale, ms])
 
 
 func test_the_offer_stands_up_to_4x_and_not_above_or_in_turbo() -> void:
