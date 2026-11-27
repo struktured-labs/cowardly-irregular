@@ -235,6 +235,15 @@ func _setup_npcs() -> void:
 	])
 	shopkeeper.npc_id = "last_shopkeeper_w6"
 	npcs.add_child(shopkeeper)
+
+	# The Traveler, by the way out toward the Calibrant: gives world6_before_she_left once the Shopkeeper's quest is done
+	var traveler = _create_npc("The Traveler", "mysterious", Vector2(14 * TILE_SIZE, 13 * TILE_SIZE), [
+		"I've walked through every world you have. After you, mostly.",
+		"Walking is always still available. That's been the whole problem."
+	])
+	traveler.sprite_archetype = "traveler"  # draws her own traveler sheet in each world; plain "mysterious" is the hooded figure
+	traveler.npc_id = "traveler_w6"
+	npcs.add_child(traveler)
 	_place_masterites()
 
 

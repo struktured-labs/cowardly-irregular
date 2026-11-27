@@ -184,6 +184,9 @@ func _build_ui() -> void:
 	var badge_row_h: float = _grew(40.0) * badge_rows
 	var badge_header_h := _grew(20.0) if all_badges.size() > 0 else 0.0
 	var advice: String = _interrupt_advice(str(AutogrindSystem.last_interrupt_rule))
+	## A meta-boss that wiped the party speaks here instead: it is why the session stopped.
+	if str(_stats.get("meta_boss_last_word", "")) != "":
+		advice = str(_stats["meta_boss_last_word"])
 	## Header is 68 px bare, 86 with the advice line; every stats offset derives from it so the panel cannot overflow.
 	## Derived from the WRAPPED height, against the NARROW panel width -- 520 is the worst case and
 	## panel_w only ever widens below, so over-reserving is the safe direction and overlap is not.

@@ -16,7 +16,6 @@ const AUTHORED_AHEAD := {
 	"memory_leak_district": "W5 — no village placement yet",
 	"madame_orrery_w5": "W5 — no village placement yet",
 	"race_condition_pair": "W5 — no village placement yet",
-	"traveler_w6": "W6 — no village placement yet",
 	"madame_orrery_w6": "W6 — no village placement yet",
 }
 
