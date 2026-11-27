@@ -15,6 +15,7 @@ var _guard = null
 var _saved_persist := false
 var _profiles: Dictionary = {}
 var _saved_enabled: Dictionary = {}
+var _saved_unlock := false
 
 
 func before_each() -> void:
@@ -26,10 +27,14 @@ func before_each() -> void:
 	## Established, not just snapshotted: an earlier arm's member left on would act at its first turn and skip the open one.
 	_saved_enabled = AutobattleSystem.autobattle_enabled.duplicate(true)
 	AutobattleSystem.autobattle_enabled = {}
+	## Every member editable, so the editor's own member switch can reach one whose turn is not open.
+	_saved_unlock = GameState.debug_all_pcs_unlocked
+	GameState.debug_all_pcs_unlocked = true
 
 
 func after_each() -> void:
 	AutobattleSystem.autobattle_enabled = _saved_enabled
+	GameState.debug_all_pcs_unlocked = _saved_unlock
 	ABProfiles.restore(AutobattleSystem, _profiles)
 	AutobattleSystem._test_disable_persistence = _saved_persist
 	if _guard != null:
@@ -75,8 +80,9 @@ func _toggle_event() -> InputEvent:
 	return null
 
 
-## Opens the editor through GameLoop, presses Select `presses` times inside it, closes it through GameLoop, then watches.
-func _run(presses: int, already_auto: bool) -> Dictionary:
+## Opens the editor through GameLoop, optionally switches it to the next member (its D-pad handler), presses Select `presses`
+## times inside it, closes it through GameLoop, then watches.
+func _run(presses: int, already_auto: bool, other_member: bool = false) -> Dictionary:
 	var scene: Node = await _open_turn()
 	var who: Combatant = BattleManager.current_combatant
 	if already_auto:
@@ -90,6 +96,7 @@ func _run(presses: int, already_auto: bool) -> Dictionary:
 	autofree(gl)
 	gl.current_scene = scene
 	gl.current_state = gl.LoopState.BATTLE
+	gl.party.assign(BattleManager.player_party)
 	gl._toggle_autobattle_editor()
 	var ed: Control = gl._autobattle_editor
 	assert_not_null(ed, "FLOOR: GameLoop opened the editor")
@@ -98,13 +105,17 @@ func _run(presses: int, already_auto: bool) -> Dictionary:
 	add_child(layer)
 	await _frames(2)
 	assert_eq(str(ed.get("character_id")), _id(who), "PRECONDITION: the editor opened on the member whose turn is open")
+	if other_member:
+		ed._cycle_character(1)
+		assert_ne(str(ed.get("character_id")), _id(who), "PRECONDITION: the editor switched to another member")
+	var edited: String = str(ed.get("character_id"))
 	var ev := _toggle_event()
 	assert_not_null(ev, "FLOOR: battle_toggle_auto has a pad binding")
 	for i in presses:
 		ed._input(ev)
 	var on_after: bool = AutobattleSystem.is_autobattle_enabled(_id(who))
 	gl._toggle_autobattle_editor()
-	var out := {"who": _id(who), "auto": on_after, "editor_gone": gl._autobattle_editor == null, "turn_left": false, "ms": 0, "watchdog": 0}
+	var out := {"who": _id(who), "edited": edited, "edited_auto": AutobattleSystem.is_autobattle_enabled(edited), "auto": on_after, "editor_gone": gl._autobattle_editor == null, "turn_left": false, "ms": 0, "watchdog": 0}
 	var t0 := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - t0 < WAIT_MS:
 		out["watchdog"] = maxi(out["watchdog"], scene._menu_wd_retries)
@@ -143,3 +154,11 @@ func test_control_a_member_already_on_is_not_run_by_the_close() -> void:
 	var r: Dictionary = await _run(0, true)
 	assert_true(r["auto"], "PRECONDITION: the member was already on")
 	assert_false(r["turn_left"], "the close does not run a turn whose autobattle it did not turn on")
+
+
+## CONTROL (main 28307): Select turns ON a DIFFERENT member than the one whose turn is open, so the close leaves that turn alone.
+func test_control_turning_on_another_member_leaves_the_open_turn_alone() -> void:
+	var r: Dictionary = await _run(1, false, true)
+	assert_true(r["edited_auto"], "PRECONDITION: Select turned the other member (%s) on" % r["edited"])
+	assert_false(r["auto"], "PRECONDITION: the open turn's member (%s) is still manual" % r["who"])
+	assert_false(r["turn_left"], "the close does not run a turn whose member it did not turn on")
