@@ -65,8 +65,10 @@ func _on_failed(mode: String, reason: String) -> void:
 	_failures.append("%s/%s" % [mode, reason])
 
 
+## Writes into the dict of the arm that asked: a request a teardown resolves late must not answer the next arm.
 func _ask(key: String, opts: Dictionary) -> void:
-	_results[key] = await _svc.complete_json("prompt " + key, SCHEMA, FALLBACK, opts)
+	var into: Dictionary = _results
+	into[key] = await _svc.complete_json("prompt " + key, SCHEMA, FALLBACK, opts)
 
 
 func _frames_until(cond: Callable, max_ms: int = 2000) -> int:
@@ -110,6 +112,7 @@ func test_a_request_cancelled_while_queued_is_never_sent() -> void:
 	var token := {"cancelled": false}
 	_ask("b", {_svc.CANCEL_TOKEN: token})
 	await get_tree().process_frame
+	assert_false(_results.has("b"), "PRECONDITION: the queued request is still waiting")
 	token["cancelled"] = true
 	await _frames_until(func() -> bool: return _results.has("b"))
 	assert_eq(_results.get("b"), FALLBACK, "the queued caller is answered with the fallback")
