@@ -6,7 +6,7 @@ extends GutTest
 const SCENE := preload("res://src/battle/BattleScene.tscn")
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
-const CAP_MS := 60000
+const CAP_MS := 30000
 
 var _guard = null
 var _saved_constants: Dictionary = {}
@@ -43,7 +43,7 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
-## Returns {ended, won, low_hp, defeat, low_hp_panel, defeat_panel, ms}.
+## Returns {ended, won, low_hp, defeat, low_hp_panel, defeat_panel, ms, watchdog}.
 func _fight(turbo: bool, speed_index: int) -> Dictionary:
 	var scene = SCENE.instantiate()
 	scene.encounter_enemies = ["cave_rat_king"]
@@ -67,14 +67,15 @@ func _fight(turbo: bool, speed_index: int) -> Dictionary:
 			foe.current_hp = int(foe.max_hp * 0.35)
 	var ids: Array = []
 	for member in scene.party_members:
-		var id: String = member.combatant_name.to_lower().replace(" ", "_")
-		ids.append(id)
-		AutobattleSystem.set_autobattle_enabled(id, true)
-	var out := {"ended": false, "won": false, "low_hp": false, "defeat": false, "low_hp_panel": false, "defeat_panel": false, "ms": 0}
+		ids.append(member.combatant_name.to_lower().replace(" ", "_"))
+	## The player's own Select/F6 path: it also runs the hero whose menu is already open (a raw enable left that turn to the menu watchdog).
+	scene._enable_all_autobattle()
+	var out := {"ended": false, "won": false, "low_hp": false, "defeat": false, "low_hp_panel": false, "defeat_panel": false, "ms": 0, "watchdog": 0}
 	var t0: int = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - t0 < CAP_MS and is_instance_valid(scene) and not scene._battle_ended:
 		if scene._boss_low_hp_spoken and scene._battle_dialogue.visible:
 			out["low_hp_panel"] = true
+		out["watchdog"] = maxi(out["watchdog"], scene._menu_wd_retries)
 		await get_tree().process_frame
 	out["ms"] = Time.get_ticks_msec() - t0
 	if is_instance_valid(scene):
@@ -100,6 +101,7 @@ func _judge(r: Dictionary, label: String) -> void:
 	assert_true(r["ended"], "@%s: the autobattle fight never ended with the boss's panel up (%d ms)" % [label, r["ms"]])
 	assert_true(r["won"], "@%s: the fight ended without the Rat King down" % label)
 	assert_true(r["defeat"], "CONTROL @%s: the defeat line was staged" % label)
+	assert_eq(r["watchdog"], 0, "CONTROL @%s: no turn waited on the menu watchdog, so the time measured is the fight's own" % label)
 
 
 func test_a_turbo_autobattle_fight_ends_with_the_boss_panel_open() -> void:
