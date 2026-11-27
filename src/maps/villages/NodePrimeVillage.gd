@@ -304,6 +304,14 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(archivist)
 
+	# The Race Condition, two processes at the coolant junction they share: gives world5_mutual_exclusion after chapter 2
+	var pair = _create_npc("The Race Condition", "villager", Vector2(17 * TILE_SIZE, 13 * TILE_SIZE), [
+		"First: We both reached for the junction at the same instant.",
+		"Second: We both reached for the junction at the same instant. We have been reaching ever since."
+	])
+	pair.npc_id = "race_condition_pair"
+	npcs.add_child(pair)
+
 	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
 	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
 	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
