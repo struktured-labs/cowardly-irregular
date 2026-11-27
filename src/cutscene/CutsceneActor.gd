@@ -54,6 +54,7 @@ var _walk_tween: Tween = null
 var _walk_target: Vector2 = Vector2.INF
 var _emote_label: Label = null
 var _bubble: Control = null
+var _bubble_left: float = 0.0
 var _shake_tween: Tween = null
 
 
@@ -144,6 +145,10 @@ func _apply_frame() -> void:
 
 
 func _process(delta: float) -> void:
+	if _bubble_left > 0.0:
+		_bubble_left -= CutsceneDirector.beat_step(delta)
+		if _bubble_left <= 0.0:
+			clear_bubble()
 	if not _walking:
 		return
 	_anim_time += delta
@@ -284,16 +289,16 @@ func say(text: String, duration: float = 1.5) -> void:
 	var head_y := -float(_frame_px) * scale.y * 0.5 - 8.0
 	panel.position = Vector2(-panel.size.x * 0.5, head_y - panel.size.y)
 	_bubble = panel
+	## Counted in _process through beat_step, not a tween: a tween takes a whole hitch in one step and the line vanishes unread.
 	if duration > 0.0 and is_inside_tree():
-		var tween := create_tween()
-		tween.tween_interval(duration)
-		tween.tween_callback(clear_bubble)
+		_bubble_left = duration
 
 
 func clear_bubble() -> void:
 	if _bubble and is_instance_valid(_bubble):
 		_bubble.queue_free()
 	_bubble = null
+	_bubble_left = 0.0
 
 
 ## CT-style shudder — fear, cold, laughter. Jitters the SPRITE's offset, never `position`, so a walk in flight is not fought; self-clears. Instant no-op off-tree.

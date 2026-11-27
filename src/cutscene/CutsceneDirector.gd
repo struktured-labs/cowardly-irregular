@@ -728,6 +728,13 @@ func _step_fade_from_black(step: Dictionary) -> void:
 
 ## Held confirm runs the scene's holds this many times faster — the same hold that fast-forwards the dialogue box, so "hold A" means one thing across a scene.
 const FAST_FORWARD_RATE: float = 4.0
+## A beat counts at most this much of one frame, so a load hitch cannot end a pause or a speech bubble on its first tick.
+const MAX_BEAT_STEP_SEC: float = 0.25
+
+
+static func beat_step(delta: float) -> float:
+	return minf(delta, MAX_BEAT_STEP_SEC)
+
 
 
 ## A tween-driven hold with the same contract as _sleep: a skip cuts it the same frame (caller snaps the end state), a held confirm runs it FAST_FORWARD_RATE faster. The fades, flash and shakes were the last holds that ignored both.
@@ -751,7 +758,7 @@ func _sleep(duration: float, on_tick: Callable = Callable()) -> void:
 		var rate: float = FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0
 		if on_tick.is_valid():
 			on_tick.call(rate)
-		elapsed += get_process_delta_time() * rate
+		elapsed += beat_step(get_process_delta_time()) * rate
 
 
 func _step_wait(step: Dictionary) -> void:
