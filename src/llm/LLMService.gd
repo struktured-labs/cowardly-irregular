@@ -37,6 +37,8 @@ const QUEUE_CAP:          int    = 16    # Max queued (waiting) requests.
 const OUTLIVES_SCENE_CHANGE := "outlives_scene_change"
 ## A JSON request with this opt goes out in plain JSON mode, with no schema: measured, the Rule Composer reads 12/12 that way and 10/12 under any schema.
 const PLAIN_JSON := "plain_json"
+## opts key: a Dictionary the caller shares; setting its "cancelled" true abandons the request like a timeout, so a dismissed screen does not keep the single queue busy.
+const CANCEL_TOKEN := "cancel_token"
 const CACHE_TTL_SECONDS:  float  = 300.0 # 5-minute TTL on cached responses.
 const MAX_TEXT_CHARS:     int    = 2000  # Hard cap on free-text responses.
 const MAX_CHOICE_TOKENS:  int    = 120   # Guard for choice-string length.
@@ -582,6 +584,9 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 		# No client guard — fall back to legacy unbounded poll.
 		while _pending_boxes.has(id) and not _pending_boxes[id][0]:
 			await get_tree().process_frame
+			if _token_cancelled(opts) and _pending_boxes.has(id) and not _pending_boxes[id][0]:
+				_abandon(id, opts, "")
+				return
 		return
 
 	# Wave F B4 fix — use wall-clock ticks instead of get_process_delta_time().
@@ -593,6 +598,9 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 	while _pending_boxes.has(id) and not _pending_boxes[id][0]:
 		await get_tree().process_frame
 		var elapsed: float = float(Time.get_ticks_msec() - t0_msec) / 1000.0
+		if _token_cancelled(opts) and _pending_boxes.has(id) and not _pending_boxes[id][0]:
+			_abandon(id, opts, "")
+			return
 		if elapsed >= timeout and _pending_boxes.has(id) and not _pending_boxes[id][0]:
 			# Client timeout. Resolve the box with null so the awaiting
 			# caller's fallback path fires immediately. Mark the id
@@ -605,32 +613,43 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 			#       cleanly without re-resolving the box.
 			# The _pending_boxes entry is erased here so the orphan can't
 			# accidentally resolve into a re-used dict key later.
-			_cancelled_ids[id] = true
-			_resolve_box(id, null)
-			_pending_boxes.erase(id)
-			if _inflight_id == id:
-				_inflight_id = ""
-			# R6 (no orphan requests): now that _inflight_id no longer points at
-			# this id, ask the backend to abort the still-running HTTPRequest so
-			# the node doesn't linger until the server (or the 30s HTTPRequest
-			# timeout) replies. HTTPBackend.cancel(id) frees the HTTPRequest and
-			# emits request_finished(id, ...) — possibly SYNCHRONOUSLY. That is
-			# safe, and MEASURED which defence carries it (see
-			# test_a_late_reply_cannot_overwrite_the_fallback):
-			#   - LOAD-BEARING: _pending_boxes.erase(id) above. Remove it and the
-			#     sync emit revives the request — that arm reds.
-			#   - BELT AND BRACES: clearing _inflight_id before this call makes the
-			#     stale-id guard hold too. Moving it AFTER the cancel reds nothing,
-			#     so do not treat the ordering as the protection; the erase is.
-			# This is independent of the cancel_all() path: _draining stays false
-			# here, but the stale-id guard alone makes the sync emit harmless.
-			if _active_backend != null and _active_backend.has_method("cancel"):
-				_active_backend.cancel(id)
-			var mode_label: String = MODE_JSON if opts.get("json_mode", false) else MODE_TEXT
-			inference_failed.emit(mode_label, "client_timeout")
-			# Kick the queue so any pending request runs immediately.
-			_process_queue()
+			_abandon(id, opts, "client_timeout")
 			return
+
+
+## Shared by the client timeout and a caller's cancel token: resolve the caller with null, free the queue, abort the backend. A cancel passes "" and reports no failure.
+func _abandon(id: String, opts: Dictionary, reason: String) -> void:
+	_cancelled_ids[id] = true
+	_resolve_box(id, null)
+	_pending_boxes.erase(id)
+	if _inflight_id == id:
+		_inflight_id = ""
+	# R6 (no orphan requests): now that _inflight_id no longer points at
+	# this id, ask the backend to abort the still-running HTTPRequest so
+	# the node doesn't linger until the server (or the 30s HTTPRequest
+	# timeout) replies. HTTPBackend.cancel(id) frees the HTTPRequest and
+	# emits request_finished(id, ...) — possibly SYNCHRONOUSLY. That is
+	# safe, and MEASURED which defence carries it (see
+	# test_a_late_reply_cannot_overwrite_the_fallback):
+	#   - LOAD-BEARING: _pending_boxes.erase(id) above. Remove it and the
+	#     sync emit revives the request — that arm reds.
+	#   - BELT AND BRACES: clearing _inflight_id before this call makes the
+	#     stale-id guard hold too. Moving it AFTER the cancel reds nothing,
+	#     so do not treat the ordering as the protection; the erase is.
+	# This is independent of the cancel_all() path: _draining stays false
+	# here, but the stale-id guard alone makes the sync emit harmless.
+	if _active_backend != null and _active_backend.has_method("cancel"):
+		_active_backend.cancel(id)
+	if reason != "":
+		var mode_label: String = MODE_JSON if opts.get("json_mode", false) else MODE_TEXT
+		inference_failed.emit(mode_label, reason)
+	# Kick the queue so any pending request runs immediately.
+	_process_queue()
+
+
+static func _token_cancelled(opts: Dictionary) -> bool:
+	var t: Variant = opts.get(CANCEL_TOKEN)
+	return t is Dictionary and bool((t as Dictionary).get("cancelled", false))
 
 
 func _resolve_box(id: String, value: Variant) -> void:

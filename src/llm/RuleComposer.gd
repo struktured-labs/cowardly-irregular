@@ -57,7 +57,7 @@ func has_llm() -> bool:
 ## build + LLMService.complete_json call, second-pass parse, and every
 ## fallback branch. Every branch emits composition_ready; failure branches
 ## additionally emit composition_failed(reason, details) first.
-func compose_async(domain: String, prompt_text: String, character_id: String = "", current_rules: Array = []) -> Dictionary:
+func compose_async(domain: String, prompt_text: String, character_id: String = "", current_rules: Array = [], cancel_token: Dictionary = {}) -> Dictionary:
 	if not domain in _VALID_DOMAINS:
 		var err = _empty_result(domain, character_id, "fallback")
 		err["errors"] = ["invalid domain: '%s'" % domain]
@@ -99,7 +99,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	var svc = get_node_or_null("/root/LLMService")
 	## Plain JSON mode: under a schema llama3 wrote rules_json as one object, or fewer rules than the ask named.
 	var raw: Variant = await svc.complete_json(prompt, DialoguePromptsScript.SCHEMA_RULE_COMPOSITION, DialoguePromptsScript.FALLBACK_RULE_COMPOSITION,
-		{svc.PLAIN_JSON: true})
+		{svc.PLAIN_JSON: true, svc.CANCEL_TOKEN: cancel_token})
 
 	var reply: Dictionary = raw if typeof(raw) == TYPE_DICTIONARY else DialoguePromptsScript.FALLBACK_RULE_COMPOSITION.duplicate(true)
 
