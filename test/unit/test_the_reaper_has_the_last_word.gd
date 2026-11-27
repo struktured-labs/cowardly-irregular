@@ -4,17 +4,21 @@ extends GutTest
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const SUMMARY := "res://src/ui/autogrind/AutogrindSummary.gd"
 const CONTROLLER := "res://src/autogrind/AutogrindController.gd"
+const SettingsMenuScript = preload("res://src/ui/SettingsMenu.gd")
 
 var _ag: Dictionary
+var _scale_was: float = 1.0
 
 
 func before_each() -> void:
 	_ag = AutogrindState.snapshot()
+	_scale_was = float(GameState.text_size_scale)
 	AutogrindSystem._test_disable_persistence = true
 	AutobattleSystem._test_disable_persistence = true
 
 
 func after_each() -> void:
+	GameState.text_size_scale = _scale_was
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test teardown")
 	AutogrindState.restore(_ag)
@@ -83,3 +87,57 @@ func test_an_ordinary_stop_shows_no_last_word() -> void:
 	await wait_frames(3)
 	for t in _texts(s, []):
 		assert_false(str(t).begins_with("Permadeath Reaper:") or str(t).begins_with("Adaptive Slime:"), "no meta-boss speaks on an ordinary stop: '%s'" % t)
+
+
+func _labels(n: Node, acc: Array) -> Array:
+	if n is Label and n.visible and str(n.text).strip_edges() != "":
+		acc.append(n)
+	for c in n.get_children():
+		_labels(c, acc)
+	return acc
+
+
+## The DRAWN rect: a wrapping Label's size is a minimum, so height comes from the lines it draws.
+func _rect(l: Label) -> Rect2:
+	return Rect2(l.position, Vector2(l.size.x, float(l.get_line_count() * l.get_line_height())))
+
+
+## main 28275 / adhoc 28277: each signed wipe line, derived from the built rows, at EVERY Text Size: shown, inside its panel, over no other label.
+func test_every_wipe_line_fits_the_summary_at_every_text_size() -> void:
+	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var lines: Array = []
+	for id in monsters:
+		if monsters[id] is Dictionary and bool(monsters[id].get("autogrind_spawned", false)):
+			var line: String = load(CONTROLLER).meta_boss_wipe_line(_built(str(id)))
+			if line != "":
+				lines.append(line)
+	assert_gt(lines.size(), 1, "CONTROL: the signed wipe lines were derived from the built rows")
+	var presets: Array = SettingsMenuScript.TEXT_SIZE_PRESETS
+	assert_gt(presets.size(), 3, "CONTROL: the Text Size ladder was read")
+	var tightest := INF
+	for line in lines:
+		for scale in presets:
+			GameState.text_size_scale = float(scale)
+			var s: Node = load(SUMMARY).new()
+			add_child_autofree(s)
+			s.setup({"battles_won": 7, "total_exp": 120, "elapsed_seconds": 90.0, "meta_boss_last_word": line}, "Defeated by meta-boss")
+			await wait_frames(3)
+			var mine: Label = null
+			for l in _labels(s, []):
+				if str(l.text) == line:
+					mine = l
+			assert_not_null(mine, "@%sx: '%s' is on the Summary" % [scale, line])
+			if mine == null:
+				continue
+			var r := _rect(mine)
+			var panel := mine.get_parent() as Control
+			assert_true(r.position.x >= 0.0 and r.end.x <= panel.size.x and r.end.y <= panel.size.y, "@%sx: '%s' stays inside its panel" % [scale, line])
+			for other in _labels(panel, []):
+				if other == mine or other.get_parent() != panel:
+					continue
+				var o := _rect(other)
+				assert_false(r.intersects(o), "@%sx: '%s' is drawn over '%s'" % [scale, line, str(other.text).substr(0, 30)])
+				if o.position.y >= r.end.y:
+					tightest = minf(tightest, o.position.y - r.end.y)
+	gut.p("wipe line: tightest gap to the row below = %.1f px" % tightest)
+	assert_true(tightest < INF, "CONTROL: a row below the wipe line was measured")
