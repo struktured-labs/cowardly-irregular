@@ -59,9 +59,12 @@ esac
 
 check_templates
 cd "$REPO"
-AUTHORED="$(find test/unit -name 'test_*.gd' | wc -l)"
-if [ "$AUTHORED" -lt 1000 ]; then
-  echo "make.sh: only $AUTHORED test files under test/unit — wrong directory or a broken checkout" >&2
+AUTHORED_FILES="$(find test/unit -name 'test_*.gd' | wc -l)"
+# GUT runs each inner `class Test* extends GutTest` as its own script, so Totals' Scripts counts them too.
+INNER="$({ /usr/bin/grep -rhcE --include='test_*.gd' '^class Test[A-Za-z0-9_]* extends (GutTest|"res://addons/gut/test.gd")' test/unit || true; } | awk '{s+=$1} END {print s+0}')"
+AUTHORED=$((AUTHORED_FILES + INNER))
+if [ "$AUTHORED_FILES" -lt 1000 ]; then
+  echo "make.sh: only $AUTHORED_FILES test files under test/unit — wrong directory or a broken checkout" >&2
   exit 1
 fi
 mkdir -p tmp
@@ -70,4 +73,4 @@ for f in chain gate rungate wedgewatch; do
   chmod +x "tmp/$f$ARG.sh"
   bash -n "tmp/$f$ARG.sh"
 done
-echo "make.sh: wrote tmp/chain$ARG.sh tmp/gate$ARG.sh tmp/rungate$ARG.sh tmp/wedgewatch$ARG.sh (authored: $AUTHORED)"
+echo "make.sh: wrote tmp/chain$ARG.sh tmp/gate$ARG.sh tmp/rungate$ARG.sh tmp/wedgewatch$ARG.sh (authored: $AUTHORED = $AUTHORED_FILES files + $INNER inner Test classes)"
