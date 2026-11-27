@@ -92,6 +92,8 @@ func _ring(scale: float, spec: Dictionary, selected: int) -> Control:
 
 var _ring_font: Font = null
 var _closest := INF
+var _edge := INF
+var _edge_at := ""
 
 
 func _font() -> Font:
@@ -114,6 +116,10 @@ func _judge(tag: String, r: Control, truncs: Array) -> Array:
 		rects.append(lr)
 		if absf(lr.size.y - _font().get_height(TextScale.scaled(10))) > 0.5:
 			bad.append("%s slot %d drawn %.0f tall, the Text Size asks %.0f" % [tag, i, lr.size.y, _font().get_height(TextScale.scaled(10))])
+		var m := minf(minf(lr.position.x, VP.x - lr.end.x), minf(lr.position.y, VP.y - lr.end.y))
+		if m < _edge:
+			_edge = m
+			_edge_at = "%s slot %d '%s'" % [tag, i, str(page[i]["label"]).left(24)]
 		if not Rect2(Vector2.ZERO, VP).encloses(lr):
 			bad.append("%s slot %d '%s' at %s runs off the screen" % [tag, i, str(page[i]["label"]).left(20), lr])
 	for i in n:
@@ -211,6 +217,7 @@ func test_every_ring_page_fits_at_every_size() -> void:
 				bad.append_array(_judge("%.2fx %s p%d" % [float(scale), spec["title"], start / 10 + 1], r, truncs))
 	assert_gt(seen, 10, "PRECONDITION: every ring page at every preset was judged")
 	gut.p("RING truncations (%d): %s" % [truncs.size(), truncs])
+	gut.p("RING smallest screen margin of any outer label: %.1f px (%s)" % [_edge, _edge_at])
 	gut.p("RING closest outer pair: %.1f px apart · ring font is the engine fallback: %s" % [_closest, str(_font() == ThemeDB.fallback_font)])
 	assert_eq(bad, [], "the ring fits at every Text Size: %s" % [bad])
 
