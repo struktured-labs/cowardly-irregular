@@ -1320,7 +1320,6 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		elif _is_on_action_cell():
 			_cycle_action_profile(1)
-			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_MINUS, KEY_KP_SUBTRACT]:
@@ -1329,7 +1328,6 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		elif _is_on_action_cell():
 			_cycle_action_profile(-1)
-			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	# Start/Escape/Enter - Save and exit
@@ -1473,7 +1471,6 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 		SoundManager.play_ui("menu_move")
 	elif _is_on_action_cell():
 		_cycle_action_profile(delta)
-		SoundManager.play_ui("menu_move")
 	return true
 
 
@@ -1592,6 +1589,10 @@ func _cycle_action_character() -> void:
 
 	var action = actions[action_idx]
 	if action.get("type") != "switch_profile":
+		_refuse_action_cycle("Stop Grinding has no character to change.")
+		return
+	if known_characters.size() <= 1:
+		_refuse_action_cycle("There is only one character to switch.")
 		return
 
 	var char_id = action.get("character_id", "hero")
@@ -1605,21 +1606,24 @@ func _cycle_action_character() -> void:
 	_refresh_grid()
 
 
-func _cycle_action_profile(direction: int) -> void:
+## The verb owns its sound: menu_move when the profile changed, menu_error and the reason when nothing could.
+func _cycle_action_profile(direction: int) -> bool:
 	"""Cycle the profile index on an action cell (-/= keys)"""
 	var rule = rules[cursor_row]
 	var actions = rule.get("actions", [])
 	var action_idx = _get_current_action_index()
 	if action_idx < 0 or action_idx >= actions.size():
-		return
+		return false
 
 	var action = actions[action_idx]
 	if action.get("type") != "switch_profile":
-		return
+		return _refuse_action_cycle("Stop Grinding has no profile to change.")
 
 	var char_id = action.get("character_id", "hero")
 	var profile_idx = action.get("profile_index", 0)
 	var char_profiles = AutobattleSystem.get_character_profiles(char_id)
+	if char_profiles.size() <= 1:
+		return _refuse_action_cycle("%s has only one profile." % str(char_id).capitalize())
 
 	profile_idx = (profile_idx + direction) % max(char_profiles.size(), 1)
 	if profile_idx < 0:
@@ -1627,7 +1631,15 @@ func _cycle_action_profile(direction: int) -> void:
 
 	action["profile_index"] = profile_idx
 	_refresh_grid()
+	SoundManager.play_ui("menu_move")
+	return true
 
+
+## An action-cell press that cannot change anything: heard as menu_error and explained in the status line.
+func _refuse_action_cycle(why: String) -> bool:
+	SoundManager.play_ui("menu_error")
+	_flash_status(why)
+	return false
 
 ## ═══════════════════════════════════════════════════════════════════════
 ## STRUCTURAL EDITS
