@@ -182,7 +182,7 @@ ${named}"
     #     PARSE, so a claim of N scripts against a tree holding M is the vacuous-corpus bug
     #     arriving by a different road. Same expression gate.sh uses.
     local ondisk
-    ondisk="$(ls test/unit/test_*.gd 2>/dev/null | wc -l)"
+    ondisk="$("$(dirname "${BASH_SOURCE[0]}")"/authored_scripts.sh test/unit)"
     [ "$gscripts" -eq "$ondisk" ] \
         || run "the ${tag} marker covers ${gscripts} scripts but ${ondisk} test files are on disk — the evidence does not cover this corpus"
 
