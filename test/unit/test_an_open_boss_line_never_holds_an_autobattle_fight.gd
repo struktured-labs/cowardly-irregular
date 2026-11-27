@@ -50,7 +50,7 @@ func _fight(turbo: bool, speed_index: int) -> Dictionary:
 	add_child_autofree(scene)
 	await _frames(3)
 	if scene._waiting_for_dialogue:
-		scene._battle_dialogue.dialogue_finished.emit()
+		scene._battle_dialogue.dismiss()
 		await _frames(3)
 	scene.turbo_mode = turbo
 	if speed_index >= 0:
