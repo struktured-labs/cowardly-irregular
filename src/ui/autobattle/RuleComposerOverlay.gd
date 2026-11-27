@@ -44,6 +44,8 @@ var _previewing: bool = false
 var _current_rules: Array = []
 var _last_composition: Dictionary = {}
 var _busy: bool = false
+## Shared with LLMService for the compose in flight; Cancel and leaving the tree set it, so a dismissed composer stops holding the one-at-a-time queue.
+var _compose_token: Dictionary = {}
 
 var _prompt_field: LineEdit = null
 var _status_label: Label = null
@@ -288,8 +290,13 @@ func get_character_id() -> String:
 
 
 func cancel() -> void:
+	_compose_token["cancelled"] = true
 	hide()
 	cancelled.emit()
+
+
+func _exit_tree() -> void:
+	_compose_token["cancelled"] = true
 
 
 func compose(prompt_text: String) -> void:
@@ -301,9 +308,13 @@ func compose(prompt_text: String) -> void:
 		return
 	_busy = true
 	_set_thinking(true)
-	var result: Dictionary = await rc.compose_async(_domain, prompt_text, _character_id, _current_rules)
+	var token: Dictionary = {"cancelled": false}
+	_compose_token = token
+	var result: Dictionary = await rc.compose_async(_domain, prompt_text, _character_id, _current_rules, token)
 	_busy = false
 	_set_thinking(false)
+	if bool(token.get("cancelled", false)):
+		return
 	_last_composition = result
 	var errors = result.get("errors", [])
 	if not errors is Array:
