@@ -126,6 +126,8 @@ var _last_player_line: String = ""   # Most-recent player choice; threaded into 
 var _npc_dialogue:   Node   = null   # NPCDialogue instance (lazy-init).
 var _choice_menu:    DialogueChoiceMenu = null
 var _active:         bool   = false
+## Shared with LLMService for the request this conversation is waiting on; abort() cancels it.
+var _llm_token:      Dictionary = {}
 ## R2 — the player node frozen by run(), tracked so abort() can restore
 ## movement even when called from outside the run() coroutine (e.g. a
 ## scene-change-triggered teardown). Cleared on normal completion.
@@ -319,6 +321,8 @@ func abort() -> void:
 	# beyond re-asserting the cleaned-up state.
 	_state = State.DONE
 	_active = false
+	## A thinking-cancel otherwise left the request holding LLMService's one slot until the 6 s timeout.
+	_llm_token["cancelled"] = true
 
 	# Hide the "thinking" indicator (idempotent on the NPCDialogue).
 	_set_thinking(false)
@@ -755,7 +759,8 @@ func _safe_complete_json(prompt: String, schema: Dictionary, fallback: Variant) 
 	var svc: Node = get_node_or_null("/root/LLMService")
 	if svc == null:
 		return fallback
-	var result: Variant = await svc.complete_json(prompt, schema, fallback)
+	_llm_token = {"cancelled": false}
+	var result: Variant = await svc.complete_json(prompt, schema, fallback, {svc.CANCEL_TOKEN: _llm_token})
 	return result
 
 

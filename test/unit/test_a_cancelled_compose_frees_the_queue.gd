@@ -157,3 +157,15 @@ func test_a_composer_freed_mid_compose_frees_the_queue() -> void:
 	var waited: int = await _frames_until(func() -> bool: return _svc._inflight_id == "")
 	assert_eq(_svc._inflight_id, "", "a composer that leaves the tree mid-compose lets the queue go")
 	assert_lt(waited, QUICK_MS, "at once (%d ms)" % waited)
+
+
+func test_an_npc_conversation_aborted_while_thinking_frees_the_queue() -> void:
+	var conv = preload("res://src/llm/DynamicConversation.gd").new()
+	add_child_autofree(conv)
+	conv._safe_complete_json("npc prompt", SCHEMA, FALLBACK)
+	await _frames_until(func() -> bool: return _svc._inflight_id != "")
+	assert_ne(_svc._inflight_id, "", "PRECONDITION: the NPC's request is in flight")
+	conv.abort()
+	var waited: int = await _frames_until(func() -> bool: return _svc._inflight_id == "")
+	assert_eq(_svc._inflight_id, "", "cancel on the NPC's thinking box lets the queue go")
+	assert_lt(waited, QUICK_MS, "at once (%d ms)" % waited)
