@@ -71,6 +71,8 @@ func _run(mid: String, with_job: bool = true) -> Dictionary:
 	var damage: int = 0
 	for _i in TURNS:
 		boss.current_mp = 99999
+		## Each turn starts at AP 0, as a real turn would, so no swing sits at the AP floor acting for free.
+		boss.current_ap = 0
 		var act: Dictionary = _bm._make_masterite_decision(boss, [boss], [hero], avail)
 		var before: int = hero.current_hp
 		if str(act.get("type", "")) == "ability":

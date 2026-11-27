@@ -58,6 +58,12 @@ func after_each() -> void:
 	randomize()
 
 
+## Each trial starts at AP 0, so hundreds of swings are paid actions and never sit at the AP floor acting for free.
+func _swing(bm, attacker: Combatant, target: Combatant) -> void:
+	attacker.current_ap = 0
+	bm._execute_attack(attacker, target)
+
+
 func _job(job_id: String) -> Dictionary:
 	var js = Engine.get_main_loop().root.get_node_or_null("JobSystem")
 	assert_not_null(js, "CONTROL: JobSystem autoload")
@@ -131,7 +137,7 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 	var one_landed := 0
 	for i in TRIALS:
 		var before: int = hits.size()
-		bm._execute_attack(rogue, target)
+		_swing(bm, rogue, target)
 		var n: int = hits.size() - before
 		per_attack.append(n)
 		if n == 2 and crits[before] != crits[before + 1]:
@@ -139,7 +145,7 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 	rogue.add_status("blind", 99)
 	for i in TRIALS:
 		var b: int = hits.size()
-		bm._execute_attack(rogue, target)
+		_swing(bm, rogue, target)
 		if hits.size() - b == 1:
 			one_landed += 1
 	bm.damage_dealt.disconnect(cb)
@@ -176,7 +182,7 @@ func _live_mean_per_attack(bm, attacker: Combatant, target: Combatant) -> float:
 			total[0] += int(amount)
 	bm.damage_dealt.connect(cb)
 	for i in TRIALS:
-		bm._execute_attack(attacker, target)
+		_swing(bm, attacker, target)
 	bm.damage_dealt.disconnect(cb)
 	return float(total[0]) / TRIALS
 
@@ -352,7 +358,7 @@ func test_live_a_stored_charge_carries_both_strikes() -> void:
 	bm.damage_dealt.connect(cb)
 	var attack := func() -> Array:
 		nums.clear()
-		bm._execute_attack(rogue, target)
+		_swing(bm, rogue, target)
 		return nums.duplicate()
 	_assert_whole_attack_charge("live", attack, rogue)
 	bm.damage_dealt.disconnect(cb)
@@ -368,3 +374,21 @@ func test_the_grind_a_stored_charge_carries_both_strikes() -> void:
 		res._resolve_attack(rogue, target)
 		return target.amounts.duplicate()
 	_assert_whole_attack_charge("grind", attack, rogue)
+
+
+func test_every_trial_swing_pays_its_ap() -> void:
+	var bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
+	assert_not_null(bm, "CONTROL: BattleManager autoload")
+	if bm == null:
+		return
+	var rogue := _make("Rogue", "rogue")
+	var target := _make("Dummy", "")
+	for i in 6:
+		bm._execute_attack(rogue, target)
+	assert_eq(rogue.current_ap, Combatant.AP_FLOOR, "CONTROL: unreset swings pin AP at the floor, where spend_ap refuses and the swing is free")
+	var paid := 0
+	for i in TRIALS:
+		_swing(bm, rogue, target)
+		if rogue.current_ap == -1:
+			paid += 1
+	assert_eq(paid, TRIALS, "every trial swing must pay its 1 AP, so the trials measure real actions and the gate log keeps its free-action warning for real ones")
