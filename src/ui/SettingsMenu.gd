@@ -285,8 +285,10 @@ func _build_ui() -> void:
 	# Cached on _scroll so _update_selection can auto-scroll to the selected row.
 	# Height is corrected after the footer is measured.
 	var scroll = ScrollContainer.new()
-	scroll.position = Vector2(0, title_bottom + 4.0)
-	scroll.size = Vector2(panel.size.x, maxf(40.0, panel.size.y - scroll.position.y - 48.0))
+	## Inset by the bevel: at x 0 the cursor's highlight painted over the panel's left border strip.
+	scroll.position = Vector2(RetroPanel.TILE_SIZE, title_bottom + 4.0)
+	scroll.size = Vector2(panel.size.x - 2.0 * RetroPanel.TILE_SIZE, maxf(40.0, panel.size.y - scroll.position.y - 48.0))
+	_desc_w = maxf(120.0, scroll.size.x - DESC_SCROLLBAR_RESERVE - 16.0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(scroll)
@@ -722,9 +724,49 @@ func _build_ui() -> void:
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)
 	var footer_rect := MenuChrome.place_footer(footer, panel.size, 12.0)
-	scroll.size = Vector2(panel.size.x, maxf(40.0, footer_rect.position.y - 6.0 - scroll.position.y))
+	scroll.size = Vector2(scroll.size.x, maxf(40.0, footer_rect.position.y - 6.0 - scroll.position.y))
 
+	_fit_rows_to_their_subtitles()
 	_update_selection()
+	## A rebuild in place (Test connection, the rebalance review closing) makes a fresh scroll at the top whose rows have
+	## no size yet, so the follow above is a no-op and the cursor sat off screen. Follow it again once they are laid out.
+	if is_inside_tree() and not get_tree().process_frame.is_connected(_follow_selection_after_layout):
+		get_tree().process_frame.connect(_follow_selection_after_layout, CONNECT_ONE_SHOT)
+
+
+## The build-time height is an estimate in another font (out of the tree a subtitle shapes 1 line where the tree gives 2),
+## so once the rows are in the tree each subtitle's REAL height moves what sits below it down, and never up.
+func _fit_rows_to_their_subtitles() -> void:
+	for it in _settings_items:
+		var row: Control = it.get("control")
+		if row == null or not row.is_inside_tree():
+			continue
+		var desc := row.get_node_or_null("Description") as Label
+		if desc == null:
+			continue
+		var h: float = desc.get_minimum_size().y
+		desc.size = Vector2(desc.size.x, h)
+		var bottom: float = desc.position.y + h
+		var grow := 0.0
+		var below := false
+		for c in row.get_children():
+			if c is Container:
+				below = true
+				var gap: float = DESC_TO_OPTIONS_GAP if str(c.name) == "OptionsContainer" else 2.0
+				grow = maxf(grow, bottom + gap - (c as Control).position.y)
+		if not below:
+			grow = maxf(0.0, bottom + 4.0 - row.custom_minimum_size.y)
+		if grow <= 0.0:
+			continue
+		for c in row.get_children():
+			if c is Container:
+				(c as Control).position.y += grow
+		row.custom_minimum_size.y += grow
+
+
+func _follow_selection_after_layout() -> void:
+	if is_inside_tree():
+		_update_selection()
 
 
 ## Padding inside an option chip, around the widest option string.
@@ -732,6 +774,45 @@ const CHIP_PAD_X := 14.0
 const CHIP_PAD_Y := 6.0
 ## Gap between the description's last line and the option row.
 const DESC_TO_OPTIONS_GAP := 6.0
+## Room the list's scrollbar takes from a row, so a wrapped description never runs under it.
+const DESC_SCROLLBAR_RESERVE := 8.0
+## The width a row's description wraps at, set by _build_ui from the list's width.
+var _desc_w: float = 744.0
+
+
+## How many lines `description` takes at the row's wrap width (a 968 px line ran out of a 760 px row at 150%).
+func _desc_lines(description: String) -> int:
+	var f: Font = _row_font()
+	var px: int = TextScale.scaled(10)
+	if f == null or description == "":
+		return 1
+	var flags := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	var h: float = f.get_multiline_string_size(description, HORIZONTAL_ALIGNMENT_LEFT, _desc_w, px, -1, flags).y
+	return maxi(1, roundi(h / maxf(1.0, f.get_height(px))))
+
+
+## Where the description's last line ends, so what sits below it follows the wrap.
+func _desc_bottom(description: String) -> float:
+	var n: int = _desc_lines(description)
+	var spacing: float = float(ThemeDB.get_default_theme().get_constant("line_spacing", "Label")) if ThemeDB.get_default_theme() else 3.0
+	return 22.0 * _row_k() + n * _line_h(TextScale.scaled(10)) + (n - 1) * spacing
+
+
+## The row's subtitle, wrapping at the row's width instead of running past its edge.
+func _make_desc(description: String, wrap_w: float = -1.0) -> Label:
+	var w: float = _desc_w if wrap_w <= 0.0 else wrap_w
+	## ORDER IS LOAD-BEARING: a Label's size only clamps UP, so font and wrap come before the text and the width, or the
+	## no-wrap minimum (the whole line, 968 px at 150%) is what the width gets clamped to (adhoc 28658).
+	var desc := Label.new()
+	desc.name = "Description"
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.text = description
+	desc.position = Vector2(8, 22.0 * _row_k())
+	desc.custom_minimum_size = Vector2(w, 0)
+	desc.size = Vector2(w, _desc_bottom(description) - desc.position.y)
+	return desc
 
 
 ## The font these rows actually draw with. Measured equal to a Label's own `get_theme_font("font")`
@@ -776,7 +857,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	## the container has to be created with its final minimum size.
 	var opt_fs: int = TextScale.scaled(10)
 	var chip: Vector2 = _chip_size(options, 40.0, 24.0, opt_fs)
-	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = _desc_bottom(description) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(80.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -804,13 +885,8 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
-	# Description
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	# Description (wraps at the row's width)
+	container.add_child(_make_desc(description))
 
 	# Options row
 	var options_container = HBoxContainer.new()
@@ -860,7 +936,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	for o in options:
 		shown.append(str(o) + "%")
 	var chip: Vector2 = _chip_size(shown, 50.0, 20.0, opt_fs)
-	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = _desc_bottom(description) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -881,13 +957,8 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
-	# Description
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	# Description (wraps at the row's width)
+	container.add_child(_make_desc(description))
 
 	# Options row
 	var options_container = HBoxContainer.new()
@@ -936,7 +1007,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	"""Create a smaller option selector setting control"""
 	var opt_fs: int = TextScale.scaled(10)
 	var chip: Vector2 = _chip_size(options, float(chip_w), 20.0, opt_fs)
-	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = _desc_bottom(description) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -957,13 +1028,8 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
-	# Description
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	# Description (wraps at the row's width)
+	container.add_child(_make_desc(description))
 
 	# Options row
 	var options_container = HBoxContainer.new()
@@ -1005,7 +1071,9 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	"""Create a toggle (on/off) setting control"""
 	var container = Control.new()
 	var k: float = _row_k()
-	container.custom_minimum_size = Vector2(400, 60.0 * k)
+	## The switches sit below the description's LAST line, and the row grows with them.
+	var toggle_y: float = maxf(40.0 * k, _desc_bottom(description) + 2.0)
+	container.custom_minimum_size = Vector2(400, maxf(60.0 * k, toggle_y + 20.0 * k))
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -1022,17 +1090,12 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
-	# Description
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	# Description (wraps at the row's width)
+	container.add_child(_make_desc(description))
 
 	# Toggle display
 	var toggle_container = HBoxContainer.new()
-	toggle_container.position = Vector2(8, 40.0 * k)
+	toggle_container.position = Vector2(8, toggle_y)
 	toggle_container.name = "ToggleContainer"
 	container.add_child(toggle_container)
 
@@ -1088,6 +1151,15 @@ func _action_hint_x(label_text: String, description: String) -> float:
 	return maxf(310.0, 8.0 + maxf(title_w, desc_w) + 12.0)
 
 
+## The hint where it always sat, unless that pushes it past the row; then at the row's end, and the subtitle wraps short of it.
+func _action_hint_x_in_row(label_text: String, description: String) -> float:
+	var f: Font = _row_font()
+	var hint_w: float = 40.0
+	if f != null:
+		hint_w = f.get_string_size("[%s]" % InputProfileManager.hint_for_action("ui_accept"), HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(10)).x
+	return minf(_action_hint_x(label_text, description), 8.0 + _desc_w - hint_w)
+
+
 func _create_action_button_neutral(label_text: String, description: String, index: int) -> Control:
 	"""Create a neutral action button (non-destructive, like Controls)"""
 	var container = Control.new()
@@ -1106,16 +1178,12 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 	label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	container.add_child(label)
 
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	var hint_x: float = _action_hint_x_in_row(label_text, description)
+	container.add_child(_make_desc(description, hint_x - 8.0 - 12.0))
 
 	var hint = Label.new()
 	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
-	hint.position = Vector2(_action_hint_x(label_text, description), 16.0 * _row_k())
+	hint.position = Vector2(hint_x, 16.0 * _row_k())
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
@@ -1144,18 +1212,14 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))  # Reddish for quit action
 	container.add_child(label)
 
-	# Description
-	var desc = Label.new()
-	desc.text = description
-	desc.position = Vector2(8, 22.0 * _row_k())
-	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
-	container.add_child(desc)
+	# Description (wraps short of the hint)
+	var hint_x: float = _action_hint_x_in_row(label_text, description)
+	container.add_child(_make_desc(description, hint_x - 8.0 - 12.0))
 
 	# Action hint — right-aligned with the title row, no vertical overlap
 	var hint = Label.new()
 	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
-	hint.position = Vector2(_action_hint_x(label_text, description), 16.0 * _row_k())
+	hint.position = Vector2(hint_x, 16.0 * _row_k())
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
