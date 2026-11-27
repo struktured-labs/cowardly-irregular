@@ -7337,6 +7337,9 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	# Forward to controller with headless-computed EXP + gold (tick 342:
 	# gold was previously dropped — empty items_gained dict meant the
 	# autogrind player got zero gold despite total_gold display).
+	## A headless fight never builds a console scene, so the meta-boss speaks into the feed around its row; read before on_battle_ended clears the data.
+	var boss_intro: Array = meta_boss_intro_lines(enemy_data)
+	var last_words: Array = meta_boss_defeat_lines(enemy_data) if victory else []
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		var items_gained: Dictionary = {"gold": gold_gained_headless}
 		for item_id in headless_item_drops:
@@ -7359,7 +7362,11 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 				summary_text += " [color=#ffcc44]+%d item%s[/color]" % [drop_count, "s" if drop_count > 1 else ""]
 		else:
 			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append_array(boss_intro)
 		_autogrind_battle_summaries.append(summary_text)
+		_autogrind_battle_summaries.append_array(last_words)
+		while _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
 		if _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
@@ -7496,10 +7503,33 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Replay recent battle summaries into the new console
 	for summary_line in _autogrind_battle_summaries:
 		battle_scene.autogrind_console_log(summary_line)
+	for line in meta_boss_intro_lines(enemy_data):
+		battle_scene.autogrind_console_log(line)
 
 	# Show current stats block
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
+
+## A meta-boss speaks its intro into the console feed: an unattended grind never opens a panel that waits for a press.
+static func meta_boss_intro_lines(enemy_data: Array) -> Array:
+	return _meta_boss_lines(enemy_data, "intro")
+
+
+## A beaten meta-boss's `defeat` lines, for the console feed after its Victory row.
+static func meta_boss_defeat_lines(enemy_data: Array) -> Array:
+	return _meta_boss_lines(enemy_data, "defeat")
+
+
+static func _meta_boss_lines(enemy_data: Array, key: String) -> Array:
+	var out: Array = []
+	for d in enemy_data:
+		if not (d is Dictionary) or not (bool(d.get("is_meta_boss", false)) or bool(d.get("is_collapse_boss", false))):
+			continue
+		var dlg: Variant = d.get("dialogue", {})
+		for l in ((dlg as Dictionary).get(key, []) if dlg is Dictionary else []):
+			out.append("[color=#ff88ff]%s:[/color] %s" % [str(d.get("name", "?")), str(l)])
+	return out
+
 
 func _on_autogrind_battle_ended(victory: bool) -> void:
 	"""Handle battle end during autogrind"""
@@ -7569,6 +7599,8 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 
 	# Per-character session EXP is recorded where it is paid, so the bar matches each wallet.
 
+	## on_battle_ended clears the meta-boss data, so its last words are read first.
+	var last_words: Array = meta_boss_defeat_lines([_autogrind_controller.get_current_meta_boss_data()]) if victory and _autogrind_controller and is_instance_valid(_autogrind_controller) else []
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
@@ -7589,6 +7621,10 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds)" % [stats.get("battles_won", 0), rounds]
 		_autogrind_battle_summaries.append(summary_text)
 		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+		for line in last_words:
+			_autogrind_battle_summaries.append(line)
+		while _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
 		# Check for new injuries and warn

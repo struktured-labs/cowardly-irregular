@@ -173,6 +173,8 @@ func test_a_boss_that_speaks_when_it_loses_speaks_when_it_wins() -> void:
 			continue
 		if not (_has_lines(row.get("dialogue", {}), "defeat") or _has_lines(dialogue.get(_persona(monsters, str(id)), {}), "victory_lines")):
 			continue
+		if bool(row.get("autogrind_spawned", false)):
+			continue  ## a grind wipe ends the session on the summary screen, so a meta-boss has no console left to gloat into
 		judged += 1
 		if _silent_end(monsters, dialogue, str(id)) != "":
 			mute.append("%s: %s" % [id, _silent_end(monsters, dialogue, str(id))])

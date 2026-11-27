@@ -408,6 +408,8 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		## Rare-encounter bonus (Hero Mimics 2.5x): BattleManager._get_battle_reward_multiplier reads this meta.
 		if data.has("reward_multiplier"):
 			enemy.set_meta("reward_multiplier", float(data["reward_multiplier"]))
+		if data.get("is_mimic", false):
+			enemy.set_meta("is_mimic", true)
 
 		# Add weaknesses/resistances from data
 		for weakness in data.get("weaknesses", []):

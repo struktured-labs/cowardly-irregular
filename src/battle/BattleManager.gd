@@ -1066,7 +1066,7 @@ func end_battle(victory: bool) -> void:
 				continue
 			if enemy.is_alive:
 				continue
-			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+			if BestiarySystem.records(enemy):
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
 				if mtype != "":
 					BestiarySystem.mark_defeated(mtype, defeat_loc)
@@ -8143,7 +8143,7 @@ func _execute_scan_effect(caster: Combatant, targets: Array) -> void:
 		if t is Combatant and t.is_alive:
 			t.set_meta("intel_revealed", true)
 			hit = true
-			if t.has_meta("monster_type") and BestiarySystem:
+			if BestiarySystem.records(t):
 				BestiarySystem.mark_seen(str(t.get_meta("monster_type")))
 			battle_log_message.emit("[color=#88ccff]🔍 %s scans %s — weaknesses exposed![/color]" % [caster.combatant_name, t.combatant_name])
 	if not hit:
