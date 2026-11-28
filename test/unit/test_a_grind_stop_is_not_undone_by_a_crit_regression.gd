@@ -1,6 +1,6 @@
 extends GutTest
 
-const BS := preload("res://src/battle/BattleScene.gd")
+const Fixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
 ## Stop or pause a grind in the 80ms after a critical hit and the engine goes back to the battle
@@ -29,14 +29,7 @@ const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
 var _saved_scale: float = 1.0
 
-## ⛔ CLEAN BY CONSTRUCTION, NOT BY ACCIDENT. This file stands up a BattleScene, and
-## BattleScene._ready() writes to the BattleManager AUTOLOAD unconditionally
-## (set_autobattle_script at :477, _start_test_battle at :480) — @cowir-battle measured that
-## standing one up is sufficient, across 26 files. Probed today: this file leaks NOTHING, but only
-## because `_ready` ABORTS first — `BS.new()` has no scene tree, so an @onready node is null and
-## "Cannot call method 'add_theme_font_size_override' on a null value" kills the frame before it
-## reaches either write. Make `_ready` defensive — an ordinary improvement — and this file starts
-## dirtying the autoload with freed combatants. Snapshot/restore removes the dependence on an error.
+## The quiet fixture gives _ready real nodes and skips its test battle; the snapshot covers its set_autobattle_script write.
 var _bm_state = BattleState.new()
 
 
@@ -51,9 +44,16 @@ func after_each() -> void:
 
 
 func _scene() -> Node:
-	var s = BS.new()
+	var s := Fixture.build()
 	add_child_autofree(s)
 	return s
+
+
+## Built from the .tscn, so _ready ran against real nodes; a bare script aborted it and logged Node not found.
+func test_the_scene_is_the_quiet_fixture_with_its_nodes() -> void:
+	var scene := _scene()
+	assert_eq(scene.get_script(), Fixture.Quiet, "this file's scene must come from the quiet fixture")
+	assert_not_null(scene.get_node_or_null("UI/PartyStatusPanel"), "and carry the real node tree")
 
 
 ## ⛔ THE DEFECT. An external writer's value must survive the pending restore.
