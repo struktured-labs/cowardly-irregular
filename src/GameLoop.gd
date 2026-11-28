@@ -6306,7 +6306,7 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	# boot order, so guard the lookup. GameLoop does not hold a reference to the
 	# active DynamicConversation — cancel_all is sufficient: the conversation's
 	# _safe await path takes its null fallback and its own teardown clears UI.
-	var _llm := get_node_or_null("/root/LLMService")
+	var _llm: Node = get_node_or_null("/root/LLMService") if is_inside_tree() else null
 	if _llm and _llm.has_method("cancel_all"):
 		_llm.cancel_all("scene_change")
 	# Idempotent UI/movement reset for any active conversation (cancel_all only

@@ -361,9 +361,9 @@ func _create_slot_row(slot_index: int) -> Control:
 	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
-	# Mouse click overlay
+	# Mouse click overlay, anchored to the row: a literal 200 left the equipped name's tail deaf to the mouse.
 	MenuMouseHelper.make_clickable(row, slot_index, 200, _slot_stride() - 4,
-		_on_slot_click.bind(slot_index), _on_slot_hover.bind(slot_index))
+		_on_slot_click.bind(slot_index), _on_slot_hover.bind(slot_index)).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	return row
 
@@ -713,9 +713,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(desc_label)
 
-	# Mouse click overlay
+	# Mouse click overlay, anchored to the row: a literal 300 left the right of every choice deaf to the mouse.
 	MenuMouseHelper.make_clickable(row, index, 300, _choice_stride() - 4,
-		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
+		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index)).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	return row
 
