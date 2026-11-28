@@ -17,6 +17,11 @@ const HARMONIA_GIVERS := {
 	"world1_untested_edge": "bram_smith",
 	"world1_word_from_capital": "rowan_harmonia",
 }
+## Maple Heights givers whose own lines argue the problem (Gerald: "That flower is NOT a violation.", Casper: "the wrong blue"). 2026-11-28.
+const W2_GIVERS := {
+	"world2_acceptable_variance": "gerald_w2",
+	"world2_wrong_blue": "casper_kid",
+}
 const OPEN_LINE := "There's a man on the road east in gold armor. He won't move."
 
 var _saved_quests: Dictionary
@@ -77,7 +82,7 @@ func test_a_quest_without_after_lines_changes_nothing() -> void:
 
 func test_every_w1_giver_with_an_open_problem_has_after_lines() -> void:
 	var gaps: Array = []
-	var givers: Dictionary = W1_GIVERS.merged(HARMONIA_GIVERS)
+	var givers: Dictionary = W1_GIVERS.merged(HARMONIA_GIVERS).merged(W2_GIVERS)
 	for qid in givers:
 		var q: Dictionary = QuestSystem.get_quest(qid)
 		assert_eq(str(q.get("giver", {}).get("npc_id", "")), givers[qid], "CONTROL: %s is given by %s" % [qid, givers[qid]])

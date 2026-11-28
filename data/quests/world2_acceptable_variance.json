@@ -79,6 +79,11 @@
         "text": "Anyway. It stays. I'll mow around it — officially, this time. Thank you. Genuinely.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "It's an official variance now. I have the letter. I've read it eleven times.",
+      "I mow around it every Saturday. The HOA inspector nods at it. Nods. At a flower.",
+      "It was here first, and that counted. I'd like to know what else was here first."
     ]
   },
   "objectives": [

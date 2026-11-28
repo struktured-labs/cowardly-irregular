@@ -33,6 +33,11 @@
       {"speaker": "Madame Orrery", "text": "The monitor in the Coordinator's office is showing the current state of the previous world. In real time — or what passes for real time between worlds. Someone built that monitor to watch the last world while running this one.", "theme": "mysterious"},
       {"speaker": "Madame Orrery", "text": "And the sky was specified wrong. Not a mistake — a placeholder. A sky entered quickly, before someone finished thinking about what the world should look like.", "theme": "mysterious"},
       {"speaker": "Madame Orrery", "text": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented.", "theme": "mysterious"}
+    ],
+    "idle_after_complete": [
+      "It's still the wrong blue. But it's a placeholder, so it's less wrong. It's just early.",
+      "Somebody put that sky down before they knew what the world was for. I like that they started with the sky.",
+      "I watch it every afternoon. In case someone comes back to finish it."
     ]
   },
   "objectives": [
