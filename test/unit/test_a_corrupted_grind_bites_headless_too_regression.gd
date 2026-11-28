@@ -138,3 +138,18 @@ func test_a_recompute_drops_the_drain_record() -> void:
 	assert_true(hero.has_meta("_drain_base"), "CONTROL: the drain left its record")
 	hero.recalculate_stats()
 	assert_false(hero.has_meta("_drain_base"), "a recompute already undid the drain, so its record must not undo it again")
+
+
+## Each engine's battle start clears _drain_base; the undo must run first, or the clear drops the record and keeps the loss.
+func test_a_battle_start_gives_the_drain_back_before_clearing_its_record() -> void:
+	for pair in [["res://src/battle/BattleManager.gd", "func start_battle(", "undo_stat_drain(players)", "for meta_key in PER_BATTLE_METAS"],
+			["res://src/autogrind/HeadlessBattleResolver.gd", "func resolve_battle(", "undo_stat_drain(_player_party)", "for meta_key in PER_BATTLE_METAS"]]:
+		var src: String = FileAccess.get_file_as_string(pair[0])
+		var at: int = src.find(pair[1])
+		assert_gt(at, -1, "CONTROL: %s found in %s" % [pair[1], pair[0]])
+		var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
+		var undo: int = body.find(pair[2])
+		var clear: int = body.find(pair[3])
+		assert_gt(clear, -1, "CONTROL: %s clears its per-battle metas" % pair[1])
+		assert_gt(undo, -1, "%s must give back a leftover drain" % pair[1])
+		assert_lt(undo, clear, "%s must give the drain back BEFORE clearing its record" % pair[1])
