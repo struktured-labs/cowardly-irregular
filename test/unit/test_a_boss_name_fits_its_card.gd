@@ -13,12 +13,12 @@ class CardDirector extends CutsceneDirector:
 		var labels: Array = []
 		for c in get_children():
 			if c is Label and not c.is_queued_for_deletion():
-				labels.append({"text": c.text, "y": c.position.y, "h": maxf(c.size.y, c.get_combined_minimum_size().y), "w": c.get_combined_minimum_size().x})
+				labels.append({"text": c.text, "w": c.get_combined_minimum_size().x})
 		for c in get_children():
 			if c is Control and not (c is Label):
 				for g in c.get_children():
 					if g is Label:
-						labels.append({"text": g.text, "y": g.position.y, "h": maxf(g.size.y, g.get_combined_minimum_size().y), "w": g.get_combined_minimum_size().x})
+						labels.append({"text": g.text, "w": g.get_combined_minimum_size().x})
 		if not labels.is_empty():
 			held.append(labels)
 	func _await_tween_hold(_tween: Tween) -> void:
@@ -102,13 +102,9 @@ func _judge(kind: String) -> void:
 					widest = {"w": float(l["w"]), "text": "%s @ %.0f%%" % [str(l["text"]).replace("\n", " / "), scale * 100.0]}
 				if float(l["w"]) > safe:
 					bad.append("%.0f%%: '%s' is %.0f px on a %.0f px screen" % [scale * 100.0, str(l["text"]).replace("\n", " / "), float(l["w"]), vw])
-			for k in range(1, labels.size()):
-				var top: Dictionary = labels[k - 1]
-				if float(top["y"]) + float(top["h"]) > float(labels[k]["y"]) + 0.5:
-					bad.append("%.0f%%: '%s' reaches into '%s' below it" % [scale * 100.0, str(top["text"]).replace("\n", " / "), labels[k]["text"]])
 	gut.p("[CARD] %s widest line: %.0f px of %.0f safe, %s" % [kind, widest["w"], safe, widest["text"]])
 	assert_gt(float(widest["w"]), safe * 0.5, "CONTROL: the widest %s line was really measured, got %.0f px" % [kind, widest["w"]])
-	assert_eq(bad, [], "every %s line fits the screen and clears the line below it, at every Text Size: shorten the line or break the card before shipping it" % kind)
+	assert_eq(bad, [], "every %s line fits the screen width at every Text Size (height is test_the_title_cards_grow_with_the_text's): shorten the line or break the card before shipping it" % kind)
 
 
 func test_every_boss_card_fits_the_screen() -> void:
