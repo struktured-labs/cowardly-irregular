@@ -78,6 +78,11 @@
         "text": "Take this. My grandmother's, from a mountain older than this one. A charm against being watched from a distance. It has never worked, in my experience. It has also never been tested against something that was actually watching.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Right to the second, every day since. I check it more now than I did when it was wrong.",
+      "A rune on my mountain, cut by a hand that has never climbed it. I keep thinking about the patience that takes.",
+      "Thirty-one years keeping time. Now, apparently, I keep watch. The clock does not know the difference."
     ]
   },
   "objectives": [

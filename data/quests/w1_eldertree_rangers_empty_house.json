@@ -79,6 +79,11 @@
         "text": "Take one of their cloaks. There are three left, and none of them belong to anyone anymore.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Three cloaks on the hooks. I have stopped counting them each morning. I count them each evening instead.",
+      "The house is still tidy. I have let no one touch it. If it is a message, I want it legible when I answer.",
+      "Eleven years of patrols. I walk the route once a day myself now. Somebody should still be on time."
     ]
   },
   "objectives": [

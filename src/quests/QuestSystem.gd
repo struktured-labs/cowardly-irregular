@@ -495,6 +495,18 @@ func giver_business_kind(npc_id: String) -> String:
 	return ""
 
 
+## After the turn-in a giver has no business, so it falls back to its own lines. A quest may author dialogue.idle_after_complete for that.
+func idle_after_complete_for(npc_id: String) -> Array:
+	for qid in _quests:
+		var q: Dictionary = _quests[qid]
+		if q.get("giver", {}).get("npc_id", "") != npc_id or get_state(qid) != "complete":
+			continue
+		var lines: Variant = (q.get("dialogue", {}) as Dictionary).get("idle_after_complete", [])
+		if lines is Array and not (lines as Array).is_empty():
+			return lines
+	return []
+
+
 func _giver_quest_for(npc_id: String) -> String:
 	## Remembered, never preferred: live business (offerable/active) still returns immediately,
 	## so a giver who somehow owned both would offer the quest rather than refuse a locked one.
