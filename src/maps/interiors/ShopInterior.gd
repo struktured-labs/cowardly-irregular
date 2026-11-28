@@ -1527,7 +1527,8 @@ func _setup_npcs() -> void:
 
 ## The village this interior was entered from; "" when GameLoop is absent or never set one.
 func _origin_map_id() -> String:
-	var gl: Node = get_node_or_null("/root/GameLoop")
+	## Off the tree there is no /root to ask, and get_node_or_null logs an error doing so (the shop tests build it detached).
+	var gl: Node = get_node_or_null("/root/GameLoop") if is_inside_tree() else null
 	if gl == null or not gl.has_method("get_village_origin_id"):
 		return ""
 	return str(gl.get_village_origin_id())

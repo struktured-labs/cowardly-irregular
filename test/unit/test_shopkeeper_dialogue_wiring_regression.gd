@@ -121,3 +121,15 @@ func test_origin_lookup_degrades_without_a_gameloop() -> void:
 	var origin: String = interior._origin_map_id()
 	interior.free()
 	assert_eq(origin, "", "no GameLoop in the harness, so the origin must be empty")
+
+
+## 2026-11-28 (cowir-story): off the tree, get_node_or_null("/root/GameLoop") logs an engine error before returning null, so the two
+## detached-interior arms above cost the gate 2 "/root" errors (battle 28825). GDScript can't read the error log, so the seat measures
+## the count; this pins that the lookup is gated on the tree, the same shape as the interior's other /root read.
+func test_the_origin_lookup_asks_root_only_from_the_tree() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/maps/interiors/ShopInterior.gd")
+	var at: int = src.find("func _origin_map_id()")
+	assert_gt(at, -1, "CONTROL: the lookup was found")
+	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_true(body.contains("/root/GameLoop"), "CONTROL: the body read is the lookup's own")
+	assert_true(body.contains("if is_inside_tree() else null"), "an off-tree interior must not ask /root")
