@@ -112,8 +112,8 @@ func test_the_refused_conditions_really_ignore_their_operator() -> void:
 	var c := Combatant.new()
 	autofree(c)
 	c.status_effects.append("poison")
-	assert_true(AutobattleSystem._evaluate_condition(c, bare), "CONTROL: a poisoned combatant matches Has Status poison")
-	assert_eq(AutobattleSystem._evaluate_condition(c, with_op), AutobattleSystem._evaluate_condition(c, bare),
+	assert_true(AutobattleSystem._evaluate_grid_condition(c, bare), "CONTROL: a poisoned combatant matches Has Status poison")
+	assert_eq(AutobattleSystem._evaluate_grid_condition(c, with_op), AutobattleSystem._evaluate_grid_condition(c, bare),
 		"Has Status compares its op after all, so refusing the operator would hide a real setting")
 
 
