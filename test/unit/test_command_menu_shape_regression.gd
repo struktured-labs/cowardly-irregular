@@ -5,7 +5,6 @@ extends GutTest
 ## a row. These build the real menu for a real job and assert on the rows that come back.
 ## Playtest 2026-08-22 (struktured): "the menu is too busy", "bard menu is cutoff on bottom".
 
-const SCENE_PATH := "res://src/battle/BattleScene.gd"
 const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 
@@ -44,7 +43,7 @@ func after_each() -> void:
 ## an empty array. Passed in isolation and failed in the full suite until this await existed;
 ## the CONTROL assert ("the builder produced a real menu") is what caught it.
 func _scene_with_enemies(n: int = 2) -> Node:
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var enemies: Array = []
