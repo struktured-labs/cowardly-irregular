@@ -297,9 +297,10 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	qty_label.name = "Quantity"
 	row.add_child(qty_label)
 
-	# Mouse click overlay
-	MenuMouseHelper.make_clickable(row, index, 220, 32,
+	# Mouse click overlay. Anchored: a literal 220 left the rest of the row (the name's tail, the count) deaf to the mouse.
+	var hit := MenuMouseHelper.make_clickable(row, index, 220, 32,
 		_on_item_click.bind(index), _on_item_hover.bind(index))
+	hit.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	return row
 
