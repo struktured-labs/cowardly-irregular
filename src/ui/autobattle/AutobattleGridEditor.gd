@@ -2174,8 +2174,11 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("battle_defer"):  # L button
 		if _is_on_action_group():
 			_split_action_group()
-		elif _is_on_condition_cell():
+		elif cursor_col < _get_condition_slots_for_row(cursor_row):
 			_add_and_condition()
+		elif not event.is_echo():
+			SoundManager.play_ui("menu_error")
+			_flash_status("Put the cursor on a condition or a repeated action.", Color.YELLOW)
 		get_viewport().set_input_as_handled()
 
 	# Tab key - Cycle profiles
