@@ -1987,6 +1987,7 @@ func _cycle_profile() -> void:
 	var profiles = AutogrindSystem.get_autogrind_profiles()
 	if profiles.size() < 2:
 		SoundManager.play_ui("menu_error")
+		_flash_status("There is only one grind profile.")
 		return
 
 	_save_rules()
