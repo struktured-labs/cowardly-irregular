@@ -119,7 +119,7 @@ func _glyph_px(base: int) -> float:
 	var font_size := TextScale.scaled(base)
 	var font: Font = get_theme_font(&"font") if is_inside_tree() else null
 	if font == null:
-		font = ThemeDB.fallback_font
+		font = UiFont.display()
 	if font == null:
 		return float(font_size)
 	return font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y
@@ -128,7 +128,7 @@ func _glyph_px(base: int) -> float:
 ## The font a body Label draws with, so a wrap measured here breaks where the Label would.
 func _label_font() -> Font:
 	var font: Font = get_theme_font(&"font", &"Label") if is_inside_tree() else null
-	return font if font != null else ThemeDB.fallback_font
+	return font if font != null else UiFont.display()
 
 
 ## One quest line as the screen lines it needs at its scaled size: words that would run past
