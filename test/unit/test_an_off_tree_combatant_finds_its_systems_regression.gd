@@ -29,6 +29,7 @@ func _pair() -> Array:
 
 func test_an_off_tree_combatant_wears_its_gear() -> void:
 	var p := _pair()
+	(p[1] as Combatant).recalculate_stats()
 	var bare: int = (p[1] as Combatant).attack
 	for c in p:
 		c.equipped_weapon = "bronze_sword"
@@ -39,6 +40,7 @@ func test_an_off_tree_combatant_wears_its_gear() -> void:
 
 func test_an_off_tree_combatant_keeps_its_passive_stat_mods() -> void:
 	var p := _pair()
+	(p[1] as Combatant).recalculate_stats()
 	var bare: int = (p[1] as Combatant).attack
 	for c in p:
 		c.equipped_passives.append("weapon_mastery")
@@ -60,9 +62,9 @@ func test_an_off_tree_combatant_heals_through_its_passive() -> void:
 func test_an_off_tree_combatant_resolves_a_legacy_job_on_load() -> void:
 	var p := _pair()
 	for c in p:
-		c.from_dict({"name": "Twin", "job": {"id": "white_mage"}})
-	assert_eq(str((p[0] as Combatant).job.get("id", "")), "cleric", "CONTROL: in the tree an old white_mage save loads as cleric")
-	assert_eq(str((p[1] as Combatant).job.get("id", "")), "cleric", "an off-tree combatant must resolve the same legacy job id")
+		c.from_dict({"name": "Twin", "secondary_job_id": "white_mage"})
+	assert_eq((p[0] as Combatant).secondary_job_id, "cleric", "CONTROL: in the tree an old white_mage save loads as cleric")
+	assert_eq((p[1] as Combatant).secondary_job_id, "cleric", "an off-tree combatant must resolve the same legacy job id")
 
 
 func test_combatant_names_no_system_by_absolute_path() -> void:
