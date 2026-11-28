@@ -1276,7 +1276,7 @@ func _input(event: InputEvent) -> void:
 	# R trigger - Add action
 	elif event.is_action_pressed("battle_advance"):
 		## A held R repeats; on a condition only the first press is refused out loud.
-		if not (event.is_echo() and _is_on_condition_cell()):
+		if not (event.is_echo() and cursor_col < _get_condition_slots_for_row(cursor_row)):
 			_add_action()
 		get_viewport().set_input_as_handled()
 
