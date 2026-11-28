@@ -2170,7 +2170,7 @@ func _input(event: InputEvent) -> void:
 			_split_action_group()
 		elif _is_on_condition_cell():
 			_add_and_condition()
-		else:
+		elif not event.is_echo():
 			SoundManager.play_ui("menu_error")
 			_flash_status("Put the cursor on a condition or a repeated action.", Color.YELLOW)
 		get_viewport().set_input_as_handled()

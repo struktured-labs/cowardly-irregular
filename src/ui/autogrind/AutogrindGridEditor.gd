@@ -1260,7 +1260,7 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("battle_defer"):
 		if _is_on_condition_cell():
 			_add_and_condition()
-		else:
+		elif not event.is_echo():
 			SoundManager.play_ui("menu_error")
 			_flash_status("Put the cursor on a condition to add another.")
 		get_viewport().set_input_as_handled()
@@ -1274,7 +1274,9 @@ func _input(event: InputEvent) -> void:
 
 	# R trigger - Add action
 	elif event.is_action_pressed("battle_advance"):
-		_add_action()
+		## A held R repeats; on a condition only the first press is refused out loud.
+		if not (event.is_echo() and _is_on_condition_cell()):
+			_add_action()
 		get_viewport().set_input_as_handled()
 
 	# Tab - Toggle row / Shift+Tab - Cycle profiles

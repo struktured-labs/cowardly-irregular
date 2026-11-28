@@ -120,3 +120,26 @@ func test_r_on_a_grind_condition_is_refused_with_a_reason() -> void:
 	assert_eq(_acts(ed), 1, "nothing was added")
 	assert_true(_stamped("menu_error"), "CONTROL: R on a condition was already refused out loud")
 	assert_string_contains(_shown(ed), "action side", "the refusal must say where R works")
+
+
+## Review (cowir-controller 28875): a held shoulder repeats, and a refusal is one buzz per press, not per key-repeat.
+func _key(code: Key, echo: bool) -> InputEventKey:
+	var k := InputEventKey.new()
+	k.keycode = code
+	k.physical_keycode = code
+	k.pressed = true
+	k.echo = echo
+	return k
+
+
+func test_a_held_shoulder_refuses_once() -> void:
+	var cases := [[AB_EDITOR, AB_COND, {"type": "attack"}, 2, KEY_L], [AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 2, KEY_L],
+		[AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 0, KEY_R]]
+	for c in cases:
+		var label := "%s key %s" % [c[0].get_file(), OS.get_keycode_string(c[4])]
+		var ed: Node = await _editor(c[0], c[1], c[2], c[3])
+		ed._input(_key(c[4], false))
+		assert_true(_stamped("menu_error"), "CONTROL %s: the first press is refused, so this key reaches the shoulder arm" % label)
+		SoundManager._sfx_cooldowns.clear()
+		ed._input(_key(c[4], true))
+		assert_false(_stamped("menu_error"), "%s: a key-repeat buzzed again" % label)
