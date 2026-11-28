@@ -2460,6 +2460,17 @@ func _apply_condition_type(new_type: String) -> void:
 	_refresh_grid()
 
 
+const OPERATOR_REFUSAL := "This condition has no operator to change."
+
+
+## False for a condition no evaluator compares: no payload at all, or a named one (status, element, weather) with no number. Shared with the autogrind editor.
+static func operator_matters(cond: Dictionary, nullary: Array) -> bool:
+	var t := str(cond.get("type", "always"))
+	if nullary.has(t):
+		return false
+	return not (AutobattleSystem.CONDITION_REQUIRED_FIELD.has(t) and not cond.has("value"))
+
+
 func _cycle_condition_operator() -> void:
 	"""Cycle through operators (<, <=, ==, >=, >, !=) - the north face (JOY_BUTTON_Y) or C. No per-press print: every print lands in his log."""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
@@ -2469,9 +2480,9 @@ func _cycle_condition_operator() -> void:
 		var cond = conditions[cursor_col]
 		var cond_type = cond.get("type", "always")
 
-		# Nullary conditions have no operator to cycle
-		if _nullary_condition_types().has(cond_type):
+		if not operator_matters(cond, _nullary_condition_types()):
 			SoundManager.play_ui("menu_error")
+			_flash_status(OPERATOR_REFUSAL, Color.YELLOW)
 			return
 
 		var operators = ["<", "<=", "==", ">=", ">", "!="]
