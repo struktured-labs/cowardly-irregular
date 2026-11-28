@@ -62,9 +62,9 @@ func test_helper_wired_into_attack_paths() -> void:
 		src.contains("_maybe_heal_from_damage(target, actual_damage, \"\")")
 		or src.contains("_maybe_heal_from_damage(target, hit_damage, \"\")"),
 		"physical-ability path must call _maybe_heal_from_damage with empty element (actual_damage or per-hit hit_damage)")
-	# Magic ability path passes the actual element (so holy bypass works).
-	assert_true(src.contains("_maybe_heal_from_damage(target, actual_damage, element)"),
-		"magic-ability path must call _maybe_heal_from_damage with element so holy bypasses")
+	# Physical damage only (struktured 2026-11-28): the magic path must not feed it.
+	assert_false(src.contains("_maybe_heal_from_damage(target, actual_damage, element)"),
+		"magic-ability path must not call _maybe_heal_from_damage: a spell bypasses the absorption")
 
 
 func test_data_still_authors_heals_from_damage() -> void:

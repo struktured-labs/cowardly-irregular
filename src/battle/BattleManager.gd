@@ -6683,11 +6683,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		## soul_reap / final_death from the reaper land here.
 		_maybe_apply_permadeath_on_kill(caster, target)
 
-		## Tick 423: the_absence heals from damage — but the data
-		## explicitly says holy magic bypasses ("Status effects,
-		## debuffs, and holy magic bypass this absorption"). Pass the
-		## element so the helper can skip when element=="holy".
-		_maybe_heal_from_damage(target, actual_damage, element)
+		## No _maybe_heal_from_damage here: the_absence heals from PHYSICAL damage only, so a spell bypasses it (struktured 2026-11-28).
 
 		## Tick 429: learns_from adaptive resistance. Increments the
 		## per-element counter for the target and adds a resistance

@@ -1729,8 +1729,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array, free: bool = f
 					## PER TARGET and gated on damage landing, mirroring BattleManager:5085-5090 — so
 					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
 					_siphon_mp(caster, ability, dealt, ability_id)
-					## Same conversion as the basic swing. Holy skips inside the helper, matching live.
-					_maybe_heal_from_damage(target, dealt, str(element))
+					## No heal-from-damage on a spell: the_absence feeds on physical damage only, as live.
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					total_for_recoil += dealt
 					_maybe_inflict_status(caster, target, ability, ability_id)
