@@ -15,7 +15,7 @@ extends GutTest
 ## _row_unavailable reads both keys and every confirm path consults it.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
+const BattleSceneFixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 ## This file assigns BattleManager's party/order/index/current/enemies. The helper derives its
 ## surface from get_property_list(), so a field added tomorrow is covered without editing this.
 const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
@@ -60,7 +60,7 @@ func _party(specs: Array) -> Array[Combatant]:
 
 
 func _scene_for(party: Array[Combatant]) -> Node:
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(BattleSceneFixture.build())
 	scene.party_members.assign(party)
 	scene.test_enemies.assign(BattleManager.enemy_party)
 	for m in party:
