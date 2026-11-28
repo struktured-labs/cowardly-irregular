@@ -24,7 +24,7 @@ class ProbeScene extends "res://src/battle/BattleScene.gd":
 		results_at = Time.get_ticks_msec()
 	func _show_victory_quip() -> void:
 		pass
-	## The real tree's _ready starts a live battle whose own victory would release the beat; this file drives the beat alone.
+	## A passed probe replaces the fixture's Quiet, so it must skip _ready's live battle itself.
 	func _start_test_battle() -> void:
 		pass
 

@@ -52,10 +52,6 @@ func _frames() -> SpriteFrames:
 func _fixture(weapon_id: String) -> Array:
 	var scene = BattleSceneFixture.build()
 	add_child_autofree(scene)
-	## The real scene's _ready spawned its own foes; this fixture's foe must be index 0, where the scene looks.
-	scene.test_enemies.clear()
-	scene.enemy_sprite_nodes.clear()
-	scene.enemy_animators.clear()
 	var foe := Combatant.new()
 	autofree(foe)
 	foe.combatant_name = "Bat"

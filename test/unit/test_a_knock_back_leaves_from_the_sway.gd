@@ -26,9 +26,6 @@ func _fixture(index: int = 0, as_enemy: bool = true) -> Array:
 	var scene = BattleSceneFixture.build()
 	add_child_autofree(scene)
 	scene.set_process(false)  # the arm advances the idle clock itself
-	## The real _ready spawned its own line; this fixture's sprites must sit at the indices the arms name.
-	for list in [scene.enemy_sprite_nodes, scene._enemy_base_positions, scene.party_sprite_nodes, scene._party_base_positions]:
-		list.clear()
 	var sprite: Node2D = null
 	for i in index + 1:
 		sprite = AnimatedSprite2D.new()
