@@ -84,6 +84,11 @@
         "text": "...It's a very good sword. Half price. It told me to.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Eighteen sales. One that stayed. I've had to start a second column in the ledger.",
+      "I test every blade before it leaves the rack now. My sister has said nothing about it. Loudly.",
+      "If a sword ever talks to you again, come tell me first. I'd like to hear it from the source this time."
     ]
   },
   "objectives": [
