@@ -352,21 +352,30 @@ const ATTENDANT_DEFAULT_LINES: Array = [
 	"...I will be here. I am always here.",
 	"I have been here for four hundred cycles. I am fine. Everything is fine."
 ]
-## world5_long_way_around step 3: the blueprint's notation, recognised on delivery (its _wiring_notes).
+## world5_long_way_around step 3: the notation recognised on delivery (its _wiring_notes), while the quest is still open.
 const ATTENDANT_BLUEPRINT_LINES: Array = [
 	"This is administrative notation. The Calibrant didn't just build the worlds. They annotated them.",
-	"They kept asking why. They kept not answering.",
-	"I have shelved it where the builder cannot read. It is the only shelf like that. I check it every cycle."
+	"They kept asking why. They kept not answering."
 ]
+## The filing line varies with the overflow: the shelter the seventeen left once it is resolved (_wiring_notes).
+const ATTENDANT_FILED_LINE := "I have filed it where the builder does not read. There is one shelf like that. I check it every cycle."
+const ATTENDANT_FILED_IN_SHELTER_LINE := "I have filed it in the shelter the seventeen left empty. It fits. I suspect it was always going to."
+## After the turn-in the first sighting is over: one past-tense line leads instead.
+const ATTENDANT_BLUEPRINT_AFTER_LINE := "The notation you brought me is still on its shelf. It has not answered anything. Neither has the builder."
 
 
 ## FIREWALL-ALPHA's lines: the blueprint beat once delivered, then the answer sent the stack, else the post.
 func _attendant_lines() -> Array:
 	var answer: Array = _attendant_answer_lines()
-	var _bp_gs = get_node_or_null("/root/GameState") if is_inside_tree() else null
-	var delivered: bool = _bp_gs != null and _bp_gs.is_story_flag_set("quest_world5_long_way_around_delivered")
-	var base: Array = answer if not answer.is_empty() else ATTENDANT_DEFAULT_LINES
-	return (ATTENDANT_BLUEPRINT_LINES + base) if delivered else base.duplicate()
+	var base: Array = (answer if not answer.is_empty() else ATTENDANT_DEFAULT_LINES).duplicate()
+	var gs = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	if gs == null or not gs.is_story_flag_set("quest_world5_long_way_around_delivered"):
+		return base
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs != null and qs.get_state("world5_long_way_around") == "complete":
+		return [ATTENDANT_BLUEPRINT_AFTER_LINE] + base
+	var resolved: bool = gs.is_story_flag_set("quest_world5_termination_condition_signal_sent")
+	return ATTENDANT_BLUEPRINT_LINES + [ATTENDANT_FILED_IN_SHELTER_LINE if resolved else ATTENDANT_FILED_LINE] + base
 
 
 ## FIREWALL-ALPHA's lines for the answer sent the stack (world5_termination_condition `sets`); [] before any answer.

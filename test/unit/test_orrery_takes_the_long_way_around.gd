@@ -9,6 +9,7 @@ const ATTENDANT := "firewall_attendant_w5"
 const DECRYPTED := "quest_world5_long_way_around_decrypted"
 const DELIVERED := "quest_world5_long_way_around_delivered"
 const SENT_ORIGINAL := "quest_world5_termination_condition_sent_original"
+const SIGNAL_SENT := "quest_world5_termination_condition_signal_sent"
 
 var _qs: Node
 var _held: Dictionary = {}
@@ -18,7 +19,7 @@ func before_each() -> void:
 	_qs = get_tree().root.get_node_or_null("QuestSystem")
 	_held = {"story": GameState.story_flags.duplicate(true), "consts": GameState.game_constants.duplicate(true),
 		"state": GameState.quests.get(QID, null)}
-	for f in [DECRYPTED, DELIVERED, SENT_ORIGINAL]:
+	for f in [DECRYPTED, DELIVERED, SENT_ORIGINAL, SIGNAL_SENT]:
 		GameState.story_flags.erase(f)
 
 
@@ -108,13 +109,17 @@ func test_delivering_the_blueprint_reaches_the_attendant_the_moment_it_lands() -
 	assert_eq(_qs.notify_talk(ATTENDANT), "", "CONTROL: delivery is not the last step")
 	assert_true(_qs._flag(DELIVERED), "talking to the attendant delivers the blueprint")
 	assert_eq(_qs.get_objective_index(QID), 3, "the quest moves on to telling Orrery")
-	var heard: Array = fw.dialogue_lines.slice(0, v.ATTENDANT_BLUEPRINT_LINES.size())
-	assert_eq(heard, v.ATTENDANT_BLUEPRINT_LINES, "the attendant recognises the notation on that same visit")
+	var n: int = v.ATTENDANT_BLUEPRINT_LINES.size()
+	assert_eq(fw.dialogue_lines.slice(0, n), v.ATTENDANT_BLUEPRINT_LINES, "the attendant recognises the notation on that same visit")
+	assert_eq(fw.dialogue_lines[n], v.ATTENDANT_FILED_LINE, "with the overflow still running, she files it where the builder does not read")
 
 
-func test_the_blueprint_beat_leads_the_answer_the_stack_was_sent() -> void:
+## Delivered and the quest still open, after the party answered the stack: the notes' shelter filing, then the answer.
+func test_once_the_overflow_is_resolved_she_files_it_in_the_shelter() -> void:
 	GameState.set_story_flag(DELIVERED, true)
+	GameState.set_story_flag(SIGNAL_SENT, true)
 	GameState.set_story_flag(SENT_ORIGINAL, true)
+	GameState.quests[QID] = {"state": "active", "objective_index": 3}
 	var v: Node = await _node_prime()
 	var fw: Node = _npc(v, ATTENDANT)
 	assert_not_null(fw, "CONTROL: the attendant stands in Node Prime")
@@ -122,6 +127,22 @@ func test_the_blueprint_beat_leads_the_answer_the_stack_was_sent() -> void:
 		return
 	var n: int = v.ATTENDANT_BLUEPRINT_LINES.size()
 	assert_eq(fw.dialogue_lines.slice(0, n), v.ATTENDANT_BLUEPRINT_LINES, "the blueprint comes first")
-	var rest: String = " ".join(PackedStringArray(fw.dialogue_lines.slice(n)))
+	assert_eq(fw.dialogue_lines[n], v.ATTENDANT_FILED_IN_SHELTER_LINE, "filed in the shelter the seventeen left")
+	var rest: String = " ".join(PackedStringArray(fw.dialogue_lines.slice(n + 1)))
 	assert_true(rest.contains("thank you"), "and the answer the party sent the stack still follows: %s" % rest)
 	assert_false(rest.contains("HALT"), "not the post's default halt")
+
+
+## After the turn-in the first sighting is over: one past-tense line, not the recognition again on every visit.
+func test_after_the_turn_in_the_recognition_is_past_tense() -> void:
+	GameState.set_story_flag(DELIVERED, true)
+	GameState.quests[QID] = {"state": "complete", "objective_index": 4}
+	var v: Node = await _node_prime()
+	var fw: Node = _npc(v, ATTENDANT)
+	assert_not_null(fw, "CONTROL: the attendant stands in Node Prime")
+	if fw == null:
+		return
+	assert_eq(_qs.get_state(QID), "complete", "CONTROL: the quest reads as turned in")
+	assert_eq(fw.dialogue_lines[0], v.ATTENDANT_BLUEPRINT_AFTER_LINE, "one past-tense line leads")
+	assert_false(" ".join(PackedStringArray(fw.dialogue_lines)).contains("administrative notation"), "the first sighting does not replay")
+	assert_eq(fw.dialogue_lines.slice(1), v.ATTENDANT_DEFAULT_LINES, "then the post as before")
