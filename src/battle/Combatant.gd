@@ -162,6 +162,12 @@ static func applied_gear_delta(stat: String, raw: int, ratio: float) -> int:
 	return raw
 
 
+## An autoload found through the SceneTree, not "/root/…": a combatant outside the tree (every headless enemy) finds nothing by absolute path.
+static func _system(system_name: String) -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree.root.get_node_or_null(system_name) if tree != null and tree.root != null else null
+
+
 func x10_ratio() -> float:
 	## Through the SceneTree, not has_node("/root/…"): a headless battle's enemies are never in the tree, and an absolute path from outside it finds nothing.
 	var tree := Engine.get_main_loop() as SceneTree
@@ -617,8 +623,9 @@ func heal_preview(amount: int) -> int:
 	## nothing. Same defensive [0.1, 10.0] clamp as the game_constants
 	## read above so a broken passive can't black-hole or runaway
 	## healing.
-	if has_node("/root/PassiveSystem"):
-		var passive_mods: Dictionary = get_node("/root/PassiveSystem").get_passive_mods(self)
+	var heal_ps: Node = _system("PassiveSystem")
+	if heal_ps != null:
+		var passive_mods: Dictionary = heal_ps.get_passive_mods(self)
 		var passive_heal_mult: float = clampf(
 			float(passive_mods.get("healing_multiplier", 1.0)),
 			0.1, 10.0)
@@ -1801,7 +1808,7 @@ func from_dict(data: Dictionary) -> void:
 		player_trust = bool(data["player_trust"])
 
 	# Resolve legacy job aliases in loaded data
-	var job_system = get_node_or_null("/root/JobSystem")
+	var job_system = _system("JobSystem")
 	if job_system:
 		# Resolve job ID in current job dict
 		if job and job is Dictionary and job.has("id"):
@@ -1909,7 +1916,7 @@ func save_current_profile() -> void:
 		"accessory": equipped_accessory,
 		"passives": equipped_passives.duplicate(),
 	}
-	var abs = get_node_or_null("/root/AutobattleSystem")
+	var abs = _system("AutobattleSystem")
 	if abs:
 		var char_id = combatant_name.to_lower().replace(" ", "_")
 		profile["autobattle"] = abs.get_character_script(char_id).duplicate(true)
@@ -1930,7 +1937,7 @@ func load_profile(key: String) -> void:
 	for passive_id in profile.get("passives", []):
 		equipped_passives.append(passive_id)
 
-	var abs = get_node_or_null("/root/AutobattleSystem")
+	var abs = _system("AutobattleSystem")
 	if abs and profile.has("autobattle"):
 		var char_id = combatant_name.to_lower().replace(" ", "_")
 		abs.set_character_script(char_id, profile["autobattle"].duplicate(true))
@@ -2024,16 +2031,18 @@ func recalculate_stats() -> void:
 	## declare magic_defense_multiplier and be inert, which is what damage_reduction's "from all
 	## sources" needed. Only MODDABLE_STATS keys are touched: crit_chance, evasion, mp_cost_multiplier
 	## and steal_chance are not stats and are read at their point of use, healing_multiplier in heal().
-	if has_node("/root/PassiveSystem"):
-		var passive_mods = get_node("/root/PassiveSystem").get_passive_mods(self)
+	var stat_ps: Node = _system("PassiveSystem")
+	if stat_ps != null:
+		var passive_mods = stat_ps.get_passive_mods(self)
 		for stat in MODDABLE_STATS:
 			var mult: float = float(passive_mods.get(stat + "_multiplier", 1.0))
 			if mult != 1.0:
 				set(stat, int(int(get(stat)) * mult))
 
 	# Apply equipment modifiers (same test-preload caveat as above).
-	if has_node("/root/EquipmentSystem"):
-		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
+	var stat_es: Node = _system("EquipmentSystem")
+	if stat_es != null:
+		var equip_mods = stat_es.get_equipment_mods(self)
 		# Driven off MODDABLE_STATS, not a hand-listed six — the old list silently omitted whatever it did not name.
 		var gear_ratio := x10_ratio()
 		for stat in MODDABLE_STATS:
