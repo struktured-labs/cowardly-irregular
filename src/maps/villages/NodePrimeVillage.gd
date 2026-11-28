@@ -341,7 +341,7 @@ func _place_orrery() -> void:
 	# Step 2: the compressed object she carries opens to a compiler's touch; the Mage reads it (no hard gate, per the notes).
 	_add_quest_examine_point("world5_long_way_around", "quest_world5_long_way_around_decrypted", "Decrypt the object",
 		"Your Mage reads the cipher the way a spell is read, and it gives. The object unfolds into a blueprint, every margin crowded with angular notation.",
-		"A compressed data object, humming in an unreasonable number of directions at once.", Vector2(19 * TILE_SIZE, 17 * TILE_SIZE))
+		"A compressed data object, humming in an unreasonable number of directions at once.", Vector2(19.5 * TILE_SIZE, 17.5 * TILE_SIZE))
 
 
 const ATTENDANT_DEFAULT_LINES: Array = [
