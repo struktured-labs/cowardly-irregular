@@ -99,13 +99,11 @@ func test_heal_delegates_to_heal_preview() -> void:
 
 
 func test_both_use_runtime_gamestate_lookup() -> void:
-	# Runtime lookup keeps these methods preload-safe for unit tests
-	# that don't have the GameState autoload registered. Pin the
-	# get_node_or_null pattern in both bodies.
+	# Runtime lookup through Combatant._system keeps both preload-safe without the autoload, and off-tree combatants read the dial.
 	var td_body := _take_damage_body()
 	var heal_body := _heal_body()
 	for body in [td_body, heal_body]:
-		assert_true(body.contains("get_tree().root.get_node_or_null(\"GameState\")"),
+		assert_true(body.contains("_system(\"GameState\")"),
 			"both methods must use runtime GameState lookup — unit-test safety")
 
 
