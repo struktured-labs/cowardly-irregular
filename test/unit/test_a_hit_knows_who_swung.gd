@@ -7,6 +7,7 @@ extends GutTest
 ## The landing now carries its attacker, and the crit, to the contact.
 
 const SCENE := preload("res://src/battle/BattleScene.gd")
+const BattleSceneFixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 const ANIMATOR := preload("res://src/battle/BattleAnimator.gd")
 const STARTERS: Array[String] = ["fighter", "cleric", "mage", "rogue", "bard"]
 
@@ -49,8 +50,12 @@ func _frames() -> SpriteFrames:
 
 ## [scene, foe, its sprite, its animator, a hero holding `weapon_id`]
 func _fixture(weapon_id: String) -> Array:
-	var scene = SCENE.new()
+	var scene = BattleSceneFixture.build()
 	add_child_autofree(scene)
+	## The real scene's _ready spawned its own foes; this fixture's foe must be index 0, where the scene looks.
+	scene.test_enemies.clear()
+	scene.enemy_sprite_nodes.clear()
+	scene.enemy_animators.clear()
 	var foe := Combatant.new()
 	autofree(foe)
 	foe.combatant_name = "Bat"

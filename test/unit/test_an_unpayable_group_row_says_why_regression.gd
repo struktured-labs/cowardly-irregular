@@ -15,7 +15,7 @@ extends GutTest
 ## _row_unavailable reads both keys and every confirm path consults it.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
+const BattleSceneFixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 ## This file assigns BattleManager's party/order/index/current/enemies. The helper derives its
 ## surface from get_property_list(), so a field added tomorrow is covered without editing this.
 const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
@@ -59,18 +59,21 @@ func _party(specs: Array) -> Array[Combatant]:
 	return party
 
 
+## The real scene: its _ready starts a battle, which zeroes AP and reseats BattleManager, so this file's state goes back after.
 func _scene_for(party: Array[Combatant]) -> Node:
-	var scene = autofree(SceneScript.new())
-	scene.party_members.assign(party)
-	scene.test_enemies.assign(BattleManager.enemy_party)
-	for m in party:
-		var sprite := AnimatedSprite2D.new()
-		add_child_autofree(sprite)
-		scene.party_sprite_nodes.append(sprite)
-	var enemy_sprite := AnimatedSprite2D.new()
-	add_child_autofree(enemy_sprite)
-	scene.enemy_sprite_nodes.append(enemy_sprite)
+	var aps: Array = party.map(func(m): return m.current_ap)
+	var enemies: Array = BattleManager.enemy_party.duplicate()
+	var scene = BattleSceneFixture.build()
+	scene.set_party(party)
 	add_child_autofree(scene)
+	for i in party.size():
+		party[i].current_ap = int(aps[i])
+	BattleManager.player_party.assign(party)
+	BattleManager.selection_order.assign(party)
+	BattleManager.selection_index = 0
+	BattleManager.current_combatant = party[0]
+	BattleManager.enemy_party.assign(enemies)
+	scene.test_enemies.assign(enemies)
 	return scene
 
 
