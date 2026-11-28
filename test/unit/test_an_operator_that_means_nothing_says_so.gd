@@ -115,3 +115,15 @@ func test_the_refused_conditions_really_ignore_their_operator() -> void:
 	assert_true(AutobattleSystem._evaluate_condition(c, bare), "CONTROL: a poisoned combatant matches Has Status poison")
 	assert_eq(AutobattleSystem._evaluate_condition(c, with_op), AutobattleSystem._evaluate_condition(c, bare),
 		"Has Status compares its op after all, so refusing the operator would hide a real setting")
+
+
+## The grind twin (cowir-autogrind 28745): Member Has Status answers the same whatever op it carries.
+func test_the_grind_status_condition_really_ignores_its_operator() -> void:
+	var bare := {"type": "member_status", "member": "", "value": "poison"}
+	var with_op := {"type": "member_status", "member": "", "value": "poison", "op": ">"}
+	var c := Combatant.new()
+	autofree(c)
+	c.status_effects.append("poison")
+	assert_true(AutogrindSystem._evaluate_party_condition([c], bare), "CONTROL: a poisoned member matches Member Has Status poison")
+	assert_eq(AutogrindSystem._evaluate_party_condition([c], with_op), AutogrindSystem._evaluate_party_condition([c], bare),
+		"Member Has Status compares its op after all, so refusing the operator would hide a real setting")
