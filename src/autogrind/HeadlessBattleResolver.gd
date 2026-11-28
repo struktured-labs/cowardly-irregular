@@ -57,7 +57,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round", "_drain_base"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -99,6 +99,7 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	## battle live had already disarmed. Enemies are rebuilt per battle, so only the party accumulated.
 	## NOT cleared, because live does not: HP, MP, permanent_injuries, and the permakilled marker.
 	## A grind that healed the party between fights would be a worse bug than the leak it replaced.
+	BattleManager.undo_stat_drain(_player_party)  # an unfinished battle's drain is given back, not dropped with its record
 	for combatant in (_player_party + _enemy_party):
 		if combatant == null or not is_instance_valid(combatant):
 			continue

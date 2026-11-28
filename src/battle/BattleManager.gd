@@ -410,7 +410,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_signature_fired", "_cadence", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
 	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
-	"counter_round", "counters_this_round",
+	"counter_round", "counters_this_round", "_drain_base",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -566,6 +566,7 @@ func _current_weather() -> String:
 ## Battle initialization
 func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
+	undo_stat_drain(players)  # a battle that never reached end_battle still gives back its drain
 	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
