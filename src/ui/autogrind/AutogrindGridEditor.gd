@@ -1432,9 +1432,11 @@ func _cycle_condition_operator() -> void:
 		return
 
 	var cond = conditions[cursor_col]
-	if cond.get("type", "always") == "always":
+	## member_status compares a name, never an op, and every NULLARY type reads none: cycling one wrote an op nothing reads and clicked as a change.
+	var t := str(cond.get("type", "always"))
+	if AutogrindSystem.NULLARY_CONDITIONS.has(t) or AutogrindSystem.NAMED_VALUE_CONDITIONS.has(t):
 		SoundManager.play_ui("menu_error")
-		_flash_status("\"Always\" has no operator to cycle.")
+		_flash_status(AutobattleGridEditor.OPERATOR_REFUSAL)
 		return
 
 	var operators = ["<", "<=", "==", ">=", ">", "!="]
