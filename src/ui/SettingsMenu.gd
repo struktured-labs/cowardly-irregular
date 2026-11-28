@@ -727,6 +727,7 @@ func _build_ui() -> void:
 	scroll.size = Vector2(scroll.size.x, maxf(40.0, footer_rect.position.y - 6.0 - scroll.position.y))
 
 	_fit_rows_to_their_subtitles()
+	_stretch_click_targets_to_their_rows()
 	_update_selection()
 	## A rebuild in place (Test connection, the rebalance review closing) makes a fresh scroll at the top whose rows have
 	## no size yet, so the follow above is a no-op and the cursor sat off screen. Follow it again once they are laid out.
@@ -762,6 +763,18 @@ func _fit_rows_to_their_subtitles() -> void:
 			if c is Container:
 				(c as Control).position.y += grow
 		row.custom_minimum_size.y += grow
+
+
+## make_clickable sizes its Button from literals (400 x 56-80) while a row is 752 wide and grows with Text Size, so a
+## click on a row's right half, or on a grown row's lower part, did nothing. Anchored, the target IS the drawn row.
+func _stretch_click_targets_to_their_rows() -> void:
+	for it in _settings_items:
+		var row: Control = it.get("control")
+		if row == null:
+			continue
+		for c in row.get_children():
+			if c is Button:
+				(c as Button).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 
 func _follow_selection_after_layout() -> void:

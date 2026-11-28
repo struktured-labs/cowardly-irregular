@@ -2234,14 +2234,12 @@ func _input(event: InputEvent) -> void:
 	# -/= keys - Adjust condition value (W/S until Advance moved to W — the editor reads Advance as Add Action)
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_EQUAL, KEY_PLUS, KEY_KP_ADD]:
 		if _is_on_condition_cell():
-			_adjust_condition_value(1)
-			SoundManager.play_ui("menu_move")
+			_dial_condition(1)
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_MINUS, KEY_KP_SUBTRACT]:
 		if _is_on_condition_cell():
-			_adjust_condition_value(-1)
-			SoundManager.play_ui("menu_move")
+			_dial_condition(-1)
 		get_viewport().set_input_as_handled()
 
 	# Select button - Toggle autobattle ON/OFF
@@ -2505,8 +2503,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 		return true
 	_value_stick_latched = true
 	if _is_on_condition_cell():
-		_adjust_condition_value(1 if event.axis_value > 0.0 else -1)
-		SoundManager.play_ui("menu_move")
+		_dial_condition(1 if event.axis_value > 0.0 else -1)
 	return true
 
 
@@ -2627,6 +2624,28 @@ func _adjust_condition_value(delta: int) -> void:
 		cond["value"] = current_value
 
 		_refresh_grid()
+
+
+## A dial press heard as menu_move only when the condition changed; otherwise menu_error and the reason.
+func _dial_condition(delta: int) -> bool:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	if cursor_col < 0 or cursor_col >= conditions.size() or not (conditions[cursor_col] is Dictionary):
+		return false
+	var cond: Dictionary = conditions[cursor_col]
+	var before: Dictionary = cond.duplicate(true)
+	_adjust_condition_value(delta)
+	if cond != before:
+		SoundManager.play_ui("menu_move")
+		return true
+	var why := AutobattleGridEditor.dial_refusal(_nullary_condition_types().has(str(cond.get("type", ""))))
+	SoundManager.play_ui("menu_error")
+	_flash_status(why, Color.YELLOW)
+	return false
+
+
+## Why a dial press changed nothing. Shared with the autogrind editor.
+static func dial_refusal(nullary: bool) -> String:
+	return "This condition has no value to change." if nullary else "That value cannot go any further this way."
 
 
 func _open_action_editor() -> void:
