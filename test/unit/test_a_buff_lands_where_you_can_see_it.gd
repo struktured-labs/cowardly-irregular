@@ -33,7 +33,7 @@ func after_each() -> void:
 ## [scene, [combatants]]: `count` monsters with sprites, registered where the scene looks for them, their
 ## buff and status signals wired as the scene's own setup wires them.
 func _fixture(count: int) -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var foes: Array = []
 	for i in count:

@@ -9,7 +9,6 @@ extends GutTest
 ## autobattled away by the terminal fallback. A boss line owning the screen is not a wedge.
 
 const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
-const BattleSceneScript := preload("res://src/battle/BattleScene.gd")
 const BattleDialogueScript := preload("res://src/ui/BattleDialogue.gd")
 
 var _bm: RefCounted = null
@@ -20,7 +19,7 @@ var _pc: Combatant = null
 func before_each() -> void:
 	_bm = BattleStateHelper.new()
 	_bm.snapshot()
-	_scene = BattleSceneScript.new()
+	_scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(_scene)
 	if _scene._battle_dialogue == null:
 		_scene._battle_dialogue = BattleDialogueScript.new()

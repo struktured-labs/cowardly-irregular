@@ -40,7 +40,7 @@ func _animator(frames: SpriteFrames, parent: Node, x: float = 400.0) -> ANIMATOR
 
 
 func _scene() -> Node:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	return scene
 
