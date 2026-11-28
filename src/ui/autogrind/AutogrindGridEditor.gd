@@ -1261,7 +1261,7 @@ func _input(event: InputEvent) -> void:
 		## A condition or the empty "+" slot beside them: the condition side, the same notion R refuses on.
 		if cursor_col < _get_condition_slots_for_row(cursor_row):
 			_add_and_condition()
-		elif not event.is_echo():
+		else:
 			SoundManager.play_ui("menu_error")
 			_flash_status("Put the cursor on a condition to add another.")
 		get_viewport().set_input_as_handled()
@@ -1275,9 +1275,7 @@ func _input(event: InputEvent) -> void:
 
 	# R trigger - Add action
 	elif event.is_action_pressed("battle_advance"):
-		## A held R repeats; on a condition only the first press is refused out loud.
-		if not (event.is_echo() and cursor_col < _get_condition_slots_for_row(cursor_row)):
-			_add_action()
+		_add_action()
 		get_viewport().set_input_as_handled()
 
 	# Tab - Toggle row / Shift+Tab - Cycle profiles
