@@ -1043,9 +1043,10 @@ func _input(event: InputEvent) -> void:
 		# Ability lists run long on a developed character; clamped rather than wrapped
 		# because a page jump that wraps past the end is disorienting.
 		if list_size > 0:
+			var page_from: int = selected_index
 			selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, list_size - 1)
 			_build_ui()
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, selected_index)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

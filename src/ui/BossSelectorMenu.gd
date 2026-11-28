@@ -390,12 +390,13 @@ func _input(event: InputEvent) -> void:
 
 	elif page != 0:
 		# 46 entries once the list came from data — one row at a time is unusable.
+		var page_from: int = selected_index
 		selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, _selectable_indices.size() - 1)
 		_clamp_scroll()
 		_refresh_list()
 		_update_selection()
 		if SoundManager:
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, selected_index)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

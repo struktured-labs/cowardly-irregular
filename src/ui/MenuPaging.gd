@@ -12,6 +12,11 @@ extends RefCounted
 const PAGE_ROWS := 10
 
 
+## The page cue: a jump that moved plays menu_move; one held at an end moved nothing and plays the refusal.
+static func play_step_cue(before: int, after: int) -> void:
+	SoundManager.play_ui("menu_move" if after != before else "menu_error")
+
+
 ## Release-edge gate. battle_defer/battle_advance each carry a BUTTON and an analog TRIGGER axis
 ## (L2 = axis 4, R2 = axis 5), and an analog ramp emits one event per value change — every one of
 ## which reads as pressed, because an axis has no echo flag. Measured: a 6-step pull past the

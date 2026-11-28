@@ -894,12 +894,13 @@ func _input(event: InputEvent) -> void:
 	elif page != 0:
 		## 113 monsters at one row per press. Clamped, not wrapped like the arrows above: a page jump
 		## is "move a screenful", and wrapping from the top to the tail is a different intent.
+		var page_from: int = _selected
 		_selected = clampi(_selected + page * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight_row()
 		_scroll_to_selected()
 		_refresh_detail()
 		if SoundManager:
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, _selected)
 		get_viewport().set_input_as_handled()
 	elif nav == "ui_left":
 		# Tick 267: cycle sort mode (Level → Kills → Name → Level).

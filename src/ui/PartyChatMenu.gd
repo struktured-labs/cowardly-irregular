@@ -244,10 +244,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif page != 0:
 		# The registry carries 44 chats and availability grows all game; clamped, not wrapped, like every other paging menu.
+		var page_from: int = _selection
 		_selection = clampi(_selection + page * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight()
 		if SoundManager:
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, _selection)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
 		_play_selected()

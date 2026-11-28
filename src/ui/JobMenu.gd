@@ -923,9 +923,10 @@ func _handle_job_input(event: InputEvent) -> void:
 	elif page != 0:
 		if jobs.size() > 0:
 			# Clamped, not wrapped: a page jump past the end is disorienting (AbilitiesMenu's ruling).
+			var page_from: int = selected_job_index
 			selected_job_index = clampi(selected_job_index + page * MenuPaging.PAGE_ROWS, 0, jobs.size() - 1)
 			_build_ui()
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, selected_job_index)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

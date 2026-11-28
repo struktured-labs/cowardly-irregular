@@ -1378,10 +1378,11 @@ func _input(event: InputEvent) -> void:
 
 	# Page jump — this list is long enough that one-row-at-a-time is a slog (struktured 2026-07-25).
 	elif page != 0:
+		var page_from: int = selected_index
 		selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, _settings_items.size() - 1)
 		_update_selection()
 		if SoundManager:
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, selected_index)
 		get_viewport().set_input_as_handled()
 
 	# Adjust value - allow echo for left/right to make adjusting sliders easier

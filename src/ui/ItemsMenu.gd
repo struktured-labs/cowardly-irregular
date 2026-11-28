@@ -766,11 +766,12 @@ func _handle_item_list_input(event: InputEvent) -> void:
 	elif page != 0:
 		## 172 items at one row per press. Clamped, not wrapped like the arrows above.
 		if _item_list.size() > 0:
+			var page_from: int = selected_item_index
 			selected_item_index = clampi(
 				selected_item_index + page * MenuPaging.PAGE_ROWS,
 				0, _item_list.size() - 1)
 			_build_ui()
-			SoundManager.play_ui("menu_move")
+			MenuPaging.play_step_cue(page_from, selected_item_index)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
