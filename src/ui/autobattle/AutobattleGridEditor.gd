@@ -1912,12 +1912,9 @@ func save_and_close() -> void:
 func _cycle_character(direction: int = 1) -> void:
 	"""Cycle to the next/previous party member (D-pad up/down in portrait focus)"""
 	if party.size() < 2:
-		# No other characters to cycle to
 		SoundManager.play_ui("menu_error")
+		_flash_status("There is no one else in the party to switch to.", Color.YELLOW)
 		return
-
-	# Save current character's script before switching
-	_save_script()
 
 	# Cycle to next/previous character. Skip spotlight-locked PCs so the
 	# user can't edit a script they don't yet control. Debug flag override:
@@ -1925,11 +1922,20 @@ func _cycle_character(direction: int = 1) -> void:
 	# guard tolerates an all-locked party (shouldn't happen given the lead
 	# is always unlocked) by breaking after one full lap.
 	var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
+	var was_index := current_party_index
 	for _i in range(party.size()):
 		current_party_index = (current_party_index + direction + party.size()) % party.size()
 		var candidate = party[current_party_index]
 		if debug_override or not ("autobattle_locked" in candidate and candidate.autobattle_locked):
 			break
+	## Every other member locked: the lap came home, so nothing switched and the press must not click as if it had.
+	if current_party_index == was_index:
+		SoundManager.play_ui("menu_error")
+		_flash_status("No one else in the party can be edited yet.", Color.YELLOW)
+		return
+
+	# Save current character's script before switching
+	_save_script()
 	var next_member = party[current_party_index]
 
 	# Setup for new character
@@ -1968,8 +1974,8 @@ func _cycle_profile() -> void:
 	"""Cycle to the next profile for current character (L button)"""
 	var profiles = AutobattleSystem.get_character_profiles(character_id)
 	if profiles.size() < 2:
-		# No other profiles to cycle to
 		SoundManager.play_ui("menu_error")
+		_flash_status("%s has only one profile." % character_name, Color.YELLOW)
 		return
 
 	# Save current script before switching
