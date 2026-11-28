@@ -9,6 +9,7 @@ extends GutTest
 ## The overlay here REPORTS the layout measured in that real battle (cards, resting title, docked title, loot strip),
 ## scaled to this viewport — the placement's input is the rect list, which is what the real overlay now provides.
 
+const SceneScript := preload("res://src/battle/BattleScene.gd")
 const MEASURED_VP := Vector2(1280, 720)
 const MEASURED := [
 	Rect2(383, 216, 274, 100), Rect2(444.65, 50.5, 150.7, 55),
@@ -26,7 +27,7 @@ class FakeResults:
 
 
 func _scene_with_results() -> Array:
-	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
+	var scene: Node = SceneScript.new()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var vp: Vector2 = scene.get_viewport_rect().size

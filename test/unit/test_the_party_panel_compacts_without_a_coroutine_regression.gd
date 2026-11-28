@@ -4,12 +4,13 @@ extends GutTest
 ## Compaction awaited process_frame in a loop, so a scene freed mid-step resumed dead; it now steps on a frame connection.
 ## GUT 9.4 cannot see engine errors, so the seat counts that line in this file's own log (as the lunge fix did).
 
+const SCENE := preload("res://src/battle/BattleScene.gd")
 const UIManager := preload("res://src/battle/BattleUIManager.gd")
 
 
 ## A script-only scene with a PARTY panel whose bottom sits at `bottom_y`.
 func _scene(bottom_y: float) -> Node:
-	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
+	var scene = SCENE.new()
 	add_child(scene)
 	var ui := Control.new()
 	ui.name = "UI"
