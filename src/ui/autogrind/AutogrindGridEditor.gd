@@ -1260,6 +1260,9 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("battle_defer"):
 		if _is_on_condition_cell():
 			_add_and_condition()
+		else:
+			SoundManager.play_ui("menu_error")
+			_flash_status("Put the cursor on a condition to add another.")
 		get_viewport().set_input_as_handled()
 
 	# Shift+R must precede battle_advance: that action binds R, and Godot matches an action even
@@ -1718,6 +1721,7 @@ func _add_action() -> void:
 
 	if cursor_col < condition_slots:
 		SoundManager.play_ui("menu_error")
+		_flash_status("Put the cursor on the action side to add an action.")
 		return
 
 	if actions.size() > 0 and actions[-1].get("type") == "stop_grinding":
