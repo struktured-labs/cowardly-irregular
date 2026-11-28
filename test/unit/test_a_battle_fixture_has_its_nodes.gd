@@ -1,6 +1,5 @@
 extends GutTest
-## .849 gate: 4450 "Node not found" engine errors, every one from a BattleScene built as a bare script.
-## battle_scene_fixture builds it from the .tscn, so its @onready paths resolve, with or without a probe subclass.
+## .849 gate: 4450 "Node not found" errors from bare-script BattleScenes; the fixture builds the .tscn instead.
 
 const Fixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 const SceneScript := preload("res://src/battle/BattleScene.gd")
@@ -38,3 +37,21 @@ func test_the_top_offenders_build_through_the_fixture() -> void:
 		var src := FileAccess.get_file_as_string("res://test/unit/test_%s.gd" % f)
 		assert_gt(src.length(), 0, "CONTROL: read test_%s.gd" % f)
 		assert_true(src.contains("battle_scene_fixture.gd"), "test_%s.gd must build its BattleScene through the fixture" % f)
+
+
+func test_the_root_sets_nothing_a_probe_swap_would_drop() -> void:
+	## set_script resets script-owned vars, so the probe path is only faithful while the .tscn root sets none.
+	var allowed := ["layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom",
+		"offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "script"]
+	var keys: Array = []
+	var on := false
+	for line in FileAccess.get_file_as_string(Fixture.SCENE_PATH).split("\n"):
+		if line.begins_with("[node name=\"BattleScene\""):
+			on = true
+		elif on and line.begins_with("["):
+			break
+		elif on and " = " in line:
+			keys.append(line.get_slice(" = ", 0))
+	assert_true(keys.has("script"), "CONTROL: the root block was found and read")
+	for k in keys:
+		assert_true(allowed.has(k), "BattleScene.tscn's root sets '%s'; battle_scene_fixture's probe set_script would silently drop a script var" % k)

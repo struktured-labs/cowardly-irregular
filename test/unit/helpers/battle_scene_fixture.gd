@@ -1,8 +1,6 @@
 extends RefCounted
 
-## Builds a BattleScene from its packed .tscn, so the @onready $-paths find their nodes.
-## A bare BattleScene.gd.new() has no children and logs one "Node not found" engine error per path
-## on add_child (4450 in the .849 gate). `script` lets a test's ProbeScene subclass ride the real tree.
+## BattleScene from its .tscn so @onready paths resolve; a bare .new() logged 4450 "Node not found" in the .849 gate.
 
 const SCENE_PATH := "res://src/battle/BattleScene.tscn"
 
