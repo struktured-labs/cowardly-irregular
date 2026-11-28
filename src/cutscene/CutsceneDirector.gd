@@ -1803,21 +1803,6 @@ func _choice_option_hidden(option: Dictionary) -> bool:
 	return false
 
 
-## A card line wider than the screen breaks at its middlemost space, so a long boss name grows a line instead of running off both edges.
-const CARD_SIDE_MARGIN: float = 16.0
-
-
-static func card_lines(text: String, px: int, max_w: float) -> String:
-	var font: Font = UiFont.display()
-	if font == null or font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= max_w:
-		return text
-	var best := -1
-	for i in text.length():
-		if text[i] == " " and (best < 0 or absi(i - text.length() / 2) < absi(best - text.length() / 2)):
-			best = i
-	return text if best < 0 else text.substr(0, best) + "\n" + text.substr(best + 1)
-
-
 ## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT
 ## THE TITLE'S HEIGHT. Both cards set their fonts raw — boss name 36 / subtitle 16, chapter title
 ## 28 / subtitle 18 — and then placed the subtitle at a fixed `+48` / `+44`, a number that is only
@@ -2027,7 +2012,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 
 	# Boss name label — large, dramatic
 	var name_label = Label.new()
-	name_label.text = card_lines(boss_name, TextScale.scaled(36), screen_size.x - 2.0 * CARD_SIDE_MARGIN)
+	name_label.text = boss_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var bi_name_px: int = TextScale.scaled(36)
 	var bi_title_px: int = TextScale.scaled(16)

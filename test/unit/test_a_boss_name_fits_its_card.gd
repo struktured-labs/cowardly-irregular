@@ -1,9 +1,10 @@
 extends GutTest
 
-## cowir-cutscenes 2026-11-28: the title cards grew taller with Text Size but nothing judged WIDTH, so a 27-char boss name ran off both edges at 200%.
+## cowir-cutscenes 2026-11-28: the title cards are judged for height at every Text Size; this judges WIDTH, so a longer boss name cannot run off the screen unseen.
 
 const TEXT_SIZE_PRESETS := [0.8, 1.0, 1.25, 1.5, 2.0]
 const DIR := "res://data/cutscenes"
+const SIDE_MARGIN := 16.0
 
 
 class CardDirector extends CutsceneDirector:
@@ -86,7 +87,7 @@ func _judge(kind: String) -> void:
 	assert_gt(steps.size(), 20, "CONTROL: the corpus holds the authored %s steps, got %d" % [kind, steps.size()])
 	var vw: float = get_viewport().get_visible_rect().size.x
 	assert_gt(vw, 1000.0, "CONTROL: a real viewport width, got %.0f" % vw)
-	var safe: float = vw - 2.0 * CutsceneDirector.CARD_SIDE_MARGIN
+	var safe: float = vw - 2.0 * SIDE_MARGIN
 	var bad: Array = []
 	var widest := {"w": 0.0, "text": ""}
 	for scale in TEXT_SIZE_PRESETS:
@@ -105,8 +106,9 @@ func _judge(kind: String) -> void:
 				var top: Dictionary = labels[k - 1]
 				if float(top["y"]) + float(top["h"]) > float(labels[k]["y"]) + 0.5:
 					bad.append("%.0f%%: '%s' reaches into '%s' below it" % [scale * 100.0, str(top["text"]).replace("\n", " / "), labels[k]["text"]])
-	gut.p("[CARD] %s widest line: %.0f px, %s" % [kind, widest["w"], widest["text"]])
-	assert_eq(bad, [], "every %s line fits the screen and clears the line below it, at every Text Size" % kind)
+	gut.p("[CARD] %s widest line: %.0f px of %.0f safe, %s" % [kind, widest["w"], safe, widest["text"]])
+	assert_gt(float(widest["w"]), safe * 0.5, "CONTROL: the widest %s line was really measured, got %.0f px" % [kind, widest["w"]])
+	assert_eq(bad, [], "every %s line fits the screen and clears the line below it, at every Text Size: shorten the line or break the card before shipping it" % kind)
 
 
 func test_every_boss_card_fits_the_screen() -> void:
@@ -115,29 +117,3 @@ func test_every_boss_card_fits_the_screen() -> void:
 
 func test_every_chapter_card_fits_the_screen() -> void:
 	await _judge("chapter_title")
-
-
-func test_some_boss_name_needs_the_break_at_200() -> void:
-	## Without this the boss arm could be green because no name is long enough, which is no evidence about the break.
-	var font: Font = UiFont.display()
-	assert_not_null(font, "CONTROL: the display face is installed")
-	GameState.text_size_scale = 2.0
-	var px := TextScale.scaled(36)
-	var safe: float = get_viewport().get_visible_rect().size.x - 2.0 * CutsceneDirector.CARD_SIDE_MARGIN
-	var over: Array = []
-	for s in _steps("boss_intro"):
-		if font.get_string_size(str(s.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > safe:
-			over.append(str(s.get("name", "")))
-	assert_gt(over.size(), 0, "at least one authored boss name is wider than the screen at 200%, so the card's break is exercised")
-	gut.p("[CARD] names that need the break at 200%%: %s" % str(over))
-
-
-func test_at_100_no_name_is_broken() -> void:
-	GameState.text_size_scale = 1.0
-	var safe: float = 1280.0 - 2.0 * CutsceneDirector.CARD_SIDE_MARGIN
-	var broken: Array = []
-	for s in _steps("boss_intro"):
-		var n := str(s.get("name", ""))
-		if CutsceneDirector.card_lines(n, TextScale.scaled(36), safe) != n:
-			broken.append(n)
-	assert_eq(broken, [], "at 100% every authored boss name stays on one line, as it always has")
