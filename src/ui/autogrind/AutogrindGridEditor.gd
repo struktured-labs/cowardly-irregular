@@ -1258,7 +1258,8 @@ func _input(event: InputEvent) -> void:
 
 	# L trigger - Add AND condition
 	elif event.is_action_pressed("battle_defer"):
-		if _is_on_condition_cell():
+		## A condition or the empty "+" slot beside them: the condition side, the same notion R refuses on.
+		if cursor_col < _get_condition_slots_for_row(cursor_row):
 			_add_and_condition()
 		elif not event.is_echo():
 			SoundManager.play_ui("menu_error")

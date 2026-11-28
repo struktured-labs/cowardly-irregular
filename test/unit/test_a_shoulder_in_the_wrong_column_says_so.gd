@@ -92,6 +92,17 @@ func test_l_on_a_condition_still_adds_one() -> void:
 		assert_false(_stamped("menu_error"), "%s: a real add must not play the refusal" % p[0].get_file())
 
 
+## Review (cowir-autogrind 28876, cowir-controller 28877): the empty "+" slot is the condition side's own add cell.
+func test_l_on_the_empty_condition_slot_adds_one() -> void:
+	for p in [[AB_EDITOR, AB_COND, {"type": "attack"}], [AG_EDITOR, AG_COND, {"type": "stop_grinding"}]]:
+		var ed: Node = await _editor(p[0], p[1], p[2], 1)
+		assert_false(ed._is_on_condition_cell(), "CONTROL %s: col 1 is the empty slot, not a condition" % p[0].get_file())
+		assert_eq(int(ed._get_condition_slots_for_row(0)), 2, "CONTROL %s: the empty slot is drawn" % p[0].get_file())
+		_press(ed, "battle_defer")
+		assert_eq(_conds(ed), 2, "%s: L on the empty condition slot did not add a condition" % p[0].get_file())
+		assert_false(_stamped("menu_error"), "%s: L on the empty condition slot was refused" % p[0].get_file())
+
+
 func test_l_on_a_single_autobattle_action_is_refused_with_a_reason() -> void:
 	## col 2: the condition, the empty AND slot, then the action.
 	var ed: Node = await _editor(AB_EDITOR, AB_COND, {"type": "attack"}, 2)
