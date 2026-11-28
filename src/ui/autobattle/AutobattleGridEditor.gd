@@ -2176,7 +2176,7 @@ func _input(event: InputEvent) -> void:
 			_split_action_group()
 		elif cursor_col < _get_condition_slots_for_row(cursor_row):
 			_add_and_condition()
-		elif not event.is_echo():
+		else:
 			SoundManager.play_ui("menu_error")
 			_flash_status("Put the cursor on a condition or a repeated action.", Color.YELLOW)
 		get_viewport().set_input_as_handled()

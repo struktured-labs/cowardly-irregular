@@ -119,10 +119,44 @@ func _glyph_px(base: int) -> float:
 	var font_size := TextScale.scaled(base)
 	var font: Font = get_theme_font(&"font") if is_inside_tree() else null
 	if font == null:
-		font = ThemeDB.fallback_font
+		font = UiFont.display()
 	if font == null:
 		return float(font_size)
 	return font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y
+
+
+## The font a body Label draws with, so a wrap measured here breaks where the Label would.
+func _label_font() -> Font:
+	var font: Font = get_theme_font(&"font", &"Label") if is_inside_tree() else null
+	return font if font != null else UiFont.display()
+
+
+## One quest line as the screen lines it needs at its scaled size: words that would run past
+## `width` move to a continuation line indented like the first. clip_text stays the last resort for
+## a single word wider than the panel. A line that fits returns itself, so 100% is unchanged.
+func _wrap_line(line: Dictionary, width: float) -> Array:
+	var text: String = str(line["text"])
+	var font: Font = _label_font()
+	var px: int = TextScale.scaled(int(line["size"]))
+	if text.strip_edges() == "" or font == null or font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= width:
+		return [line]
+	var lead: String = text.substr(0, text.length() - text.strip_edges(true, false).length())
+	var out: Array = []
+	var cur: String = ""
+	for word in text.strip_edges(true, false).split(" ", false):
+		var trial: String = (lead + word) if cur == "" else (cur + " " + word)
+		if cur != "" and font.get_string_size(trial, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > width:
+			out.append(cur)
+			trial = lead + word
+		cur = trial
+	if cur != "":
+		out.append(cur)
+	var rows: Array = []
+	for t in out:
+		var row: Dictionary = line.duplicate()
+		row["text"] = t
+		rows.append(row)
+	return rows
 
 
 func setup() -> void:
@@ -182,11 +216,22 @@ func _build_ui() -> void:
 		var next_label = Label.new()
 		next_label.name = "NextBanner"
 		next_label.text = "▶ Next: " + next_text
+		## Wraps inside the banner, which grows to the wrapped height; one line ran off the screen from 125%.
+		next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		next_label.position = Vector2(32, banner_top + 4.0)
 		next_label.size = Vector2(vp_size.x - 64, next_label_h)
 		next_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		next_label.add_theme_color_override("font_color", ACTIVE_COLOR)
 		add_child(next_label)
+		next_label.size.y = 0.0
+		var wrapped_h: float = next_label.get_minimum_size().y
+		if next_label.get_line_count() > 1:
+			next_label_h = maxf(next_label_h, wrapped_h)
+			next_label.size.y = next_label_h
+			next_bg_h = next_label_h + 8.0
+			next_bg.size.y = next_bg_h
+		else:
+			next_label.size.y = next_label_h
 		banner_h = next_bg_h + 8.0
 
 	# Quest content area. Chapter headers are the tallest body line (base 15). A fixed 20px pitch is shorter than that glyph, and a larger Text Size stacks the next objective through it.
@@ -198,7 +243,13 @@ func _build_ui() -> void:
 	var line_height: float = maxf(20.0, _glyph_px(15))
 	_max_visible_lines = int(content_h / line_height)
 
-	var lines: Array = _build_quest_lines()
+	var logical: Array = _build_quest_lines()
+	## Scroll, paging and the window all count SCREEN lines, so a wrapped objective scrolls like any other.
+	var lines: Array = []
+	var first_row: Array = []
+	for line in logical:
+		first_row.append(lines.size())
+		lines.append_array(_wrap_line(line, vp_size.x - float(line["indent"]) - 20.0))
 	_total_lines = lines.size()
 
 	# On first open, snap the scroll viewport so the active objective lands
@@ -206,8 +257,9 @@ func _build_ui() -> void:
 	# in late-game runs. Subsequent rebuilds (driven by scroll input) skip
 	# this so the user's manual scroll position is preserved.
 	if not _initial_scroll_applied:
-		var active_idx = _find_active_line_index(lines)
+		var active_idx = _find_active_line_index(logical)
 		if active_idx > -1:
+			active_idx = int(first_row[active_idx])
 			# Leave ~2 lines of context above the active objective so the
 			# chapter header is still visible.
 			_scroll_offset = maxi(0, active_idx - 2)

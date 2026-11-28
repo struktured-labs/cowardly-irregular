@@ -313,15 +313,7 @@ func _setup_npcs() -> void:
 	# Firewall Guard (blocks path, future content hint). After world5_termination_condition step 3 the attendant
 	# speaks to the answer the party sent the stack (QuestSystem choice `sets`); the original message earns the reply
 	# its _wiring_notes authored. Same shape as the W1 dragon villages: lines chosen when the village is built.
-	var _fw_lines: Array = _attendant_lines()
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _fw_lines if not _fw_lines.is_empty() else [
-		"HALT. Access to sector twelve is restricted.",
-		"Clearance level required: DELTA.",
-		"Your current clearance level: NONE.",
-		"When you have acquired sufficient system permissions, return.",
-		"...I will be here. I am always here.",
-		"I have been here for four hundred cycles. I am fine. Everything is fine."
-	])
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), _attendant_lines())
 	firewall.npc_id = "firewall_attendant_w5"
 	npcs.add_child(firewall)
 	# The answer is sent mid-conversation; re-pick his lines when the quest moves so the next talk already knows it.
@@ -333,12 +325,62 @@ func _setup_npcs() -> void:
 	_add_quest_examine_point("world5_termination_condition", "quest_world5_termination_condition_stack_read", "Read the stack",
 		"Frame after frame, one parameter shifting, the same call spells it out: STATUS REPORT. GRAND MECHANISM. ALL FUNCTIONS NOMINAL. AWAITING ACKNOWLEDGEMENT. The first frame is three years old. Nobody ever wrote back.",
 		"A stack overflow, still running. Every frame is the same call, retried. Seventeen smaller processes are sheltering in its noise.", Vector2(2.5 * TILE_SIZE, 15.5 * TILE_SIZE))
+	_place_orrery()
 	_place_masterites()
 
 
-## FIREWALL-ALPHA's lines for the answer sent the stack (world5_termination_condition `sets`); [] before any answer.
+## Orrery_v5, the packet taking the long way round: gives world5_long_way_around (its prereq keeps the W4 step first).
+func _place_orrery() -> void:
+	var orrery = _create_npc("Orrery_v5", "mysterious", Vector2(17 * TILE_SIZE, 16 * TILE_SIZE), [
+		"Transit time: an unreasonable duration. I prefer the scenic route.",
+		"Deprecated nodes only. Nobody inspects a road they think is closed."
+	])
+	orrery.sprite_archetype = "traveler"  # the travelling merchant keeps her look, as in Rivet Row
+	orrery.npc_id = "madame_orrery_w5"
+	npcs.add_child(orrery)
+	# Step 2: the compressed object she carries opens to a compiler's touch; the Mage reads it (no hard gate, per the notes).
+	_add_quest_examine_point("world5_long_way_around", "quest_world5_long_way_around_decrypted", "Decrypt the object",
+		"Your Mage reads the cipher the way a spell is read, and it gives. The object unfolds into a blueprint, every margin crowded with angular notation.",
+		"A compressed data object, humming in an unreasonable number of directions at once.", Vector2(19.5 * TILE_SIZE, 17.5 * TILE_SIZE))
+
+
+const ATTENDANT_DEFAULT_LINES: Array = [
+	"HALT. Access to sector twelve is restricted.",
+	"Clearance level required: DELTA.",
+	"Your current clearance level: NONE.",
+	"When you have acquired sufficient system permissions, return.",
+	"...I will be here. I am always here.",
+	"I have been here for four hundred cycles. I am fine. Everything is fine."
+]
+## world5_long_way_around step 3: the notation recognised on delivery (its _wiring_notes), while the quest is still open.
+const ATTENDANT_BLUEPRINT_LINES: Array = [
+	"This is administrative notation. The Calibrant didn't just build the worlds. They annotated them.",
+	"They kept asking why. They kept not answering."
+]
+## The filing line varies with the overflow: the shelter the seventeen left once it is resolved (_wiring_notes).
+const ATTENDANT_FILED_LINE := "I have filed it where the builder does not read. There is one shelf like that. I check it every cycle."
+const ATTENDANT_FILED_IN_SHELTER_LINE := "I have filed it in the shelter the seventeen left empty. It fits. I suspect it was always going to."
+## After the turn-in the first sighting is over: one past-tense line leads instead.
+const ATTENDANT_BLUEPRINT_AFTER_LINE := "The notation you brought me is still on its shelf. It has not answered anything. Neither has the builder."
+
+
+## FIREWALL-ALPHA's lines: the blueprint beat once delivered, then the answer sent the stack, else the post.
 func _attendant_lines() -> Array:
-	var _fw_gs = get_node_or_null("/root/GameState")
+	var answer: Array = _attendant_answer_lines()
+	var base: Array = (answer if not answer.is_empty() else ATTENDANT_DEFAULT_LINES).duplicate()
+	var gs = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	if gs == null or not gs.is_story_flag_set("quest_world5_long_way_around_delivered"):
+		return base
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs != null and qs.get_state("world5_long_way_around") == "complete":
+		return [ATTENDANT_BLUEPRINT_AFTER_LINE] + base
+	var resolved: bool = gs.is_story_flag_set("quest_world5_termination_condition_signal_sent")
+	return ATTENDANT_BLUEPRINT_LINES + [ATTENDANT_FILED_IN_SHELTER_LINE if resolved else ATTENDANT_FILED_LINE] + base
+
+
+## FIREWALL-ALPHA's lines for the answer sent the stack (world5_termination_condition `sets`); [] before any answer.
+func _attendant_answer_lines() -> Array:
+	var _fw_gs = get_node_or_null("/root/GameState") if is_inside_tree() else null
 	var _fw_lines: Array = []
 	if _fw_gs != null and _fw_gs.is_story_flag_set("quest_world5_termination_condition_sent_original"):
 		_fw_lines = [
@@ -367,9 +409,7 @@ func _attendant_lines() -> Array:
 func _refresh_attendant(firewall: Node) -> void:
 	if not is_instance_valid(firewall):
 		return
-	var lines: Array = _attendant_lines()
-	if not lines.is_empty():
-		firewall.dialogue_lines = lines
+	firewall.dialogue_lines = _attendant_lines()
 
 
 ## W5's three village Masterites. The Root Process already fights arbiter_futuristic; these are the other

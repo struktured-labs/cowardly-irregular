@@ -14,7 +14,6 @@ const NPC_SRC := "res://src/exploration/OverworldNPC.gd"
 const AUTHORED_AHEAD := {
 	"rat_patrol_junction": "W4 — sited in rivet_row_tunnels, which exists as no map",
 	"memory_leak_district": "W5 — no village placement yet",
-	"madame_orrery_w5": "W5 — no village placement yet",
 	"madame_orrery_w6": "W6 — no village placement yet",
 }
 

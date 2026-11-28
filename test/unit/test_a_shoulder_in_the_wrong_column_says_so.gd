@@ -133,7 +133,7 @@ func test_r_on_a_grind_condition_is_refused_with_a_reason() -> void:
 	assert_string_contains(_shown(ed), "action side", "the refusal must say where R works")
 
 
-## Review (cowir-controller 28875): a held shoulder repeats, and a refusal is one buzz per press, not per key-repeat.
+## A key-repeat never reaches the shoulder arms (is_action_pressed drops echoes by default); this pins it should anyone pass allow_echo.
 ## The key is read off the action's own binding, so a remap (L/R became Q/W) cannot leave this arm pressing a dead key.
 func _key(action: String, echo: bool) -> InputEventKey:
 	var bound: InputEventKey = null
