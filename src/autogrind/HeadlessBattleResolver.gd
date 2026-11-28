@@ -57,7 +57,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung", "counter_round", "counters_this_round", "_drain_base"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -99,6 +99,7 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	## battle live had already disarmed. Enemies are rebuilt per battle, so only the party accumulated.
 	## NOT cleared, because live does not: HP, MP, permanent_injuries, and the permakilled marker.
 	## A grind that healed the party between fights would be a worse bug than the leak it replaced.
+	BattleManager.undo_stat_drain(_player_party)  # an unfinished battle's drain is given back, not dropped with its record
 	for combatant in (_player_party + _enemy_party):
 		if combatant == null or not is_instance_valid(combatant):
 			continue
@@ -238,6 +239,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 
 func _restore_bm(bm, player_backup: Array, enemy_backup: Array, round_backup: int = 0) -> void:
+	if bm.has_method("undo_stat_drain"):
+		bm.undo_stat_drain(_player_party)
 	bm.current_round = round_backup
 	bm.player_party.clear()
 	bm.enemy_party.clear()
@@ -263,6 +266,10 @@ func _tick_round_start() -> void:
 		## NO DEBT PAYMENT HERE. Live pays it inside the SELECTION loop (BattleManager:1604), where the
 		## same branch also forfeits the turn. Paying at round start AND granting the natural +1 below
 		## made debt recover at 2 AP/round and cost nothing — @cowir-battle, 2026-09-16.
+	## Live's own corruption tick (time_distortion, stat_drain) on the parties resolve_battle lent BattleManager.
+	var bm: Object = _get_autoload("BattleManager")
+	if bm != null and bm.has_method("_apply_corruption_effects_on_round_start"):
+		bm._apply_corruption_effects_on_round_start()
 
 
 func _selection_phase() -> Array[Dictionary]:
@@ -1160,6 +1167,9 @@ func _roll_attack_strike(attacker, target, scale: float, charge: float = 0.0) ->
 	## damage, exactly where live applies it, because this file's defense formula is quadratic and
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+	## reality_bending, last in the roll as in live's _roll_attack_strike: the hit carries the target's defence.
+	if attacker.has_meta("corruption_effects") and "reality_bending" in attacker.get_meta("corruption_effects", []):
+		damage += float(target.defense)
 	return {"fate": "hit", "damage": int(damage)}
 
 
