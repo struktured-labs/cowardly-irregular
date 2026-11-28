@@ -437,8 +437,9 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	# Mouse click overlay
 	## Height from the ROW, not a literal 56: a two-line description makes the row taller and the
 	## bottom of a highlighted row would otherwise not answer a click.
+	## Width from the ROW too: a literal 200 left the slot's job name and description deaf to the mouse past it.
 	MenuMouseHelper.make_clickable(row, slot_index, 200, row_height,
-		_on_job_slot_click.bind(slot_index), _on_job_slot_hover.bind(slot_index))
+		_on_job_slot_click.bind(slot_index), _on_job_slot_hover.bind(slot_index)).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	return row
 
@@ -810,9 +811,9 @@ func _create_job_row(job_id: String, index: int, row_width: float = 0.0) -> Cont
 		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
 
-	# Mouse click overlay
+	# Mouse click overlay, anchored to the row: a literal 300 x 66 left the right of every job and a tall row's foot deaf.
 	MenuMouseHelper.make_clickable(row, index, 300, 66,
-		_on_job_click.bind(index), _on_job_hover.bind(index))
+		_on_job_click.bind(index), _on_job_hover.bind(index)).set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	return row
 

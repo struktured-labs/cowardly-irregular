@@ -7,6 +7,7 @@ extends GutTest
 ## would speak twice, or over the rewards). A recorded clip for the same text outranks the live voice.
 
 const SceneScript := preload("res://src/battle/BattleScene.gd")
+const BattleSceneFixture := preload("res://test/unit/helpers/battle_scene_fixture.gd")
 const DialogueScript := preload("res://src/ui/BattleDialogue.gd")
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const Replay := preload("res://tools/replay_tts_backend.gd")
@@ -22,6 +23,9 @@ class ProbeScene extends "res://src/battle/BattleScene.gd":
 	func _show_victory_results() -> void:
 		results_at = Time.get_ticks_msec()
 	func _show_victory_quip() -> void:
+		pass
+	## A passed probe replaces the fixture's Quiet, so it must skip _ready's live battle itself.
+	func _start_test_battle() -> void:
 		pass
 
 
@@ -75,9 +79,9 @@ func after_each() -> void:
 	_bm_guard.restore()
 
 
-## A bare scene with a real BattleDialogue and one boss whose monster id is `monster_id`.
+## The real scene (no battle started) with a real BattleDialogue and one boss whose monster id is `monster_id`.
 func _make_scene(monster_id: String = BOSS_ID) -> Node:
-	_scene = ProbeScene.new()
+	_scene = BattleSceneFixture.build(ProbeScene)
 	add_child_autofree(_scene)
 	_dialogue = DialogueScript.new()
 	_scene.add_child(_dialogue)

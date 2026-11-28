@@ -264,19 +264,23 @@ func _scroll_to_selected() -> void:
 	_inner.position.y = -clampf(y, 0.0, _scroll_max)
 
 
+## A press past either end moves nothing, so it plays the refusal rather than menu_move.
+func _step_selection(direction: int) -> void:
+	var next := clampi(_selected + direction, 0, maxi(_rows.size() - 1, 0))
+	if next == _selected:
+		SoundManager.play_ui("menu_error")
+		return
+	_selected = next
+	_update_selection()
+	SoundManager.play_ui("menu_move")
+
+
 func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push stepped this list five rows.
 	var nav := MenuNav.step(event)
-	if nav == "ui_down":
-		_selected = mini(_selected + 1, _rows.size() - 1)
-		_update_selection()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-	elif nav == "ui_up":
-		_selected = maxi(_selected - 1, 0)
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+	if nav == "ui_down" or nav == "ui_up":
+		_step_selection(1 if nav == "ui_down" else -1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		SoundManager.play_ui("menu_close")
