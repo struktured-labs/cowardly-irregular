@@ -1202,7 +1202,7 @@ const INNKEEPERS := {
 
 ## The village this interior was entered from; "" when GameLoop is absent or never set one.
 func _origin_map_id() -> String:
-	var gl: Node = get_node_or_null("/root/GameLoop")
+	var gl: Node = get_node_or_null("/root/GameLoop") if is_inside_tree() else null
 	if gl == null or not gl.has_method("get_village_origin_id"):
 		return ""
 	return str(gl.get_village_origin_id())
