@@ -79,6 +79,11 @@
         "text": "Take this ember. It is not lit, but it is warm. If it starts to lean, in your pocket, in your pack — put it down and look east.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Straight up, as it burned for six hundred years. The temple feels louder without its opinion.",
+      "I keep a map by the altar now, folded to the capital. I hope never to need it unfolded.",
+      "No one tends the flame but me again. I had not noticed how lonely that was until she came."
     ]
   },
   "objectives": [

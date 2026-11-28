@@ -78,6 +78,11 @@
         "text": "Take this. It was my husband's. A pick, well kept. He'd want it swung, not stored. So swing it.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "I took his name off the shift board. Then I put it back. The foreman hasn't said a word either way.",
+      "The ledger's in the office with that page cut out. I kept the page. It's still not his hand.",
+      "If you hear that word again somewhere else — reallocated — you come back and tell me where."
     ]
   },
   "objectives": [
