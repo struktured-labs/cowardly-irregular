@@ -144,7 +144,6 @@ const FALLBACK_SITES := {
 	"res://src/ui/JobMenu.gd": 3,
 	"res://src/ui/LensMenu.gd": 1,
 	"res://src/ui/MenuChrome.gd": 1,
-	"res://src/ui/QuestLog.gd": 1,
 	"res://src/ui/SettingsMenu.gd": 1,
 	"res://src/ui/StatusMenu.gd": 1,
 	"res://src/ui/Toast.gd": 1,
