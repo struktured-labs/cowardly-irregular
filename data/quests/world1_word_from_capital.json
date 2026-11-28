@@ -75,6 +75,11 @@
         "text": "My old ribbon. He kept it. That absolute — thank you. Thank you for carrying this.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "I've read Aldrin's letter nine times. Three lines, and two of them are about the weather.",
+      "He kept that ribbon six months and told nobody. That's my brother. No sense, and my chin.",
+      "Next spring I'm going to Scriptura myself. The farm can run a week without me. Mother says so. Mostly."
     ]
   },
   "objectives": [

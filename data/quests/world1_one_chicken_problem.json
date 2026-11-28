@@ -73,6 +73,11 @@
         "text": "Three potions, as promised. And take this egg. Cluck Norris lays them so rarely I half believe she does it on purpose. Careful with it. It's... spirited.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Seven chickens. Seven names. All of them right, which has never once happened before.",
+      "Phil comes to the fence when I say her name. The other six are jealous. Chickens are terrible at hiding it.",
+      "The old man by the well asks after her every morning. I tell him she's doing well. It's true, and it makes his day."
     ]
   },
   "objectives": [
