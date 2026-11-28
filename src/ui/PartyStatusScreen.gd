@@ -478,7 +478,7 @@ func _format_id(id: String) -> String:
 func _resolve_ability_name(ability_id: String) -> String:
 	if ability_id == "":
 		return ""
-	var js: Node = get_node_or_null("/root/JobSystem")
+	var js: Node = get_node_or_null("/root/JobSystem") if is_inside_tree() else null
 	if js != null and js.has_method("get_ability"):
 		var data: Dictionary = js.get_ability(ability_id)
 		if not data.is_empty() and data.has("name"):
@@ -489,7 +489,7 @@ func _resolve_ability_name(ability_id: String) -> String:
 func _resolve_passive_name(passive_id: String) -> String:
 	if passive_id == "":
 		return ""
-	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	var ps: Node = get_node_or_null("/root/PassiveSystem") if is_inside_tree() else null
 	if ps != null and ps.has_method("get_passive"):
 		var data: Dictionary = ps.get_passive(passive_id)
 		if not data.is_empty() and data.has("name"):
@@ -501,7 +501,7 @@ func _resolve_equipment(item_id: String) -> Dictionary:
 	## Best-effort lookup: try EquipmentSystem, then item data files.
 	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
 	# Godot 4 — fetch the autoload via the scene tree root.
-	var eq: Node = get_node_or_null("/root/EquipmentSystem")
+	var eq: Node = get_node_or_null("/root/EquipmentSystem") if is_inside_tree() else null
 	if eq != null:
 		for method in ["get_item", "get_weapon", "get_armor", "get_accessory"]:
 			if eq.has_method(method):
