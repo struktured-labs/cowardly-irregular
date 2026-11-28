@@ -410,7 +410,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_signature_fired", "_cadence", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
 	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
-	"counter_round", "counters_this_round",
+	"counter_round", "counters_this_round", "_drain_base",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -566,6 +566,7 @@ func _current_weather() -> String:
 ## Battle initialization
 func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
+	undo_stat_drain(players)  # a battle that never reached end_battle still gives back its drain
 	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
@@ -1006,6 +1007,7 @@ func apply_post_battle_restore(party: Array) -> Dictionary:
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
+	undo_stat_drain(player_party)
 	_settle_cadence_edges()
 	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
 	var defer_payout: bool = victory and _defer_victory_payout()
@@ -1988,6 +1990,8 @@ func _apply_corruption_effects_on_round_start() -> void:
 	if "stat_drain" in active_effects:
 		for member in player_party:
 			if member.is_alive:
+				if not member.has_meta("_drain_base"):
+					member.set_meta("_drain_base", {"attack": member.attack, "defense": member.defense, "magic": member.magic})
 				member.attack = maxi(1, member.attack - maxi(1, int(member.attack * 0.01)))
 				member.defense = maxi(1, member.defense - maxi(1, int(member.defense * 0.01)))
 				member.magic = maxi(1, member.magic - maxi(1, int(member.magic * 0.01)))
@@ -2007,6 +2011,17 @@ func _apply_corruption_effects_on_round_start() -> void:
 	for unimplemented in []:
 		if unimplemented in active_effects:
 			push_warning("[BattleManager] corruption effect '%s' is in active_effects but has NO runtime handler — added in GameState._apply_random_corruption_effect but never consumed" % unimplemented)
+
+
+## stat_drain is "permanent within battle": the stats each member had before its first drain, put back as the battle ends.
+static func undo_stat_drain(party: Array) -> void:
+	for m in party:
+		if is_instance_valid(m) and m.has_meta("_drain_base"):
+			var base: Dictionary = m.get_meta("_drain_base")
+			m.attack = int(base["attack"])
+			m.defense = int(base["defense"])
+			m.magic = int(base["magic"])
+			m.remove_meta("_drain_base")
 
 
 func _calculate_selection_order() -> void:

@@ -11,6 +11,12 @@ const W1_GIVERS := {
 	"w1_ironhaven_flame_speaks_wrong": "temple_keeper_sella",
 	"w1_sandrift_water_on_the_road": "caravan_master_kes",
 }
+## Harmonia's givers whose own lines describe the job as open (Bram: "One came BACK.", Rowan's unsent letter). 2026-11-28.
+const HARMONIA_GIVERS := {
+	"world1_one_chicken_problem": "farmer_aldwick",
+	"world1_untested_edge": "bram_smith",
+	"world1_word_from_capital": "rowan_harmonia",
+}
 const OPEN_LINE := "There's a man on the road east in gold armor. He won't move."
 
 var _saved_quests: Dictionary
@@ -62,18 +68,19 @@ func test_an_unfinished_quest_keeps_the_givers_own_lines() -> void:
 
 
 func test_a_quest_without_after_lines_changes_nothing() -> void:
-	var qid := "world1_one_chicken_problem"
+	var qid := "world1_fools_spread"
 	assert_true(_authored(qid).is_empty(), "CONTROL: this quest authors none")
-	var aldwick: Node = _giver("farmer_aldwick")
+	var orrery: Node = _giver("madame_orrery_w1")
 	_set_state(qid, "complete")
-	assert_eq(aldwick._static_source_lines(QuestSystem), [OPEN_LINE], "no idle_after_complete means the giver's own lines")
+	assert_eq(orrery._static_source_lines(QuestSystem), [OPEN_LINE], "no idle_after_complete means the giver's own lines")
 
 
-func test_every_w1_dragon_village_giver_has_after_lines() -> void:
+func test_every_w1_giver_with_an_open_problem_has_after_lines() -> void:
 	var gaps: Array = []
-	for qid in W1_GIVERS:
+	var givers: Dictionary = W1_GIVERS.merged(HARMONIA_GIVERS)
+	for qid in givers:
 		var q: Dictionary = QuestSystem.get_quest(qid)
-		assert_eq(str(q.get("giver", {}).get("npc_id", "")), W1_GIVERS[qid], "CONTROL: %s is given by %s" % [qid, W1_GIVERS[qid]])
+		assert_eq(str(q.get("giver", {}).get("npc_id", "")), givers[qid], "CONTROL: %s is given by %s" % [qid, givers[qid]])
 		var lines: Array = _authored(qid)
 		if lines.size() < 2:
 			gaps.append(qid)
