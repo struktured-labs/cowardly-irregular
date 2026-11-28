@@ -61,7 +61,22 @@ func test_the_fonts_follow_the_setting() -> void:
 	assert_gt(b, s, "the record name must GROW with Text Size: 80%% %d, 200%% %d" % [s, b])
 
 
+## Vertical overlap of two line boxes. The authored page already lets the 24px name box dip ~3px into
+## the quip box at 100% (the glyph ink clears it), so growth is judged against that, not against zero.
+func _v_overlap(a: Rect2, b: Rect2) -> float:
+	return maxf(0.0, minf(a.end.y, b.end.y) - maxf(a.position.y, b.position.y))
+
+
 func test_every_line_fits_its_row_at_every_preset() -> void:
+	var ref: Dictionary = {}
+	var ref_h: Dictionary = {}
+	var m0: Node = await _built_at(1.0)
+	for row in m0._rows:
+		var r: Control = row as Control
+		var q: Rect2 = _ink(r.get_child(3) as Label)
+		ref_h[(r.get_child(1) as Label).text] = _ink(r.get_child(1) as Label).size.y
+		ref[(r.get_child(1) as Label).text] = maxf(_v_overlap(_ink(r.get_child(1) as Label), q),
+			_v_overlap(_ink(r.get_child(2) as Label), q))
 	var bad: Array = []
 	var judged := 0
 	var outgrew := 0
@@ -72,27 +87,31 @@ func test_every_line_fits_its_row_at_every_preset() -> void:
 			var r: Control = row as Control
 			var bg_bottom: float = (r.get_child(0) as Control).size.y
 			var name_l: Label = r.get_child(1) as Label
-			var parts: Array = [_ink(name_l), _ink(r.get_child(2) as Label), _ink(r.get_child(3) as Label)]
-			if name_l.get_minimum_size().y > 19.0:
+			var n: Rect2 = _ink(name_l)
+			var v: Rect2 = _ink(r.get_child(2) as Label)
+			var q: Rect2 = _ink(r.get_child(3) as Label)
+			if n.size.y > float(ref_h.get(name_l.text, INF)) + 0.5:
 				outgrew += 1
 			var tag: String = "%.2fx %s" % [scale, name_l.text]
-			for i in parts.size():
-				var a: Rect2 = parts[i]
+			for part in [["name", n], ["value", v], ["quip", q]]:
+				var a: Rect2 = part[1]
 				judged += 1
 				if a.position.x < 0.0 or a.end.x > w + 0.5 or a.end.y > bg_bottom + 0.5:
-					bad.append("%s part %d %s leaves the row (w %.0f, bottom %.0f)" % [tag, i, a, w, bg_bottom])
-				for j in range(i + 1, parts.size()):
-					if a.intersects(parts[j] as Rect2):
-						bad.append("%s parts %d and %d overlap: %s ∩ %s" % [tag, i, j, a, parts[j]])
+					bad.append("%s %s %s leaves the row (w %.0f, bottom %.0f)" % [tag, part[0], a, w, bg_bottom])
+			if n.intersects(v):
+				bad.append("%s name %s meets value %s" % [tag, n, v])
+			var allowed: float = float(ref.get(name_l.text, 0.0)) + 0.5
+			var got: float = maxf(_v_overlap(n, q), _v_overlap(v, q))
+			if got > allowed:
+				bad.append("%s a line dips %.1fpx into the quip (100%% allows %.1f)" % [tag, got, allowed - 0.5])
 		var title: Label = m.get_child(1) as Label
 		if title.position.y + title.get_minimum_size().y > (m._list as Control).position.y + 0.5:
 			bad.append("%.2fx title ends %.0f below the list top %.0f" % [scale,
 				title.position.y + title.get_minimum_size().y, (m._list as Control).position.y])
-		var hint: Label = m._hint as Label
-		if (m._list as Control).get_rect().end.y > hint.position.y + 0.5:
+		if (m._list as Control).get_rect().end.y > (m._hint as Label).position.y + 0.5:
 			bad.append("%.2fx the list runs into the hint" % scale)
 	assert_gt(judged, 100, "CONTROL: the arm must judge every line of every row at every preset")
-	assert_gt(outgrew, 0, "CONTROL: some name line must outgrow the authored 19px, or this arm has no teeth")
+	assert_gt(outgrew, 0, "CONTROL: some name line must outgrow its 100% height, or this arm has no teeth")
 	assert_eq(bad, [], "every record line must fit its row: %s" % [bad])
 
 
@@ -122,7 +141,15 @@ func test_the_default_text_size_keeps_the_shipped_layout() -> void:
 	assert_eq(float(m._scroll_max), 0.0, "nothing scrolls at 100%")
 	assert_false((m._hint as Label).text.contains("Scroll"), "and the hint is unchanged")
 	var w: float = (m._list as Control).size.x
+	var moved := 0
 	for row in m._rows:
 		var r: Control = row as Control
+		var v: Label = r.get_child(2) as Label
 		assert_almost_eq((r.get_child(3) as Label).position.y, authored - 22.0, 0.01, "quip at the authored y")
-		assert_eq((r.get_child(2) as Label).position, Vector2(w - 236.0, 4.0), "value at the authored spot")
+		if v.get_minimum_size().x <= 220.0:
+			assert_eq(v.position, Vector2(w - 236.0, 4.0), "a value that fits keeps the authored spot")
+		else:
+			moved += 1
+			assert_almost_eq(v.position.x + v.size.x, w - 16.0, 0.01, "a wider value keeps the right margin")
+	## The one 100% change: a long Best Grind value outgrew its 220px slot and ran past the row.
+	assert_eq(moved, 1, "CONTROL: the fixture's Best Grind value must be wider than 220px at 100%")

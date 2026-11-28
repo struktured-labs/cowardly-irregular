@@ -202,24 +202,28 @@ func _build_ui() -> void:
 	_fit_to_the_text(title, panel_w, row_space)
 
 
-## Growth-only: measured in the tree, so 100% (where everything fits) keeps the authored layout.
+## Growth-only, measured in the tree: a row grows by what its lines grew over their 100% height, so
+## 100% keeps the authored pitch. Reads minimums, never `size`: a Label built out of the tree keeps a
+## stale clamp from a different font.
 func _fit_to_the_text(title: Label, panel_w: float, row_space: float) -> void:
 	var top: float = maxf(LIST_TOP, title.position.y + title.get_minimum_size().y + 4.0)
 	if top > LIST_TOP:
 		_list.position.y = top
 		_list.size.y = row_space - (top - LIST_TOP)
-	var need: float = _pitch
+	var grow_line := 0.0
+	var grow_quip := 0.0
 	for row in _rows:
-		need = maxf(need, _fit_row(row as Control, panel_w))
-	if need > _pitch:
-		_pitch = need
+		var g: Vector2 = _fit_row(row as Control, panel_w)
+		grow_line = maxf(grow_line, g.x)
+		grow_quip = maxf(grow_quip, g.y)
+	if grow_line + grow_quip > 0.5:
+		_pitch += grow_line + grow_quip
 		for i in _rows.size():
 			var row: Control = _rows[i] as Control
 			row.position.y = float(i) * _pitch
 			row.size.y = _pitch
 			(row.get_child(0) as Control).size.y = _pitch - 6.0
-			var quip: Label = row.get_child(3) as Label
-			quip.position.y = _pitch - 7.0 - quip.size.y
+			(row.get_child(3) as Label).position.y = _pitch - 22.0 - grow_quip
 	_inner.size.y = float(_rows.size()) * _pitch
 	_scroll_max = _inner.size.y - _list.size.y
 	if _scroll_max < 0.5:
@@ -228,28 +232,31 @@ func _fit_to_the_text(title: Label, panel_w: float, row_space: float) -> void:
 		_hint.text = "↑↓ Scroll    " + _hint.text
 
 
-## Lays one row out from its labels' real sizes; returns the pitch the row needs.
-func _fit_row(row: Control, panel_w: float) -> float:
+## The height a Label's line has at its authored 100% size, measured on the label itself.
+func _base_height(l: Label, base_px: int) -> float:
+	var now: int = l.get_theme_font_size("font_size")
+	l.add_theme_font_size_override("font_size", base_px)
+	var h: float = l.get_minimum_size().y
+	l.add_theme_font_size_override("font_size", now)
+	return h
+
+
+## Seats one row's value from its real width; returns how much its name/value line and its quip grew.
+func _fit_row(row: Control, panel_w: float) -> Vector2:
 	var name_l: Label = row.get_child(1) as Label
 	var value_l: Label = row.get_child(2) as Label
 	var quip: Label = row.get_child(3) as Label
 	var name_min: Vector2 = name_l.get_minimum_size()
 	var value_min: Vector2 = value_l.get_minimum_size()
-	var quip_min: Vector2 = quip.get_minimum_size()
-	var block: float = maxf(maxf(name_min.y, value_min.y), 19.0)
-	if value_min.x > 220.0:
-		value_l.position.x = panel_w - 16.0 - value_min.x
-		value_l.size.x = value_min.x
-	if 16.0 + name_min.x + 12.0 > value_l.position.x:
+	value_l.size.x = maxf(220.0, value_min.x)
+	value_l.position.x = panel_w - 16.0 - value_l.size.x
+	var line: float = maxf(name_min.y, value_min.y)
+	if 16.0 + name_min.x + 12.0 > value_l.position.x + value_l.size.x - value_min.x:
 		value_l.position.y = 4.0 + name_min.y
-		block = name_min.y + value_min.y
-	if quip_min.x > panel_w - 32.0:
-		quip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		quip.size.x = panel_w - 32.0
-		quip.update_minimum_size()
-		quip.size.y = 0.0
-	var quip_h: float = maxf(15.0, quip.size.y)
-	return 4.0 + block + quip_h + 7.0
+		line = name_min.y + value_min.y
+	var base_line: float = maxf(_base_height(name_l, 14), _base_height(value_l, 15))
+	var base_quip: float = _base_height(quip, 10)
+	return Vector2(maxf(0.0, line - base_line), maxf(0.0, quip.get_minimum_size().y - base_quip))
 
 
 func _scroll_by(dy: float) -> bool:
@@ -261,9 +268,9 @@ func _scroll_by(dy: float) -> bool:
 
 
 func _input(event: InputEvent) -> void:
-	if _scroll_max > 0.0 and (event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up")):
-		var dy: float = _pitch if event.is_action_pressed("ui_down") else -_pitch
-		if _scroll_by(dy):
+	var nav := MenuNav.step(event)
+	if _scroll_max > 0.0 and (nav == "ui_up" or nav == "ui_down"):
+		if _scroll_by(_pitch if nav == "ui_down" else -_pitch):
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 		return
