@@ -7,7 +7,6 @@ extends GutTest
 ## so switching back puts the same spell on the bar again. A spell that was actually
 ## learned stays usable on the new job and must stay on the bar.
 
-const SCENE_PATH := "res://src/battle/BattleScene.gd"
 const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 
 
@@ -87,7 +86,7 @@ func _hero() -> Combatant:
 
 
 func _scene_with_enemies() -> Node:
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var enemies: Array = []

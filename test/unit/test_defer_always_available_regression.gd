@@ -27,7 +27,6 @@ extends GutTest
 ## intact and the extraction broke. Everything else here was always behavioural.
 
 const MENU_PATH := "res://src/battle/BattleCommandMenu.gd"
-const SCENE_PATH := "res://src/battle/BattleScene.gd"
 
 
 func _combatant(ap: int) -> Combatant:
@@ -43,8 +42,7 @@ func _combatant(ap: int) -> Combatant:
 ## The real Defer row, built by the real builder. Mechanism-agnostic by construction: whether the
 ## gate is carried by `disabled` or by `reject_reason`, what matters is whether the row refuses.
 func _defer_row(c: Combatant) -> Dictionary:
-	var scene_script: GDScript = load(SCENE_PATH)
-	var scene: Node = scene_script.new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var foe := Combatant.new()

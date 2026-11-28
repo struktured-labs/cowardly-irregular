@@ -4,7 +4,6 @@ extends GutTest
 ## Engine order (4.4.1, adhoc 25634): a lunge killed earlier in the frame its stop's timer fires is valid+dead, and play() errors.
 ## The stop now resumes only the sprite's CURRENT lunge, so the error is gone; the seat counts it in this file's log (main 27971).
 
-const SCENE := preload("res://src/battle/BattleScene.gd")
 const STOP := 0.18
 
 var _saved_scale := 1.0
@@ -33,7 +32,7 @@ func _sprite(x: float) -> AnimatedSprite2D:
 ## Three lunges by one attacker; each later lunge starts in the SAME frame the previous stop ends (its timer is made first).
 ## Returns [home, final position, held-and-killed count].
 func _chain(same_frame: bool) -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var attacker := _sprite(400)
 	var target := _sprite(100)
@@ -77,7 +76,7 @@ func test_a_chain_that_waits_out_each_stop_ends_at_home() -> void:
 
 
 func test_a_held_lunge_replaced_without_a_kill_is_not_resumed_over_its_successor() -> void:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var attacker := _sprite(400)
 	var target := _sprite(100)

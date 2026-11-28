@@ -61,7 +61,10 @@ func test_a_built_scene_starts_no_battle_of_its_own() -> void:
 func test_the_top_offenders_build_through_the_fixture() -> void:
 	for f in ["command_menu_shape_regression", "the_boss_last_words_are_a_moment", "a_buff_lands_where_you_can_see_it",
 			"a_running_advance_shows_its_steps", "a_swing_plays_to_its_last_frame", "a_boss_line_is_not_a_wedged_menu_regression",
-			"a_hit_lands_with_its_weight", "a_sprite_rests_at_its_own_colour", "the_locked_defer_row_says_why_regression"]:
+			"a_hit_lands_with_its_weight", "a_sprite_rests_at_its_own_colour", "the_locked_defer_row_says_why_regression",
+			"the_group_menu_offers_what_the_engine_accepts", "the_party_shares_one_bag_in_battle", "the_advance_queue_is_shown_as_cards",
+			"the_party_panel_compacts_without_a_coroutine_regression", "a_chained_lunge_comes_home_regression",
+			"job_change_hides_unknown_quick_slots_regression", "victory_banners_stay_clear_of_the_results", "defer_always_available_regression"]:
 		var src := FileAccess.get_file_as_string("res://test/unit/test_%s.gd" % f)
 		assert_gt(src.length(), 0, "CONTROL: read test_%s.gd" % f)
 		assert_true(src.contains("battle_scene_fixture.gd"), "test_%s.gd must build its BattleScene through the fixture" % f)

@@ -5,7 +5,6 @@ extends GutTest
 ## card (order badge, icon, name, -> target) cascading off the live command menu; undo pops the top one.
 ## Driven through BattleScene's real queue handler, on a real Win98Menu.
 
-const SCENE := preload("res://src/battle/BattleScene.gd")
 
 
 func _combatant(n: String) -> Combatant:
@@ -16,7 +15,7 @@ func _combatant(n: String) -> Combatant:
 
 
 func _rig() -> Array:
-	var scene = SCENE.new()  # bare: _ready stops before starting a battle (no .tscn nodes)
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()  # quiet fixture: real nodes, no auto battle
 	add_child_autofree(scene)
 	scene.test_enemies.assign([_combatant("Goblin A"), _combatant("Goblin B")] as Array[Combatant])
 	scene.party_members.assign([_combatant("Fighter"), _combatant("Cleric")] as Array[Combatant])

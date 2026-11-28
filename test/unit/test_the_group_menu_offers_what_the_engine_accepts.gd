@@ -21,7 +21,6 @@ extends GutTest
 ## refusal through both keys.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
 
 var _saved_party: Array
 var _saved_order: Array
@@ -123,7 +122,7 @@ func _limit_row(scene, combatant: Combatant) -> Dictionary:
 
 
 func _scene_for(party: Array[Combatant]) -> Node:
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	scene.party_members.assign(party)
 	scene.test_enemies.assign(BattleManager.enemy_party)
 	for m in party:

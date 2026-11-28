@@ -9,7 +9,6 @@ extends GutTest
 ## bag, both live and headless. Enemies still use only their own inventory.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
 const GameLoopScript = preload("res://src/GameLoop.gd")
 
 var _saved_party: Array
@@ -75,7 +74,7 @@ func _menu_ids(party: Array[Combatant], actor: Combatant, enemy: Combatant) -> A
 	BattleManager.selection_order.assign(party)
 	BattleManager.selection_index = party.find(actor)
 	BattleManager.current_combatant = actor
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	scene.party_members.assign(party)
 	scene.test_enemies.assign([enemy] as Array[Combatant])
 	for i in party.size():
