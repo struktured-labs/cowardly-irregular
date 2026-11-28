@@ -9,6 +9,13 @@ class_name RecordsMenu
 signal closed()
 
 var _rows: Array = []
+## Rows live in a clipping list so a page that outgrows the screen at a large Text Size scrolls.
+const LIST_TOP := 72.0
+var _list: Control = null
+var _inner: Control = null
+var _pitch: float = 0.0
+var _scroll_max: float = 0.0
+var _hint: Label = null
 
 
 func _ready() -> void:
@@ -128,16 +135,24 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(title)
 
-	var y := 72.0
+	var y := LIST_TOP
 	var records: Array = _collect_records()
 	## The pitch was a hardcoded 56 and the page was EXACTLY full at eleven rows (72 + 11*56 = 688,
 	## the hint's own line), so the twelfth record anyone added fell off the bottom unseen. Derived
 	## from the space that actually exists, clamped so a short list keeps its roomy spacing.
 	var row_space: float = max(100.0, (vp.y - 40.0) - y)
 	var pitch: float = clampf(row_space / float(max(1, records.size())), 40.0, 56.0)
+	_list = Control.new()
+	_list.clip_contents = true
+	_list.position = Vector2(panel_x, LIST_TOP)
+	_list.size = Vector2(panel_w, row_space)
+	add_child(_list)
+	_inner = Control.new()
+	_inner.size = Vector2(panel_w, row_space)
+	_list.add_child(_inner)
 	for rec in records:
 		var row := Control.new()
-		row.position = Vector2(panel_x, y)
+		row.position = Vector2(0, y - LIST_TOP)
 		row.size = Vector2(panel_w, pitch)
 		var row_bg := ColorRect.new()
 		row_bg.color = Color(0.12, 0.12, 0.20, 0.9)
@@ -171,10 +186,12 @@ func _build_ui() -> void:
 		row.add_child(quip)
 
 		_rows.append(row)
-		add_child(row)
+		_inner.add_child(row)
 		y += pitch
+	_pitch = pitch
 
 	var hint := Label.new()
+	_hint = hint
 	hint.text = "%s Close" % InputProfileManager.hint_for_action("ui_cancel")
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
@@ -182,9 +199,74 @@ func _build_ui() -> void:
 	hint.size = Vector2(panel_w, 18)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(hint)
+	_fit_to_the_text(title, panel_w, row_space)
+
+
+## Growth-only: measured in the tree, so 100% (where everything fits) keeps the authored layout.
+func _fit_to_the_text(title: Label, panel_w: float, row_space: float) -> void:
+	var top: float = maxf(LIST_TOP, title.position.y + title.get_minimum_size().y + 4.0)
+	if top > LIST_TOP:
+		_list.position.y = top
+		_list.size.y = row_space - (top - LIST_TOP)
+	var need: float = _pitch
+	for row in _rows:
+		need = maxf(need, _fit_row(row as Control, panel_w))
+	if need > _pitch:
+		_pitch = need
+		for i in _rows.size():
+			var row: Control = _rows[i] as Control
+			row.position.y = float(i) * _pitch
+			row.size.y = _pitch
+			(row.get_child(0) as Control).size.y = _pitch - 6.0
+			var quip: Label = row.get_child(3) as Label
+			quip.position.y = _pitch - 7.0 - quip.size.y
+	_inner.size.y = float(_rows.size()) * _pitch
+	_scroll_max = _inner.size.y - _list.size.y
+	if _scroll_max < 0.5:
+		_scroll_max = 0.0
+	if _scroll_max > 0.0:
+		_hint.text = "↑↓ Scroll    " + _hint.text
+
+
+## Lays one row out from its labels' real sizes; returns the pitch the row needs.
+func _fit_row(row: Control, panel_w: float) -> float:
+	var name_l: Label = row.get_child(1) as Label
+	var value_l: Label = row.get_child(2) as Label
+	var quip: Label = row.get_child(3) as Label
+	var name_min: Vector2 = name_l.get_minimum_size()
+	var value_min: Vector2 = value_l.get_minimum_size()
+	var quip_min: Vector2 = quip.get_minimum_size()
+	var block: float = maxf(maxf(name_min.y, value_min.y), 19.0)
+	if value_min.x > 220.0:
+		value_l.position.x = panel_w - 16.0 - value_min.x
+		value_l.size.x = value_min.x
+	if 16.0 + name_min.x + 12.0 > value_l.position.x:
+		value_l.position.y = 4.0 + name_min.y
+		block = name_min.y + value_min.y
+	if quip_min.x > panel_w - 32.0:
+		quip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		quip.size.x = panel_w - 32.0
+		quip.update_minimum_size()
+		quip.size.y = 0.0
+	var quip_h: float = maxf(15.0, quip.size.y)
+	return 4.0 + block + quip_h + 7.0
+
+
+func _scroll_by(dy: float) -> bool:
+	var y: float = clampf(-_inner.position.y + dy, 0.0, _scroll_max)
+	if is_equal_approx(y, -_inner.position.y):
+		return false
+	_inner.position.y = -y
+	return true
 
 
 func _input(event: InputEvent) -> void:
+	if _scroll_max > 0.0 and (event.is_action_pressed("ui_down") or event.is_action_pressed("ui_up")):
+		var dy: float = _pitch if event.is_action_pressed("ui_down") else -_pitch
+		if _scroll_by(dy):
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		SoundManager.play_ui("menu_close")
 		closed.emit()
