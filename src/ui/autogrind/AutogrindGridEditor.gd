@@ -1258,8 +1258,12 @@ func _input(event: InputEvent) -> void:
 
 	# L trigger - Add AND condition
 	elif event.is_action_pressed("battle_defer"):
-		if _is_on_condition_cell():
+		## A condition or the empty "+" slot beside them: the condition side, the same notion R refuses on.
+		if cursor_col < _get_condition_slots_for_row(cursor_row):
 			_add_and_condition()
+		elif not event.is_echo():
+			SoundManager.play_ui("menu_error")
+			_flash_status("Put the cursor on a condition to add another.")
 		get_viewport().set_input_as_handled()
 
 	# Shift+R must precede battle_advance: that action binds R, and Godot matches an action even
@@ -1271,7 +1275,9 @@ func _input(event: InputEvent) -> void:
 
 	# R trigger - Add action
 	elif event.is_action_pressed("battle_advance"):
-		_add_action()
+		## A held R repeats; on a condition only the first press is refused out loud.
+		if not (event.is_echo() and cursor_col < _get_condition_slots_for_row(cursor_row)):
+			_add_action()
 		get_viewport().set_input_as_handled()
 
 	# Tab - Toggle row / Shift+Tab - Cycle profiles
@@ -1718,6 +1724,7 @@ func _add_action() -> void:
 
 	if cursor_col < condition_slots:
 		SoundManager.play_ui("menu_error")
+		_flash_status("Put the cursor on the action side to add an action.")
 		return
 
 	if actions.size() > 0 and actions[-1].get("type") == "stop_grinding":
@@ -1987,6 +1994,7 @@ func _cycle_profile() -> void:
 	var profiles = AutogrindSystem.get_autogrind_profiles()
 	if profiles.size() < 2:
 		SoundManager.play_ui("menu_error")
+		_flash_status("There is only one grind profile.")
 		return
 
 	_save_rules()
