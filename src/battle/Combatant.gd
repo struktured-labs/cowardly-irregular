@@ -1954,6 +1954,7 @@ func fork_profile(from_key: String, to_key: String) -> void:
 ## Stat recalculation with modifiers
 func recalculate_stats() -> void:
 	"""Recalculate all stats based on base stats + modifiers"""
+	remove_meta("_drain_base")  # a recompute already undoes stat_drain; a stale record would undo it twice
 	# Start with base stats
 	max_hp = base_max_hp
 	max_mp = base_max_mp

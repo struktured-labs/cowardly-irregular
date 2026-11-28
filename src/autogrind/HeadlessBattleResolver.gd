@@ -238,6 +238,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 
 func _restore_bm(bm, player_backup: Array, enemy_backup: Array, round_backup: int = 0) -> void:
+	if bm.has_method("undo_stat_drain"):
+		bm.undo_stat_drain(_player_party)
 	bm.current_round = round_backup
 	bm.player_party.clear()
 	bm.enemy_party.clear()
