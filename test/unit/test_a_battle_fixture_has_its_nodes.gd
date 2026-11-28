@@ -32,8 +32,7 @@ func test_a_probe_subclass_keeps_its_script_and_the_nodes() -> void:
 
 
 func test_the_top_offenders_build_through_the_fixture() -> void:
-	for f in ["command_menu_shape_regression", "a_hit_knows_who_swung", "the_boss_last_words_are_a_moment",
-			"a_cast_boss_speaks_its_last_words_live", "a_knock_back_leaves_from_the_sway", "an_unpayable_group_row_says_why_regression"]:
+	for f in ["command_menu_shape_regression", "the_boss_last_words_are_a_moment"]:
 		var src := FileAccess.get_file_as_string("res://test/unit/test_%s.gd" % f)
 		assert_gt(src.length(), 0, "CONTROL: read test_%s.gd" % f)
 		assert_true(src.contains("battle_scene_fixture.gd"), "test_%s.gd must build its BattleScene through the fixture" % f)

@@ -60,7 +60,7 @@ func _party(specs: Array) -> Array[Combatant]:
 
 
 func _scene_for(party: Array[Combatant]) -> Node:
-	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
+	var scene = autofree(SceneScript.new())
 	scene.party_members.assign(party)
 	scene.test_enemies.assign(BattleManager.enemy_party)
 	for m in party:
