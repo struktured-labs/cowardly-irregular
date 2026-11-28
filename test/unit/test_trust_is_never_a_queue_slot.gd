@@ -7,7 +7,6 @@ extends GutTest
 ## nobody has classified cannot be queued either. BEHAVIOURAL against the real Win98Menu and the real menu builder.
 
 const W98 := "res://src/ui/Win98Menu.gd"
-const SCENE_PATH := "res://src/battle/BattleScene.gd"
 const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 
 var _saved_enemy: Array = []
@@ -162,7 +161,7 @@ func test_every_real_command_row_is_classified() -> void:
 	assert_eq(Win98Menu.row_kind(_trust()), "hands_turn", "Trust hands the turn over")
 	assert_eq(Win98Menu.row_kind(_auto()), "hands_turn", "Auto hands the turn over")
 	assert_eq(Win98Menu.row_kind(_attack()), "action", "CONTROL: an attack is an action")
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var enemies: Array = []

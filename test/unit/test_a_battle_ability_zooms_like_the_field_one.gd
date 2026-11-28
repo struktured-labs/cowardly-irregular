@@ -12,7 +12,7 @@ const SHORTEST_ID := "slash"  # the shortest real description in abilities.json 
 var _saved_scale = null
 
 
-class ProbeScene extends "res://src/battle/BattleScene.gd":
+class ProbeScene extends "res://test/unit/helpers/battle_scene_fixture.gd".Quiet:
 	var repeats: int = 0
 	func _repeat_previous_actions() -> void:
 		repeats += 1
@@ -201,7 +201,7 @@ func test_back_unzooms_without_closing() -> void:
 
 
 func test_west_zooms_on_the_ability_list_and_repeats_everywhere_else() -> void:
-	var scene = ProbeScene.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build(ProbeScene)
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var pair: Array = await _opened()

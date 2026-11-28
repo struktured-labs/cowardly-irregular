@@ -17,7 +17,7 @@ func _sprite(x: float) -> AnimatedSprite2D:
 
 
 func test_the_swing_tween_is_killed_when_its_attacker_is_freed() -> void:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var attacker := _sprite(400)
 	var target := _sprite(100)

@@ -142,8 +142,7 @@ func test_helper_runtime_default_returns_red() -> void:
 	GameState.color_blind_mode = false
 	# Instantiate BattleScene's helper via load — bare Control,
 	# helper is an instance method so we need a fresh node.
-	var cls = load(BATTLE_SCENE)
-	var bs = cls.new()
+	var bs = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(bs)
 	var c := bs._elem_weak_color() as Color
 	assert_almost_eq(c.r, 1.0, 0.001, "default R = 1.0")
@@ -156,8 +155,7 @@ func test_helper_runtime_accessibility_returns_magenta() -> void:
 		pending("GameState autoload missing")
 		return
 	GameState.color_blind_mode = true
-	var cls = load(BATTLE_SCENE)
-	var bs = cls.new()
+	var bs = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(bs)
 	var c := bs._elem_weak_color() as Color
 	assert_almost_eq(c.r, 1.0, 0.001, "accessibility R = 1.0")

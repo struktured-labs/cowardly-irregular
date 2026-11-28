@@ -140,7 +140,7 @@ func test_the_icons_are_registered_for_the_artist() -> void:
 
 
 func test_battle_ability_rows_draw_the_ability_icon_not_the_item_scroll() -> void:
-	var scene: Node = load("res://src/battle/BattleScene.gd").new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var pc := _pc("mage")

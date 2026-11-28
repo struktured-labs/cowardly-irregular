@@ -6,7 +6,6 @@ extends GutTest
 ## non-Fighter spotlight) opened an empty Item command while the party was holding potions.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
 
 const _STUB := """
 extends Node
@@ -106,7 +105,7 @@ func _bench(duelist: Combatant, roster: Array) -> void:
 
 
 func _menu_ids(duelist: Combatant) -> Array:
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	var field: Array[Combatant] = [duelist]
 	scene.party_members.assign(field)
 	var foe := _enemy()
@@ -123,7 +122,7 @@ func _menu_ids(duelist: Combatant) -> Array:
 
 
 func _item_row_ids(duelist: Combatant) -> Array:
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	var field: Array[Combatant] = [duelist]
 	scene.party_members.assign(field)
 	var foe := _enemy()

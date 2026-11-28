@@ -12,7 +12,6 @@ extends GutTest
 ## Still inert and NOT claimed here: autobattle_verbs.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
 
 var _saved_party: Array
 var _saved_order: Array
@@ -129,7 +128,7 @@ func _scene_with(pc: Combatant, enemy: Combatant) -> Node:
 	BattleManager.selection_order.assign([pc] as Array[Combatant])
 	BattleManager.selection_index = 0
 	BattleManager.current_combatant = pc
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	scene.party_members.assign([pc] as Array[Combatant])
 	scene.test_enemies.assign([enemy] as Array[Combatant])
 	var sprite := AnimatedSprite2D.new()

@@ -75,7 +75,7 @@ func test_it_fires_only_on_the_non_full_render_branch() -> void:
 
 func test_it_survives_a_freed_or_null_caster() -> void:
 	## Sprites are freed on death and on scene teardown; the tell must not abort its caller.
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var survived := 0
 	scene._spawn_cast_anticipation(null, {"id": "fire"})

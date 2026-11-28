@@ -61,7 +61,7 @@ func test_the_proven_site_keeps_a_reachable_guard() -> void:
 
 func test_a_freed_instance_reaches_the_guard_for_real() -> void:
 	## Behavioural arm — the source scan cannot prove the runtime property.
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var doomed := Node2D.new()
 	add_child(doomed)

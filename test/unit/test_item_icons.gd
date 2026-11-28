@@ -115,7 +115,7 @@ func test_the_bag_draws_an_icon_on_every_row() -> void:
 
 
 func test_battle_item_rows_draw_an_icon() -> void:
-	var scene: Node = load("res://src/battle/BattleScene.gd").new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var pc := Combatant.new()

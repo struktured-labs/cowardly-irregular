@@ -64,7 +64,13 @@ func test_the_top_offenders_build_through_the_fixture() -> void:
 			"a_hit_lands_with_its_weight", "a_sprite_rests_at_its_own_colour", "the_locked_defer_row_says_why_regression",
 			"the_group_menu_offers_what_the_engine_accepts", "the_party_shares_one_bag_in_battle", "the_advance_queue_is_shown_as_cards",
 			"a_chained_lunge_comes_home_regression",
-			"job_change_hides_unknown_quick_slots_regression", "defer_always_available_regression"]:
+			"job_change_hides_unknown_quick_slots_regression", "defer_always_available_regression",
+			"elem_indicator_colorblind", "formula_sight_shows_the_math", "item_use_refuses_a_noop_regression",
+			"spotlight_duel_reaches_the_benched_bag_regression", "the_rogue_strikes_twice", "a_battle_ability_zooms_like_the_field_one",
+			"a_swing_dies_with_its_sprite", "cast_anticipation_regression", "every_ability_has_an_icon",
+			"freed_instance_guard_reachability", "item_icons", "item_target_cursor_starts_regression",
+			"revive_on_living_refused_regression", "royal_spite_reads_devastating", "summon_preview_uses_magic_regression",
+			"trust_is_never_a_queue_slot"]:
 		var src := FileAccess.get_file_as_string("res://test/unit/test_%s.gd" % f)
 		assert_gt(src.length(), 0, "CONTROL: read test_%s.gd" % f)
 		assert_true(src.contains("battle_scene_fixture.gd"), "test_%s.gd must build its BattleScene through the fixture" % f)

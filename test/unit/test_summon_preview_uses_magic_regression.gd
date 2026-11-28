@@ -10,7 +10,6 @@ extends GutTest
 ## Ally summons (rat_swarm, royal_summon, pack_call) carry summon_id and are not this hit.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
-const SceneScript = preload("res://src/battle/BattleScene.gd")
 
 var _saved_weather: String = ""
 var _saved_weather_timer: float = 0.0
@@ -190,7 +189,7 @@ func test_the_menu_prints_the_magic_total() -> void:
 	BattleManager.selection_order.assign([caster] as Array[Combatant])
 	BattleManager.selection_index = 0
 	BattleManager.current_combatant = caster
-	var scene = autofree(SceneScript.new())
+	var scene = autofree(preload("res://test/unit/helpers/battle_scene_fixture.gd").build())
 	scene.party_members.assign([caster] as Array[Combatant])
 	scene.test_enemies.assign([foe] as Array[Combatant])
 	var sprite := AnimatedSprite2D.new()

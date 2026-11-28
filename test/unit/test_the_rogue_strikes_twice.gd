@@ -28,7 +28,7 @@ class CountingTarget extends Combatant:
 
 
 ## Records when each held number actually lands, in game seconds.
-class TimedScene extends "res://src/battle/BattleScene.gd":
+class TimedScene extends "res://test/unit/helpers/battle_scene_fixture.gd".Quiet:
 	var landed: Array = []
 	var holds: Array = []
 	var asked_at: Array = []
@@ -240,7 +240,7 @@ func _rogue_animator(parent: Node) -> ANIMATOR:
 
 ## Feed one two-strike attack through the scene the way BattleManager does, and return the landings.
 func _swing(turbo: bool) -> Array:
-	var scene := TimedScene.new()
+	var scene := preload("res://test/unit/helpers/battle_scene_fixture.gd").build(TimedScene) as TimedScene
 	add_child_autofree(scene)
 	scene.turbo_mode = turbo
 	var animator := _rogue_animator(scene)

@@ -11,7 +11,6 @@ extends GutTest
 const ItemsMenuScript = preload("res://src/ui/ItemsMenu.gd")
 const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
-const SCENE_PATH := "res://src/battle/BattleScene.gd"
 
 var _saved_enemy: Array = []
 var _saved_player: Array = []
@@ -163,7 +162,7 @@ func _row(rows: Array, id: String) -> Dictionary:
 
 
 func _battle_rows(party: Array) -> Array:
-	var scene: Node = load(SCENE_PATH).new()
+	var scene: Node = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	var enemy := Combatant.new()

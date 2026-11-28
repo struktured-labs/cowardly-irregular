@@ -129,7 +129,7 @@ func test_the_beat_lands_at_full_weight_and_the_generic_counter_does_not() -> vo
 
 
 func test_the_counter_number_leaves_the_heros_swing() -> void:
-	_scene = load(SCENE).new()
+	_scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	if _scene._tier() == BattleJuice.Tier.OFF:
 		pending("the beat is off at this juice tier; the lift is untestable here")
 		return
@@ -163,7 +163,7 @@ func test_the_counter_beat_lands_on_the_shipped_sheets_own_impact_frame() -> voi
 	var anim = load("res://src/battle/BattleAnimator.gd").new()
 	anim.setup(spr)
 	add_child_autofree(anim)
-	var scene = load(SCENE).new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var ability: Dictionary = JobSystem.get_ability("royal_spite")
 	assert_eq(scene._ability_sheet_anim(ability, anim), "royal_spite", "the counter beat asks for the bespoke art, not play_attack")
