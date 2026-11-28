@@ -42,7 +42,7 @@ func _frames() -> SpriteFrames:
 
 ## [scene, party member, its sprite, a monster, its sprite]
 func _fixture() -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var pc := Combatant.new()
 	autofree(pc)

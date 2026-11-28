@@ -69,7 +69,7 @@ func _frames() -> SpriteFrames:
 
 ## [scene, monster, its sprite, its animator, the attacker whose action is resolving]
 func _fixture() -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var foe := Combatant.new()
 	autofree(foe)
@@ -307,7 +307,7 @@ func test_a_plain_attack_holds_its_hit_until_contact() -> void:
 	var m: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
 	for turbo in [false, true]:
 		Engine.time_scale = 0.5
-		var scene = SCENE.new()
+		var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 		add_child_autofree(scene)
 		scene.turbo_mode = turbo
 		var fighter: SpriteFrames = HybridSpriteLoader._load_external_sheet(m["sheets"]["fighter"], "fighter")

@@ -6,7 +6,6 @@ extends GutTest
 ## the same action_executing / action_executed BattleManager emits for a menu Advance and an autobattle
 ## plan alike; driven here through BattleScene's two hooks on a bare scene.
 
-const SCENE := preload("res://src/battle/BattleScene.gd")
 
 var _scene
 var _saved_pp: Array = []
@@ -26,7 +25,7 @@ func _c(n: String) -> Combatant:
 func before_each() -> void:
 	_saved_pp = BattleManager.player_party.duplicate()
 	_saved_ep = BattleManager.enemy_party.duplicate()
-	_scene = SCENE.new()
+	_scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(_scene)
 	_hero = _c("Fighter")
 	_a = _c("Goblin A")
