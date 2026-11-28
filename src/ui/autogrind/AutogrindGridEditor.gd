@@ -1316,16 +1316,14 @@ func _input(event: InputEvent) -> void:
 	# -/= - Adjust values (W/S until Advance moved to W — the editor reads Advance as Add Action)
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_EQUAL, KEY_PLUS, KEY_KP_ADD]:
 		if _is_on_condition_cell():
-			_adjust_condition_value(1)
-			SoundManager.play_ui("menu_move")
+			_dial_condition(1)
 		elif _is_on_action_cell():
 			_cycle_action_profile(1)
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_MINUS, KEY_KP_SUBTRACT]:
 		if _is_on_condition_cell():
-			_adjust_condition_value(-1)
-			SoundManager.play_ui("menu_move")
+			_dial_condition(-1)
 		elif _is_on_action_cell():
 			_cycle_action_profile(-1)
 		get_viewport().set_input_as_handled()
@@ -1468,8 +1466,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 	_value_stick_latched = true
 	var delta: int = 1 if event.axis_value > 0.0 else -1
 	if _is_on_condition_cell():
-		_adjust_condition_value(delta)
-		SoundManager.play_ui("menu_move")
+		_dial_condition(delta)
 	elif _is_on_action_cell():
 		_cycle_action_profile(delta)
 	return true
@@ -1538,6 +1535,23 @@ func _adjust_condition_value(delta: int) -> void:
 	current_value = clamp(current_value + delta * step, min_val, max_val)
 	cond["value"] = current_value
 	_refresh_grid()
+
+
+## A dial press heard as menu_move only when the condition changed; otherwise menu_error and the reason.
+func _dial_condition(delta: int) -> bool:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	if cursor_col < 0 or cursor_col >= conditions.size() or not (conditions[cursor_col] is Dictionary):
+		return false
+	var cond: Dictionary = conditions[cursor_col]
+	var before: Dictionary = cond.duplicate(true)
+	_adjust_condition_value(delta)
+	if cond != before:
+		SoundManager.play_ui("menu_move")
+		return true
+	var why := AutobattleGridEditor.dial_refusal(AutogrindSystem.NULLARY_CONDITIONS.has(str(cond.get("type", ""))))
+	SoundManager.play_ui("menu_error")
+	_flash_status(why)
+	return false
 
 
 func _cycle_action_type() -> void:
