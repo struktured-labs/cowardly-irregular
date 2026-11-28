@@ -69,7 +69,7 @@ func _frames() -> SpriteFrames:
 
 ## [scene, monster, its sprite, its animator, the attacker whose action is resolving]
 func _fixture() -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	var foe := Combatant.new()
 	autofree(foe)
