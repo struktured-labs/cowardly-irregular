@@ -73,6 +73,11 @@
         "text": "One thing. The paperwork he was carrying — it wasn't drafted for him. Someone drafted it, then handed it to a soldier and told him to be a lawyer. That someone is who I would like a word with. But not today.",
         "theme": "villager"
       }
+    ],
+    "idle_after_complete": [
+      "Forty barrels, all still full, all moving at dawn. A caravan that sits nine days learns to leave early.",
+      "The road east is just a road again. I still expect gold armor behind every dune.",
+      "Somebody drafted that soldier's paperwork. I read every notice we pass now. Twice."
     ]
   },
   "objectives": [

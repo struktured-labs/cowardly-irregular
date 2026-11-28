@@ -1386,10 +1386,11 @@ func _start_dialogue() -> void:
 	# PRECEDENCE: a resolved bucket SHADOWS dialogue_lines (i.e. persona fallbacks[]) on this path only — they still render inside DynamicConversation. Pinned by test_persona_shadow_annotation_ratchet.gd.
 	var source_lines: Array = _quest_state_bucket_rotation(_quest_bucket)
 	if source_lines.is_empty():
-		var n: int = dialogue_lines.size()
+		var base: Array = _static_source_lines(_quest_sys_for_lines)
+		var n: int = base.size()
 		var offset: int = (_dialogue_visit_count % n) if n > 0 else 0
 		for i in range(n):
-			var line_text = dialogue_lines[(i + offset) % n]
+			var line_text = base[(i + offset) % n]
 			lines.append({
 				"speaker": npc_name,
 				"text": line_text,
@@ -1505,6 +1506,15 @@ func _quest_state_bucket_rotation(bucket: String) -> Array:
 	for i in range(bucket_lines.size()):
 		rotated.append(str(bucket_lines[(i + start) % bucket_lines.size()]))
 	return rotated
+
+
+## A giver whose quest is done speaks its quest's idle_after_complete, if authored; else its own lines.
+func _static_source_lines(quest_sys: Node) -> Array:
+	if quest_sys != null and quest_sys.has_method("idle_after_complete_for"):
+		var after: Array = quest_sys.idle_after_complete_for(get_npc_id())
+		if not after.is_empty():
+			return after
+	return dialogue_lines
 
 
 func _run_dynamic_conversation(player: Node) -> void:
