@@ -1916,9 +1916,6 @@ func _cycle_character(direction: int = 1) -> void:
 		_flash_status("There is no one else in the party to switch to.", Color.YELLOW)
 		return
 
-	# Save current character's script before switching
-	_save_script()
-
 	# Cycle to next/previous character. Skip spotlight-locked PCs so the
 	# user can't edit a script they don't yet control. Debug flag override:
 	# GameState.debug_all_pcs_unlocked treats every PC as unlocked. The
@@ -1936,6 +1933,9 @@ func _cycle_character(direction: int = 1) -> void:
 		SoundManager.play_ui("menu_error")
 		_flash_status("No one else in the party can be edited yet.", Color.YELLOW)
 		return
+
+	# Save current character's script before switching
+	_save_script()
 	var next_member = party[current_party_index]
 
 	# Setup for new character

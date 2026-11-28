@@ -109,8 +109,11 @@ func test_every_other_member_locked_is_refused_not_a_switch_to_yourself() -> voi
 	var party := [_member("Hero"), _member("Mira", true), _member("Zack", true)]
 	var ed: Node = await _ab_editor(party)
 	assert_eq(int(ed.current_party_index), 0, "CONTROL: the editor starts on the hero")
+	var saves := [0]
+	ed.script_saved.connect(func(_id, _s): saves[0] += 1)
 	ed._cycle_character(1)
 	assert_eq(int(ed.current_party_index), 0, "CONTROL: the lap came home to the hero")
+	assert_eq(saves[0], 0, "a refused switch still wrote the script")
 	assert_false(_stamped("menu_select"), "with everyone else locked the press clicked as a switch to the same character")
 	assert_true(_stamped("menu_error"), "with everyone else locked the press was not refused")
 	assert_string_contains(_shown(ed), "can be edited yet", "the refusal must say why")
