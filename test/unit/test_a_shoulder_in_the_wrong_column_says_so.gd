@@ -134,20 +134,28 @@ func test_r_on_a_grind_condition_is_refused_with_a_reason() -> void:
 
 
 ## Review (cowir-controller 28875): a held shoulder repeats, and a refusal is one buzz per press, not per key-repeat.
-func _key(code: Key, echo: bool) -> InputEventKey:
+## The key is read off the action's own binding, so a remap (L/R became Q/W) cannot leave this arm pressing a dead key.
+func _key(action: String, echo: bool) -> InputEventKey:
+	var bound: InputEventKey = null
+	for e in InputMap.action_get_events(action):
+		if e is InputEventKey:
+			bound = e
+			break
+	assert_not_null(bound, "FLOOR: %s has a keyboard binding" % action)
 	var k := InputEventKey.new()
-	k.keycode = code
-	k.physical_keycode = code
+	if bound != null:
+		k.keycode = bound.keycode
+		k.physical_keycode = bound.physical_keycode
 	k.pressed = true
 	k.echo = echo
 	return k
 
 
 func test_a_held_shoulder_refuses_once() -> void:
-	var cases := [[AB_EDITOR, AB_COND, {"type": "attack"}, 2, KEY_L], [AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 2, KEY_L],
-		[AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 0, KEY_R]]
+	var cases := [[AB_EDITOR, AB_COND, {"type": "attack"}, 2, "battle_defer"], [AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 2, "battle_defer"],
+		[AG_EDITOR, AG_COND, {"type": "stop_grinding"}, 0, "battle_advance"]]
 	for c in cases:
-		var label := "%s key %s" % [c[0].get_file(), OS.get_keycode_string(c[4])]
+		var label := "%s %s key" % [c[0].get_file(), c[4]]
 		var ed: Node = await _editor(c[0], c[1], c[2], c[3])
 		ed._input(_key(c[4], false))
 		assert_true(_stamped("menu_error"), "CONTROL %s: the first press is refused, so this key reaches the shoulder arm" % label)
