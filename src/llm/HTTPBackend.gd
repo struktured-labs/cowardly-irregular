@@ -344,7 +344,9 @@ static func dialogue_consequence(now_ready: bool, dialogue_on: bool) -> String:
 
 ## Read the Dynamic Dialogue toggle off the service, the way RuleComposer does.
 func dialogue_enabled() -> bool:
-	var svc: Node = get_node_or_null("/root/LLMService")
+	# Through the SceneTree root, not "/root/…": an off-tree backend's absolute lookup logs an engine error and finds nothing.
+	var tree := Engine.get_main_loop() as SceneTree
+	var svc: Node = tree.root.get_node_or_null("LLMService") if tree != null and tree.root != null else null
 	return svc != null and "llm_enabled" in svc and bool(svc.llm_enabled)
 
 
