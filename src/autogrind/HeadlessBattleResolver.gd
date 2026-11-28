@@ -263,6 +263,10 @@ func _tick_round_start() -> void:
 		## NO DEBT PAYMENT HERE. Live pays it inside the SELECTION loop (BattleManager:1604), where the
 		## same branch also forfeits the turn. Paying at round start AND granting the natural +1 below
 		## made debt recover at 2 AP/round and cost nothing — @cowir-battle, 2026-09-16.
+	## Live's own corruption tick (time_distortion, stat_drain) on the parties resolve_battle lent BattleManager.
+	var bm: Object = _get_autoload("BattleManager")
+	if bm != null and bm.has_method("_apply_corruption_effects_on_round_start"):
+		bm._apply_corruption_effects_on_round_start()
 
 
 func _selection_phase() -> Array[Dictionary]:
@@ -1160,6 +1164,9 @@ func _roll_attack_strike(attacker, target, scale: float, charge: float = 0.0) ->
 	## damage, exactly where live applies it, because this file's defense formula is quadratic and
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+	## reality_bending, last in the roll as in live's _roll_attack_strike: the hit carries the target's defence.
+	if attacker.has_meta("corruption_effects") and "reality_bending" in attacker.get_meta("corruption_effects", []):
+		damage += float(target.defense)
 	return {"fate": "hit", "damage": int(damage)}
 
 

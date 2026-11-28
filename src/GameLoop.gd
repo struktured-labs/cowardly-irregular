@@ -7290,6 +7290,9 @@ func _combatant_for_headless(data: Dictionary) -> Combatant:
 		enemy.elemental_weaknesses.append(str(w))
 	for r in data.get("resistances", []):
 		enemy.elemental_resistances.append(str(r))
+	## The scaled row's corruption, as BattleEnemySpawner stores it: without it a corrupted grind's monsters bit only live.
+	if data.get("corruption_effects", []) is Array and not (data["corruption_effects"] as Array).is_empty():
+		enemy.set_meta("corruption_effects", (data["corruption_effects"] as Array).duplicate())
 	var kit: Variant = data.get("abilities", [])
 	if kit is Array and not (kit as Array).is_empty():
 		enemy.job = {"abilities": (kit as Array).duplicate(), "name": str(data.get("name", "Enemy"))}
