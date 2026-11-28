@@ -77,7 +77,7 @@ func after_each() -> void:
 
 ## A bare scene with a real BattleDialogue and one boss whose monster id is `monster_id`.
 func _make_scene(monster_id: String = BOSS_ID) -> Node:
-	_scene = ProbeScene.new()
+	_scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build(ProbeScene)
 	add_child_autofree(_scene)
 	_dialogue = DialogueScript.new()
 	_scene.add_child(_dialogue)

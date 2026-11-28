@@ -69,7 +69,7 @@ func after_each() -> void:
 
 ## A bare scene (its _ready stops before any battle) with a real BattleDialogue attached.
 func _make_scene() -> Node:
-	_scene = ProbeScene.new()
+	_scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build(ProbeScene)
 	add_child_autofree(_scene)
 	_dialogue = DialogueScript.new()
 	_scene.add_child(_dialogue)

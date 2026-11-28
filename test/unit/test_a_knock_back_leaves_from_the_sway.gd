@@ -22,7 +22,7 @@ func after_each() -> void:
 
 ## [scene, sprite]: one monster sprite at index `index` of the enemy line, as the scene's own spawn leaves it.
 func _fixture(index: int = 0, as_enemy: bool = true) -> Array:
-	var scene = SCENE.new()
+	var scene = preload("res://test/unit/helpers/battle_scene_fixture.gd").build()
 	add_child_autofree(scene)
 	scene.set_process(false)  # the arm advances the idle clock itself
 	var sprite: Node2D = null
